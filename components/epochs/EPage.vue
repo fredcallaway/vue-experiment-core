@@ -32,6 +32,6 @@ onMounted(() => {
 
 <template>
   <div class="EPage">
-    <slot :epoch="epoch"/>
+    <slot :epoch="epoch" :done="epoch.done" />
   </div>
 </template>

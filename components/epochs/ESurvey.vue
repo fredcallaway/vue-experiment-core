@@ -30,12 +30,6 @@ const submit = () => {
       />
 
       <RadioButtons
-        question="Did you understand what you were doing?"
-        :options="['yes', 'no']"
-        v-model="formData.understood"
-      />
-
-      <RadioButtons
         question="How fun was the experiment?"
         :options="['worse than average', 'typical', 'better than average']"
         v-model="formData.fun"

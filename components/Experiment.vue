@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 // Minimal default experiment template
 // Projects should override this component by creating components/Experiment.vue
-logEvent('experiment.template.loaded')
 </script>
 
 <template>
