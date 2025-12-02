@@ -11,8 +11,8 @@ export function indices(x: ArrayLike<unknown>): number[] {
   return Array.from({ length: x.length }, (_, i) => i)
 }
 
-export function repeat<T>(xs: T[], n: number): T[] {
-  return Array.from({ length: n }, () => xs).flat()
+export function repeat<T>(xs: readonly T[], n: number): T[] {
+  return Array.from({ length: n }, () => [...xs]).flat()
 }
 
 export function fill<T>(x: T, n: number): T[] {
