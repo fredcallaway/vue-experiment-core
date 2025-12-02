@@ -2,6 +2,7 @@
 const props = defineProps<{
   value: string
   unstyled?: boolean
+  color?: 'primary' | 'red' | 'yellow' | 'green' | 'blue' | 'orange' | 'purple' | 'gray' // from uno.config.ts
 }>()
 
 
@@ -22,11 +23,17 @@ P.on('mousedown', (value: string) => {
   emit('mousedown', value)
 })
 
+const classes = computed(() => {
+  if (props.unstyled) return []
+  if (props.color) return `btn-${props.color}`
+  return 'btn'
+})
+
 </script>
 
 <template>
   <button 
-    :class="{ 'btn': !unstyled }" 
+    :class="classes" 
     @click="P.emit('click', value)"
     @mouseenter="P.emit('hover', value)"
     @mousedown="P.emit('mousedown', value)"
