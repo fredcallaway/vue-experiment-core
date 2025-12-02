@@ -1,3 +1,4 @@
+
 export const parseUrlParams = createGlobalState(() => {
   const urlParams = new URLSearchParams(window.location.search)
 
@@ -31,6 +32,17 @@ export const parseUrlParams = createGlobalState(() => {
   }
 })
 
+// TODO: fix imports so we can use the one from utils/misc
+const hashString = (str: string): number => {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  return Math.abs(hash)
+}
+
 export const useCurrentSession = createGlobalState<() => SessionMeta>(() => {
   const parsed = parseUrlParams()
   
@@ -46,7 +58,8 @@ export const useCurrentSession = createGlobalState<() => SessionMeta>(() => {
   })()
   const participantId = parsed.participantId || 'UNKNOWN'
   const studyId = parsed.studyId || 'UNKNOWN'
-  const assignment = parsed.assignment ?? undefined  // set in useConditions
+  // if assignment is missing, we use a deterministic "random" assignment based on sessionId
+  const assignment = parsed.assignment ?? hashString(sessionId) % 10_000
 
   let mode: DataMode
   if (parsed.mode) {

@@ -14,7 +14,7 @@ export type SessionMeta = {
   completionTime?: number
   lastUpdateTime: number
   bonus: number
-  assignment?: number
+  assignment: number
   conditions?: Record<string, unknown>
 }
 

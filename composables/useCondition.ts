@@ -10,9 +10,6 @@ Values are "sampled" to tile the space as uniformly as possible.
 */
 export const useConditions = createGlobalState(() => {
   const meta = useCurrentSession()
-  if (!meta.assignment) {
-    meta.assignment = random.int(10_000)
-  }
   const conditions = reactive<Record<string, any>>({})
   meta.conditions = conditions
 
