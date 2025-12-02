@@ -1,18 +1,10 @@
-import { ref as dbRef, update, get, set, getDatabase, serverTimestamp } from 'firebase/database'
-import { initializeApp } from 'firebase/app'
+import { ref as dbRef, update, get, set, serverTimestamp, type DatabaseReference } from 'firebase/database'
 import { useStorage } from '@vueuse/core'
 import { z } from 'zod'
 import { logError } from './logEvent'
 let dbInstance: DataWriter | null = null
 
 const online = useOnline()
-
-export const useDatabase = createGlobalState(() => {
-  const config = useConfig()
-  const firebaseApp = initializeApp(config.firebase)
-  const firebaseDb = getDatabase(firebaseApp)
-  return firebaseDb
-})
 
 export function useDataWriter(): DataWriter {
   if (!dbInstance) {
@@ -65,17 +57,16 @@ export class DataWriter {
     return this.meta?.sessionId ?? '__PREINIT__'
   }
 
-  async initializeSession(meta: SessionMeta) {
+  async initializeSession(meta: SessionMeta): Promise<boolean> {
     if (this.disabled) {
       console.warn('DataWriter: called initializeSession while disabled; ignoring')
-      return
+      return false
     }
 
     this.meta = meta
     this.mode = meta.mode
     // const { sessionId, participantId, studyId, mode, version } = prm
     // this.sessionId = sessionId
-
 
     const currentUpdates = this.updates.value
     if (Object.keys(currentUpdates).length > 0) {
@@ -89,38 +80,50 @@ export class DataWriter {
           write: (v: Record<string, any>) => JSON.stringify(v),
         }
       })
+      console.log('recovered updates from localStorage', this.updates.value)
       for (const [key, value] of Object.entries(currentUpdates)) {
         this.updates.value[key.replace('__PREINIT__', meta.sessionId)] = value
       }
     }
 
-    const metaRef = dbRef(useDatabase(), this.dbPath('meta'))
-    const snapshot = await get(metaRef)
-    if (snapshot.exists()) {
-      console.warn('DataWriter: repeat_session', meta.sessionId)
-    }
-    else {
-      meta.lastUpdateTime = Date.now()
-      await set(metaRef, meta)
-    }
+    try {
+      const db = useDatabase()
+      await db.assertConnected()
+      const snapshot = await db.get(this.dbPath('meta'))
+      if (snapshot) {
+        console.warn('DataWriter: repeat_session', meta.sessionId)
+      }
+      else {
+        meta.lastUpdateTime = Date.now()
+        await db.set(this.dbPath('meta'), meta)
+      }
 
-    // watch for changes to the meta object and update the database
-    let prevMeta = structuredClone(toRaw(meta))
-    watchDeep(meta, () => {
-      const changes: Record<string, any> = {}
-      for (const key in meta) {
-        const typedKey = key as keyof SessionMeta
-        if (typedKey === 'lastUpdateTime') continue
-        if (!R.isDeepEqual(meta[typedKey], prevMeta[typedKey])) {
-          changes[typedKey] = meta[typedKey]
+      // watch for changes to the meta object and update the database
+      let prevMeta = structuredClone(toRaw(meta))
+      watchDeep(meta, () => {
+        const changes: Record<string, any> = {}
+        for (const key in meta) {
+          const typedKey = key as keyof SessionMeta
+          if (typedKey === 'lastUpdateTime') continue
+          if (!R.isDeepEqual(meta[typedKey], prevMeta[typedKey])) {
+            changes[typedKey] = meta[typedKey]
+          }
         }
-      }
-      prevMeta = structuredClone(toRaw(meta))
-      
-      if (Object.keys(changes).length > 0) {
-        this.updateMeta(changes as Partial<SessionMeta>)
-      }
-    })
+        prevMeta = structuredClone(toRaw(meta))
+
+        if (Object.keys(changes).length > 0) {
+          this.updateMeta(changes as Partial<SessionMeta>)
+        }
+      })
+
+      return true // success
+
+    } catch (error) {
+      console.error('Failed to initialize database connection.', error)
+      this.mode = 'dummy'
+      console.warn('DataWriter: falling back to dummy mode due to database initialization error')
+      return false
+    }
   }
 
   pushEvent(event: LogEvent) {
@@ -159,8 +162,8 @@ export class DataWriter {
       return
     }
     // ensure meta is fully up to date
-    const metaRef = dbRef(useDatabase(), this.dbPath('meta'))
-    await set(metaRef, this.meta)
+    const db = useDatabase()
+    await db.set(this.dbPath('meta'), this.meta)
 
     // TODO: also flush other (when we support that)
 
@@ -178,9 +181,10 @@ export class DataWriter {
     try {
       if (this.mode !== 'dummy') {
         const lastUpdateTime = serverTimestamp() as unknown as number
+        const db = useDatabase()
         const path = this.dbPath('meta', 'lastUpdateTime')
         this.updates.value[path] = lastUpdateTime
-        update(dbRef(useDatabase()), this.updates.value)
+        db.update('/', this.updates.value)
       }
       console.debug(`flushed ${Object.keys(this.updates.value).length} updates`, toRaw(this.updates.value))
       this.updates.value = {}

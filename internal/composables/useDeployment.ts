@@ -37,7 +37,7 @@ export const useDeployment = () => {
   const checkDeployedSha = async () => {
     deployedSha.value = 'loading...'
     const db = useDatabase()
-    const snapshot = await get(dbRef(db, 'deployStatus'))
+    const snapshot = await db.get('deployStatus')
     const data = snapshot.val()
     deployedSha.value = data?.sha || ''
   }
@@ -66,7 +66,7 @@ export const useDeployment = () => {
     
     // Store deployed SHA in Firebase
     const db = useDatabase()
-    await set(dbRef(db, 'deployStatus'), {
+    await db.set('deployStatus', {
       sha: result.sha,
       deployedAt: Date.now(),
     })

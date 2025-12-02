@@ -5,7 +5,7 @@ import { ref as dbRef, onValue, get } from 'firebase/database'
 export const useDatabasePath = <T>(path: string, listen: boolean) => {
   // TODO track database listeners to avoid duplicates?
   console.debug('useDatabasePath.subscribe', path)
-  const db = useDatabase()
+  const { db } = useDatabase()
   const data = ref(null) as Ref<T | null>
   const isLoading = ref<boolean>(true)
   const isMissing = ref<boolean>(false)
@@ -28,7 +28,7 @@ export const useDatabasePath = <T>(path: string, listen: boolean) => {
 }
 
 export const getDatabasePath = async <T>(fullPath: string): Promise<T | null> => {
-  const db = useDatabase()
+  const { db } = useDatabase()
   const snapshot = await get(dbRef(db, fullPath))
   return snapshot.val()
 }

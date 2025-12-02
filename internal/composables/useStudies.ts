@@ -9,12 +9,11 @@ type StudyData = {
 
 export const addStudy = async (studyId: string, data: StudyData) => {
   const db = useDatabase()
-  await set(dbRef(db, `studies/${studyId}/`), data)
+  await db.set(`studies/${studyId}/`, data)
 }
 
 export const getStudy = async (studyId: string): Promise<StudyData | null> => {
   const db = useDatabase()
-  const studyRef = dbRef(db, `studies/${studyId}/`)
-  const snapshot = await get(studyRef)
-  return snapshot.val() || null
+  const snapshot = await db.get(`studies/${studyId}/`)
+  return snapshot?.val() || null
 }

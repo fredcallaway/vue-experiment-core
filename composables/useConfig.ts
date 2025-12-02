@@ -5,16 +5,6 @@ export type Config = {
   version: string
   contactEmail: string
   completion: { mode: 'prolific' } | { mode: 'link', link: string}
-  firebase: {
-    projectId: string
-    appId: string
-    databaseURL: string
-    storageBucket: string
-    apiKey: string
-    authDomain: string
-    messagingSenderId: string
-    measurementId: string
-  }
 }
 
 
