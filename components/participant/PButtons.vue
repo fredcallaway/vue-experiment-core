@@ -11,7 +11,7 @@ const values =
 const classes = 
   Array.isArray(props.classes) ? props.classes : 
   props.classes ? string2array(props.classes) : 
-  fill('btn-primary', values.length)
+  []
 
 const emit = defineEmits<{
   (e: 'click', value: string): void

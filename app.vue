@@ -36,38 +36,32 @@ onMounted(async () => {
   background-color: #ffffff;
 }
 
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+input, select, textarea {
+  outline: inherit;
+}
+
+a {
+  @apply text-blue underline;
+}
+
+h1 { font-size: 2em; font-weight: bold; }
+h2 { font-size: 1.5em; font-weight: bold; }
+h3 { font-size: 1.17em; font-weight: bold; }
+h4 { font-size: 1em; font-weight: bold; }
+h5 { font-size: 0.83em; font-weight: bold; }
+h6 { font-size: 0.67em; font-weight: bold; }
+
 /* ensure scrollbar doesn't mess with layout */
 :root, html {
   overflow-y: scroll;
   scrollbar-gutter: stable;
-}
-
-/* reset default styles */
-button {
-  color: inherit;
-  border: inherit;
-  cursor: pointer;
-  background-color: inherit;
-}
-
-input, select, textarea {
-  outline: none;
-  box-shadow: none;
-  background-color: #fff;
-  color: #101010;
-  box-shadow: none;
-  border-style: solid;
-  border-color: #101010;
-  /* border-width: 1px; */
-}
-
-h1, h2, h3, h4, h5, h6, p {
-  margin-top: 0; 
-}
-
-pre {
-  margin-top: 0;
-  margin-bottom: 0;
 }
 
 .subtle-scrollbar {

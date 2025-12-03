@@ -17,7 +17,7 @@ resetWindowSize()
 <template>
 <div>
   <div flex="~ wrap gap-4" p-10>
-    <NuxtLink btn-gray v-for="page in pages" :key="page.path" :to="page.path">
+    <NuxtLink btn-gray no-underline v-for="page in pages" :key="page.path" :to="page.path">
       {{ page.name }}
     </NuxtLink>
   </div>

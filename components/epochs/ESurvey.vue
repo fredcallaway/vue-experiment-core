@@ -38,6 +38,7 @@ const submit = () => {
       <fieldset>
         <h4>Do you have any other feedback? (optional)</h4>
         <textarea
+          input
           id="feedback"
           v-model="formData.feedback"
           rows="3"

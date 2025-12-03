@@ -278,7 +278,6 @@ const filteredSubmissions = computed(() => {
             <a 
               :href="getStudyLink(study)"
               target="_blank"
-              class="text-blue-500 underline"
             >
               View on Prolific →
             </a>

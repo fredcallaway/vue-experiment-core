@@ -27,7 +27,7 @@ const toggle = () => {
   <label class="flex items-center gap-2 cursor-pointer">
     <div
       class="relative w-11 h-6 rounded-full transition-colors"
-      :class="isChecked ? 'bg-blue-500' : 'bg-gray-300'"
+      :class="isChecked ? 'bg-blue' : 'bg-gray-300'"
       @click="toggle"
     >
       <div

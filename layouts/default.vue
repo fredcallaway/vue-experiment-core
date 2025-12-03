@@ -5,7 +5,7 @@ const { violated } = useWindowEnforcer()
 </script>
 
 <template>
-  <div flex="~ col" px-1 ref="container" overflow-hidden >
+  <div p2 flex="~ col" ref="container" overflow-hidden>
     <NavBar mb-2/>
     <div flex="~ row gap-4">
       <div flex="~ col">

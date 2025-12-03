@@ -148,9 +148,9 @@ const fast = useFastMode()
       </div>
     </div>
     
-    <label text-sm text-right mb--2>
+    <div flex="~ items-center justify-end gap-2" mt2 float-right>
       fast mode
-      <input type="checkbox" v-model="fast" translate-y-0.5 translate-x--1/>
-    </label>
+      <Toggle v-model="fast" />
+    </div>
   </div>
 </template>

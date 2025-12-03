@@ -77,7 +77,7 @@ const slots = useSlots()
           for more than {{ totalTimeoutSeconds }} seconds.
         </div>
     
-        <div class="bg-gray-50 p-6 border-2 text-sm overflow-y-auto h-100 ">
+        <div class="p-6 border-2 text-sm overflow-y-auto h-100 ">
           <div w-110 mx-auto mt20 v-if="!slots.default">
             If you're reading this, you should either put the correct
             consent form in Consent.vue or message the researcher telling them

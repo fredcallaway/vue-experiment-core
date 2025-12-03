@@ -12,7 +12,7 @@ const model = defineModel<string>()
 <div>
   <h4>{{ question }}</h4>
   <div>
-    <label v-for="option in options" :key="option">
+    <label v-for="option in options" :key="option" mx1>
       <input type="radio" v-model="model" :value="option" />
       {{ option }}
     </label>

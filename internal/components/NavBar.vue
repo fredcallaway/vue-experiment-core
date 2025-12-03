@@ -27,7 +27,7 @@ const isActiveLink = (linkPath: string) => {
 </script>
 
 <template>
-  <nav class="bg-white h-5 pl-4">
+  <nav h6 px1>
     <div class="flex items-center gap-6">
       <NuxtLink
         v-for="link in topNavLinks"

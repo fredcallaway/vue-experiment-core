@@ -2,7 +2,7 @@
 const props = defineProps<{
   value: string
   unstyled?: boolean
-  color?: 'primary' | 'red' | 'yellow' | 'green' | 'blue' | 'orange' | 'purple' | 'gray' // from uno.config.ts
+  color?: 'primary' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'gray' // from uno.config.ts
 }>()
 
 
@@ -23,10 +23,14 @@ P.on('mousedown', (value: string) => {
   emit('mousedown', value)
 })
 
+const attrs = useAttrs()
+
 const classes = computed(() => {
+  const hasBtn = String(attrs.class ?? '').includes('btn-') || Object.keys(attrs).some(k => k.includes('btn-'))
+  if (hasBtn) return []
   if (props.unstyled) return []
   if (props.color) return `btn-${props.color}`
-  return 'btn'
+  return 'btn-primary'
 })
 
 </script>
