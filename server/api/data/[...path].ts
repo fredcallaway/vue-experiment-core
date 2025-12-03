@@ -5,7 +5,7 @@ const DATA_DIR = resolve(process.cwd(), 'data')
 
 function getFilePath(pathParam: string | string[]): string {
   const pathSegments = Array.isArray(pathParam) ? pathParam : [pathParam]
-  const relativePath = pathSegments.join('/')
+  const relativePath = pathSegments.map(decodeURIComponent).join('/')
   const fullPath = resolve(DATA_DIR, relativePath)
   
   // Security check: ensure path is within data directory
@@ -173,6 +173,10 @@ export default defineEventHandler(async (event) => {
         })
       }
       writeFile(filePath, defaultValue)
+      // Parse JSON default values that were serialized as query params
+      if (filePath.endsWith('.json') && typeof defaultValue === 'string') {
+        return JSON.parse(defaultValue)
+      }
       return defaultValue
     }
     return readFile(filePath)

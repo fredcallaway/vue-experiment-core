@@ -49,6 +49,10 @@ type StoredSessionMeta = SessionMeta & { _downloadTime: number }
 
 export const writeLocalSessionData = async (session: SessionData, _downloadTime: number = Date.now()) => {
   console.debug('writing session data to filesystem', session.meta.sessionId)
+  if (!session.meta.sessionId) {
+    console.error('session meta has no sessionId', session.meta)
+    return
+  }
   const { mode, sessionId } = session.meta
   const fsData: StoredSessionData = {
     ...session,
@@ -67,6 +71,7 @@ export const readLocalSessionData = (mode: DataMode, sessionId: string): Promise
 // MAIN COMPOSABLES
 
 export const useAllData = (mode: DataMode, listen: boolean = true) => {
+  assertOneOf(mode, ['live', 'debug'])
 
   const { data: fsMeta } = useFetch<Record<string, StoredSessionMeta>>(`/api/data/raw/${mode}/_meta.json`, {
     query: { default: '{}' }
@@ -116,6 +121,10 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
       const sessionData = await fetchSessionDataFromDb(mode, sessionId)
       if (!sessionData) {
         console.error('session data not found', sessionId)
+        return
+      }
+      if (!sessionData.meta.sessionId) {
+        console.error('sessionData.meta has no sessionId', sessionId, sessionData.meta,)
         return
       }
       await writeLocalSessionData(sessionData, now)

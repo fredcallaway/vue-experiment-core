@@ -71,6 +71,9 @@ const sessionList = computed(() => {
   return makeSessionList(sessions.value)
 })
 
+onMounted(() => {
+  syncLocalData()
+})
 
 </script>
 
