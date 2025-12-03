@@ -2,7 +2,7 @@
 
 defineWindowSize({
   width: 1000,
-  height: 600,
+  height: 800,
 })
 
 const classes = [
@@ -34,7 +34,6 @@ const classes = [
       <button btn-purple btn-sm >btn-purple btn-sm</button>
     </div>
 
-
     <div flex="~ row gap-2">
       <div w-full card-gray >
         <h3>This is a card</h3>
@@ -54,6 +53,12 @@ const classes = [
         <option value="2">Option 2</option>t
         <option value="3">Option 3</option>
       </select>
+    </div>
+
+    <div border-4 relative wfull h80>
+      <div t1 l1 bg-green-600 w-80 h-50 />
+      <div t6 l6 bg-blue-300 square-20 />
+      <div t4 l12 circle-10 bg-yellow />
     </div>
   </div>    
 </template>

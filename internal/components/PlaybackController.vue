@@ -273,9 +273,11 @@ bus.on((e: PEvent) => {
 
 // for testing style
 // onMounted(async () => {
-//   for (const key of R.reverse(PARTICIPANT_KEYS)) {
-//     await timeoutPromise(800)
-//     showKeyPress(key)
+//   while (true) {
+//     for (const key of R.reverse(PARTICIPANT_KEYS)) {
+//       await timeoutPromise(800)
+//       showKeyPress(key)
+//     }
 //   }
 // })
 
@@ -296,17 +298,19 @@ onKeyStroke(['n', 'ArrowRight'], (event) => {
 <template>
   <div class="playback-controller p-4 bg-gray-50 rounded-lg" >
     <MainContentOverlay flex-center>
-      <div v-if="currentKeyPress"
-        scale-200 flex-center
-        w-20 h-20 rounded-lg
+      <div v-show="currentKeyPress"
+        flex-center
+        rounded-lg
         text-4xl font-mono
         :style="{
           // background: `rgba(0,0,0,${keyPressOpacity * 1})`,
           // color: `rgba(255,255,255,${keyPressOpacity})`,
+          width: '150px',
+          height: '150px',
           opacity: keyPressOpacity,
           background: 'black',
           color: 'white',
-          fontSize: (4 / currentKeyPress.length) + 'rem',
+          fontSize: (6 / (currentKeyPress?.length ?? 1)) + 'rem',
         }"
       >
         {{ currentKeyPress }}

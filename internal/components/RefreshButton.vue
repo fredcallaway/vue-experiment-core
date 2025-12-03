@@ -27,10 +27,9 @@ const formatTimestamp = (timestamp: number | null | undefined) => {
     <span mr-1 text-base text-gray-600 v-if="label">{{ label }} </span>
     <span text-base text-gray-600>{{ formatTimestamp(timestamp) }}</span>
     <button
-      class="bg-transparent! text-blue-500 hover:text-blue-400 italic display-inline-block p-0 "
+      class=" text-blue-500 hover:text-blue-400 italic display-inline-block p-0 "
       ml-3
       @click="refresh"
-      btn-gray-xs
       :disabled="isLoading"
     >
       <span text-lg inline-block mt--1 ml--1.5 class="i-mdi-reload" :class="{ 'animate-[spin_1s_linear_infinite]': isLoading }" />
