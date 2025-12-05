@@ -65,11 +65,14 @@ export const useDeployment = () => {
     error.value = ''
     
     // Store deployed SHA in Firebase
-    const db = useDatabase()
-    await db.set('deployStatus', {
+    const info = {
       sha: result.sha,
       deployedAt: Date.now(),
-    })
+      version: useConfig().version,
+    }
+    const db = useDatabase()
+    await db.set('deployStatus', info)
+    await db.set(`deploys/${info.deployedAt}`, info)
     deployedSha.value = result.sha
 
     return true
