@@ -1,22 +1,44 @@
-export function defineParams<T extends Record<string, any>>(defaults: T) {
+type MaybeGetter<T> = T | (() => T)
+type MaybeGetterObject<T> = { [K in keyof T]: MaybeGetter<T[K]> }
+export type ParamsSpec<T> = Partial<MaybeGetterObject<T>>
+
+function evaluateGetters<T extends Record<string, any>>(obj: MaybeGetterObject<T>): T {
+  return R.mapValues(obj, (value) => R.isFunction(value) ? value() : value) as T
+}
+
+export function defineParams<T extends Record<string, any>>(defaults: MaybeGetterObject<T>) {
   const injectionKey = Symbol()
 
-  const provideParams = (params: Partial<T>) => {
-    const existingRef = injectLocal<Ref<Partial<T>> | undefined>(injectionKey, undefined)
+  const provideParams = (params: ParamsSpec<T>) => {
+    const existingRef = injectLocal<Ref<ParamsSpec<T>> | undefined>(injectionKey, undefined)
     if (existingRef) {
       Object.assign(existingRef.value, params)
     } else {
-      const newRef = ref({ ...params } as Partial<T>)
+      const newRef = ref({ ...params } as ParamsSpec<T>)
       provideLocal(injectionKey, newRef)
     }
   }
 
-  const useParams = (override?: Partial<T>): T => {
-    const providedRef = injectLocal<Ref<Partial<T>> | undefined>(injectionKey)
+  const useParams = (override?: ParamsSpec<T>): T => {
+    const providedRef = injectLocal<Ref<ParamsSpec<T>> | undefined>(injectionKey)
     const provided = providedRef?.value
-    return { ...defaults, ...provided, ...override } as T
+    const merged = { ...defaults, ...provided, ...override } as MaybeGetterObject<T>
+    return evaluateGetters(merged)
   }
 
-  return [provideParams, useParams] as const
+  const ProvideParamsComponent = defineComponent<{ params?: ParamsSpec<T> }>({
+    props: {
+      params: {
+        type: Object as PropType<ParamsSpec<T>>,
+        default: () => ({} as ParamsSpec<T>),
+      },
+    },
+    setup(props, { slots }) {
+      provideParams(props.params || {})
+      return () => slots.default?.()
+    },
+  })
+
+  return [provideParams, useParams, ProvideParamsComponent] as const
 }
 
