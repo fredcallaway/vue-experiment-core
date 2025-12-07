@@ -42,6 +42,7 @@ type Participant<TypeMap extends Record<string, any> = Record<string, any>> = {
   promise<E extends keyof TypeMap>(eventType: E, predicate: (info: TypeMap[E]) => boolean): Promise<TypeMap[E]>
   onKeyPress(spec: KeySpec, handler: (keyPress: KeyPress) => void, options?: KeyPressOptions): Unsubscriber
   promiseKeyPress(spec: KeySpec): Promise<KeyPress>
+  promiseKeyPress(spec: KeySpec, maxTime: number): Promise<KeyPress | 'TIMEOUT'>
 }
 
 export const useParticipantBus = () => useEventBus<PEvent>(`participant`)
@@ -126,12 +127,25 @@ export function useParticipant<
     }
   }
 
-  const promiseKeyPress = registerAsync((spec: KeySpec) => new Promise<KeyPress>((resolve) => {
+  function promiseKeyPressImpl(spec: KeySpec, maxTime?: number) {
+    const { resolve, promise } = Promise.withResolvers<KeyPress | 'TIMEOUT'>()
     const unsub = onKeyPress(spec, (keyPress) => {
       resolve(keyPress)
       unsub()
     })
-  }))
+    if (maxTime) {
+      setTimeout(() => {
+        resolve('TIMEOUT')
+        unsub()
+      }, maxTime)
+    }
+    return promise
+  }
+  // typing: TIMEOUT is only possible when maxTime is provided
+  const promiseKeyPress = registerAsync(promiseKeyPressImpl) as {
+    (spec: KeySpec): Promise<KeyPress>
+    (spec: KeySpec, maxTime: number): Promise<KeyPress | 'TIMEOUT'>
+  }
 
   return {
     emit,
