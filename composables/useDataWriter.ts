@@ -90,7 +90,7 @@ export class DataWriter {
       const db = useDatabase()
       await db.assertConnected()
       const snapshot = await db.get(this.dbPath('meta'))
-      if (snapshot) {
+      if (snapshot.exists()) {
         console.warn('DataWriter: repeat_session', meta.sessionId)
       }
       else {
@@ -184,7 +184,14 @@ export class DataWriter {
         const db = useDatabase()
         const path = this.dbPath('meta', 'lastUpdateTime')
         this.updates.value[path] = lastUpdateTime
-        db.update('/', this.updates.value)
+
+        // this should be impossible, will remove when I'm more confident
+        if (Object.keys(this.updates.value).some(key => key.includes('__PREINIT__'))) {
+          logError('tried to flush updates with __PREINIT__ as sessionId')
+          this.clearQueue()
+        } else {
+          db.update('/', this.updates.value)
+        }
       }
       console.debug(`flushed ${Object.keys(this.updates.value).length} updates`, toRaw(this.updates.value))
       this.updates.value = {}
