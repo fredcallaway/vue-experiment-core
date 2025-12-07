@@ -43,6 +43,13 @@ export const logDebug = (message: string, info?: any) => {
   console.log('logDebug', message, info)
 }
 
+export const declareEventLogger = <T extends Record<string, unknown>>(name: string) => {
+  const logger = (data: T) => {
+    logEvent(name, data)
+  }
+  const eventFilter = (e: LogEvent): e is BaseLogEvent<T> => e.eventType == name
+  return [logger, eventFilter] as const
+}
 
 type ErrorData = {
   message: string
@@ -50,8 +57,6 @@ type ErrorData = {
   cause?: any
   stack?: string
 }
-
-
 
 function extractErrorData(...args: [Error, any?] | [string, any?]): ErrorData {
   if (isError(args[0])) {
