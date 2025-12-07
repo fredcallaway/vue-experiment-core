@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 const { name='EDelay', ms = 1000 } = defineProps<{ name?: string, ms?: number }>()
 
-const { sleep, onMountedAsync } = useLocalAsync()
+const { sleep } = useLocalAsync()
 const { done } = useEpoch(name)
 
 const emit = defineEmits<{
   (e: 'done'): void
 }>()
 
-onMountedAsync(async () => {
+onMounted(async () => {
   await sleep(ms)
   emit('done')
   done()

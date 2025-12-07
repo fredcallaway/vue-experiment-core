@@ -18,7 +18,10 @@ export const useLocalAsync = () => {
 
   const rejects = new Set<(reason?: any) => void>()
   onUnmounted(() => {
-    rejects.forEach(reject => reject('unmounted'))
+    if (rejects.size > 0) {
+      console.debug(`useLocalAsync: unmounted with ${rejects.size} pending promises`)
+    }
+    rejects.forEach(reject => reject('useLocalAsync:unmounted'))
   })
 
   const track = <T>(p: Promise<T>): Promise<T> => {
@@ -43,23 +46,8 @@ export const useLocalAsync = () => {
     await new Promise(resolve => setTimeout(resolve, ms))
   })
 
-  const onMountedAsync = (f: () => Promise<void>) => {
-    onMounted(async () => {
-      try {
-        await f()
-      } catch (e) {
-        if (e === 'unmounted') {
-          console.debug('useLocalAsync: caught unmounted')
-          return
-        }
-        throw e
-      }
-    })
-  }
-  
   return {
     registerAsync,
     sleep,
-    onMountedAsync
   }
 }

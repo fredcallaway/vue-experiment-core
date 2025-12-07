@@ -18,6 +18,16 @@ onMounted(async () => {
   }
 })
 
+const nuxtApp = useNuxtApp()
+const defaultHandler = nuxtApp.vueApp.config.errorHandler
+nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
+  if (err === 'useLocalAsync:unmounted') {
+    return
+  }
+  defaultHandler(err, instance, info)
+}
+
+
 </script>
 
 <template>
