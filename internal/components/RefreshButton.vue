@@ -8,11 +8,11 @@ const props = defineProps<{
 }>()
 
 const formatTimestamp = (timestamp: number | null | undefined) => {
-  if (!timestamp) return 'Never'
+  if (!timestamp) return '(never)'
   const numTimestamp = typeof timestamp === 'string' ? Number(timestamp) : timestamp
-  if (isNaN(numTimestamp)) return 'Never'
+  if (isNaN(numTimestamp)) return '(never)'
   const date = new Date(numTimestamp)
-  if (isNaN(date.getTime())) return 'Never'
+  if (isNaN(date.getTime())) return '(never)'
   const today = new Date()
   const isToday = date.toDateString() === today.toDateString()
   if (isToday) {

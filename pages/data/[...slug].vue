@@ -10,6 +10,7 @@ const route = useRoute()
 const router = useRouter()
 
 const mode = (route.query.mode as 'live' | 'debug') || 'live'
+const otherMode = computed(() => mode === 'live' ? 'debug' : 'live')
 
 const rawSlug = computed(() => {
   const slug = route.params.slug
@@ -81,11 +82,15 @@ onMounted(() => {
   <div class="p-8 max-w-7xl mx-auto">
     <!-- <Error :error="metaError" /> -->
 
+    <h1>Data Viewer</h1>
+
+    <NuxtLink external :href="`/data?mode=${otherMode}`">view {{ otherMode }} data</NuxtLink>
+
     <div min-h-6 flex items-center>
       <span class="font-mono">data/{{ mode }}/raw/</span>&nbsp;
       <span v-if="syncStatus === 'synced'">is up to date</span>
       <span v-else>
-        is out of date
+        was last updated at 
         <RefreshButton
           :refresh="syncLocalData"
           :is-loading="syncStatus === 'loading'"
