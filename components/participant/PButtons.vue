@@ -22,7 +22,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="flex justify-center gap-2 mx-auto">
+  <div class="flex justify-center gap-4 mx-auto">
     <PButton 
       v-for="(value, idx) in values" 
       :key="idx"
