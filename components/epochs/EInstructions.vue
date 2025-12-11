@@ -62,18 +62,6 @@ const bonus = useBonus()
             click me!
           </div>
         </header>
-        <EDelay :ms="3000" />
-      </EPage>
-
-      <EPage>
-        <header>
-          <div card-yellow >
-            <h3>Warning!</h3>
-            Do not refresh the page or close the browser window during the experiment.
-            If you do, you will not be able to complete the study!
-          </div>
-        </header>
-        <EButtons :values="['I will not refresh the page']" />
       </EPage>
 
       <slot :enableNext="enableNext" :goNext="goNext" />
