@@ -6,7 +6,8 @@ const props = defineProps<{
   delay?: NumberLike,
 }>()
 
-const ready = useTimeout(ensureNumber(props.delay ?? 0))
+const ms = ensureNumber(props.delay ?? 0)
+const ready = useTimeout(replaceFast(ms, Math.max(200, ms / 5)))
 const { done } = useEpoch(props.name ?? 'EContinue')
 
 </script>
