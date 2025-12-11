@@ -1,10 +1,10 @@
 <script setup lang="ts">
 const props = defineProps<{
-  x?: number | string
-  y?: number | string
-  length?: number | string
-  rot?: number | string
-  width?: number | string // line width
+  x?: NumberLike
+  y?: NumberLike
+  length?: NumberLike
+  rot?: NumberLike
+  width?: NumberLike // line width
 }>()
 
 const endX = ensureNumber(props.x ?? 0)

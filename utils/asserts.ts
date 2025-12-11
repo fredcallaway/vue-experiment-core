@@ -29,10 +29,11 @@ export function assertString(x: unknown): string {
 }
 
 export function assertNumber(x: unknown): number {
-  if (typeof x !== 'number') {
-    throw new Error(`Expected number, got ${typeof x}`);
+  const n = Number(x)
+  if (isNaN(n)) {
+    throw new Error(`Invalid number: ${x}`);
   }
-  return x
+  return n
 }
 
 export function assertBoolean(x: unknown): boolean {

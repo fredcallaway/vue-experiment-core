@@ -111,8 +111,8 @@ export const decompressEvents = (record: DBSessionEvents): LogEvent[] => {
       currentEpochId = assertString(data.id)
     }
     return {
-      timestamp: ensureNumber(timestamp),
-      index: ensureNumber(index),
+      timestamp: assertNumber(timestamp),
+      index: assertNumber(index),
       eventType,
       uid,
       data: assertObject(data),

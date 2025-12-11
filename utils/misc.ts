@@ -32,7 +32,8 @@ export function string2array(str: string): string[] {
   return str.split(sep ?? ' ')
 }
 
-export function ensureNumber(x: string | number): number {
+export type NumberLike = number | `${number}`
+export function ensureNumber(x: NumberLike): number {
   const n = Number(x)
   if (isNaN(n)) {
     throw new Error(`Invalid number: ${x}`)

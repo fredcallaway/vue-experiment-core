@@ -1,15 +1,19 @@
 <script lang="ts" setup>
-const { name='EDelay', ms = 1000 } = defineProps<{ name?: string, ms?: number }>()
+
+const props = defineProps<{ 
+  name?: string, 
+  ms: NumberLike,
+}>()
 
 const { sleep } = useLocalAsync()
-const { done } = useEpoch(name)
+const { done } = useEpoch(props.name ?? 'EDelay')
 
 const emit = defineEmits<{
   (e: 'done'): void
 }>()
 
 onMounted(async () => {
-  await sleep(ms)
+  await sleep(ensureNumber(props.ms))
   emit('done')
   done()
 })
@@ -17,7 +21,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div v-if="useSlots().default">
+  <div>
     <slot></slot>
   </div>
 </template> 
