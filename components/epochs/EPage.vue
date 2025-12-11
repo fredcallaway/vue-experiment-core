@@ -7,27 +7,9 @@ const props = defineProps<{
 
 const epoch = useEpoch(props.name ?? 'EPage')
 
-// {
-//   next() {
-//     if (props.autoNext) {
-//       this.done()
-//     } else {
-//       // this.maxVisited = Math.max(this.maxVisited, this.step + 1)
-//       this._parent.enableNext()
-//     }
-//   }
-// }
+const emit = defineEmits<{ (e: 'mounted', epoch: Epoch): void }>()
+onMounted(() => emit('mounted', epoch))
 
-const emit = defineEmits<{
-  (e: 'mounted'): void
-}>()
-
-onMounted(() => {
-  emit('mounted')
-  // if (!epoch._parent.enableNext) {
-  //   throw new Error("EPage must be inside an ESequence")
-  // }
-})
 </script>
 
 <template>
