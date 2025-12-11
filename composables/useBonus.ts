@@ -14,6 +14,12 @@ export const useBonus = createGlobalState(() => {
     get dollars() {
       return this.toDollars(this.points)
     },
+    get centsString() {
+      return this.toCentsString(this.points)
+    },
+    get dollarsString() {
+      return this.toDollarsString(this.points)
+    },
     get report() {
       return `Your current bonus is $${this.dollars.toFixed(2)}`
     },
