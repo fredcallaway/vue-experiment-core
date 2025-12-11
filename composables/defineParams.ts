@@ -11,18 +11,15 @@ export function defineParams<T extends Record<string, any>>(defaults: MaybeGette
 
   const provideParams = (params: ParamsSpec<T>) => {
     const existingRef = injectLocal<Ref<ParamsSpec<T>> | undefined>(injectionKey, undefined)
-    if (existingRef) {
-      Object.assign(existingRef.value, params)
-    } else {
-      const newRef = ref({ ...params } as ParamsSpec<T>)
-      provideLocal(injectionKey, newRef)
-    }
+    const newRef = ref({ ...existingRef?.value, ...params } as ParamsSpec<T>)
+    provideLocal(injectionKey, newRef)
   }
 
   const useParams = (override?: ParamsSpec<T>): T => {
     const providedRef = injectLocal<Ref<ParamsSpec<T>> | undefined>(injectionKey)
     const provided = providedRef?.value
     const merged = { ...defaults, ...provided, ...override } as MaybeGetterObject<T>
+    logEvent('useParams', { merged })
     return evaluateGetters(merged)
   }
 
