@@ -19,8 +19,9 @@ export function defineParams<T extends Record<string, any>>(defaults: MaybeGette
     const providedRef = injectLocal<Ref<ParamsSpec<T>> | undefined>(injectionKey)
     const provided = providedRef?.value
     const merged = { ...defaults, ...provided, ...override } as MaybeGetterObject<T>
-    logEvent('useParams', { merged })
-    return evaluateGetters(merged)
+    const params = evaluateGetters(merged)
+    logEvent('useParams', { params })
+    return params
   }
 
   const ProvideParamsComponent = defineComponent<{ params?: ParamsSpec<T> }>({
