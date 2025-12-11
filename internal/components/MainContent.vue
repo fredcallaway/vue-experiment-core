@@ -27,7 +27,7 @@ whenever(content, (el) => {
 
 <template>
   <!-- wrapper div to allow outer v-show -->
-  <div>
+  <div relative>
     <div v-show="!violated" ref="content" class="main-content"
       :class="{
         'main-outline': props.showOutline,
