@@ -33,6 +33,7 @@ export class DataWriter {
   private maxWait: number
   private debounceFlush: () => void
   private disabled: boolean = false
+  private _events: LogEvent[] = []
 
   constructor() {
     // this.sessionId = '__PREINIT__'  // until initialized
@@ -53,6 +54,10 @@ export class DataWriter {
     return this.meta !== null
   }
 
+  get events(): ReadonlyArray<LogEvent> {
+    return this._events
+  }
+
   get sessionId() {
     return this.meta?.sessionId ?? '__PREINIT__'
   }
@@ -62,17 +67,19 @@ export class DataWriter {
       console.warn('DataWriter: called initializeSession while disabled; ignoring')
       return false
     }
+    console.log('DataWriter: initializing session:', meta)
 
     this.meta = meta
     this.mode = meta.mode
-    // const { sessionId, participantId, studyId, mode, version } = prm
-    // this.sessionId = sessionId
 
     const currentUpdates = this.updates.value
+    this.clearQueue() // we put them back later
+
     if (Object.keys(currentUpdates).length > 0) {
       console.log('initializeSession: found existing updates', currentUpdates)
     }
 
+    // in live mode, the queue is held in local storage so it can be recovered after a refresh
     if (meta.mode === 'live') {
       this.updates = useStorage(storageKey(meta.sessionId), {}, localStorage, {
         serializer: {
@@ -80,11 +87,17 @@ export class DataWriter {
           write: (v: Record<string, any>) => JSON.stringify(v),
         }
       })
-      console.log('recovered updates from localStorage', this.updates.value)
-      for (const [key, value] of Object.entries(currentUpdates)) {
-        this.updates.value[key.replace('__PREINIT__', meta.sessionId)] = value
+      if (Object.keys(this.updates.value).length > 0) {
+        console.log('recovered updates from localStorage', this.updates.value)
       }
     }
+
+    // migrate updates from __PREINIT__ to the new sessionId
+    for (const [key, value] of Object.entries(currentUpdates)) {
+      const newKey = key.replace('__PREINIT__', meta.sessionId).replace('dummy/', `${this.mode}/`)
+      this.updates.value[newKey] = value
+    }
+    console.log('👉', toRaw(this.updates.value))
 
     try {
       const db = useDatabase()
@@ -127,6 +140,7 @@ export class DataWriter {
   }
 
   pushEvent(event: LogEvent) {
+    this._events.push(event)
     const [key, data] = compressEvent(event)
     const path = this.dbPath('events', key)
     this.queueUpdate(path, toRaw(data))

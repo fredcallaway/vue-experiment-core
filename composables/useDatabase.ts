@@ -25,6 +25,10 @@ export const useDatabase = createGlobalState(() => {
       resume()
     }
   })
+  
+  whenever(connected, () => {
+    console.log('Connected to database: ', firebaseConfig.databaseURL)
+  }, { once: true })
 
   const assertConnected = async ({timeout = 5000} = {}) => {
     try {

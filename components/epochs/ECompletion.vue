@@ -28,17 +28,40 @@ const handleSubmit = () => {
 onMounted(() => {
   logEvent('experiment.complete')
   dataWriter.updateMeta({ completionTime: Date.now() })
-  dataWriter.flush()
+  if (dataWriter.initialized) {
+    dataWriter.flush()
+  }
 })
+
+const saveDebugData = async () => {
+  await dataWriter.initializeSession(useCurrentSession())
+  dataWriter.flush()
+}
+
 </script>
 
 <template>
   <div w-full>
-    <div mx-auto w-min-140 text-center>
+    <div mx-auto w-140 text-center>
       <h1>Thanks!</h1>
       <p>You have completed the study. Your final bonus is ${{ useBonus().dollars.toFixed(2) }}.</p>
   
-      <div v-if="dataWriter.hasPendingUpdates">
+      <div v-if="!dataWriter.initialized" card-gray mt10>
+        <p>
+          The study is running in development mode. If you want to save the data to the debug database, click the button below.
+        </p>
+        <pre text-left text-xs bg-white p2 border-gray-400 border-2 overflow-y-auto max-h-60 class="subtle-scrollbar" >{{ 
+          {
+            meta: useCurrentSession(),
+            events: dataWriter.events,
+          }
+        }}</pre>
+        <button btn-blue mt4 @click="saveDebugData">
+          Save data to debug database
+        </button>
+      </div>
+
+      <div v-else-if="dataWriter.hasPendingUpdates">
         <p>
           Please wait for your data to be saved.
         </p>
@@ -49,7 +72,7 @@ onMounted(() => {
           This is taking longer than expected. Try refreshing the page.
         </p>
       </div>
-  
+
       <div v-else>
         <div v-if="code">
           <p p-2>Your completion code is: <b>{{ code }}</b></p> 
