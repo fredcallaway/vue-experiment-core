@@ -2,10 +2,12 @@
 useErrorLogging()
 const { violated } = useWindowEnforcer()
 
+const devTools = ref(true)
+
 </script>
 
 <template>
-  <div p2 flex="~ col" ref="container" overflow-hidden>
+  <div p2 flex="~ col" overflow-hidden v-if="devTools">
     <NavBar mb-2/>
     <div flex="~ row gap-4">
       <div flex="~ col">
@@ -20,6 +22,12 @@ const { violated } = useWindowEnforcer()
         <EventView flex-1 ref="eventViewRef"/>
       </div>
     </div>
+  </div>
+  <div v-else flex-center min-h-80vh>
+    <NavBar mb-2/>
+    <MainContent bg-white fixed-width fixed-height >
+      <Experiment />
+    </MainContent>
   </div>
 </template>
 

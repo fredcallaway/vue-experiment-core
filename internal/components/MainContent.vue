@@ -74,7 +74,7 @@ whenever(content, (el) => {
 }
 
 .main-outline {
-  @apply outline outline-2 outline-dashed overflow-auto outline-gray-200;
+  @apply outline-2 outline-dashed overflow-auto outline-gray-200;
 }
 
 .overflowing {
