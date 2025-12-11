@@ -3,6 +3,7 @@
 const props = defineProps<{ 
   name?: string, 
   values: string | string[],
+  disabled?: boolean
 }>()
 
 const { done } = useEpoch(props.name ?? 'EButtons')
@@ -12,6 +13,6 @@ const { done } = useEpoch(props.name ?? 'EButtons')
 <template>
   <div>
     <slot />
-    <PButtons :values="props.values" @click="done" mt-2 />
+    <PButtons :disabled="props.disabled" :values="props.values" @click="done" mt-2 />
   </div>
 </template>

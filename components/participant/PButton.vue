@@ -3,6 +3,8 @@ const props = defineProps<{
   value: string
   unstyled?: boolean
   color?: 'primary' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'gray' // from uno.config.ts
+  disabled?: boolean
+  delay?: NumberLike
 }>()
 
 
@@ -33,11 +35,17 @@ const classes = computed(() => {
   return 'btn-primary'
 })
 
+
+const ms = ensureNumber(props.delay ?? 0)
+const ready = useTimeout(replaceFast(ms, Math.max(200, ms / 5)))
+const disabled = computed(() => props.disabled || !ready.value)
+
 </script>
 
 <template>
   <button 
     :class="classes" 
+    :disabled="disabled"
     @click="P.emit('click', value)"
     @mouseenter="P.emit('hover', value)"
     @mousedown="P.emit('mousedown', value)"
