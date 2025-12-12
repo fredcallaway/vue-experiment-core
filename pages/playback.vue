@@ -13,6 +13,9 @@ const epochId = getUrlParam('epoch') ?? undefined
 
 const { events, isReady, isMissing, isLoading } = useSessionEvents(mode, sessionId)
 
+const { meta } = useSessionMeta(mode, sessionId)
+Object.assign(useCurrentSession(), meta)
+
 // watchEffect(() => {
 //   console.log('events', events.value)
 //   console.log('isReady', isReady.value)

@@ -173,6 +173,11 @@ export const useSessionEvents = (mode: DataMode, sessionId: string) => {
   return { events, ...rest }
 }
 
+export const useSessionMeta = (mode: DataMode, sessionId: string) => {
+  const { data, ...rest } = useDatabasePath<SessionMeta | null>(getDBPath(mode, sessionId, 'meta'), true)
+  return { meta: data, ...rest }
+}
+
 export const useSessionData = (mode: DataMode, sessionId: string): ReactiveSession => {
   const { data: metaRef } = useDatabasePath<SessionMeta | null>(getDBPath(mode, sessionId, 'meta'), true)
   const { data: eventsRef } = useDatabasePath<DBSessionEvents | null>(getDBPath(mode, sessionId, 'events'), true)

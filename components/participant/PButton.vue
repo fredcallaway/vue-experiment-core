@@ -14,14 +14,41 @@ const emit = defineEmits<{
   (e: 'mousedown', value: string): void
 }>()
 
+const playbackState = usePlaybackState().state
+
+const isPlaybackHover = ref(false)
+const isPlaybackDown = ref(false)
+const hoverOff = useTimeoutFn(() => { isPlaybackHover.value = false }, 250, { immediate: false })
+const downOff = useTimeoutFn(() => { isPlaybackDown.value = false }, 150, { immediate: false })
+
+watch(playbackState, (s) => {
+  if (s === 'playing') return
+  isPlaybackHover.value = false
+  isPlaybackDown.value = false
+  hoverOff.stop()
+  downOff.stop()
+})
+
 const P = useParticipant<{click: string, hover: string, mousedown: string}>('PButton')
 P.on('click', (value: string) => {
+  if (playbackState.value === 'playing') {
+    isPlaybackDown.value = false
+    downOff.stop()
+  }
   emit('click', value)
 })
 P.on('hover', (value: string) => {
+  if (playbackState.value === 'playing') {
+    isPlaybackHover.value = true
+    hoverOff.start()
+  }
   emit('hover', value)
 })
 P.on('mousedown', (value: string) => {
+  if (playbackState.value === 'playing') {
+    isPlaybackDown.value = true
+    downOff.start()
+  }
   emit('mousedown', value)
 })
 
@@ -35,6 +62,15 @@ const classes = computed(() => {
   return 'btn-primary'
 })
 
+const playbackFxClasses = computed(() => {
+  if (playbackState.value !== 'playing') return []
+  return [
+    'transition-transform',
+    isPlaybackHover.value && 'brightness-110',
+    isPlaybackDown.value && 'scale-95 brightness-90',
+  ].filter(Boolean)
+})
+
 
 const ms = ensureNumber(props.delay ?? 0)
 const ready = useTimeout(replaceFast(ms, Math.max(200, ms / 5)))
@@ -44,7 +80,7 @@ const disabled = computed(() => props.disabled || !ready.value)
 
 <template>
   <button 
-    :class="classes" 
+    :class="[classes, playbackFxClasses]" 
     :disabled="disabled"
     @click="P.emit('click', value)"
     @mouseenter="P.emit('hover', value)"

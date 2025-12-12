@@ -1,7 +1,5 @@
 <script lang="ts" setup>
 
-type PlaybackState = 'stopped' | 'playing' | 'paused'
-
 const props = defineProps<{
   events: LogEvent[]
   epoch: string | undefined
