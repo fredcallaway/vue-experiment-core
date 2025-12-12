@@ -322,7 +322,7 @@ export const useProlific = createGlobalState(() => {
     if (existingBlocklist) {
       const existingValues = existingBlocklist.selected_values || []
       existingBlocklist.selected_values = R.unique([...existingValues, ...previousStudyIds])
-    } else {
+    } else if (previousStudyIds.length > 0) {
       filters.push({
         filter_id: 'previous_studies_blocklist',
         selected_values: previousStudyIds
