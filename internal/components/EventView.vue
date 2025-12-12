@@ -5,6 +5,8 @@ type FormattedEvent = {
   timestamp: number
   caption?: string
   data?: Record<string, any>
+  isError?: boolean
+  errorMinimal?: string
   cardClass?: string
 }
 
@@ -15,6 +17,45 @@ const props = defineProps<{
 const events = reactive<FormattedEvent[]>([])
 const whitelistFilter = ref(props.initialFilter ?? '')
 const startTime = ref(START_TIME)
+
+const normalizeNewlines = (s: string) => s.replaceAll('\\n', '\n')
+const formatForPre = (value: unknown) => {
+  if (typeof value === 'string') return normalizeNewlines(value)
+  return JSON.stringify(value, null, 2)
+}
+
+const formatErrorEvent = (data: Record<string, any>) => {
+  const { cause, info, stack, ...rest } = data
+  if (stack !== undefined && typeof stack !== 'string') {
+    throw new Error(`Error event stack must be a string; got ${typeof stack}`)
+  }
+  const normalizedStack = stack === undefined ? undefined : normalizeNewlines(stack)
+  const headline =
+    normalizedStack
+      ?.split('\n')
+      .map((l) => l.trimEnd())
+      .find((l) => l.trim().length > 0)
+    ?? (typeof rest.message === 'string'
+      ? rest.message
+      : typeof data.message === 'string'
+        ? data.message
+        : undefined)
+
+  const firstFrame =
+    normalizedStack
+      ?.split('\n')
+      .map((l) => l.trimEnd())
+      .find((l) => /^\s*at\s+/.test(l))
+
+  const m = firstFrame?.match(/^\s*at\s+(?<fn>.*?)\s+\(/)
+  const fn = m?.groups?.fn
+
+  return {
+    minimal: [headline, fn ? `   at ${fn} (see console for details)` : undefined]
+      .filter((x): x is string => x !== undefined && x.length > 0)
+      .join('\n'),
+  }
+}
 
 useLogEventBus().on((event) => {
   const { eventType, timestamp, data } = event
@@ -41,10 +82,13 @@ useLogEventBus().on((event) => {
   }
   else if (isErrorEvent(event)) {
     const { message, ...rest } = event.data
+    const { minimal } = formatErrorEvent({ message, ...rest })
     events.unshift({
       ...event,
       caption: message,
-      data: rest,
+      data: R.isEmpty(rest) ? undefined : rest,
+      isError: true,
+      errorMinimal: minimal.length === 0 ? undefined : minimal,
       cardClass: 'card-red',
     })
   }
@@ -102,14 +146,17 @@ const eventViewHeight = computed(() => {
     <button absolute right-2 top-2 btn-gray btn-xs @click="events.length = 0">clear</button>
     <TextFilter v-model="whitelistFilter" placeholder="e.g. !epoch" mb-2 />
     <div flex="~ col gap-2" overflow-y-auto class="subtle-scrollbar">
-      <template v-for="{eventType, timestamp, caption, data, cardClass} in filteredEvents" :key="timestamp">
-        <div :class="cardClass ?? 'card-gray'" p-2 mr-1 rounded-md relative>
-          <span font-bold>{{ eventType }}</span>
+      <template v-for="event in filteredEvents" :key="event.timestamp">
+        <div :class="event.cardClass ?? 'card-gray'" p-2 mr-1 rounded-md relative>
+          <span font-bold>{{ event.eventType }}</span>
           <div text-right absolute top-2 right-2>
-            <span text-xs opacity-50>{{ fmtTimestamp(timestamp) }}</span>
+            <span text-xs opacity-50>{{ fmtTimestamp(event.timestamp) }}</span>
           </div>
-          <div v-if="caption" text-xs  opacity-50>{{ caption }}</div>
-          <pre v-if="data !== undefined" text-xs>{{ data }}</pre>
+          <div v-if="event.caption" text-xs opacity-50>{{ event.caption }}</div>
+          <template v-if="event.isError">
+            <pre v-if="event.errorMinimal !== undefined" text-xs>{{ event.errorMinimal }}</pre>
+          </template>
+          <pre v-else-if="event.data !== undefined" text-xs>{{ event.data }}</pre>
         </div>
       </template>
     </div>
