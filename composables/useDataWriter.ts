@@ -62,7 +62,7 @@ export class DataWriter {
     return this.meta?.sessionId ?? '__PREINIT__'
   }
 
-  async initializeSession(meta: SessionMeta): Promise<boolean> {
+  async initializeSession(meta: SessionMeta): Promise<unknown> {
     if (this.disabled) {
       console.warn('DataWriter: called initializeSession while disabled; ignoring')
       return false
@@ -97,7 +97,6 @@ export class DataWriter {
       const newKey = key.replace('__PREINIT__', meta.sessionId).replace('dummy/', `${this.mode}/`)
       this.updates.value[newKey] = value
     }
-    console.log('👉', toRaw(this.updates.value))
 
     try {
       const db = useDatabase()
@@ -135,7 +134,7 @@ export class DataWriter {
       console.error('Failed to initialize database connection.', error)
       this.mode = 'dummy'
       console.warn('DataWriter: falling back to dummy mode due to database initialization error')
-      return false
+      return error
     }
   }
 

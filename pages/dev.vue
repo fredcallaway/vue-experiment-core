@@ -10,8 +10,14 @@ if (params.sessionId || params.mode) {
     meta.mode = 'debug'
   }
   console.log('initializing dev session', meta)
-  useDataWriter().initializeSession(meta)
+  useDataWriter().initializeSession(meta).then((error) => {
+    if (error instanceof Error) {
+      logError('Failed to initialize data writer; check firebase.config.json', error)
+    }
+  })
 }
+
+
 
 </script>
 
