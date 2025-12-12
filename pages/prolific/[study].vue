@@ -18,7 +18,6 @@ const submissions = computed(() => study.value?.submissions ?? [])
 
 // ===== actions ============================================================
 
-
 const deleteStudy = async () => {
   console.log('deleting study', studyId)
   await prolific.deleteStudy(studyId)
@@ -115,11 +114,12 @@ const applyCsvAdjustments = () => {
 const allData = useAllData('live')
 
 const sessions = computed(() => {
-  if (!allData.sessions.value) return []
+  if (!allData.sessions.value) return null
   return Object.values(allData.sessions.value).filter(session => session.studyId === studyId)
 })
 
 const databaseBonuses = computed(() => {
+  if (!sessions.value) return {}
   const result: Record<string, number> = {}
   for (const session of sessions.value) {
     if (session.participantId !== 'UNKNOWN' && session.bonus !== undefined) {
@@ -152,14 +152,14 @@ const minAdjustments = computed(() => {
   ))
 })
 
-watch(submissions, () => {
+watchEffect(() => {
   if (submissions.value.length === 0) return
 
   for (const sub of submissions.value) {
     const minAdjustment = minAdjustments.value[sub.participant_id] ?? 0
     bonusAdjustments.value[sub.participant_id] = Math.max(minAdjustment, 0)
   }
-}, { immediate: true })
+})
 
 
 // ===== template helpers ===================================================
@@ -403,6 +403,9 @@ const filteredSubmissions = computed(() => {
         </div>
       </div>
       <!-- Submissions Table -->
+      <div v-else-if="sessions === null">
+        loading submissions...
+      </div>
       <div v-else>
         <div flex="~ row gap-2 justify-between items-end" mb-2 mt-8>
           <div>
