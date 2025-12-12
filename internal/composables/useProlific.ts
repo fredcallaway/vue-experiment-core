@@ -277,7 +277,8 @@ export const useProlific = createGlobalState(() => {
   }
 
   const createAccessDetails = (totalAvailablePlaces: number) => {
-    const url = useConfig().url + '/exp?PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}&SESSION_ID={{%SESSION_ID%}}'
+    
+    const url = prolificConfig.baseUrl + '/exp?PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}&SESSION_ID={{%SESSION_ID%}}'
     return range(totalAvailablePlaces).map(i => ({
       external_url: `${url}&assignment=${i}`,
       total_allocation: 1,

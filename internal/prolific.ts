@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import firebaseConfig from '~/firebase.config.json'
 
 export type EligibilityConfig = {
   allowUK?: boolean
@@ -11,6 +12,7 @@ export type EligibilityConfig = {
 
 export type ProlificConfig = {
   projectId: string
+  baseUrl: string
   name: string
   description: string
   estimated_completion_time: number
@@ -30,6 +32,9 @@ let _prolificConfig: ProlificConfig | null = null
 
 export const defineProlificConfig = (config: ProlificConfig): ProlificConfig => {
   _prolificConfig = config
+  if (config.baseUrl === 'FIREBASE_DEFAULT') {
+    config.baseUrl = `https://${firebaseConfig.projectId}.web.app/`
+  }
   return config
 }
 

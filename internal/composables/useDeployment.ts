@@ -1,5 +1,3 @@
-import { ref } from 'vue'
-import { ref as dbRef, get, set } from 'firebase/database'
 
 export interface GitStatus {
   sha: string
@@ -18,7 +16,7 @@ export const useDeployment = () => {
 
   const config = useConfig()
   const unconfigured = computed(() => {
-    return config.url.includes('vue-experiment-template.web.app/') || config.contactEmail.includes('@fakeDomain.foo')
+    return config.contactEmail.includes('@fakeDomain')
   })
 
   const status = computed<DeploymentStatus>(() => {

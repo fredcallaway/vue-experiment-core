@@ -255,7 +255,7 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
         <div v-else-if="status === 'unconfigured'" card-error>
           <b>⚠ epoch.config.ts has not been configured</b>
           <br>
-          Update the url and contact email in epoch.config.ts
+          Update the contact email (at least) in epoch.config.ts
         </div>
         <div v-else-if="status === 'dirty'" card-warn>
           <span i-mdi-alert ml--2 translate-y--1 text-2xl/>

@@ -27,6 +27,7 @@ export const useDatabase = createGlobalState(() => {
   })
   
   whenever(connected, () => {
+    // @ts-ignore   the config file is empty before initializing a project
     console.log('Connected to database: ', firebaseConfig.databaseURL)
   }, { once: true })
 

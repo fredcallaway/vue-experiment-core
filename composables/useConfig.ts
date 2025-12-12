@@ -1,5 +1,4 @@
 export type Config = {
-  url: string
   title: string
   icon: string
   version: string
