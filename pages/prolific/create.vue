@@ -49,7 +49,7 @@ const bypassGitCheck = ref(false)
 const bypassDeployedCheck = ref(false)
 
 const internalName = computed(() => {
-  return `v${config.version || 'unknown'} (git ${localSha.value})`
+  return `${config.version || 'unknown'} (git ${localSha.value})`
 })
 
 const saveConfig = useAsyncRunner()
@@ -252,6 +252,11 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
           <br>
           <div>commit: <span class="font-mono">{{ localSha }}</span></div>
         </div>
+        <div v-else-if="status === 'unconfigured'" card-error>
+          <b>⚠ epoch.config.ts has not been configured</b>
+          <br>
+          Update the url and contact email in epoch.config.ts
+        </div>
         <div v-else-if="status === 'dirty'" card-warn>
           <span i-mdi-alert ml--2 translate-y--1 text-2xl/>
           <b>Git worktree is not clean</b>
@@ -309,7 +314,7 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
           v-else
           @click="deploy"
           btn-blue
-          :disabled="R.isIncludedIn(status, ['loading', 'deployed', 'dirty'])"
+          :disabled="status !== 'ready'"
         >
           {{ status == 'loading' ? 'Deploying...' : 'Deploy Website' }}
         </button>

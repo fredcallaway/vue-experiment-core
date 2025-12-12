@@ -6,7 +6,7 @@ export interface GitStatus {
   dirty: boolean
 }
 
-type DeploymentStatus = 'ready' | 'loading' | 'dirty' | 'error' | 'deployed'
+type DeploymentStatus = 'ready' | 'loading' | 'dirty' | 'error' | 'deployed' | 'unconfigured'
 
 export const useDeployment = () => {
   const error = ref('')
@@ -16,13 +16,20 @@ export const useDeployment = () => {
   const isDirty = ref(false)
   const gitStatus = ref('')
 
+  const config = useConfig()
+  const unconfigured = computed(() => {
+    return config.url.includes('vue-experiment-template.web.app/') || config.contactEmail.includes('@fakeDomain.foo')
+  })
+
   const status = computed<DeploymentStatus>(() => {
+    if (unconfigured.value) return 'unconfigured'
     if (isLoading.value) return 'loading'
     if (isDirty.value) return 'dirty'
     if (error.value) return 'error'
     if (deployedSha.value == localSha.value) return 'deployed'
     return 'ready'
   })
+
 
   const checkGitStatus = async () => {
     const response = await fetch('/api/prolific/git-status')
@@ -68,7 +75,7 @@ export const useDeployment = () => {
     const info = {
       sha: result.sha,
       deployedAt: Date.now(),
-      version: useConfig().version,
+      version: config.version,
     }
     const db = useDatabase()
     await db.set('deployStatus', info)
