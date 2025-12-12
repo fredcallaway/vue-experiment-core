@@ -70,6 +70,10 @@ export const useProlific = createGlobalState(() => {
     const result = await baseRequest('GET', `/projects/${newProjectId}`)
     if (result.ok) {
       status.value = 'ok'
+      if (prolificConfig.projectId !== newProjectId) {
+        prolificConfig.projectId = newProjectId
+        await writeProlificConfig(prolificConfig)
+      }
     } else if (result.status === 401) {
       status.value = 'invalidToken'
     } else if (result.status == 404) {

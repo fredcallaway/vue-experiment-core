@@ -38,6 +38,14 @@ export const getProlificConfig = (): ProlificConfig => {
   return _prolificConfig
 }
 
+export const writeProlificConfig = async (config: ProlificConfig) => {
+  await fetch('/api/prolific/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config)
+  })
+}
+
 export const eligibilityToFilters = (eligibility: EligibilityConfig): Filter[] => {
   const filters: Filter[] = []
 

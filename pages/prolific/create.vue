@@ -55,11 +55,7 @@ const internalName = computed(() => {
 const saveConfig = useAsyncRunner()
 const saveConfigToFile = async () => {
   await saveConfig.run(async () => {
-    await fetch('/api/prolific/config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData.value)
-    })
+    await writeProlificConfig(formData.value)
   })
 }
 
