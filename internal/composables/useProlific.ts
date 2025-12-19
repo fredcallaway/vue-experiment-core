@@ -118,8 +118,8 @@ export const useProlific = createGlobalState(() => {
     return data
   }
 
-  const fetchStudies = async ({page = null as number | null, status = null as string | null}): Promise<StudyShort[]> => {
-    let query = '?ordering=-date_created'
+  const fetchStudies = async ({page = null as number | null, status = null as string | null}): Promise<{ results: StudyShort[], meta: { count: number } }> => {
+    let query = 'ordering=-date_created'
     if (page) {
       query += `&page_size=${PAGE_SIZE}&page=${page}`
     }
@@ -127,18 +127,24 @@ export const useProlific = createGlobalState(() => {
       query += `&status=${status}`
     }
     // const query = `&page=${page}&page_size=${PAGE_SIZE}`
-    const response = await request<{ results: any[], _links?: { next?: { href?: string } } }>(
+    const response = await request<{ results: any[], meta: { count: number }, _links?: { next?: { href?: string } } }>(
       'GET',
       `/projects/${projectId.value}/studies?${query}`
     )
-    return response.results.map((s: any) => ProlificStudyShortSchema.parse(s))
+    return {
+      results: response.results.map((s: any) => ProlificStudyShortSchema.parse(s)),
+      meta: response.meta
+    }
   }
 
   // Async generator for study list
   const fetchStudyList = async function*(): AsyncGenerator<StudyShort[], void, unknown> {
     // 1. First page of -date_created (immediate)
-    const firstPage = await fetchStudies({ page: 1 })
-    yield firstPage
+    const firstPageResponse = await fetchStudies({ page: 1 })
+    yield firstPageResponse.results
+
+    // Calculate max page based on total count
+    const maxPage = Math.ceil(firstPageResponse.meta.count / PAGE_SIZE)
 
     // 2. Status queries in parallel
     const statusQueries = [
@@ -148,9 +154,9 @@ export const useProlific = createGlobalState(() => {
     ]
 
     for (const promise of statusQueries) {
-      const results = await promise
-      if (results.length > 0) {
-        yield results
+      const response = await promise
+      if (response.results.length > 0) {
+        yield response.results
       }
     }
 
@@ -158,15 +164,15 @@ export const useProlific = createGlobalState(() => {
     let page = 2
     const twoWeeksAgo = Date.now() - 14 * 24 * 60 * 60 * 1000
 
-    while (true) {
-      const pageStudies = await fetchStudies({ page })
+    while (page <= maxPage) {
+      const pageResponse = await fetchStudies({ page })
 
-      if (pageStudies.length === 0) break
+      if (pageResponse.results.length === 0) break
 
-      yield pageStudies
+      yield pageResponse.results
 
       // Check if all studies in this page are old
-      const allOld = pageStudies.every(s =>
+      const allOld = pageResponse.results.every(s =>
         new Date(s.date_created).getTime() < twoWeeksAgo
       )
 
