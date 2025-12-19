@@ -10,9 +10,9 @@
 
 <script setup lang="ts">
 
+const model = defineModel<number>({ required: true })
 
 const props = withDefaults(defineProps<{
-  modelValue: number
   scrollStep?: number
   min?: number
   max?: number
@@ -23,19 +23,19 @@ const props = withDefaults(defineProps<{
   max: Infinity
 })
 
-const emit = defineEmits<{
-  'update:modelValue': [value: number]
-}>()
-
-const inputValue = ref(props.modelValue)
+const inputValue = ref(model.value)
 const invalid = computed(() => !isBetween(inputValue.value, props.min, props.max) || isNaN(inputValue.value))
+
+watch(model, (newValue) => {
+  inputValue.value = newValue
+})
 
 const confirm = () => {
   if (isNaN(inputValue.value)) {
-    inputValue.value = props.modelValue
+    inputValue.value = model.value
   } else {
     inputValue.value = clamp(inputValue.value, props.min, props.max)
-    emit('update:modelValue', inputValue.value)
+    model.value = inputValue.value
   }
 }
 
