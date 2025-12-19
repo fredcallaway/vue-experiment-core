@@ -1,4 +1,4 @@
-import { ref as dbRef, update, get, set, serverTimestamp, type DatabaseReference } from 'firebase/database'
+import { serverTimestamp } from 'firebase/database'
 import { useStorage } from '@vueuse/core'
 import { z } from 'zod'
 import { logError } from './logEvent'
@@ -11,14 +11,6 @@ export function useDataWriter(): DataWriter {
     dbInstance = new DataWriter()
   }
   return dbInstance
-}
-
-type SessionParams = { 
-  sessionId: string, 
-  participantId: string,  // default: 'UNKNOWN'
-  studyId: string,  // default: 'UNKNOWN'
-  mode: DataMode,  // default: 'debug'
-  version: string,  // default: useConfig().version
 }
 
 const storageKey = (sessionId: string) => `dataWriter-${sessionId}`
@@ -152,6 +144,11 @@ export class DataWriter {
       const path = this.dbPath('meta', key)
       this.queueUpdate(path, toRaw(value))
     }
+  }
+
+  updateOther(path: string, value: any) {
+    const fullPath = this.dbPath('other', path)
+    this.queueUpdate(fullPath, toRaw(value))
   }
 
   async withDisabled(f: () => Promise<void>) {
