@@ -42,9 +42,9 @@ whenever(content, (el) => {
     >
       <slot />
     </div>
-    <div v-if="violated && minWidth && minHeight"
-      absolute top-0 left-0 w-full h-full flex-center
-    bg-black text-center text-white text-xl overflow-hidden
+    <div v-if="violated"
+      inset-0 top-0 left-0 w-screen h-screen flex-center
+    bg-black text-center text-white text-xl
     >
       <div p-5>
         You're browser window isn't large enough.<br>
