@@ -15,6 +15,9 @@ const abortExperiment = (reason: 'TIMEOUT' | 'ABORTED') => {
   }
 }
 
+// this provides basic bot-detection
+useMouseTracking({ minPixels: 1, minRate: 0, maxRate: 60, maxFrames: 500 })
+
 const totalTimeoutSeconds = 120_000 / 1000
 const { idle } = useIdle(60_000)
 const timer = useTimer(60_000, { immediate: false })
@@ -34,10 +37,12 @@ const slots = useSlots()
 </script>
 
 <template>
+  <!-- abort screen -->
   <div v-if="aborted" flex-center hfull>
     <div my5 italic text-gray>the experiment has been aborted</div>
     <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=700" alt="cat" >
   </div>
+  <!-- idle screen -->
   <div v-else-if="idle" class="w150 text-center p-8 mx-auto">
     <h1 class="text-2xl font-bold mb-4">Are you there?</h1>
     <div class="text-gray-600 mb-6">
@@ -48,6 +53,7 @@ const slots = useSlots()
       seconds.
     </div>
   </div>
+  <!-- deny consent screen -->
   <div v-else-if="saidNo" class="flex items-center justify-center">
     <div class="max-w-md text-center p-8">
       <h1 class="text-2xl font-bold mb-4">Are you sure?</h1>
@@ -68,6 +74,7 @@ const slots = useSlots()
       </div>
     </div>
   </div>
+  <!-- main screen -->
   <div v-else class="bg-white">
     <div class="max-w-4xl mx-auto px-4">
       <div class="bg-white">
