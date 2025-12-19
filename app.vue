@@ -31,7 +31,6 @@ nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
 </script>
 
 <template>
-  <SizeScaler />
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>

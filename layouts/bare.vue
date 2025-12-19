@@ -1,5 +1,5 @@
 <template>
-  <div p2>
+  <div>
     <slot />
   </div>
 </template>

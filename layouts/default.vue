@@ -9,6 +9,7 @@ const devTools = ref(true)
 <template>
   <div p2 flex="~ col" overflow-hidden v-if="devTools">
     <NavBar mb-2/>
+    <SizeScaler />
     <div flex="~ row gap-4">
       <div flex="~ col">
         <MainContent show-outline fixed-width fixed-height>
