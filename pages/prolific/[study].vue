@@ -92,12 +92,12 @@ const applyCsvAdjustments = () => {
   const lines = bonusCsv.value.trim().split('\n')
   for (const line of lines) {
     const [id, adjustment] = line.split(',')
-    const session = submissions.value.find(sub => sub.id === id || sub.participant_id === id)
-    if (!session) {
-      alert(`Problem with line ${line}: session not found`)
+    const sub = submissions.value.find(sub => sub.id === id || sub.participant_id === id)
+    if (!sub) {
+      alert(`Problem with line ${line}: submission not found`)
       return
     }
-    const participantId = session.participant_id
+    const participantId = sub.participant_id
     if (id && adjustment) {
       const val = parseFloat(adjustment.trim())
       if (abs(val % 1) > 1e-6) {
@@ -403,7 +403,10 @@ const filteredSubmissions = computed(() => {
         </div>
       </div>
       <!-- Submissions Table -->
-      <div v-else-if="sessions === null">
+      <div v-else-if="allData.isMissing.value">
+        failed to load submissions; check database
+      </div>
+      <div v-else-if="allData.isLoading.value">
         loading submissions...
       </div>
       <div v-else>

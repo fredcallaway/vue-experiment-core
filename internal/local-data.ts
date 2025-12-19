@@ -76,7 +76,7 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
   const { data: fsMeta } = useFetch<Record<string, StoredSessionMeta>>(`/api/data/raw/${mode}/_meta.json`, {
     query: { default: '{}' }
   })
-  const { data: dbMeta } = useDatabasePath<Record<string, SessionMeta>>(`${mode}/meta`, listen)
+  const { data: dbMeta, isMissing, isLoading } = useDatabasePath<Record<string, SessionMeta>>(`${mode}/meta`, listen)
   const sessions = computed(() => dbMeta.value) // TODO use fsMeta if offline ?
 
 
@@ -146,7 +146,7 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
     }
   }
 
-  return { sessions, syncLocalData, syncStatus, lastSyncTime, lastUpdateTime }
+  return { sessions, syncLocalData, syncStatus, lastSyncTime, lastUpdateTime, isMissing, isLoading }
 }
 
 export type SessionStatus = 'active' | 'completed' | 'idle' | 'quit'
