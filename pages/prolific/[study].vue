@@ -118,6 +118,18 @@ const sessions = computed(() => {
   return Object.values(allData.sessions.value).filter(session => session.studyId === studyId)
 })
 
+const sessionsBySessionId = computed(() => {
+  if (!sessions.value) return {}
+  return R.pullObject(sessions.value, R.prop('sessionId'), R.identity())
+})
+
+const getDataStatus = (sub: Submission) => {
+  const session = sessionsBySessionId.value[sub.id]
+  if (!session) return { text: 'missing', color: 'text-gray-400' }
+  if (session.completionTime) return { text: 'full', color: 'text-green-600' }
+  return { text: 'partial', color: 'text-amber-500' }
+}
+
 const databaseBonuses = computed(() => {
   if (!sessions.value) return {}
   const result: Record<string, number> = {}
@@ -438,6 +450,7 @@ const filteredSubmissions = computed(() => {
                 <th px-2 py-2 text-left whitespace-nowrap>Started</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Code</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Status</th>
+                <th px-2 py-2 text-left whitespace-nowrap>Data</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Time</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Bonus
                   <span ml-2 text-gray-500 font-mono text-8pt>DB + ADJ = TOTAL</span>
@@ -479,6 +492,10 @@ const filteredSubmissions = computed(() => {
                   <div :class="getSubmissionStatusColorClass(sub.status)" text-xs text-white rounded p-1 text-center w20>
                     {{ getSubmissionStatusLabel(sub.status) }}
                   </div>
+                </td>
+                <!-- Data -->
+                <td px-2 py-2 whitespace-nowrap text-left :class="getDataStatus(sub).color">
+                  {{ getDataStatus(sub).text }}
                 </td>
                 <td px-2 py-2 whitespace-nowrap text-right>
                   {{ sub.time_taken ? formatTime(sub.time_taken * 1000) : 'N/A' }}
