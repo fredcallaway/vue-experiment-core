@@ -4,6 +4,7 @@ const { done } = useEpoch('consent')
 const saidNo = ref(false)
 const aborted = ref(false)
 
+// TODO: should mark this somehow to prevent refresh and continue
 const abortExperiment = (reason: 'TIMEOUT' | 'ABORTED') => {
   if (aborted.value) return
   if (useConfig().completion.mode === 'prolific' && useCurrentSession().mode === 'live') {
@@ -18,9 +19,9 @@ const abortExperiment = (reason: 'TIMEOUT' | 'ABORTED') => {
 // this provides basic bot-detection
 useMouseTracking({ minPixels: 1, minRate: 0, maxRate: 60, maxFrames: 500 })
 
-const totalTimeoutSeconds = 120_000 / 1000
-const { idle } = useIdle(60_000)
-const timer = useTimer(60_000, { immediate: false })
+const totalTimeoutSeconds = 150
+const { idle } = useIdle(30_000)
+const timer = useTimer(120_000, { immediate: false })
 timer.onDone(() => abortExperiment('TIMEOUT'))
 
 watchEffect(() => {
