@@ -1,4 +1,3 @@
-import { ref as dbRef, get, set } from 'firebase/database'
 
 type StudyData = {
   sha: string
