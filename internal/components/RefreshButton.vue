@@ -32,7 +32,7 @@ const formatTimestamp = (timestamp: number | null | undefined) => {
       @click="refresh"
       :disabled="isLoading"
     >
-      <span text-lg inline-block mt--1 ml--1.5 class="i-mdi-reload" :class="{ 'animate-[spin_1s_linear_infinite]': isLoading }" />
+      <span text-lg inline-block mt--1 ml--1.5 class="i-mdi-refresh" :class="{ 'animate-spin': isLoading }" />
     </button>
   </span>
 </template>
