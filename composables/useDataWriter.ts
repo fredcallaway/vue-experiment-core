@@ -95,7 +95,14 @@ export class DataWriter {
       await db.assertConnected()
       const snapshot = await db.get(this.dbPath('meta'))
       if (snapshot.exists()) {
-        console.warn('DataWriter: repeat_session', meta.sessionId)
+        const existingMeta = snapshot.val()
+        if (!existingMeta.sessionId) {
+          console.warn('DataWriter: existing meta missing sessionId, overwriting', meta.sessionId)
+          meta.lastUpdateTime = Date.now()
+          await db.set(this.dbPath('meta'), meta)
+        } else {
+          console.warn('DataWriter: repeat_session', meta.sessionId)
+        }
       }
       else {
         meta.lastUpdateTime = Date.now()
