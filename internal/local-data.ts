@@ -61,6 +61,7 @@ export const writeLocalSessionData = async (session: SessionData, _downloadTime:
   await $fetch(`/api/data/raw/${mode}/${sessionId}.json`, {
     method: 'PUT',
     body: fsData,
+    timeout: 30000,
   })
 }
 
@@ -101,48 +102,63 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
     console.log('syncing local data')
     // wait for last sync to complete before starting a new one
     await until(syncLoading).toBe(false)
+    syncLoading.value = true
     
-    // wait for db and fs meta to be ready
-    await until(dbMeta).toBeTruthy();
-    await until(fsMeta).toBeTruthy();
-    const now = Date.now()
-    const dbm = dbMeta.value!
-    const fsm = fsMeta.value!
+    try {
+      // wait for db and fs meta to be ready
+      await until(dbMeta).toBeTruthy();
+      await until(fsMeta).toBeTruthy();
+      const now = Date.now()
+      const dbm = dbMeta.value!
+      const fsm = fsMeta.value!
 
-    let anyChanged = false
-    await Promise.all(Object.keys(dbm).map(async (sessionId) => {
-      // skip if session has been downloaded after the last update
-      const dlTime = (fsm[sessionId]?._downloadTime || 0)
-      if (dlTime >= dbm[sessionId].lastUpdateTime) {
-        return
+      let anyChanged = false
+      // Process sessions with concurrency limit to avoid overwhelming the backend
+      const sessionIds = Object.keys(dbm)
+      const concurrencyLimit = 3
+      for (let i = 0; i < sessionIds.length; i += concurrencyLimit) {
+        const batch = sessionIds.slice(i, i + concurrencyLimit)
+        await Promise.all(batch.map(async (sessionId) => {
+          // skip if session has been downloaded after the last update
+          const dlTime = (fsm[sessionId]?._downloadTime || 0)
+          if (dlTime >= dbm[sessionId].lastUpdateTime) {
+            return
+          }
+          // local data is stale -> update it
+          anyChanged = true
+          const sessionData = await fetchSessionDataFromDb(mode, sessionId)
+          if (!sessionData) {
+            console.error('session data not found', sessionId)
+            return
+          }
+          if (!sessionData.meta.sessionId) {
+            console.error('sessionData.meta has no sessionId', sessionId, sessionData.meta,)
+            return
+          }
+          console.log(`Writing session ${sessionId}`)
+          await writeLocalSessionData(sessionData, now)
+          fsm[sessionId] = {
+            ...dbm[sessionId],
+            _downloadTime: now,
+          }
+        }))
       }
-      // local data is stale -> update it
-      anyChanged = true
-      const sessionData = await fetchSessionDataFromDb(mode, sessionId)
-      if (!sessionData) {
-        console.error('session data not found', sessionId)
-        return
+      // update fs meta if any changes were made
+      if (anyChanged) {
+        await $fetch(`/api/data/raw/${mode}/_meta.json`, {
+          method: 'PUT',
+          body: fsm,
+        })
+        fsMeta.value = fsm
+        console.log('synced local data', fsm)
+      } else {
+        console.log('no changes to local data')
       }
-      if (!sessionData.meta.sessionId) {
-        console.error('sessionData.meta has no sessionId', sessionId, sessionData.meta,)
-        return
-      }
-      await writeLocalSessionData(sessionData, now)
-      fsm[sessionId] = {
-        ...dbm[sessionId],
-        _downloadTime: now,
-      }
-    }))
-    // update fs meta if any changes were made
-    if (anyChanged) {
-      await $fetch(`/api/data/raw/${mode}/_meta.json`, {
-        method: 'PUT',
-        body: fsm,
-      })
-      fsMeta.value = fsm
-      console.log('synced local data', fsm)
-    } else {
-      console.log('no changes to local data')
+    } catch (error) {
+      console.error('error syncing local data', error)
+      throw error
+    } finally {
+      syncLoading.value = false
     }
   }
 
@@ -229,6 +245,7 @@ export const makeSessionList = (sessions: Record<string, SessionMeta> | SessionM
       'lastUpdateTime',
       'participantId',
       'studyId',
+      'conditions'
     ])),
   )
 }

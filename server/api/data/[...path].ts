@@ -1,5 +1,6 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'fs'
-import { join, resolve, relative } from 'path'
+import { readFile as readFileAsync, writeFile as writeFileAsync, mkdir } from 'fs/promises'
+import { existsSync } from 'fs'
+import { join, resolve, relative, dirname } from 'path'
 
 const DATA_DIR = resolve(process.cwd(), 'data')
 
@@ -98,9 +99,9 @@ function parseCsvLine(line: string): string[] {
 }
 
 
-const readFile = (filePath: string) => {
+const readFile = async (filePath: string) => {
   try {
-    const content = readFileSync(filePath, 'utf-8')
+    const content = await readFileAsync(filePath, 'utf-8')
     if (filePath.endsWith('.json')) {
       return JSON.parse(content)
     } else if (filePath.endsWith('.csv')) {
@@ -115,7 +116,7 @@ const readFile = (filePath: string) => {
   }
 }
 
-const writeFile = (filePath: string, content: any) => {
+const writeFile = async (filePath: string, content: any) => {
   // ensure content is string
   if (typeof content !== 'string') {
     if (filePath.endsWith('.csv')) {
@@ -137,11 +138,11 @@ const writeFile = (filePath: string, content: any) => {
   }
   try {
     // Create directory if it doesn't exist
-    const dirPath = join(filePath, '..')
+    const dirPath = dirname(filePath)
     if (!existsSync(dirPath)) {
-      mkdirSync(dirPath, { recursive: true })
+      await mkdir(dirPath, { recursive: true })
     }
-    writeFileSync(filePath, content, 'utf-8')
+    await writeFileAsync(filePath, content, 'utf-8')
   } catch (error: any) {
     throw createError({
       statusCode: 500,
@@ -172,14 +173,14 @@ export default defineEventHandler(async (event) => {
           message: 'File not found'
         })
       }
-      writeFile(filePath, defaultValue)
+      await writeFile(filePath, defaultValue)
       // Parse JSON default values that were serialized as query params
       if (filePath.endsWith('.json') && typeof defaultValue === 'string') {
         return JSON.parse(defaultValue)
       }
       return defaultValue
     }
-    return readFile(filePath)
+    return await readFile(filePath)
   }
 
   else if (method === 'POST' || method === 'PUT') {
@@ -191,7 +192,7 @@ export default defineEventHandler(async (event) => {
         message: 'Request body is required'
       })
     }
-    writeFile(filePath, body)
+    await writeFile(filePath, body)
     return
   } 
   
