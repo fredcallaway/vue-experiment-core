@@ -4,12 +4,21 @@ interface Props {
   trueValue?: string | boolean
   falseValue?: string | boolean
   label?: string
+  labelPosition?: 'left' | 'right' | 'top' | 'bottom'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   trueValue: true,
   falseValue: false,
+  labelPosition: 'right',
 })
+
+const positionClass = computed(() => ({
+  left: 'flex-row-reverse',
+  right: 'flex-row',
+  top: 'flex-col-reverse',
+  bottom: 'flex-col',
+})[props.labelPosition])
 
 const emit = defineEmits<{
   'update:modelValue': [value: string | boolean]
@@ -24,7 +33,7 @@ const toggle = () => {
 </script>
 
 <template>
-  <label class="flex items-center gap-2 cursor-pointer">
+  <label class="flex items-center gap-2 cursor-pointer" :class="positionClass">
     <div
       class="relative w-11 h-6 rounded-full transition-colors"
       :class="isChecked ? 'bg-blue' : 'bg-gray-300'"
