@@ -24,14 +24,6 @@ const deleteStudy = async () => {
   await navigateTo('/prolific')
 }
 
-const approveAll = wrap(async () => {
-  if (!confirm('Approve all eligible submissions?')) return
-  await prolific.approveSubmissions(studyId)
-})
-
-const approveSubmission = wrap(async (submissionId: string) => {
-  await prolific.approveSubmission(studyId, submissionId)
-})
 
 const pauseStudy = wrap(async () => {
   await prolific.pauseStudy(studyId)
@@ -130,6 +122,87 @@ const getDataStatus = (sub: Submission) => {
   return { text: 'partial', color: 'text-amber-500' }
 }
 
+const getCodeType = (studyCode: string | null | undefined) => {
+  if (!studyCode) return 'NOCODE'
+  if (!study.value) return studyCode
+  return study.value.completion_codes.find(cc => cc.code === studyCode)?.code_type || studyCode
+}
+
+
+// ===== actions column ======================================================
+
+type SubmissionAction = 'none' | 'approve' | 'return' | 'reject' | null
+
+const selectedActions = ref<Record<string, SubmissionAction>>({})
+const userModifiedActions = ref<Set<string>>(new Set())
+
+const getPossibleActions = (sub: Submission) => {
+  switch (sub.status) {
+    case 'AWAITING REVIEW': return ['approve', 'return', 'reject', 'none']
+    case 'RETURNED': return ['approve', 'none']
+    default: return ['none']
+  }
+}
+
+const isActionLocked = (sub: Submission) => getPossibleActions(sub).length === 1
+
+const getActionColorClass = (action: SubmissionAction) => {
+  switch (action) {
+    case null: return 'text-blue-600 border-blue-600'
+    case 'none': return 'text-gray-300 border-gray-300'
+    case 'approve': return 'text-green-600 border-green-600'
+    case 'return': return 'text-orange-500 border-orange-500'
+    case 'reject': return 'text-red-600 border-red-600'
+  }
+}
+
+const getDefaultAction = (sub: Submission): SubmissionAction => {
+  const codeType = getCodeType(sub.study_code)
+  const dataStatus = getDataStatus(sub).text
+  if (codeType === 'COMPLETED' && dataStatus === 'full') return 'approve'
+  if (sub.status === 'RETURNED') return 'none'
+  return null
+}
+
+watch([submissions, sessions], () => {
+  for (const sub of submissions.value) {
+    if (!userModifiedActions.value.has(sub.id)) {
+      selectedActions.value[sub.id] = getDefaultAction(sub)
+    }
+  }
+})
+
+const onActionChange = (submissionId: string) => {
+  userModifiedActions.value.add(submissionId)
+}
+
+const executeActions = wrap(async () => {
+  const actionCounts = { approve: 0, return: 0, reject: 0 }
+  for (const sub of submissions.value) {
+    const action = selectedActions.value[sub.id]
+    if (action && action !== 'none') actionCounts[action]++
+  }
+
+  const summary = Object.entries(actionCounts)
+    .filter(([_, count]) => count > 0)
+    .map(([action, count]) => `${action}: ${count}`)
+    .join(', ')
+
+  if (!summary) {
+    alert('No actions to execute')
+    return
+  }
+
+  if (!confirm(`Execute actions? ${summary}`)) return
+
+  for (const sub of submissions.value) {
+    const action = selectedActions.value[sub.id]
+    if (action === 'approve') await prolific.approveSubmission(studyId, sub.id)
+    else if (action === 'return') await prolific.requestReturn(studyId, sub.id)
+    else if (action === 'reject') await prolific.rejectSubmission(studyId, sub.id)
+  }
+})
+
 const databaseBonuses = computed(() => {
   if (!sessions.value) return {}
   const result: Record<string, number> = {}
@@ -176,17 +249,11 @@ watchEffect(() => {
 
 // ===== template helpers ===================================================
 
-const getCodeType = (studyCode: string | null | undefined) => {
-  if (!studyCode) return 'NOCODE'
-  if (!study.value) return studyCode
-  return study.value.completion_codes.find(cc => cc.code === studyCode)?.code_type || studyCode
-}
-
 const getCodeColorClass = (studyCode: string | null | undefined) => {
   if (!studyCode || !study.value) return 'text-gray-400'
   const codeType = study.value.completion_codes.find(cc => cc.code === studyCode)?.code_type
   if (!codeType) return 'text-purple'
-  
+
   switch (codeType) {
     case 'COMPLETED': return 'text-green-600'
     case 'ERROR': return 'text-red-600'
@@ -237,7 +304,7 @@ const costString = computed(() => {
   const sv = study.value
   // const base = sv.total_cost / PROLIFIC_FEE
   const base = sv.reward * sv.places_taken
-  
+
   const bonus = R.pipe(sv.submissions, R.map(sub => sum(sub.bonus_payments)), R.sum())
   const total = (base + bonus)
   return `${PROLIFIC_FEE} × (${formatCents(base)} + ${formatCents(bonus)}) = ${formatCents(total)}`
@@ -269,7 +336,7 @@ const filteredSubmissions = computed(() => {
 
     <NuxtLink to="/prolific" class="absolute translate-y--5 translate-x-1"> ← All Studies </NuxtLink>
     <Error :error="error || studyError" />
-    
+
     <div v-if="study">
       <div class="flex gap-6 mb-6">
         <div class="bg-gray-100 p-6 rounded flex-1">
@@ -283,8 +350,8 @@ const filteredSubmissions = computed(() => {
             <div><b>Study ID:</b> {{ study.id }}</div>
             <div><b>Reward:</b> ${{ (study.reward / 100).toFixed(2) }}</div>
             <div><b>Places:</b> {{ study.places_taken ?? 0 }} / {{ study.total_available_places }}</div>
-            
-            
+
+
             <div><b>Estimated Time:</b> {{ study.estimated_completion_time }} min</div>
             <div><b>Cost:</b> {{ costString }}</div>
             <a 
@@ -299,7 +366,7 @@ const filteredSubmissions = computed(() => {
         <!-- Actions -->
         <div class="bg-gray-100 p-6 rounded min-w-100 ">
           <h2 mb4>Actions</h2>
-          
+
           <!-- Draft Study Actions -->
           <div v-if="study.status === 'UNPUBLISHED'" class="flex gap-2">
             <!-- TODO (maybe) allow publishing drafts (need to pull logic from create.vue) -->
@@ -310,7 +377,7 @@ const filteredSubmissions = computed(() => {
               >
                 Publish Study
               </button>
-              
+
               <button 
                 @click="deleteStudy" 
                 btn-red
@@ -348,7 +415,7 @@ const filteredSubmissions = computed(() => {
               >
                 Stop Study
               </button>
-              
+
               <!-- add places -->
               <button 
                 @click="addPlaces" 
@@ -378,7 +445,7 @@ const filteredSubmissions = computed(() => {
                 rows="3"
                 placeholder="participant_id_1,0.50&#10;participant_id_2,1.00&#10;..."
               ></textarea>
-              
+
               <div flex gap-4 mt-4>
                 <button
                   @click="applyCsvAdjustments"
@@ -388,11 +455,11 @@ const filteredSubmissions = computed(() => {
                   Apply Adjustments
                 </button>
                 <button
-                  @click="approveAll"
+                  @click="executeActions"
                   btn-green
                   :disabled="loading"
                 >
-                  Approve All
+                  Execute Actions
                 </button>
                 <button
                   @click="assignBonuses"
@@ -440,7 +507,7 @@ const filteredSubmissions = computed(() => {
             />
           </div>
         </div>
-        
+
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
@@ -448,9 +515,10 @@ const filteredSubmissions = computed(() => {
                 <th px-2 py-2 text-left whitespace-nowrap>Session ID</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Participant ID</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Started</th>
-                <th px-2 py-2 text-left whitespace-nowrap>Code</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Status</th>
+                <th px-2 py-2 text-left whitespace-nowrap>Code</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Data</th>
+                <th px-2 py-2 text-left whitespace-nowrap>Action</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Time</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Bonus
                   <span ml-2 text-gray-500 font-mono text-8pt>DB + ADJ = TOTAL</span>
@@ -479,13 +547,9 @@ const filteredSubmissions = computed(() => {
                     w-4 h-4
                   />
                 </td>
-                <!-- Times -->
+                <!-- Start Time -->
                 <td px-2 py-2 whitespace-nowrap text-left>
                   {{ sub.started_at ? formatDateTime(sub.started_at) : 'never' }}
-                </td>
-                <!-- Completion Code -->
-                <td px-2 py-2 whitespace-nowrap font-mono font-bold text-sm text-left :class="getCodeColorClass(sub.study_code)">
-                  {{ getCodeType(sub.study_code) }}
                 </td>
                 <!-- Submission Status -->
                 <td px-2 py-2 whitespace-nowrap text-left >
@@ -493,10 +557,34 @@ const filteredSubmissions = computed(() => {
                     {{ getSubmissionStatusLabel(sub.status) }}
                   </div>
                 </td>
+                <!-- Completion Code -->
+                <td px-2 py-2 whitespace-nowrap font-mono font-bold text-xs text-left :class="getCodeColorClass(sub.study_code)">
+                  {{ getCodeType(sub.study_code) }}
+                </td>
                 <!-- Data -->
                 <td px-2 py-2 whitespace-nowrap text-left :class="getDataStatus(sub).color">
                   {{ getDataStatus(sub).text }}
                 </td>
+                <!-- Action -->
+                <td px-2 py-2 whitespace-nowrap text-left>
+                  <span v-if="isActionLocked(sub)" text-gray-400></span>
+                  <select 
+                    v-else 
+                    v-model="selectedActions[sub.id]" 
+                    @change="onActionChange(sub.id)"
+                    input 
+                    px-1 
+                    py-0.5 
+                    text-xs
+                    :class="getActionColorClass(selectedActions[sub.id])"
+                  >
+                    <option v-if="selectedActions[sub.id] === null" :value="null"></option>
+                    <option v-for="action in getPossibleActions(sub)" :key="action" :value="action">
+                      {{ action }}
+                    </option>
+                  </select>
+                </td>
+                <!-- Time Taken -->
                 <td px-2 py-2 whitespace-nowrap text-right>
                   {{ sub.time_taken ? formatTime(sub.time_taken * 1000) : 'N/A' }}
                 </td>
@@ -532,3 +620,4 @@ const filteredSubmissions = computed(() => {
 <style scoped>
 
 </style>
+  

@@ -484,6 +484,21 @@ export const useProlific = createGlobalState(() => {
     await studiesCache.getItemAsync(studyId)
   }
 
+  const requestReturn = async (studyId: string, submissionId: string): Promise<void> => {
+    await request('POST', `/submissions/${submissionId}/request-return/`, {
+      request_return_reasons: ["Didn't finish the study"],
+    })
+    await studiesCache.getItemAsync(studyId)
+  }
+
+  const rejectSubmission = async (studyId: string, submissionId: string): Promise<void> => {
+    await request('POST', `/submissions/${submissionId}/transition/`, {
+      action: 'REJECT',
+      rejection_category: 'NO_DATA',
+    })
+    await studiesCache.getItemAsync(studyId)
+  }
+
   const assignBonuses = async ( studyId: string, bonusesInCents: Record<string, number> ) => {
     const study = await studiesCache.getItemAsync(studyId)
 
@@ -581,6 +596,8 @@ export const useProlific = createGlobalState(() => {
     addPlaces,
     approveSubmissions,
     approveSubmission,
+    requestReturn,
+    rejectSubmission,
     assignBonuses,
     getStudyLink,
   }
