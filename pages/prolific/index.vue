@@ -173,6 +173,8 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
       {{ error }}
     </div>
 
+    <ProlificMessages mb3 rounded mb-4 />
+
     <!-- Study List View -->
     <div v-if="prolific && status == 'ok'">
 
