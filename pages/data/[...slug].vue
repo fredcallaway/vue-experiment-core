@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import firebaseConfig from '~/firebase.config.json'
 
 definePageMeta({
   layout: 'dashboard',
@@ -85,6 +86,8 @@ onMounted(() => {
     <h1>Data Viewer</h1>
 
     <NuxtLink external :href="`/data?mode=${otherMode}`">view {{ otherMode }} data</NuxtLink>
+    <br />
+    <NuxtLink external :href="firebaseConfig.databaseURL">firebase console</NuxtLink>
 
     <div min-h-6 flex items-center>
       <span class="font-mono">data/{{ mode }}/raw/</span>&nbsp;
