@@ -218,6 +218,7 @@ const databaseBonuses = computed(() => {
 })
 
 const bonusAdjustments = ref<Record<string, number>>({})
+const userModifiedBonuses = ref<Set<string>>(new Set())
 
 const intendedBonuses = computed(() => {
   return R.pullObject(submissions.value, R.prop("participant_id"), sub => (
@@ -241,10 +242,16 @@ watchEffect(() => {
   if (submissions.value.length === 0) return
 
   for (const sub of submissions.value) {
-    const minAdjustment = minAdjustments.value[sub.participant_id] ?? 0
-    bonusAdjustments.value[sub.participant_id] = Math.max(minAdjustment, 0)
+    if (!userModifiedBonuses.value.has(sub.participant_id)) {
+      const minAdjustment = minAdjustments.value[sub.participant_id] ?? 0
+      bonusAdjustments.value[sub.participant_id] = Math.max(minAdjustment, 0)
+    }
   }
 })
+
+const onBonusChange = (participantId: string) => {
+  userModifiedBonuses.value.add(participantId)
+}
 
 
 // ===== template helpers ===================================================
@@ -313,18 +320,26 @@ const costString = computed(() => {
 const searchQuery = ref('')
 const filteredSubmissions = computed(() => {
   if (submissions.value.length === 0) return []
-  if (!searchQuery.value.trim()) return submissions.value
+  
+  let result = submissions.value
+  if (searchQuery.value.trim()) {
+    const filter = createTextFilter(searchQuery.value)
+    result = submissions.value.filter(sub => {
+      const searchText = [
+        sub.participant_id,
+        sub.id,
+        sub.status.replace('REVIEW', ''),
+        sub.study_code || '',
+        getCodeType(sub.study_code)
+      ].join(' ')
+      return filter(searchText)
+    })
+  }
 
-  const filter = createTextFilter(searchQuery.value)
-  return submissions.value.filter(sub => {
-    const searchText = [
-      sub.participant_id,
-      sub.id,
-      sub.status.replace('REVIEW', ''),
-      sub.study_code || '',
-      getCodeType(sub.study_code)
-    ].join(' ')
-    return filter(searchText)
+  return [...result].sort((a, b) => {
+    const aUncertain = selectedActions.value[a.id] === null ? 0 : 1
+    const bUncertain = selectedActions.value[b.id] === null ? 0 : 1
+    return aUncertain - bUncertain
   })
 })
 
@@ -594,6 +609,7 @@ const filteredSubmissions = computed(() => {
                   <span mx-1>+</span>
                   <NumberInput
                     v-model="bonusAdjustments[sub.participant_id]"
+                    @update:modelValue="onBonusChange(sub.participant_id)"
                     :scroll-step="5"
                     :min="minAdjustments[sub.participant_id] ?? 0"
                     step="25"
