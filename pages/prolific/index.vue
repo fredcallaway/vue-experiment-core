@@ -24,20 +24,21 @@ const cacheError = ref<Error | null>(null)
 const searchQuery = ref('')
 const filteredStudies = computed(() => {
   if (!studies.value) return []
-  if (!searchQuery.value.trim()) return studies.value
-  
-  const filter = createTextFilter(searchQuery.value)
-  return studies.value.filter(study => {
-    const searchText = [
-      study.id,
-      study.internal_name,
-      study.name,
-      study.status,
-      study.published_at || '',
-      formatDateTime(study.published_at ?? 'N/A')
-    ].join(' ')
-    return filter(searchText)
-  })
+  const base = searchQuery.value.trim()
+    ? studies.value.filter(study => {
+        const filter = createTextFilter(searchQuery.value)
+        const searchText = [
+          study.id,
+          study.internal_name,
+          study.name,
+          study.status,
+          study.published_at || '',
+          formatDateTime(study.published_at ?? 'N/A')
+        ].join(' ')
+        return filter(searchText)
+      })
+    : studies.value
+  return R.sortBy(base, [s => s.published_at ?? '', 'desc'])
 })
 
 const error = computed(() => {
@@ -181,16 +182,12 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
       <div flex="~ row gap-2 justify-between items-end" mb-2>
         <div>
           <h2>Studies ({{ filteredStudies.length }})</h2>
-          <div class="text-xs text-gray-500">
-            Last updated: {{ formatDateTime(studiesTimestamp, 'never') }}
-            <button
-              @click="studyList.refresh()"
-              :disabled="loading"
-              class="ml-2 text-blue-600 hover:underline disabled:text-gray-400"
-            >
-              {{ loading ? 'Refreshing...' : 'Refresh' }}
-            </button>
-          </div>
+          <RefreshButton
+            :refresh="studyList.refresh"
+            :is-loading="loading"
+            :timestamp="studiesTimestamp"
+            label="Last updated:"
+          />
         </div>
         <TextFilter v-model="searchQuery" placeholder="e.g. active,complete 11/5" />
       </div>
