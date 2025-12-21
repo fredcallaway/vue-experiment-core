@@ -184,7 +184,7 @@ export class DataWriter {
 
     // TODO: also flush other (when we support that)
 
-    this._flush()
+    await this._flush()
   }
 
   private async _flush() {
@@ -207,7 +207,7 @@ export class DataWriter {
           logError('tried to flush updates with __PREINIT__ as sessionId')
           this.clearQueue()
         } else {
-          db.update('/', this.updates.value)
+          await db.update('/', this.updates.value)
         }
       }
       console.debug(`flushed ${Object.keys(this.updates.value).length} updates`, toRaw(this.updates.value))

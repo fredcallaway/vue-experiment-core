@@ -3,35 +3,37 @@ useEpoch('Completion') // we never call done from here
 const config = useConfig()
 const dataWriter = useDataWriter()
 
-const code = config.completion.mode === 'prolific' ? useCompletionCode('COMPLETED') : null
+const completedCode = config.completion.mode === 'prolific' ? useCompletionCode('COMPLETED') : null
+const errorCode = config.completion.mode === 'prolific' ? useCompletionCode('ERROR') : null
+
+const online = useOnline()
+const longWait = useTimeout(30_000)
+whenever(longWait, () => useUnload().disable())
+
+const code = computed(() => longWait.value ? errorCode : completedCode)
 
 const link = computed(() => {
   switch (config.completion.mode) {
     case 'link':
       return config.completion.link
     case 'prolific':
-      return `https://app.prolific.co/submissions/complete?cc=${code}`
+      return `https://app.prolific.co/submissions/complete?cc=${code.value}`
     default:
       throw new Error(`No completion link found`)
   }
 })
-
-const online = useOnline()
-const longWait = useTimeout(5000)
-whenever(longWait, () => useUnload().disable())
 
 const handleSubmit = () => {
   useUnload().disable()
   window.location.href = link.value
 }
 
-onMounted(() => {
-  logEvent('experiment.complete')
-  dataWriter.updateMeta({ completionTime: Date.now() })
-  if (dataWriter.initialized) {
-    dataWriter.flush()
-  }
-})
+logEvent('experiment.complete')
+dataWriter.updateMeta({ completionTime: Date.now() })
+if (dataWriter.initialized) {
+  dataWriter.flush()
+}
+const minWait = useTimeout(2000)
 
 const saveDebugData = async () => {
   await dataWriter.initializeSession(useCurrentSession())
@@ -61,7 +63,7 @@ const saveDebugData = async () => {
         </button>
       </div>
 
-      <div v-else-if="dataWriter.hasPendingUpdates">
+      <div v-else-if="!minWait || dataWriter.hasPendingUpdates">
         <p>
           Please wait for your data to be saved.
         </p>
@@ -69,13 +71,16 @@ const saveDebugData = async () => {
           It looks like your internet connection is down. Please check your connection and try again.
         </p>
         <p v-else-if="longWait">
-          This is taking longer than expected. Try refreshing the page.
+          We're having trouble saving your data. Please submit with code: <b>{{ errorCode }}</b>
         </p>
+        <button v-if="longWait" btn-primary mt-10 @click="handleSubmit">
+          Submit to Prolific
+        </button>
       </div>
 
       <div v-else>
-        <div v-if="code">
-          <p p-2>Your completion code is: <b>{{ code }}</b></p> 
+        <div v-if="completedCode">
+          <p p-2>Your completion code is: <b>{{ completedCode }}</b></p> 
           <p>Click "Submit" to be redirected to the Prolific completion page.</p> 
         </div>
         <button btn-primary mt-10 @click="handleSubmit">
