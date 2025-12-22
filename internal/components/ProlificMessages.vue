@@ -61,6 +61,10 @@ const handleResolve = (correspondence: { studyId: string; participantId: string;
   const key = getKey(correspondence)
   withLoading(key, () => messages.markResolved(correspondence.studyId, correspondence.participantId, !correspondence.resolved))
 }
+
+onMounted(() => {
+  messages.refresh()
+})
 </script>
 
 <template>
