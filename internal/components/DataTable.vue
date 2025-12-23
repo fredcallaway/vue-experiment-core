@@ -319,6 +319,8 @@ const columnWidths = computed(() => {
   return widths
 })
 
+const slots = useSlots()
+
 </script>
 
 <template>
@@ -337,8 +339,11 @@ const columnWidths = computed(() => {
     </div>
 
     <div flex="~ row gap-2 justify-between items-end" mb-2 :class="{ 'opacity-0': columns.length == 0 }">
-      <div>
+      <div v-if="slots.default">
         <slot />
+      </div>
+      <div v-else>
+        {{ filteredTableData.length }} rows
       </div>
       <TextFilter v-model="searchQuery" :placeholder="placeholder" />
     </div>
