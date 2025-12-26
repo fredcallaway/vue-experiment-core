@@ -66,6 +66,9 @@ export const useCurrentSession = createGlobalState<() => SessionMeta>(() => {
     mode = parsed.mode
   } else {
     mode = (studyId != 'UNKNOWN' || participantId != 'UNKNOWN') ? 'live' : 'debug'
+    if (studyId.startsWith('debug') || participantId.startsWith('debug')) {
+      mode = 'debug'
+    }
     console.log(`inferred mode="${mode}" from studyId="${studyId}" and participantId="${participantId}"`)
   }
 
