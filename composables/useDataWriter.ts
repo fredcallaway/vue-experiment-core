@@ -1,7 +1,7 @@
 import { serverTimestamp } from 'firebase/database'
 import { useStorage } from '@vueuse/core'
 import { z } from 'zod'
-import { logError } from './logEvent'
+import { logError, logEvent } from './logEvent'
 let dbInstance: DataWriter | null = null
 
 const online = useOnline()
@@ -64,6 +64,9 @@ export class DataWriter {
     this.meta = meta
     this.mode = meta.mode
 
+    logEvent('dataWriter.initializeSession', meta)
+
+
     const currentUpdates = this.updates.value
     this.clearQueue() // we put them back later
 
@@ -81,6 +84,7 @@ export class DataWriter {
       })
       if (Object.keys(this.updates.value).length > 0) {
         console.log('recovered updates from localStorage', this.updates.value)
+        logEvent('dataWriter.recoveredUpdates', { numUpdates: Object.keys(this.updates.value).length })
       }
     }
 
@@ -102,6 +106,7 @@ export class DataWriter {
           await db.set(this.dbPath('meta'), meta)
         } else {
           console.warn('DataWriter: repeat_session', meta.sessionId)
+          logEvent('dataWriter.repeatSession', { sessionId: meta.sessionId })
         }
       }
       else {

@@ -137,6 +137,7 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
           }
           console.log(`Writing session ${sessionId}`)
           await writeLocalSessionData(sessionData, now)
+          console.debug(`  done (${sessionId})`)
           fsm[sessionId] = {
             ...dbm[sessionId],
             _downloadTime: now,

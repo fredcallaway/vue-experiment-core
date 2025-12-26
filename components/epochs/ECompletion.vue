@@ -29,7 +29,8 @@ const handleSubmit = () => {
 }
 
 logEvent('experiment.complete')
-dataWriter.updateMeta({ completionTime: Date.now() })
+useCurrentSession().completionTime = Date.now()
+
 if (dataWriter.initialized) {
   dataWriter.flush()
 }
