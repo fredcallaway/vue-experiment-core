@@ -38,6 +38,14 @@ export const defineProlificConfig = (config: ProlificConfig): ProlificConfig => 
   return config
 }
 
+export const getProlificBaseUrl = (config: ProlificConfig): string => {
+  if (config.baseUrl === 'FIREBASE_DEFAULT') {
+    return `https://${firebaseConfig.projectId}.web.app/`
+  }
+  assert(config.baseUrl.startsWith('https://'), 'Prolific base URL must start with https://')
+  return config.baseUrl
+}
+
 export const getProlificConfig = (): ProlificConfig => {
   if (!_prolificConfig) throw new Error('Prolific config not initialized. Import prolific.config.ts first.')
   return _prolificConfig

@@ -80,6 +80,11 @@ const cannotSubmitReason = computed(() => {
 const canSubmit = computed(() => cannotSubmitReason.value === '')
 
 
+const previewUrl = computed(() => {
+  const baseUrl = getProlificBaseUrl(formData.value)
+  return `${baseUrl}/exp?PROLIFIC_PID=debug&STUDY_ID=debug&SESSION_ID=debug&assignment=0`
+})
+
 const create = useAsyncRunner()
 const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
   await create.run(async () => {
@@ -301,6 +306,12 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
         </div>
         <div v-else-if="cannotSubmitReason" card-error>
           <b>⚠ {{ cannotSubmitReason }}</b>
+        </div>
+
+        <div mt-2>
+          <a :href="previewUrl" target="_blank" class="text-blue-600 hover:underline">
+            Preview deployment →
+          </a>
         </div>
 
         <button
