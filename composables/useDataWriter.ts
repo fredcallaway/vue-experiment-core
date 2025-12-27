@@ -202,21 +202,26 @@ export class DataWriter {
     
     try {
       if (this.mode !== 'dummy') {
-        const lastUpdateTime = serverTimestamp() as unknown as number
         const db = useDatabase()
+        
+        const toFlush = this.updates.value
+        // extra safe alternative to this.updates.value = {}
+        for (const key of Object.keys(toFlush)) {
+          delete this.updates.value[key]
+        }
+        const lastUpdateTime = serverTimestamp() as unknown as number
         const path = this.dbPath('meta', 'lastUpdateTime')
-        this.updates.value[path] = lastUpdateTime
+        toFlush[path] = lastUpdateTime
 
         // this should be impossible, will remove when I'm more confident
-        if (Object.keys(this.updates.value).some(key => key.includes('__PREINIT__'))) {
+        if (Object.keys(toFlush).some(key => key.includes('__PREINIT__'))) {
           logError('tried to flush updates with __PREINIT__ as sessionId')
           this.clearQueue()
         } else {
           await db.update('/', this.updates.value)
         }
+        console.debug(`flushed ${Object.keys(toFlush).length} updates`, toRaw(toFlush))
       }
-      console.debug(`flushed ${Object.keys(this.updates.value).length} updates`, toRaw(this.updates.value))
-      this.updates.value = {}
     } catch (error) {
       console.error('Failed to flush updates:', error, toRaw(this.updates.value))
     }
