@@ -195,35 +195,38 @@ export class DataWriter {
   private async _flush() {
     if (!online.value) return
     if (this.disabled) return
-    if (!this.initialized) {
-      console.debug('_flush called before initialized, holding updates in queue')
+    if (!this.initialized) return
+
+    // pull out current updates
+    const toFlush = toRaw(this.updates.value)
+    this.updates.value = {}
+
+    if (this.mode === 'dummy') {
+      console.debug(`fake-flushed ${Object.keys(toFlush).length} updates`, toFlush)
       return
     }
     
     try {
-      if (this.mode !== 'dummy') {
-        const db = useDatabase()
-        
-        const toFlush = this.updates.value
-        // extra safe alternative to this.updates.value = {}
-        for (const key of Object.keys(toFlush)) {
-          delete this.updates.value[key]
-        }
-        const lastUpdateTime = serverTimestamp() as unknown as number
-        const path = this.dbPath('meta', 'lastUpdateTime')
-        toFlush[path] = lastUpdateTime
+      const db = useDatabase()
+    
+      const lastUpdateTime = serverTimestamp() as unknown as number
+      const path = this.dbPath('meta', 'lastUpdateTime')
+      toFlush[path] = lastUpdateTime
 
-        // this should be impossible, will remove when I'm more confident
-        if (Object.keys(toFlush).some(key => key.includes('__PREINIT__'))) {
-          logError('tried to flush updates with __PREINIT__ as sessionId')
-          this.clearQueue()
-        } else {
-          await db.update('/', this.updates.value)
-        }
-        console.debug(`flushed ${Object.keys(toFlush).length} updates`, toRaw(toFlush))
+      // this should be impossible, will remove when I'm more confident
+      if (Object.keys(toFlush).some(key => key.includes('__PREINIT__'))) {
+        logError('tried to flush updates with __PREINIT__ as sessionId')
+        this.clearQueue()
+      } else {
+        await db.update('/', toFlush)
       }
+      console.debug(`flushed ${Object.keys(toFlush).length} updates`, toFlush)
     } catch (error) {
-      console.error('Failed to flush updates:', error, toRaw(this.updates.value))
+      console.error('Failed to flush updates:', error, toFlush)
+      logError('Failed to flush updates', {
+        error: JSON.stringify(error), 
+        updates: JSON.stringify(toFlush)
+      })
     }
   }
 
