@@ -8,9 +8,11 @@ const errorCode = config.completion.mode === 'prolific' ? useCompletionCode('ERR
 
 const online = useOnline()
 const longWait = useTimeout(30_000)
-whenever(longWait, () => useUnload().disable())
+const dataSaved = ref(false)
 
-const code = computed(() => longWait.value ? errorCode : completedCode)
+// whenever(longWait, () => useUnload().disable())
+
+const code = computed(() => (longWait.value && !dataSaved.value) ? errorCode : completedCode)
 
 const link = computed(() => {
   switch (config.completion.mode) {
@@ -32,7 +34,7 @@ logEvent('experiment.complete')
 useCurrentSession().completionTime = Date.now()
 
 if (dataWriter.initialized) {
-  dataWriter.flush()
+  dataWriter.flush().then(() => dataSaved.value = true)
 }
 const minWait = useTimeout(2000)
 
@@ -64,7 +66,7 @@ const saveDebugData = async () => {
         </button>
       </div>
 
-      <div v-else-if="!minWait || dataWriter.hasPendingUpdates">
+      <div v-else-if="!minWait || !dataSaved">
         <p>
           Please wait for your data to be saved.
         </p>
