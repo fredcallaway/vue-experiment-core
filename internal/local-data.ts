@@ -115,7 +115,7 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
       let anyChanged = false
       // Process sessions with concurrency limit to avoid overwhelming the backend
       const sessionIds = Object.keys(dbm)
-      const concurrencyLimit = 3
+      const concurrencyLimit = 1
       for (let i = 0; i < sessionIds.length; i += concurrencyLimit) {
         const batch = sessionIds.slice(i, i + concurrencyLimit)
         await Promise.all(batch.map(async (sessionId) => {
@@ -273,7 +273,7 @@ export const makeEventList = (session: SessionData) => {
     }
     return {
       sessionId: session.meta.sessionId,
-      time: event.timestamp,
+      timeRaw: event.timestamp,
       epoch: currentEpoch,
       eventType: event.eventType,
       data: payload,
