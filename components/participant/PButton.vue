@@ -14,8 +14,13 @@ const emit = defineEmits<{
   (e: 'mousedown', value: string): void
 }>()
 
-const playbackState = usePlaybackState().state
 
+const ms = ensureNumber(props.delay ?? 0)
+const ready = useTimeout(replaceFast(ms, Math.max(200, ms / 5)))
+const disabled = computed(() => props.disabled || !ready.value)
+
+
+const playbackState = usePlaybackState().state
 const isPlaybackHover = ref(false)
 const isPlaybackDown = ref(false)
 const hoverOff = useTimeoutFn(() => { isPlaybackHover.value = false }, 250, { immediate: false })
@@ -35,6 +40,7 @@ P.on('click', (value: string) => {
     isPlaybackDown.value = false
     downOff.stop()
   }
+  if (disabled.value) return
   emit('click', value)
 })
 P.on('hover', (value: string) => {
@@ -42,6 +48,7 @@ P.on('hover', (value: string) => {
     isPlaybackHover.value = true
     hoverOff.start()
   }
+  if (disabled.value) return
   emit('hover', value)
 })
 P.on('mousedown', (value: string) => {
@@ -49,6 +56,7 @@ P.on('mousedown', (value: string) => {
     isPlaybackDown.value = true
     downOff.start()
   }
+  if (disabled.value) return
   emit('mousedown', value)
 })
 
@@ -72,9 +80,6 @@ const playbackFxClasses = computed(() => {
 })
 
 
-const ms = ensureNumber(props.delay ?? 0)
-const ready = useTimeout(replaceFast(ms, Math.max(200, ms / 5)))
-const disabled = computed(() => props.disabled || !ready.value)
 
 </script>
 
