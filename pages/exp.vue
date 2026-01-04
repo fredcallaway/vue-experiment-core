@@ -12,6 +12,7 @@ useBrowserMonitoring()
 
 const contactEmail = useConfig().contactEmail
 const { unloading, cancelUnload } = useUnload()
+useUnload().disable()
 
 const { violated } = useWindowEnforcer()
 
@@ -25,32 +26,39 @@ watchImmediate(violated, (isViolated) => {
 
 useSizeScale().enabled.value = false
 
-const db = useDatabase()
-
 const initStatus = ref<'loading' | 'error' | 'invalid-participant' | 'ready' | 'confirmed'>('loading')
 
-initialized.then((result) => {
-  if (result === true) {
-    if (meta.sessionId.startsWith('debug')) {
-      initStatus.value = 'ready'
-    } else if (meta.participantId === 'UNKNOWN' || meta.sessionId.startsWith('UNKNOWN')) {
-      initStatus.value = 'invalid-participant'
-    } else {
-      initStatus.value = 'ready'
-    }
-  } else {
+// e.g. 636d6ce3fb3683ff33f9e514
+const isProlificIdentifier = (str: string) => /^[a-f\d]{24}$/i.test(str)
+const validateSession = () => {
+  if (meta.sessionId.startsWith('debug') && meta.mode == 'debug') return true
+  if (meta.mode === 'debug') return false
+  const fields = [
+    meta.sessionId,
+    meta.participantId,
+    meta.studyId,
+  ]
+  return fields.every(isProlificIdentifier)
+}
+
+const minWait = timeoutPromise(2000)
+
+initialized.then(async (result) => {
+  if (result !== true) {
     initStatus.value = 'error'
+  } else if (!validateSession()) {
+    initStatus.value = 'invalid-participant'
+  } else {
+    await minWait
+    initStatus.value = 'ready'
   }
 })
 
 const confirmConnection = () => {
   initStatus.value = 'confirmed'
+  useUnload().enable()
   logEvent('experiment.connection.confirmed')
 }
-
-const showDisconnectedScreen = computed(() => {
-  return initStatus.value === 'confirmed' && db.disconnectedSeconds.value > 3
-})
 
 </script>
 
@@ -96,31 +104,15 @@ const showDisconnectedScreen = computed(() => {
     </div>
     
     <div v-else-if="initStatus === 'ready'" fixed inset-0 bg-white flex-center z-100>
-      <div shrink-0 w600px mx-auto p-3 text-center>
-        <h1>Connection Established</h1>
-        <p>
-          Participant ID: <span font-mono>{{ meta.participantId }}</span>
-        </p>
-        <div flex-center>
-          <button btn-primary mx-auto @click="confirmConnection">
-            Continue
-          </button>
+      <div shrink-0 w-130 mx-auto p-3>
+        <div card-yellow>
+          <h3>Warning!</h3>
+          Do not refresh the page or close the browser window during the experiment.
+          If you do, you will not be able to complete the study!
         </div>
-      </div>
-    </div>
-
-    <div v-if="showDisconnectedScreen" fixed inset-0 bg-white flex-center z-100>
-      <div shrink-0 w600px mx-auto p-3 text-center>
-        <h1>Connection Lost</h1>
-        <p>
-          We've lost connection to the server. Please wait while we attempt to reconnect.
-        </p>
-        <p>
-          Disconnected for: {{ db.disconnectedSeconds }} seconds
-        </p>
-        <p>
-          If the problem persists, please contact {{ contactEmail }}.
-        </p>
+        <div flex-center mt-10>
+          <PButton value="I will not refresh the page" @click="confirmConnection" />
+        </div>
       </div>
     </div>
 
