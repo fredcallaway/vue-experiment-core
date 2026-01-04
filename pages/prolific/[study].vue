@@ -77,6 +77,7 @@ const assignBonuses = wrap(async () => {
 })
 
 const bonusCsv = ref('')
+const showImportModal = ref(false)
 
 const applyCsvAdjustments = () => {
   if (!bonusCsv.value.trim()) return
@@ -100,6 +101,7 @@ const applyCsvAdjustments = () => {
     }
   }
   bonusCsv.value = ''
+  showImportModal.value = false
 }
 
 
@@ -504,22 +506,13 @@ const filteredSubmissions = computed(() => {
             </div>
 
             <div>
-              <label class="block mb-2 font-semibold">Bulk adjust bonuses (CSV: participant_id,adjustment)</label>
-              <textarea 
-                v-model="bonusCsv" 
-                input
-                w-full
-                rows="3"
-                placeholder="participant_id_1,0.50&#10;participant_id_2,1.00&#10;..."
-              ></textarea>
-
-              <div flex gap-4 mt-4>
+              <div flex gap-4>
                 <button
-                  @click="applyCsvAdjustments"
+                  @click="showImportModal = true"
                   btn-blue
-                  :disabled="loading || !bonusCsv.trim()"
+                  :disabled="loading"
                 >
-                  Apply Adjustments
+                  Import Bonuses
                 </button>
                 <button
                   @click="assignBonuses"
@@ -672,6 +665,55 @@ const filteredSubmissions = computed(() => {
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Bonuses Modal -->
+    <div
+      v-if="showImportModal"
+      fixed
+      inset-0
+      z-50
+      flex
+      items-center
+      justify-center
+      bg-black
+      bg-opacity-50
+      @click.self="showImportModal = false"
+    >
+      <div bg-white rounded-lg p-6 max-w-lg w-full mx-4>
+        <div flex justify-between items-center mb-4>
+          <h3 class="text-xl font-semibold">Import Bonuses</h3>
+          <button
+            @click="showImportModal = false"
+            class="text-gray-500 hover:text-gray-700"
+          >
+            <span i-mdi-close text-2xl />
+          </button>
+        </div>
+        <label class="block mb-2 font-semibold">CSV: participant_id,adjustment</label>
+        <textarea 
+          v-model="bonusCsv" 
+          input
+          w-full
+          rows="6"
+          placeholder="participant_id_1,0.50&#10;participant_id_2,1.00&#10;..."
+        ></textarea>
+        <div flex gap-4 mt-4 justify-end>
+          <button
+            @click="showImportModal = false"
+            btn-gray
+          >
+            Cancel
+          </button>
+          <button
+            @click="applyCsvAdjustments"
+            btn-blue
+            :disabled="loading || !bonusCsv.trim()"
+          >
+            Apply Adjustments
+          </button>
         </div>
       </div>
     </div>
