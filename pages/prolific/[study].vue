@@ -176,14 +176,32 @@ const onActionChange = (submissionId: string) => {
   userModifiedActions.value.add(submissionId)
 }
 
-const executeActions = wrap(async () => {
-  const actionCounts = { approve: 0, return: 0, reject: 0 }
-  for (const sub of submissions.value) {
-    const action = selectedActions.value[sub.id]
-    if (action && action !== 'none') actionCounts[action]++
-  }
+const groupedByAction = computed(() => {
+  const submissionsToProcess = submissions.value
+    .filter(sub => sub.status !== 'APPROVED')
+    .map(sub => ({ id: sub.id, action: selectedActions.value[sub.id] }))
+    .filter(item => item.action === 'approve' || item.action === 'return' || item.action === 'reject') as Array<{ id: string; action: 'approve' | 'return' | 'reject' }>
 
-  const summary = Object.entries(actionCounts)
+  return R.groupBy(submissionsToProcess, R.prop('action'))
+})
+
+const actionCounts = computed(() => {
+  const notApproved = submissions.value.filter(sub => sub.status !== 'APPROVED')
+  
+  const none = notApproved.filter(sub => selectedActions.value[sub.id] === 'none').length
+  const unspecified = notApproved.filter(sub => selectedActions.value[sub.id] === null).length
+
+  return {
+    approve: groupedByAction.value['approve']?.length ?? 0,
+    return: groupedByAction.value['return']?.length ?? 0,
+    reject: groupedByAction.value['reject']?.length ?? 0,
+    none,
+    unspecified,
+  }
+})
+
+const executeActions = wrap(async () => {
+  const summary = Object.entries(actionCounts.value)
     .filter(([_, count]) => count > 0)
     .map(([action, count]) => `${action}: ${count}`)
     .join(', ')
@@ -195,11 +213,12 @@ const executeActions = wrap(async () => {
 
   if (!confirm(`Execute actions? ${summary}`)) return
 
-  for (const sub of submissions.value) {
-    const action = selectedActions.value[sub.id]
-    if (action === 'approve') await prolific.approveSubmission(studyId, sub.id)
-    else if (action === 'return') await prolific.requestReturn(studyId, sub.id)
-    else if (action === 'reject') await prolific.rejectSubmission(studyId, sub.id)
+  for (const [action, subs] of Object.entries(groupedByAction.value)) {
+    for (const { id } of subs) {
+      if (action === 'approve') await prolific.approveSubmission(studyId, id)
+      else if (action === 'return') await prolific.requestReturn(studyId, id)
+      else if (action === 'reject') await prolific.rejectSubmission(studyId, id)
+    }
   }
 })
 
@@ -380,7 +399,7 @@ const filteredSubmissions = computed(() => {
 
         <!-- Actions -->
         <div class="bg-gray-100 p-6 rounded min-w-100 ">
-          <h2 mb4>Actions</h2>
+          <h2>Recruitment</h2>
 
           <!-- Draft Study Actions -->
           <div v-if="study.status === 'UNPUBLISHED'" class="flex gap-2">
@@ -451,6 +470,39 @@ const filteredSubmissions = computed(() => {
               />
             </div>
 
+            <div mb-4>
+              <h2>Review</h2>
+              <div flex gap-3 items-center mb-2>
+                <div>
+                  <span mb-2 mr1 text-2xl i-mdi-check-circle text-green-600 />
+                  <span text-2xl >{{ actionCounts.approve }}</span>
+                </div>
+                <div>
+                  <span mb-2 mr1 text-2xl i-mdi-arrow-left-circle text-orange-500 />
+                  <span text-2xl >{{ actionCounts.return }}</span>
+                </div>
+                <div>
+                  <span mb-2 mr1 text-2xl i-mdi-close-circle text-red-600 />
+                  <span text-2xl >{{ actionCounts.reject }}</span>
+                </div>
+                <div>
+                  <span mb-2 mr1 text-2xl i-mdi-minus-circle text-gray-500 />
+                  <span text-2xl >{{ actionCounts.none }}</span>
+                </div>
+                <div>
+                  <span mb-2 mr1 text-2xl i-mdi-help-circle text-blue-600 />
+                  <span text-2xl >{{ actionCounts.unspecified }}</span>
+                </div>
+              </div>
+              <button
+                @click="executeActions"
+                btn-blue
+                :disabled="loading || (actionCounts.approve === 0 && actionCounts.return === 0 && actionCounts.reject === 0)"
+              >
+                Execute
+              </button>
+            </div>
+
             <div>
               <label class="block mb-2 font-semibold">Bulk adjust bonuses (CSV: participant_id,adjustment)</label>
               <textarea 
@@ -468,13 +520,6 @@ const filteredSubmissions = computed(() => {
                   :disabled="loading || !bonusCsv.trim()"
                 >
                   Apply Adjustments
-                </button>
-                <button
-                  @click="executeActions"
-                  btn-green
-                  :disabled="loading"
-                >
-                  Execute Actions
                 </button>
                 <button
                   @click="assignBonuses"
