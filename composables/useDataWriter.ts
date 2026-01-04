@@ -173,7 +173,7 @@ export class DataWriter {
 
   updateOther(path: string, value: any) {
     const fullPath = this.dbPath('other', path)
-    this.queueUpdate(fullPath, toRaw(value))
+    this.queueUpdate(fullPath, toSafeData(value))
   }
 
   async withDisabled(f: () => Promise<void>) {
@@ -255,24 +255,8 @@ export class DataWriter {
     return getDBPath(this.mode as DataMode, this.sessionId, kind, key)
   }
 
-  private queueUpdate(fullPath: string, value: any) {
+  private queueUpdate(fullPath: string, value: SafeData) {
     if (this.disabled) return
-    
-    // normalize value to JSON-compatible object as required by firebase
-    if (typeof value == 'object') {
-      value = R.omitBy(value, v => v === undefined)
-    }
-    const result = z.json().safeParse(value)
-    if (result.success) {
-      value = result.data
-    } else {
-      logError('non JSON-compatible value passed to queueUpdate (see console)', {fullPath, value})
-      try {
-        value = JSON.parse(JSON.stringify(value))
-      } catch (error) {
-        logError('failed to normalize value ', {error})
-      }
-    }
     console.debug('queueUpdate', fullPath, value)
     this.updates.value[fullPath] = value
     this.debounceFlush()

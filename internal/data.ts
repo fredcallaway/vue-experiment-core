@@ -4,6 +4,16 @@
 
 export type DataMode = 'live' | 'debug'
 
+// data that can be reliably stored in the database (firebase RTDB)
+export type SafeData =
+| boolean
+| number
+| string
+| SafeData[]
+| { [k: string]: SafeData };
+
+export type SafeDataObject = Record<string, SafeData>
+
 export type SessionMeta = {
   sessionId: string
   participantId: string
@@ -15,7 +25,7 @@ export type SessionMeta = {
   lastUpdateTime: number
   bonus: number
   assignment: number
-  conditions?: Record<string, unknown>
+  conditions?: SafeDataObject
 }
 
 export type LogEvent = {
@@ -24,10 +34,10 @@ export type LogEvent = {
   currentEpochId: string
   index: number
   uid: string
-  data: Record<string, unknown>
+  data: SafeDataObject
 }
 
-export type BaseLogEvent<D extends Record<string, unknown>> = LogEvent & {data: D}
+export type BaseLogEvent<D extends SafeDataObject> = LogEvent & {data: D}
 
 export type EpochEvent = BaseLogEvent<{
   id: string
@@ -57,7 +67,7 @@ export const isErrorEvent = (event: LogEvent): event is ErrorEvent => {
 export type SessionData = {
   meta: SessionMeta
   events: LogEvent[]
-  other?: Record<string, unknown> | null // unstructured data
+  other?: SafeDataObject | null // unstructured data
 }
 
 // ============================================================================
@@ -73,7 +83,7 @@ export type SessionData = {
 * │   └── {sessionId}/
 * │       └── {DBEventKey}: DBEventData
 * └── other/
-*     └── {sessionId}: Record<string, unknown> ... // optional unstructured data
+*     └── {sessionId}: SafeDataObject ... // optional unstructured data
 * 
 * NOTE: we invert the keys of the Session type to allow efficient
 * processing of the different kinds of data (meta, events, other)
@@ -83,14 +93,14 @@ export type SessionData = {
 export type DBModeData = {
   meta: Record<string, SessionMeta>
   events: Record<string, DBSessionEvents>
-  other: Record<string, Record<string, unknown>>
+  other: Record<string, SafeDataObject>
 }
 
 // NOTE: using em dash as separator to avoid clash with hyphen
 // timestamp—index—eventType—uid
 
 export type DBEventKey = `${number}—${number}—${string}—${string}`
-export type DBEventData = Record<string, unknown> | false
+export type DBEventData = SafeDataObject | false
 export type DBSessionEvents = Record<DBEventKey, DBEventData>
 
 export const compressEvent = (event: LogEvent): [DBEventKey, DBEventData] => {
@@ -115,7 +125,7 @@ export const decompressEvents = (record: DBSessionEvents): LogEvent[] => {
       index: assertNumber(index),
       eventType,
       uid,
-      data: assertObject(data),
+      data: assertObject(data) as SafeDataObject,
       currentEpochId,
     }
   })
@@ -142,3 +152,54 @@ export const getDBPath = (mode: DataMode, sessionId: string, kind: keyof Session
 //   participant: (mode: DataMode, sessionId: string, path?: string) => 
 //     path ? `${mode}/${sessionId}/participant/${path}` : `${mode}/${sessionId}/participant`,
 // }
+
+
+export function toSafeData(input: unknown): SafeData {
+  const seen = new WeakSet<object>();
+
+  const walk = (x: any): SafeData => {
+    // unwrap refs and vue proxies
+    if (isRef(x)) x = x.value;
+    if (isProxy(x)) x = toRaw(x);
+
+    const t = typeof x;
+    
+    // primitives
+    if (t === "string" || t === "boolean") return x;
+    if (t === "number") return Number.isFinite(x) ? x : String(x);
+
+    // cannot be represented as is, fall back to string
+    if (x === null || x === undefined || t === "function" || t === "symbol" || t === "bigint") {
+      return String(x)
+    };
+
+    // objects
+    if (typeof x === "object") {
+      if (seen.has(x)) throw new TypeError("ensureSafeData: circular structure");
+      seen.add(x);
+
+      // strip classes
+      if (x instanceof Date) return x.toISOString()
+      if (x instanceof Set) return Array.from(x, walk);
+      if (x instanceof Map) return Array.from(x.entries(), ([k, v]) => [walk(k), walk(v)]) as any;
+
+      if (Array.isArray(x)) return x.map(walk);
+
+      // plain-ish object: keep only enumerable string keys, drop undefined like JSON does
+      const out: SafeDataObject = {};
+      for (const [k, v] of Object.entries(x)) {
+        if (v === undefined) continue;
+        out[k] = walk(v);
+      }
+      return out;
+    }
+
+    throw new TypeError(`ensureSafeData: cannot convert ${x} to SafeData`);
+  };
+
+  return walk(input);
+}
+
+export function toSafeDataObject(input: Record<string, unknown>): SafeDataObject {
+  return toSafeData(assertObject(input)) as SafeDataObject
+}

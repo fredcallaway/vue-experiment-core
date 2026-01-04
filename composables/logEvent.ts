@@ -7,6 +7,7 @@ let currentIndex = 0
 export const useLogEventBus = () => useEventBus<LogEvent>('events')
 
 export const logEvent = (eventType: string, data?: Record<string, unknown>, saveToDB = !eventType.startsWith('debug.')) => {
+  const safeData = toSafeDataObject(data ?? {})
 
   const dataWriter = useDataWriter()
 
@@ -22,7 +23,7 @@ export const logEvent = (eventType: string, data?: Record<string, unknown>, save
     timestamp: Date.now(),
     index: currentIndex++,
     uid: trueRandom().toString(36).substring(2, 9),
-    data: data ?? {},
+    data: safeData,
     currentEpochId: useCurrentEpoch().value.id,
   }
   if (saveToDB) {
@@ -43,7 +44,7 @@ export const logDebug = (message: string, info?: any) => {
   console.log('logDebug', message, info)
 }
 
-export const declareEventLogger = <T extends Record<string, unknown>>(name: string) => {
+export const declareEventLogger = <T extends SafeDataObject>(name: string) => {
   const logger = (data: T) => {
     logEvent(name, data)
   }
@@ -92,8 +93,7 @@ function extractErrorData(...args: [Error, any?] | [string, any?]): ErrorData {
 // logError(new Error('test error'), 'in trial set up')
 // logError('my error', {reason: 'test reason'})
 export const logError = (...args: [Error, any?] | [string, any?]) => {
-  // JSON wrapping ensures it's safe to send to database
-  const errorData = JSON.parse(JSON.stringify(extractErrorData(...args)))
+  const errorData = toSafeDataObject(extractErrorData(...args))
   logEvent('error', errorData)
   console.error('logError', ...args)
 }

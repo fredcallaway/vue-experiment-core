@@ -37,7 +37,7 @@ const fetchSessionDataFromDb = async (mode: DataMode, sessionId: string): Promis
   const meta = await getDatabasePath<SessionMeta>(getDBPath(mode, sessionId, 'meta'))
   if (!meta) return null
   const rawEvents = await getDatabasePath<DBSessionEvents>(getDBPath(mode, sessionId, 'events'))
-  const other = await getDatabasePath<Record<string, unknown>>(getDBPath(mode, sessionId, 'other'))
+  const other = await getDatabasePath<SafeDataObject>(getDBPath(mode, sessionId, 'other'))
   const events = decompressEvents(rawEvents ?? {})
   return { meta, events, other }
 }
@@ -198,7 +198,7 @@ export const useSessionMeta = (mode: DataMode, sessionId: string) => {
 export const useSessionData = (mode: DataMode, sessionId: string): ReactiveSession => {
   const { data: metaRef } = useDatabasePath<SessionMeta | null>(getDBPath(mode, sessionId, 'meta'), true)
   const { data: eventsRef } = useDatabasePath<DBSessionEvents | null>(getDBPath(mode, sessionId, 'events'), true)
-  const { data: otherRef } = useDatabasePath<Record<string, unknown> | null>(getDBPath(mode, sessionId, 'other'), false)
+  const { data: otherRef } = useDatabasePath<SafeDataObject | null>(getDBPath(mode, sessionId, 'other'), false)
 
   const { data: fsData, error: fsError } = useFetch<StoredSessionData>(`/api/data/raw/${mode}/${sessionId}.json`)
 
@@ -260,9 +260,8 @@ export const makeEventList = (session: SessionData) => {
   return session.events.map(event => {
     const payload = event.data ?? {}
     if (event.eventType.startsWith('epoch.start')) {
-      currentEpoch = typeof (payload as Record<string, unknown>).id === 'string'
-        ? (payload as Record<string, unknown>).id as string
-        : currentEpoch
+      // currentEpoch = typeof payload.id === 'string' ? payload.id as string : currentEpoch
+      currentEpoch = assertString(payload.id)
       return {
         time: event.timestamp,
         epoch: currentEpoch,
