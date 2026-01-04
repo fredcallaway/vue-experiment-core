@@ -30,8 +30,9 @@ const handleSubmit = () => {
   window.location.href = link.value
 }
 
-logEvent('experiment.complete')
-useCurrentSession().completionTime = Date.now()
+const meta = useCurrentSession()
+meta.completionTime = Date.now()
+logEvent('experiment.complete', meta)
 
 if (dataWriter.initialized) {
   dataWriter.flush().then(() => dataSaved.value = true)
