@@ -46,7 +46,7 @@ onMounted(async () => {
 <template>
   <div v-if="!db.connected.value" text-center>
     <h1>Connection Error</h1>
-    <p>
+    <div>
       We are unable to establish a connection to the server.
       <p v-if="!online">
         It looks like your internet connection is down. Please confirm that you can visit other web pages.
@@ -56,7 +56,7 @@ onMounted(async () => {
         <br>
         The experiment will continue automatically when the connection is restored.
       </p>
-    </p>
+    </div>
     <p mt10>
       If the problem persists, please contact {{ contactEmail }}.
     </p>

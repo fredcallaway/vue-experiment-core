@@ -455,7 +455,7 @@ const filteredSubmissions = computed(() => {
               <!-- set status -->
               <button 
                 v-if="study.status === 'ACTIVE'" 
-                btn-blue
+                btn-yellow
                 @click="pauseStudy" 
                 :disabled="loading"
               >
