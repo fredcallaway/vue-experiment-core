@@ -26,7 +26,7 @@ watchImmediate(violated, (isViolated) => {
 
 useSizeScale().enabled.value = false
 
-const initStatus = ref<'loading' | 'error' | 'invalid-participant' | 'ready' | 'confirmed'>('loading')
+const initStatus = ref<'loading' | 'error' | 'repeat' | 'invalid-participant' | 'confirmed'>('loading')
 
 // e.g. 636d6ce3fb3683ff33f9e514
 const isProlificIdentifier = (str: string) => /^[a-f\d]{24}$/i.test(str)
@@ -44,21 +44,28 @@ const validateSession = () => {
 const minWait = timeoutPromise(2000)
 
 initialized.then(async (result) => {
+  console.warn('👉', result)
   if (result !== true) {
-    initStatus.value = 'error'
+    if (result instanceof Error) {
+      if (result.message.includes('repeatSession.mismatch')) {
+        initStatus.value = 'invalid-participant'
+      } else if (result.message.includes('repeatSession.alreadyStarted')) {
+        initStatus.value = 'repeat'
+      } else {
+        initStatus.value = 'error'
+      }
+    } else {
+      initStatus.value = 'error'
+    }
   } else if (!validateSession()) {
     initStatus.value = 'invalid-participant'
   } else {
     await minWait
-    initStatus.value = 'ready'
+    initStatus.value = 'confirmed'
+    useUnload().enable()
+    logEvent('experiment.connection.confirmed')
   }
 })
-
-const confirmConnection = () => {
-  initStatus.value = 'confirmed'
-  useUnload().enable()
-  logEvent('experiment.connection.confirmed')
-}
 
 </script>
 
@@ -90,6 +97,18 @@ const confirmConnection = () => {
       </div>
     </div>
 
+    <div v-else-if="initStatus === 'repeat'" fixed inset-0 bg-white flex-center z-100>
+      <div shrink-0 w600px mx-auto p-3 text-center>
+        <h1>Repeat Session Detected</h1>
+        <p>
+          It looks like you've already begun this study, so you can't start again.
+        </p>
+        <p>
+          Please return the study. If you believe you should receive partial payment, please send
+          us a message through Prolific explaining what happened.
+        </p>
+      </div>
+    </div>
     <div v-else-if="initStatus === 'invalid-participant'" fixed inset-0 bg-white flex-center z-100>
       <div shrink-0 w600px mx-auto p-3 text-center>
         <h1>Invalid Link</h1>
@@ -100,19 +119,6 @@ const confirmConnection = () => {
         <p>
           If the problem persists, please contact {{ contactEmail }}.
         </p>
-      </div>
-    </div>
-    
-    <div v-else-if="initStatus === 'ready'" fixed inset-0 bg-white flex-center z-100>
-      <div shrink-0 w-130 mx-auto p-3>
-        <div card-yellow>
-          <h3>Warning!</h3>
-          Do not refresh the page or close the browser window during the experiment.
-          If you do, you will not be able to complete the study!
-        </div>
-        <div flex-center mt-10>
-          <PButton value="I will not refresh the page" @click="confirmConnection" />
-        </div>
       </div>
     </div>
 

@@ -59,7 +59,7 @@ export class DataWriter {
       console.warn('DataWriter: called initializeSession while disabled; ignoring')
       return false
     }
-    console.log('DataWriter: initializing session:', meta)
+    console.log('DataWriter: initializing session:', toRaw(meta))
 
     this.meta = meta
     this.mode = meta.mode
@@ -71,7 +71,7 @@ export class DataWriter {
     this.clearQueue() // we put them back later
 
     if (Object.keys(currentUpdates).length > 0) {
-      console.log('initializeSession: found existing updates', currentUpdates)
+      console.log('initializeSession: found existing updates', toRaw(currentUpdates))
     }
 
     // in live mode, the queue is held in local storage so it can be recovered after a refresh
@@ -93,34 +93,42 @@ export class DataWriter {
       const newKey = key.replace('__PREINIT__', meta.sessionId).replace('dummy/', `${this.mode}/`)
       this.updates.value[newKey] = value
     }
-
+    logEvent('TEMP TEST')
     try {
       // ensure connection to database
       const db = useDatabase()
       await db.assertConnected()
+      logEvent('TEMP TEST 2')
 
-      // check if the session already exists
       const snapshot = await db.get(this.dbPath('meta'))
       if (snapshot.exists()) {
-        const oldMeta = snapshot.val()
+        // this session has already been initialized
+        const oldMeta = snapshot.val() as SessionMeta
         logEvent('DataWriter.repeatSession', { oldMeta, newMeta: meta })
 
-        if (!oldMeta.sessionId) {
-          console.warn('DataWriter: existing meta missing sessionId, overwriting', meta.sessionId)
+        if (!oldMeta.sessionId && !oldMeta.startTime) {
+          // I'm not sure exactly how this happens
+          logEvent('DataWriter.repeatSession.overwrite')
           meta.lastUpdateTime = Date.now()
           await db.set(this.dbPath('meta'), meta)
         } else {
-          console.warn('DataWriter: repeat session', meta.sessionId)
+          // don't allow restarting if the actual experiment has begun
+          if (oldMeta.noReturnTime) {
+            logEvent('DataWriter.repeatSession.alreadyStarted')
+            throw new Error("DataWriter.repeatSession.alreadyStarted")
+          }
           for (const key of ['sessionId', 'participantId', 'studyId', 'version', 'mode', 'assignment'] as const) {
             if (oldMeta[key] !== meta[key]) {
-              logError('DataWriter.repeatSession.mismatch', {key, oldMeta, meta})
-              throw new Error(`repeat session has mismatched meta for "${key}"`)
+              logEvent('DataWriter.repeatSession.mismatch', { key })
+              throw new Error("DataWriter.repeatSession.mismatch")
             }
           }
+          logEvent('DataWriter.repeatSession.update')
           Object.assign(meta, oldMeta)
         }
       }
-      else {
+      else { // no existing data (expected case)
+        logEvent('DataWriter.initializeSession.noExistingData')
         meta.lastUpdateTime = Date.now()
         await db.set(this.dbPath('meta'), meta)
       }

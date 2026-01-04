@@ -7,6 +7,7 @@ let currentIndex = 0
 export const useLogEventBus = () => useEventBus<LogEvent>('events')
 
 export const logEvent = (eventType: string, data?: Record<string, unknown>, saveToDB = !eventType.startsWith('debug.')) => {
+  console.debug('logEvent', eventType, data)
   const safeData = toSafeDataObject(data ?? {})
 
   const dataWriter = useDataWriter()

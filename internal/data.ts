@@ -21,6 +21,7 @@ export type SessionMeta = {
   version: string
   mode: DataMode
   startTime: number
+  noReturnTime?: number
   completionTime?: number
   lastUpdateTime: number
   bonus: number
