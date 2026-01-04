@@ -64,7 +64,7 @@ export class DataWriter {
     this.meta = meta
     this.mode = meta.mode
 
-    logEvent('dataWriter.initializeSession', meta)
+    logEvent('DataWriter.initializeSession', meta)
 
 
     const currentUpdates = this.updates.value
@@ -84,7 +84,7 @@ export class DataWriter {
       })
       if (Object.keys(this.updates.value).length > 0) {
         console.log('recovered updates from localStorage', this.updates.value)
-        logEvent('dataWriter.recoveredUpdates', { numUpdates: Object.keys(this.updates.value).length })
+        logEvent('DataWriter.recoveredUpdates', { numUpdates: Object.keys(this.updates.value).length })
       }
     }
 
@@ -95,18 +95,22 @@ export class DataWriter {
     }
 
     try {
+      // ensure connection to database
       const db = useDatabase()
       await db.assertConnected()
+
+      // check if the session already exists
       const snapshot = await db.get(this.dbPath('meta'))
       if (snapshot.exists()) {
         const existingMeta = snapshot.val()
+        logEvent('DataWriter.repeatSession', { oldMeta: existingMeta, newMeta: meta })
+
         if (!existingMeta.sessionId) {
           console.warn('DataWriter: existing meta missing sessionId, overwriting', meta.sessionId)
           meta.lastUpdateTime = Date.now()
           await db.set(this.dbPath('meta'), meta)
         } else {
           console.warn('DataWriter: repeat_session', meta.sessionId)
-          logEvent('dataWriter.repeatSession', { sessionId: meta.sessionId })
         }
       }
       else {
@@ -131,6 +135,15 @@ export class DataWriter {
           this.updateMeta(changes as Partial<SessionMeta>)
         }
       })
+
+      // double check that meta has been saved correctly
+      const snapshot2 = await db.get(this.dbPath('meta'))
+      const dbMeta = snapshot2.val() as SessionMeta
+      const localMeta = toRaw(meta)
+      if (!R.isDeepEqual(localMeta, dbMeta)) {
+        logError('DataWriter.metaMismatch', {localMeta, dbMeta})
+      }
+      assert(dbMeta.sessionId == localMeta.sessionId, 'sessionId must match between meta and database')
 
       return true // success
 
