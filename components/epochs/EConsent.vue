@@ -56,13 +56,13 @@ const slots = useSlots()
   </div>
   <!-- deny consent screen -->
   <div v-else-if="saidNo" class="flex items-center justify-center">
-    <div class="max-w-md text-center p-8">
+    <div class="w-150 text-center p-8">
       <h1 class="text-2xl font-bold mb-4">Are you sure?</h1>
       <p class="text-gray-600 mb-6">
         Clicking the abort button will abort the experiment and send you back 
         to Prolific to return the submission.
       </p>
-      <div flex="~ row gap-4" flex-center debug>
+      <div flex="~ row gap-4" flex-center>
         <PButton value="agree" btn-primary @click="saidNo = false">
           <span i-mdi-arrow-left />
           Back to consent
