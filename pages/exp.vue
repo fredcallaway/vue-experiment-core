@@ -24,6 +24,14 @@ watchImmediate(violated, (isViolated) => {
   }
 })
 
+const { isPrimary } = useMultipleTabDetection()
+
+watchImmediate(isPrimary, (primary) => {
+  if (!primary) {
+    logEvent('experiment.multipleTab.detected')
+  }
+})
+
 useSizeScale().enabled.value = false
 
 const initStatus = ref<'loading' | 'error' | 'repeat' | 'invalid-participant' | 'confirmed'>('loading')
@@ -136,6 +144,16 @@ initialized.then(async (result) => {
             Resume Experiment
           </button>
         </div>
+      </div>
+    </div>
+
+    <div v-if="!isPrimary" fixed inset-0 bg-white flex-center z-100>
+      <div shrink-0 w600px mx-auto p-3 text-center>
+        <h1>Multiple Tabs Detected</h1>
+        <p>
+          You have opened this experiment in multiple tabs or windows.
+          Please close this tab and continue in your original tab.
+        </p>
       </div>
     </div>
   </div>
