@@ -283,7 +283,7 @@ tryOnScopeDispose(() => {
 })
 
 const estimateTextWidth = (text: string, scale:number = 1): number => {
-  return text.length * 6.5
+  return text.length * 7.5
 }
 
 const columnWidths = computed(() => {
