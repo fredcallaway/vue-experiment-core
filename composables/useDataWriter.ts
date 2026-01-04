@@ -102,15 +102,22 @@ export class DataWriter {
       // check if the session already exists
       const snapshot = await db.get(this.dbPath('meta'))
       if (snapshot.exists()) {
-        const existingMeta = snapshot.val()
-        logEvent('DataWriter.repeatSession', { oldMeta: existingMeta, newMeta: meta })
+        const oldMeta = snapshot.val()
+        logEvent('DataWriter.repeatSession', { oldMeta, newMeta: meta })
 
-        if (!existingMeta.sessionId) {
+        if (!oldMeta.sessionId) {
           console.warn('DataWriter: existing meta missing sessionId, overwriting', meta.sessionId)
           meta.lastUpdateTime = Date.now()
           await db.set(this.dbPath('meta'), meta)
         } else {
-          console.warn('DataWriter: repeat_session', meta.sessionId)
+          console.warn('DataWriter: repeat session', meta.sessionId)
+          for (const key of ['sessionId', 'participantId', 'studyId', 'version', 'mode', 'assignment'] as const) {
+            if (oldMeta[key] !== meta[key]) {
+              logError('DataWriter.repeatSession.mismatch', {key, oldMeta, meta})
+              throw new Error(`repeat session has mismatched meta for "${key}"`)
+            }
+          }
+          Object.assign(meta, oldMeta)
         }
       }
       else {
