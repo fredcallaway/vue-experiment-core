@@ -63,7 +63,7 @@ const versionList = computed(() => {
         version,
         ...makeVersionInfo(sessions),
       })),
-      R.sortBy(R.prop('latestUpdateTime')),
+      R.sortBy(x => -x.latestUpdateTime),
     )
   }
 )
