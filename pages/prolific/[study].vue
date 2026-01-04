@@ -79,25 +79,26 @@ const assignBonuses = wrap(async () => {
 const bonusCsv = ref('')
 const showImportModal = ref(false)
 
-const applyCsvAdjustments = () => {
+const applyCsvBonuses = () => {
   if (!bonusCsv.value.trim()) return
 
   const lines = bonusCsv.value.trim().split('\n')
   for (const line of lines) {
-    const [id, adjustment] = line.split(',')
+    const [id, bonus] = line.split(',')
     const sub = submissions.value.find(sub => sub.id === id || sub.participant_id === id)
     if (!sub) {
       alert(`Problem with line ${line}: submission not found`)
       return
     }
     const participantId = sub.participant_id
-    if (id && adjustment) {
-      const val = parseFloat(adjustment.trim())
+    if (id && bonus) {
+      const val = parseFloat(bonus.trim())
       if (abs(val % 1) > 1e-6) {
-        alert(`Problem with line ${line}: adjustment is not a whole number (cents)`)
+        alert(`Problem with line ${line}: bonus is not a whole number (cents)`)
         return
       }
-      bonusAdjustments.value[participantId] = val
+      bonusOverrides.value[participantId] = val
+      userModifiedBonuses.value.add(participantId)
     }
   }
   bonusCsv.value = ''
@@ -238,36 +239,36 @@ const databaseBonuses = computed(() => {
   return result
 })
 
-const bonusAdjustments = ref<Record<string, number>>({})
+const bonusOverrides = ref<Record<string, number | undefined>>({})
 const userModifiedBonuses = ref<Set<string>>(new Set())
 
 const intendedBonuses = computed(() => {
-  return R.pullObject(submissions.value, R.prop("participant_id"), sub => (
-    (databaseBonuses.value[sub.participant_id] ?? 0) + 
-    (bonusAdjustments.value[sub.participant_id] ?? 0)
-  ))
+  return R.pullObject(submissions.value, R.prop("participant_id"), sub => {
+    const override = bonusOverrides.value[sub.participant_id]
+    return override !== undefined ? override : (databaseBonuses.value[sub.participant_id] ?? 0)
+  })
 })
 
 const currentBonuses = computed(() => {
   return R.pullObject(submissions.value, R.prop("participant_id"), sub => sum(sub.bonus_payments))
 })
 
-const minAdjustments = computed(() => {
-  return R.pullObject(submissions.value, R.prop("participant_id"), sub => (
-    (currentBonuses.value[sub.participant_id] ?? 0) - 
-    (databaseBonuses.value[sub.participant_id] ?? 0)
-  ))
+const totalBonus = computed(() => {
+  return R.sum(Object.values(intendedBonuses.value))
 })
 
-watchEffect(() => {
-  if (submissions.value.length === 0) return
-
+const overrideStats = computed(() => {
+  let count = 0
+  let totalAdjustment = 0
   for (const sub of submissions.value) {
-    if (!userModifiedBonuses.value.has(sub.participant_id)) {
-      const minAdjustment = minAdjustments.value[sub.participant_id] ?? 0
-      bonusAdjustments.value[sub.participant_id] = Math.max(minAdjustment, 0)
+    const override = bonusOverrides.value[sub.participant_id]
+    if (override !== undefined) {
+      count++
+      const database = databaseBonuses.value[sub.participant_id] ?? 0
+      totalAdjustment += override - database
     }
   }
+  return { count, totalAdjustment }
 })
 
 const onBonusChange = (participantId: string) => {
@@ -313,8 +314,33 @@ const getBonusStatus = (sub: Submission) => {
   const current = currentBonuses.value[sub.participant_id] ?? 0
   const intended = intendedBonuses.value[sub.participant_id] ?? 0
   if (intended === 0 && current === 0) return {text: 'NONE', color: 'text-gray-300'}
-  if (intended > current) return {text: current, color: 'text-red-600'}
+  if (current == 0) return {text: 'TODO', color: 'text-amber'}
+  if (intended > current) return {text: 'UNDER', color: 'text-red-600'}
   return {text: 'PAID', color: 'text-green-600'}
+}
+
+const getBonusBorderColor = (participantId: string) => {
+  const override = bonusOverrides.value[participantId]
+  if (override === undefined) return ''
+  const database = databaseBonuses.value[participantId] ?? 0
+  if (override > database) return 'border-green-600'
+  if (override < database) return 'border-red-600'
+  return ''
+}
+
+const getBonusValue = (participantId: string) => {
+  const override = bonusOverrides.value[participantId]
+  return override !== undefined ? override : (databaseBonuses.value[participantId] ?? 0)
+}
+
+const setBonusValue = (participantId: string, value: number) => {
+  const database = databaseBonuses.value[participantId] ?? 0
+  if (value === database) {
+    delete bonusOverrides.value[participantId]
+  } else {
+    bonusOverrides.value[participantId] = value
+  }
+  userModifiedBonuses.value.add(participantId)
 }
 
 
@@ -505,6 +531,19 @@ const filteredSubmissions = computed(() => {
               </button>
             </div>
 
+            <div mb-4>
+              <h2>Bonus</h2>
+              <div mb-2>
+                <div>Total: {{ formatCents(totalBonus) }}</div>
+                <div v-if="overrideStats.count > 0">
+                  Adjustments: {{ overrideStats.count }} ({{ formatCents(overrideStats.totalAdjustment) }})
+                </div>
+                <div v-else class="text-gray-400">
+                  No adjustments
+                </div>
+              </div>
+            </div>
+
             <div>
               <div flex gap-4>
                 <button
@@ -573,9 +612,7 @@ const filteredSubmissions = computed(() => {
                 <th px-2 py-2 text-left whitespace-nowrap>Data</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Action</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Time</th>
-                <th px-2 py-2 text-left whitespace-nowrap>Bonus
-                  <span ml-2 text-gray-500 font-mono text-8pt>DB + ADJ = TOTAL</span>
-                </th>
+                <th px-2 py-2 text-left whitespace-nowrap>Bonus</th>
               </tr>
             </thead>
             <tbody>
@@ -643,21 +680,20 @@ const filteredSubmissions = computed(() => {
                 </td>
                 <!-- Bonus -->
                 <td px-2 py-2 whitespace-nowrap font-mono text-sm flex items-center>
-                  <span w-10 text-right>{{ databaseBonuses[sub.participant_id] ?? 0 }}</span>
-                  <span mx-1>+</span>
                   <NumberInput
-                    v-model="bonusAdjustments[sub.participant_id]"
-                    @update:modelValue="onBonusChange(sub.participant_id)"
+                    :modelValue="getBonusValue(sub.participant_id)"
+                    :default="databaseBonuses[sub.participant_id]"
+                    @update:modelValue="(val) => setBonusValue(sub.participant_id, val)"
                     :scroll-step="5"
-                    :min="minAdjustments[sub.participant_id] ?? 0"
+                    :min="0"
                     step="25"
                     input
                     font-mono
                     w-10
                     px-1
+                    border-2
+                    :class="getBonusBorderColor(sub.participant_id)"
                   />
-                  &nbsp;=
-                  {{ intendedBonuses[sub.participant_id] ?? 0 }}
                   <span :class="getBonusStatus(sub).color" font-bold ml-auto w-15>
                     {{ getBonusStatus(sub).text }}
                   </span>
@@ -692,13 +728,13 @@ const filteredSubmissions = computed(() => {
             <span i-mdi-close text-2xl />
           </button>
         </div>
-        <label class="block mb-2 font-semibold">CSV: participant_id,adjustment</label>
+        <label class="block mb-2 font-semibold">CSV: participant_id,bonus (cents)</label>
         <textarea 
           v-model="bonusCsv" 
           input
           w-full
           rows="6"
-          placeholder="participant_id_1,0.50&#10;participant_id_2,1.00&#10;..."
+          placeholder="participant_id_1,50&#10;participant_id_2,100&#10;..."
         ></textarea>
         <div flex gap-4 mt-4 justify-end>
           <button
@@ -708,11 +744,11 @@ const filteredSubmissions = computed(() => {
             Cancel
           </button>
           <button
-            @click="applyCsvAdjustments"
+            @click="applyCsvBonuses"
             btn-blue
             :disabled="loading || !bonusCsv.trim()"
           >
-            Apply Adjustments
+            Apply Bonuses
           </button>
         </div>
       </div>
