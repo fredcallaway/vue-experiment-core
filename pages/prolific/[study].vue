@@ -281,6 +281,33 @@ const overrideStats = computed(() => {
   return { count, totalAdjustment }
 })
 
+const bonusPaidStatus = computed(() => {
+  if (submissions.value.length === 0) return { text: 'UNPAID', color: 'text-amber-500' }
+  
+  let allPaid = true
+  let anyPaid = false
+  
+  for (const sub of submissions.value) {
+    const intended = intendedBonuses.value[sub.participant_id] ?? 0
+    const current = currentBonuses.value[sub.participant_id] ?? 0
+    
+    if (intended > 0) {
+      if (current >= intended) {
+        anyPaid = true
+      } else {
+        allPaid = false
+        if (current > 0) {
+          anyPaid = true
+        }
+      }
+    }
+  }
+  
+  if (allPaid) return { text: 'PAID', color: 'text-green-600' }
+  if (!anyPaid) return { text: 'UNPAID', color: 'text-red-600' }
+  return { text: 'PARTIAL', color: 'text-amber-500' }
+})
+
 const onBonusChange = (participantId: string) => {
   userModifiedBonuses.value.add(participantId)
 }
@@ -544,7 +571,12 @@ const filteredSubmissions = computed(() => {
             <div mb-4>
               <h2>Bonus</h2>
               <div mb-2>
-                <div>Total: {{ formatCents(totalBonus) }}</div>
+                <div flex items-center gap-2>
+                  <span>Total: {{ formatCents(totalBonus) }}</span>
+                  <span :class="bonusPaidStatus.color" font-bold>
+                    {{ bonusPaidStatus.text }}
+                  </span>
+                </div>
                 <div v-if="overrideStats.count > 0">
                   Adjustments: {{ overrideStats.count }} ({{ formatCents(overrideStats.totalAdjustment) }})
                 </div>
