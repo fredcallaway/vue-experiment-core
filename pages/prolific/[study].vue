@@ -235,6 +235,11 @@ const executeActions = wrap(async () => {
   await Promise.all(promises)
 })
 
+const executeAll = wrap(async () => {
+  await executeActions()
+  await assignBonuses()
+})
+
 const databaseBonuses = computed(() => {
   if (!sessions.value) return {}
   const result: Record<string, number> = {}
@@ -538,6 +543,7 @@ const filteredSubmissions = computed(() => {
             <div mb-4>
               <h2>Review</h2>
               <div flex gap-3 items-center mb-2>
+                <span font-bold>Approve:</span>
                 <div>
                   <span mb-2 mr1 text-2xl i-mdi-check-circle text-green-600 />
                   <span text-2xl >{{ actionCounts.approve }}</span>
@@ -559,20 +565,9 @@ const filteredSubmissions = computed(() => {
                   <span text-2xl >{{ actionCounts.unspecified }}</span>
                 </div>
               </div>
-              <button
-                @click="executeActions"
-                btn-blue
-                :disabled="loading || (actionCounts.approve === 0 && actionCounts.return === 0 && actionCounts.reject === 0)"
-              >
-                Execute
-              </button>
-            </div>
-
-            <div mb-4>
-              <h2>Bonus</h2>
               <div mb-2>
                 <div flex items-center gap-2>
-                  <span>Total: {{ formatCents(totalBonus) }}</span>
+                  <span font-bold>Bonuses: {{ formatCents(totalBonus) }}</span>
                   <span :class="bonusPaidStatus.color" font-bold>
                     {{ bonusPaidStatus.text }}
                   </span>
@@ -584,25 +579,13 @@ const filteredSubmissions = computed(() => {
                   No adjustments
                 </div>
               </div>
-            </div>
-
-            <div>
-              <div flex gap-4>
-                <button
-                  @click="showImportModal = true"
-                  btn-blue
-                  :disabled="loading"
-                >
-                  Import Bonuses
-                </button>
-                <button
-                  @click="assignBonuses"
-                  btn-purple
-                  :disabled="loading || !!bonusCsv.trim()"
-                >
-                  Assign Bonuses
-                </button>
-              </div>
+              <button
+                @click="executeAll"
+                btn-blue
+                :disabled="loading || (actionCounts.approve === 0 && actionCounts.return === 0 && actionCounts.reject === 0)"
+              >
+                Execute
+              </button>
             </div>
           </div>
         </div>
@@ -654,7 +637,19 @@ const filteredSubmissions = computed(() => {
                 <th px-2 py-2 text-left whitespace-nowrap>Data</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Action</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Time</th>
-                <th px-2 py-2 text-left whitespace-nowrap>Bonus</th>
+                <th px-2 py-2 text-left whitespace-nowrap>
+                  <div flex items-center gap-2>
+                    <span>Bonus</span>
+                    <button
+                      @click="showImportModal = true"
+                      btn-xs
+                      class="font-400"
+                      :disabled="loading"
+                    >
+                      import
+                    </button>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
