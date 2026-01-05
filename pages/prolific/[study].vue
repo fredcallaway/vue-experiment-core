@@ -216,13 +216,23 @@ const executeActions = wrap(async () => {
 
   if (!confirm(`Execute actions? ${summary}`)) return
 
-  for (const [action, subs] of Object.entries(groupedByAction.value)) {
-    for (const { id } of subs) {
-      if (action === 'approve') await prolific.approveSubmission(studyId, id)
-      else if (action === 'return') await prolific.requestReturn(studyId, id)
-      else if (action === 'reject') await prolific.rejectSubmission(studyId, id)
+  const promises: Promise<any>[] = []
+  const toExecute = R.mapValues(groupedByAction.value, subs => subs.map(sub => sub.id))
+  
+  if (toExecute.approve) {
+    promises.push(prolific.approveSubmissions(studyId, toExecute.approve))
+  }
+  if (toExecute.return) {
+    for (const id of toExecute.return) {
+      promises.push(prolific.requestReturn(studyId, id))
     }
   }
+  if (toExecute.reject) {
+    for (const id of toExecute.reject) {
+      promises.push(prolific.rejectSubmission(studyId, id))
+    }
+  }
+  await Promise.all(promises)
 })
 
 const databaseBonuses = computed(() => {
