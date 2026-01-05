@@ -1,6 +1,8 @@
 import '~/prolific.config.ts'
 
 const PAGE_SIZE = 5
+const API_INTERVAL = 1000
+const API_CONCURRENCY_LIMIT = 3
 
 export const useProlific = createGlobalState(() => {
   const prolificConfig = getProlificConfig()
@@ -83,39 +85,82 @@ export const useProlific = createGlobalState(() => {
     }
   })
 
-  const request = async <T>(method: string, path: string, body?: any): Promise<T> => {
-    await Promise.any([
-      until(status).toBe('ok'),
-      timeoutPromise(2000)
-    ])
-    if (status.value !== 'ok') {
-      throw new ProlificError('invalid status: ' + status.value)
-    }
-    const response = await baseRequest(method, path, body)
+  // Request queue system
+  type QueuedRequest<T> = {
+    method: string
+    path: string
+    body?: any
+    resolve: (value: T) => void
+    reject: (error: any) => void
+  }
 
-    if (response.status === 204) {
-      return {} as T
-    }
+  const requestQueue = ref<QueuedRequest<any>[]>([])
+  const runningCount = ref(0)
 
-    const responseText = await response.text()
-    let data: any
-
-    if (responseText.trim()) {
-      try {
-        data = JSON.parse(responseText)
-      } catch {
-        data = { info: responseText }
+  const processRequest = async <T>(queued: QueuedRequest<T>): Promise<void> => {
+    try {
+      await Promise.any([
+        until(status).toBe('ok'),
+        timeoutPromise(2000)
+      ])
+      if (status.value !== 'ok') {
+        throw new ProlificError('invalid status: ' + status.value)
       }
-    } else {
-      data = {}
-    }
+      const response = await baseRequest(queued.method, queued.path, queued.body)
 
-    if (!response.ok) {
-      const msg = `API Error: ${method} ${path}\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`
-      throw new ProlificError(msg)
-    }
+      if (response.status === 204) {
+        queued.resolve({} as T)
+        return
+      }
 
-    return data
+      const responseText = await response.text()
+      let data: any
+
+      if (responseText.trim()) {
+        try {
+          data = JSON.parse(responseText)
+        } catch {
+          data = { info: responseText }
+        }
+      } else {
+        data = {}
+      }
+
+      if (!response.ok) {
+        const msg = `API Error: ${queued.method} ${queued.path}\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`
+        throw new ProlificError(msg)
+      }
+
+      queued.resolve(data)
+    } catch (error) {
+      queued.reject(error)
+    }
+  }
+
+  const processQueue = async () => {
+    while (requestQueue.value.length > 0 && runningCount.value < API_CONCURRENCY_LIMIT) {
+      const queued = requestQueue.value.shift()
+      if (!queued) break
+
+      runningCount.value++
+      processRequest(queued).finally(() => {
+        runningCount.value--
+      })
+    }
+  }
+
+  // Start queue processor
+  const { pause, resume } = useIntervalFn(processQueue, API_INTERVAL)
+  resume()
+
+  const request = async <T>(method: string, path: string, body?: any): Promise<T> => {
+    return new Promise<T>((resolve, reject) => {
+      requestQueue.value.push({ method, path, body, resolve, reject })
+      // Try to process immediately if under concurrency limit
+      if (runningCount.value < API_CONCURRENCY_LIMIT) {
+        processQueue()
+      }
+    })
   }
 
   const fetchStudies = async ({page = null as number | null, status = null as string | null}): Promise<{ results: StudyShort[], meta: { count: number } }> => {
