@@ -188,11 +188,7 @@ export const useProlificMessages = createGlobalState(() => {
 
   const assignBonus = async (studyId: string, participantId: string, amountCents: number) => {
     if (amountCents <= 0) return
-    
-    const { confirmPayment } = await prolific.assignBonuses(studyId, {
-      [participantId]: amountCents
-    })
-    await confirmPayment()
+    await prolific.assignBonuses(studyId, { [participantId]: amountCents }, amountCents)
   }
 
   return {

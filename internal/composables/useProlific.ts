@@ -532,7 +532,7 @@ export const useProlific = createGlobalState(() => {
 
   const requestReturn = async (studyId: string, submissionId: string): Promise<void> => {
     await request('POST', `/submissions/${submissionId}/request-return/`, {
-      request_return_reasons: ["Didn't finish the study"],
+      request_return_reasons: ["Did not complete the study"],
     })
     await studiesCache.getItemAsync(studyId)
   }
@@ -545,7 +545,8 @@ export const useProlific = createGlobalState(() => {
     await studiesCache.getItemAsync(studyId)
   }
 
-  const assignBonuses = async ( studyId: string, bonusesInCents: Record<string, number> ) => {
+  // NOTE: bonusesInCents is the TOTAL bonus (including already paid), newBonusTotal is only the NEW amount to pay
+  const assignBonuses = async ( studyId: string, bonusesInCents: Record<string, number>, newBonusTotal: number ) => {
     const study = await studiesCache.getItemAsync(studyId)
 
     const submissions = study.submissions
@@ -586,7 +587,7 @@ export const useProlific = createGlobalState(() => {
       .join('\n')
 
     if (!bonusString) {
-      return { totalAmount: 0, confirmPayment: async () => {} }
+      return
     }
 
     const response = await request<{ total_amount: number; id: string }>(
@@ -598,26 +599,24 @@ export const useProlific = createGlobalState(() => {
       }
     )
 
-    // return a callback to confirm the payment
-    const confirmPayment = async () => {
-      await request('POST', `/bulk-bonus-payments/${response.id}/pay/`, {})
-      // refresh study until bonuses are updated
-      // TODO (maybe) we make a lot of unnecessary calls to fetch the study (only need submissions)
-      watchStudy(studyId, {
-        interval: 2000,
-        maxCall: 30,
-        callback: (study) => {
-          console.log('checking bonuses', study.submissions.map(sub => sub.bonus_payments))
-          const allBonused = study.submissions.every(sub => sum(sub.bonus_payments) >= (newBonus[sub.participant_id] ?? 0))
-          if (allBonused) {
-            return true // stop listening
-          }
-        }
-      })
-
+    if (Math.abs(response.total_amount - newBonusTotal * PROLIFIC_FEE) > 5) {
+      throw new ProlificError(`Bonus total mismatch: expected ${round(newBonusTotal * PROLIFIC_FEE)} with prolific fee, got ${response.total_amount}`)
     }
 
-    return { totalAmount: response.total_amount, confirmPayment }
+    await request('POST', `/bulk-bonus-payments/${response.id}/pay/`, {})
+    // refresh study until bonuses are updated
+    // TODO (maybe) we make a lot of unnecessary calls to fetch the study (only need submissions)
+    watchStudy(studyId, {
+      interval: 2000,
+      maxCall: 30,
+      callback: (study) => {
+        console.log('checking bonuses')
+        const allBonused = study.submissions.every(sub => sum(sub.bonus_payments) >= (newBonus[sub.participant_id] ?? 0))
+        if (allBonused) {
+          return true // stop listening
+        }
+      }
+    })
   }
 
   const getStudyLink = (studyId: string): string => {

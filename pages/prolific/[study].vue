@@ -4,7 +4,6 @@
 definePageMeta({
   layout: 'dashboard',
 })
-const PROLIFIC_FEE = 1.33
 const route = useRoute()
 const studyId = route.params.study as string
 const prolific = useProlific()
@@ -54,27 +53,6 @@ const addPlaces = wrap(async () => {
 })
 
 // ===== bonuses ============================================================
-
-const assignBonuses = wrap(async () => {
-  const { totalAmount, confirmPayment } = await prolific.assignBonuses(studyId, intendedBonuses.value)
-  if (totalAmount === 0) {
-    alert('No bonuses to assign')
-    return
-  }
-
-  if (confirm(`Pay ${formatCents(totalAmount)} in bonuses?`)) {
-    if (totalAmount > 500_00) {
-      const ok = confirm(`Double checking: ${formatCents(totalAmount)}. Are you sure you want to pay this amount?`)
-      if (!ok) return
-    }
-    try {
-      await confirmPayment()
-      alert('Bonuses paid!')
-    } catch (error) {
-      alert('Bonuses may or may not have been paid. Please check the study on Prolific.')
-    }
-  }
-})
 
 const bonusCsv = ref('')
 const showImportModal = ref(false)
@@ -229,35 +207,25 @@ const getActionsPromises = () => {
   return promises
 }
 
-const getBonusesInfo = async () => {
-  return await prolific.assignBonuses(studyId, intendedBonuses.value)
-}
-
 const showExecuteModal = ref(false)
 const executeModalData = ref<{
   actionsSummary: string
   bonusesAmount: number
-  bonusesInfo?: { totalAmount: number; confirmPayment: () => Promise<void> }
 } | null>(null)
 const executeStatus = ref<{ actions?: 'pending' | 'success' | 'error', bonuses?: 'pending' | 'success' | 'error', error?: string }>({})
 
+const unpaidBonus = computed(() => totalIntendedBonus.value - totalPaidBonus.value)
+
 const canExecute = computed(() => {
   const actions = actionCounts.value
-  return actions.approve > 0 || actions.return > 0 || actions.reject > 0 || totalIntendedBonus.value > totalPaidBonus.value
+  return actions.approve > 0 || actions.return > 0 || actions.reject > 0 || unpaidBonus.value > 0
 })
 
-const executeAll = async () => {
+const executeAll = () => {
   const actionsSummary = getActionsSummary()
-  if (!actionsSummary) {
-    return
-  }
-
-  const bonusesInfo = await getBonusesInfo()
-  
   executeModalData.value = {
     actionsSummary,
-    bonusesAmount: bonusesInfo.totalAmount,
-    bonusesInfo: bonusesInfo.totalAmount > 0 ? bonusesInfo : undefined
+    bonusesAmount: unpaidBonus.value,
   }
   executeStatus.value = {}
   showExecuteModal.value = true
@@ -277,12 +245,9 @@ const confirmExecute = wrap(async () => {
     executeStatus.value.error = error instanceof Error ? error.message : String(error)
   }
 
-  if (executeModalData.value.bonusesInfo) {
+  if (executeModalData.value.bonusesAmount > 0) {
     try {
-      if (executeModalData.value.bonusesAmount > 500_00) {
-        // Large amount warning could be added here if needed
-      }
-      await executeModalData.value.bonusesInfo.confirmPayment()
+      await prolific.assignBonuses(studyId, intendedBonuses.value, executeModalData.value.bonusesAmount)
       executeStatus.value.bonuses = 'success'
     } catch (error) {
       executeStatus.value.bonuses = 'error'
@@ -858,7 +823,8 @@ const filteredSubmissions = computed(() => {
         <div v-if="executeStatus.actions === undefined && executeStatus.bonuses === undefined" mb-4>
           <div mb-2>
             <div font-bold mb-1>Actions:</div>
-            <div>{{ executeModalData.actionsSummary }}</div>
+            <div v-if="executeModalData.actionsSummary">{{ executeModalData.actionsSummary }}</div>
+            <div v-else class="text-gray-400">No actions</div>
           </div>
           <div mb-2>
             <div font-bold mb-1>Bonuses:</div>
@@ -876,7 +842,8 @@ const filteredSubmissions = computed(() => {
             <div font-bold mb-1>Actions:</div>
             <div flex items-center gap-2>
               <span v-if="executeStatus.actions === 'pending'" class="text-gray-500">Processing...</span>
-              <span v-else-if="executeStatus.actions === 'success'" class="text-green-600">✓ Success</span>
+              <span v-else-if="executeStatus.actions === 'success' && executeModalData.actionsSummary" class="text-green-600">✓ Success</span>
+              <span v-else-if="executeStatus.actions === 'success'" class="text-gray-400">Skipped</span>
               <span v-else-if="executeStatus.actions === 'error'" class="text-red-600">✗ Error</span>
             </div>
           </div>
@@ -884,9 +851,9 @@ const filteredSubmissions = computed(() => {
             <div font-bold mb-1>Bonuses:</div>
             <div flex items-center gap-2>
               <span v-if="executeStatus.bonuses === 'pending'" class="text-gray-500">Processing...</span>
-              <span v-else-if="executeStatus.bonuses === 'success'" class="text-green-600">✓ Success</span>
+              <span v-else-if="executeStatus.bonuses === 'success' && executeModalData.bonusesAmount > 0" class="text-green-600">✓ Success</span>
+              <span v-else-if="executeStatus.bonuses === 'success'" class="text-gray-400">Skipped</span>
               <span v-else-if="executeStatus.bonuses === 'error'" class="text-red-600">✗ Error</span>
-              <span v-else-if="executeModalData.bonusesAmount === 0" class="text-gray-400">Skipped</span>
             </div>
           </div>
           <div v-if="executeStatus.error" class="text-red-600 text-sm mt-2">

@@ -8,7 +8,6 @@ const prolific = useProlific()
 const { deploy, localSha, deployedSha, status, error: deploymentError, gitStatus } = useDeployment()
 
 const MIN_WAGE = 8
-const PROLIFIC_FEE = 1.33
 
 const config = useConfig()
 
