@@ -3,13 +3,13 @@
 const props = defineProps<{
   refresh: () => Promise<any>
   isLoading: boolean
-  timestamp: number | null
+  timestamp: NumberLike | null
   label?: string
 }>()
 
-const formatTimestamp = (timestamp: number | null | undefined) => {
+const formatTimestamp = (timestamp: NumberLike | null | undefined) => {
   if (!timestamp) return '(never)'
-  const numTimestamp = typeof timestamp === 'string' ? Number(timestamp) : timestamp
+  const numTimestamp = ensureNumber(timestamp)
   if (isNaN(numTimestamp)) return '(never)'
   const date = new Date(numTimestamp)
   if (isNaN(date.getTime())) return '(never)'
