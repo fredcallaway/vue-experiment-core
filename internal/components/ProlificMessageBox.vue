@@ -16,6 +16,20 @@ const emit = defineEmits<{
 const messages = useProlificMessages()
 messages.refreshCorrespondence(props.correspondence.studyId, props.correspondence.participantId)
 
+const prolific = useProlific()
+const studyCache = prolific.getStudyCache(props.correspondence.studyId)
+
+const submission = computed(() => {
+  const study = studyCache.fullItem.value
+  if (!study) return null
+  return study.submissions.find(s => s.participant_id === props.correspondence.participantId)
+})
+
+const totalBonus = computed(() => {
+  if (!submission.value) return 0
+  return sum(submission.value.bonus_payments)
+})
+
 const isLoading = ref(false)
 const replyText = ref('')
 const bonusAmount = ref(0)
@@ -76,7 +90,10 @@ const handleResolve = async () => {
         Session: <NuxtLink :to="`/data/sessions/${correspondence.participantId}`">{{ correspondence.participantId }}</NuxtLink>
       </div>
       <div class="text-xs text-gray-500">
-        Status: {{ correspondence.status }}
+        Status: {{ submission?.status ?? 'Unknown' }}
+      </div>
+      <div class="text-xs text-gray-500">
+        Total Bonus: ${{ (totalBonus / 100).toFixed(2) }}
       </div>
     </div>
 

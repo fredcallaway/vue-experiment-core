@@ -10,7 +10,6 @@ export interface Correspondence {
   resolved: boolean
   timestamp: number
   messages: Message[]
-  status?: SubmissionStatus
 }
 
 interface ProlificMessage {
@@ -81,8 +80,7 @@ export const useProlificMessages = createGlobalState(() => {
     participantId: string,
     messages: ProlificMessage[],
     researcherId: string,
-    existingResolved?: boolean,
-    status?: SubmissionStatus
+    existingResolved?: boolean
   ): Correspondence => {
     const sortedMessages = R.sortBy(messages, m => new Date(m.datetime_created).getTime())
     return {
@@ -96,8 +94,7 @@ export const useProlificMessages = createGlobalState(() => {
         body: m.body,
         timestamp: new Date(m.datetime_created).getTime(),
         isResearcher: m.sender_id === researcherId
-      })),
-      status
+      }))
     }
   }
 
@@ -146,25 +143,13 @@ export const useProlificMessages = createGlobalState(() => {
         const allUserMessages = await fetchUserMessages(participantId)
         const studyMessages = allUserMessages.filter(m => m.data.study_id === studyId)
         
-        const existing = correspondences.value[key]
-        let status: SubmissionStatus | undefined = existing?.status
-        if (status !== 'APPROVED') {
-          const studyCache = prolific.getStudyCache(studyId)
-          const study = studyCache.fullItem.value
-          if (study) {
-            const submission = study.submissions.find(s => s.participant_id === participantId)
-            status = submission?.status
-          }
-        }
-        
         const hasParticipantMessages = studyMessages.some(m => m.sender_id === participantId)
         const correspondence = buildCorrespondence(
           studyId,
           participantId,
           studyMessages,
           researcherId,
-          !hasParticipantMessages,
-          status
+          !hasParticipantMessages
         )
         
         await db.set(`${MESSAGES_PATH}/${key}`, correspondence)
@@ -185,25 +170,13 @@ export const useProlificMessages = createGlobalState(() => {
     
     const key = `${studyId}-${participantId}`
     const existing = correspondences.value[key]
-    
-    let status: SubmissionStatus | undefined = existing?.status
-    if (status !== 'APPROVED') {
-      const studyCache = prolific.getStudyCache(studyId)
-      const study = studyCache.fullItem.value
-      if (study) {
-        const submission = study.submissions.find(s => s.participant_id === participantId)
-        status = submission?.status
-      }
-    }
-    
     const hasParticipantMessages = studyMessages.some(m => m.sender_id === participantId)
     const correspondence = buildCorrespondence(
       studyId,
       participantId,
       studyMessages,
       researcherId,
-      existing?.resolved ?? !hasParticipantMessages,
-      status
+      existing?.resolved ?? !hasParticipantMessages
     )
     
     await db.set(`${MESSAGES_PATH}/${key}`, correspondence)
