@@ -113,6 +113,8 @@ export const eligibilityToFilters = (eligibility: EligibilityConfig): Filter[] =
   return filters
 }
 
+// e.g. 636d6ce3fb3683ff33f9e514
+export const isProlificIdentifier = (str: string) => /^[a-f\d]{24}$/i.test(str)
 
 // Payload for creating studies (what gets sent to Prolific API)
 export type StudyPayload = {

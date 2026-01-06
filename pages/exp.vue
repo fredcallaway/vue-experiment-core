@@ -36,8 +36,6 @@ useSizeScale().enabled.value = false
 
 const initStatus = ref<'loading' | 'error' | 'repeat' | 'invalid-participant' | 'confirmed'>('loading')
 
-// e.g. 636d6ce3fb3683ff33f9e514
-const isProlificIdentifier = (str: string) => /^[a-f\d]{24}$/i.test(str)
 const validateSession = () => {
   if (meta.sessionId.startsWith('debug') && meta.mode == 'debug') return true
   if (meta.mode === 'debug') return false

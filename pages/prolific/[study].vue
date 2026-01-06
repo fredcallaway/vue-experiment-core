@@ -8,12 +8,73 @@ const route = useRoute()
 const studyId = route.params.study as string
 const prolific = useProlific()
 const { loading, error, wrap} = useAsyncRunner()
+const prolificMessages = useProlificMessages()
+
+// ===== messaging ===========================================================
+
+const messageModalParticipantId = ref<string | null>(null)
+const messageModalLoading = ref(false)
+
+const getMessageStatus = (participantId: string) => {
+  const correspondence = prolificMessages.getCorrespondence(studyId, participantId)
+  if (!correspondence) return 'none'
+  return correspondence.resolved ? 'resolved' : 'unresolved'
+}
+
+const getMessageIconClass = (participantId: string) => {
+  const status = getMessageStatus(participantId)
+  switch (status) {
+    case 'unresolved': return 'i-mdi-message-alert text-amber-500'
+    case 'resolved': return 'i-mdi-message-check text-green-600'
+    case 'none': return 'i-mdi-message-outline text-gray-400'
+  }
+}
+
+const openMessageModal = async (participantId: string) => {
+  messageModalParticipantId.value = participantId
+  messageModalLoading.value = true
+  try {
+    await prolificMessages.getOrCreateCorrespondence(studyId, participantId)
+  } finally {
+    messageModalLoading.value = false
+  }
+}
+
+const closeMessageModal = () => {
+  messageModalParticipantId.value = null
+}
+
+const messageModalCorrespondence = computed(() => {
+  if (!messageModalParticipantId.value) return null
+  return prolificMessages.getCorrespondence(studyId, messageModalParticipantId.value)
+})
 
 // Reactive cache
 const studyCache = prolific.getStudyCache(studyId)
 const { fullItem: study, error: studyError } = studyCache
 
 const submissions = computed(() => study.value?.submissions ?? [])
+
+// Auto-refresh correspondences on page load for relevant submissions
+onMounted(() => {
+  watchOnce(submissions, (subs) => {
+    if (!subs || subs.length === 0) return
+    
+    for (const sub of subs) {
+      const codeType = getCodeType(sub.study_code)
+      
+      // Refresh if: code type is not COMPLETED or NOCODE
+      // OR status is AWAITING REVIEW and code type is not COMPLETED
+      const shouldRefresh = 
+        (codeType !== 'COMPLETED' && codeType !== 'NOCODE') ||
+        (sub.status === 'AWAITING REVIEW' && codeType !== 'COMPLETED')
+      
+      if (shouldRefresh) {
+        prolificMessages.refreshCorrespondence(studyId, sub.participant_id)
+      }
+    }
+  })
+})
 
 // ===== actions ============================================================
 
@@ -673,8 +734,13 @@ const filteredSubmissions = computed(() => {
                   {{ sub.participant_id }}
                   <button
                     @click="copy(sub.participant_id)"
-
                     class="i-mdi-clipboard-multiple ml-1 text-gray-500 hover:text-gray-700 cursor-pointer"
+                    w-4 h-4
+                  />
+                  <button
+                    @click="openMessageModal(sub.participant_id)"
+                    :class="getMessageIconClass(sub.participant_id)"
+                    class="ml-1 cursor-pointer hover:opacity-70"
                     w-4 h-4
                   />
                 </td>
@@ -884,6 +950,35 @@ const filteredSubmissions = computed(() => {
           >
             Close
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message Modal -->
+    <div
+      v-if="messageModalParticipantId"
+      fixed
+      inset-0
+      z-50
+      flex
+      items-center
+      justify-center
+      bg-black
+      bg-opacity-50
+      @click.self="closeMessageModal"
+    >
+      <div bg-white rounded-lg p-4 w-96 max-h-[80vh] flex flex-col>
+        <div v-if="messageModalLoading" class="text-gray-500 p-8 text-center">
+          Loading messages...
+        </div>
+        <div v-else-if="messageModalCorrespondence" class="flex-1 min-h-0">
+          <ProlificMessageBox
+            :correspondence="messageModalCorrespondence"
+            show-session-link
+          />
+        </div>
+        <div v-else class="text-gray-500 p-8 text-center">
+          No messages found
         </div>
       </div>
     </div>

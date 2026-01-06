@@ -114,6 +114,8 @@ export const useProlificMessages = createGlobalState(() => {
       )
 
       // Filter to messages from our studies, sent by participants (not researcher)
+      // NOTE: prolific does not provide the recipient_id so we can't process
+      // those (annoying!)
       const newMessages = response.results.filter(m => 
         studyIds.has(m.data.study_id) && m.sender_id !== researcherId
       )
@@ -128,18 +130,26 @@ export const useProlificMessages = createGlobalState(() => {
       for (const [key, messages] of Object.entries(grouped)) {
         const studyId = messages[0].data.study_id
         const participantId = messages[0].sender_id
+        if (!isProlificIdentifier(studyId)) {
+          console.error('👉 Invalid study ID', studyId)
+          continue
+        }
+        if (!isProlificIdentifier(participantId)) {
+          console.error('👉 Invalid participant ID', participantId)
+          continue
+        }
         
         // Fetch complete message history for this user
         const allUserMessages = await fetchUserMessages(participantId)
         const studyMessages = allUserMessages.filter(m => m.data.study_id === studyId)
         
-        const existing = correspondences.value[key]
+        const hasParticipantMessages = studyMessages.some(m => m.sender_id === participantId)
         const correspondence = buildCorrespondence(
           studyId,
           participantId,
           studyMessages,
           researcherId,
-          false // New messages means unresolved
+          !hasParticipantMessages
         )
         
         await db.set(`${MESSAGES_PATH}/${key}`, correspondence)
@@ -159,12 +169,13 @@ export const useProlificMessages = createGlobalState(() => {
     
     const key = `${studyId}-${participantId}`
     const existing = correspondences.value[key]
+    const hasParticipantMessages = studyMessages.some(m => m.sender_id === participantId)
     const correspondence = buildCorrespondence(
       studyId,
       participantId,
       studyMessages,
       researcherId,
-      existing?.resolved
+      existing?.resolved ?? !hasParticipantMessages
     )
     
     await db.set(`${MESSAGES_PATH}/${key}`, correspondence)
@@ -191,6 +202,20 @@ export const useProlificMessages = createGlobalState(() => {
     await prolific.assignBonuses(studyId, { [participantId]: amountCents }, amountCents)
   }
 
+  const getCorrespondence = (studyId: string, participantId: string) => {
+    const key = `${studyId}-${participantId}`
+    return correspondences.value[key] ?? null
+  }
+
+  const getOrCreateCorrespondence = async (studyId: string, participantId: string) => {
+    const existing = getCorrespondence(studyId, participantId)
+    if (existing) return existing
+    
+    // Fetch messages for this participant
+    await refreshCorrespondence(studyId, participantId)
+    return getCorrespondence(studyId, participantId)
+  }
+
   return {
     correspondences: readonly(correspondences),
     isLoading: readonly(isLoading),
@@ -199,7 +224,9 @@ export const useProlificMessages = createGlobalState(() => {
     refreshCorrespondence,
     sendMessage,
     markResolved,
-    assignBonus
+    assignBonus,
+    getCorrespondence,
+    getOrCreateCorrespondence
   }
 })
 
