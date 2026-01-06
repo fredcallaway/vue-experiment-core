@@ -17,7 +17,7 @@ const messageModalLoading = ref(false)
 
 const getMessageStatus = (participantId: string) => {
   const correspondence = prolificMessages.getCorrespondence(studyId, participantId)
-  if (!correspondence) return 'none'
+  if (!correspondence || !correspondence.messages?.length) return 'none'
   return correspondence.resolved ? 'resolved' : 'unresolved'
 }
 
@@ -159,8 +159,12 @@ const sessionsBySessionId = computed(() => {
 const getDataStatus = (sub: Submission) => {
   const session = sessionsBySessionId.value[sub.id]
   if (!session) return { text: 'missing', color: 'text-gray-400' }
-  if (session.completionTime) return { text: 'full', color: 'text-green-600' }
-  return { text: 'partial', color: 'text-amber-500' }
+  if (!session.noReturnTime) {
+    if (sub.status === 'RETURNED') return { text: 'minimal', color: 'text-gray-400' }
+    return { text: 'minimal', color: 'text-red-600' }
+  }
+  if (!session.completionTime) return { text: 'partial', color: 'text-amber' }
+  return { text: 'full', color: 'text-green-600' }
 }
 
 const getCodeType = (studyCode: string | null | undefined) => {
