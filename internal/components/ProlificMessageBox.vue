@@ -25,16 +25,28 @@ const submission = computed(() => {
   return study.submissions.find(s => s.participant_id === props.correspondence.participantId)
 })
 
-const totalBonus = computed(() => {
+const currentBonus = computed(() => {
   if (!submission.value) return 0
   return sum(submission.value.bonus_payments)
 })
 
 const isLoading = ref(false)
 const replyText = ref('')
-const bonusAmount = ref(0)
+const intendedBonus = ref(0)
 
-const hasInput = computed(() => !!replyText.value.trim() || bonusAmount.value > 0)
+watch(currentBonus, (val) => {
+  if (intendedBonus.value < val) {
+    intendedBonus.value = val
+  }
+}, { immediate: true })
+
+const bonusChangeStatus = computed(() => {
+  const diff = intendedBonus.value - currentBonus.value
+  if (diff === 0) return 'no change'
+  return `add ${diff}¢`
+})
+
+const hasInput = computed(() => !!replyText.value.trim() || intendedBonus.value > currentBonus.value)
 
 const messagesContainer = ref<HTMLElement>()
 
@@ -53,15 +65,15 @@ onMounted(scrollToBottom)
 const handleSend = async () => {
   isLoading.value = true
   try {
-    if (bonusAmount.value > 0) {
-      await messages.assignBonus(props.correspondence.studyId, props.correspondence.participantId, bonusAmount.value)
+    const bonusDiff = intendedBonus.value - currentBonus.value
+    if (bonusDiff > 0) {
+      await messages.assignBonus(props.correspondence.studyId, props.correspondence.participantId, bonusDiff)
     }
     if (replyText.value.trim()) {
       await messages.sendMessage(props.correspondence.studyId, props.correspondence.participantId, replyText.value.trim())
     }
     replyText.value = ''
-    bonusAmount.value = 0
-    emit('send', replyText.value, bonusAmount.value)
+    emit('send', replyText.value, bonusDiff)
   } finally {
     isLoading.value = false
   }
@@ -86,14 +98,11 @@ const handleResolve = async () => {
       <div v-if="showStudyLink" class="text-xs text-gray-500">
         Study: <NuxtLink :to="`/prolific/${correspondence.studyId}`">{{ correspondence.studyId }}</NuxtLink>
       </div>
-      <div v-if="showSessionLink" class="text-xs text-gray-500">
-        Session: <NuxtLink :to="`/data/sessions/${correspondence.participantId}`">{{ correspondence.participantId }}</NuxtLink>
+      <div v-if="submission && showSessionLink" class="text-xs text-gray-500">
+        Session: <NuxtLink :to="`/data/sessions/${submission.id}`">{{ submission.id }}</NuxtLink>
       </div>
       <div class="text-xs text-gray-500">
         Status: {{ submission?.status ?? 'Unknown' }}
-      </div>
-      <div class="text-xs text-gray-500">
-        Total Bonus: ${{ (totalBonus / 100).toFixed(2) }}
       </div>
     </div>
 
@@ -126,13 +135,23 @@ const handleResolve = async () => {
         rows="2"
       />
       <div class="flex items-center gap-2">
-        <span class="text-sm fw-600 text-gray-700">Bonus</span>
+        <div w-13>
+          <div class="text-sm fw-600 text-gray-700">Bonus</div>
+          <div v-if="intendedBonus > currentBonus" class="text-xs text-green-600">
+            add {{ intendedBonus - currentBonus }}¢
+          </div>
+          <div v-else class="text-xs text-gray-500">
+            add {{ intendedBonus - currentBonus }}¢
+          </div>
+        </div>
         <NumberInput
-          v-model="bonusAmount"
+          v-model="intendedBonus"
+          :default="currentBonus"
+          :min="currentBonus"
           :scroll-step="5"
-          :min="0"
           :max="2000"
-          class="w-11 text-sm input"
+          class="w-11 text-sm input mr-5"
+          :class="{'border-green-600': intendedBonus > currentBonus}"
         />
         <button
           @click="handleSend"
