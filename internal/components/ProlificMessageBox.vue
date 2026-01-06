@@ -1,17 +1,4 @@
 <script setup lang="ts">
-interface Message {
-  readonly body: string
-  readonly timestamp: number
-  readonly isResearcher: boolean
-}
-
-interface Correspondence {
-  readonly studyId: string
-  readonly participantId: string
-  readonly resolved: boolean
-  readonly timestamp: number
-  readonly messages: readonly Message[]
-}
 
 const props = defineProps<{
   correspondence: Correspondence
@@ -27,6 +14,7 @@ const emit = defineEmits<{
 }>()
 
 const messages = useProlificMessages()
+messages.refreshCorrespondence(props.correspondence.studyId, props.correspondence.participantId)
 
 const isLoading = ref(false)
 const replyText = ref('')
@@ -88,7 +76,7 @@ const handleResolve = async () => {
         Session: <NuxtLink :to="`/data/sessions/${correspondence.participantId}`">{{ correspondence.participantId }}</NuxtLink>
       </div>
       <div class="text-xs text-gray-500">
-        {{ formatDateTime(correspondence.timestamp) }}
+        Status: {{ correspondence.status }}
       </div>
     </div>
 
