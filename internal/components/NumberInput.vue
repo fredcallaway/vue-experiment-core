@@ -5,8 +5,9 @@
     @mouseleave="isHovered = false"
   >
     <input 
-      v-model.number="inputValue"
-      @change="confirm"
+      :value="inputValue"
+      @input="handleInput"
+      @change="handleChange"
       @wheel="scrollHandler"
       :class="{'border-red-500': invalid}"
       w-full
@@ -51,8 +52,15 @@ watch(model, (newValue) => {
   inputValue.value = newValue
 })
 
-const confirm = () => {
-  const val = inputValue.value
+const handleInput = (e: Event) => {
+  const val = Number((e.target as HTMLInputElement).value)
+  if (typeof val === 'number' && !isNaN(val) && isBetween(val, props.min, props.max)) {
+    model.value = clamp(val, props.min, props.max)
+  }
+}
+
+const handleChange = (e: Event) => {
+  const val = Number((e.target as HTMLInputElement).value)
   if (typeof val !== 'number' || isNaN(val) || !isBetween(val, props.min, props.max)) {
     inputValue.value = props.default
     model.value = props.default
@@ -63,8 +71,9 @@ const confirm = () => {
 }
 
 const scrollHandler = useScrollHandler((direction) => {
-  inputValue.value += props.scrollStep * direction
-  confirm()
+  const newValue = inputValue.value + props.scrollStep * direction
+  inputValue.value = clamp(newValue, props.min, props.max)
+  model.value = inputValue.value
 })
 
 const reset = () => {
