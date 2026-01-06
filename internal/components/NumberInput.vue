@@ -9,6 +9,7 @@
       @change="confirm"
       @wheel="scrollHandler"
       :class="{'border-red-500': invalid}"
+      w-full
     />
     <Transition>
       <button
@@ -51,7 +52,6 @@ watch(model, (newValue) => {
 })
 
 const confirm = () => {
-  console.log('confirm', inputValue.value, model.value)
   const val = inputValue.value
   if (typeof val !== 'number' || isNaN(val) || !isBetween(val, props.min, props.max)) {
     inputValue.value = props.default
