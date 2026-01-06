@@ -346,7 +346,22 @@ const currentBonuses = computed(() => {
 })
 
 const defaultBonuses = computed(() => {
-  return R.mapValues(currentBonuses.value, (current, participantId) => Math.max(current, databaseBonuses.value[participantId] ?? 0))
+  return R.mapValues(currentBonuses.value, (current, participantId) => {
+    const sub = submissions.value.find(s => s.participant_id === participantId)
+    if (!sub) return current
+    
+    const selectedAction = selectedActions.value[sub.id]
+    const dataStatus = getDataStatus(sub).text
+    const currentStatus = sub.status
+    
+    const shouldUseDatabaseBonus = 
+      selectedAction === 'approve' ||
+      dataStatus === 'full' ||
+      currentStatus === 'APPROVED'
+    
+    const dbBonus = shouldUseDatabaseBonus ? (databaseBonuses.value[participantId] ?? 0) : 0
+    return Math.max(current, dbBonus)
+  })
 })
 
 const intendedBonuses = computed(() => {
