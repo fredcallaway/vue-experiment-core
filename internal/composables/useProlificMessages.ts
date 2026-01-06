@@ -131,11 +131,11 @@ export const useProlificMessages = createGlobalState(() => {
         const studyId = messages[0].data.study_id
         const participantId = messages[0].sender_id
         if (!isProlificIdentifier(studyId)) {
-          console.error('👉 Invalid study ID', studyId)
+          console.error('Invalid study ID', studyId)
           continue
         }
         if (!isProlificIdentifier(participantId)) {
-          console.error('👉 Invalid participant ID', participantId)
+          console.error('Invalid participant ID', participantId)
           continue
         }
         
@@ -163,7 +163,7 @@ export const useProlificMessages = createGlobalState(() => {
   }
 
   const refreshCorrespondence = async (studyId: string, participantId: string) => {
-    console.log('👉 refreshCorrespondence', studyId, participantId)
+    console.debug('refreshCorrespondence', studyId, participantId)
     const researcherId = await getResearcherId()
     const allMessages = await fetchUserMessages(participantId)
     const studyMessages = allMessages.filter(m => m.data.study_id === studyId)
