@@ -54,11 +54,11 @@ const bonus = useBonus()
 
     <ESequence name="instructions" ref="seq">
 
-      <EPage :done="enableNext">
+      <EPage @mounted="enableNext" name="welcome">
         <header>
           Thanks for participating in our experiment! We'll start with some instructions.
           Navigate with arrow keys or the buttons at the top.
-          <div t4 r5 italic rotate-10 text-sm v-show="allowNext">
+          <div t4 r5 italic rotate-10 text-sm>
             click me!
           </div>
         </header>
