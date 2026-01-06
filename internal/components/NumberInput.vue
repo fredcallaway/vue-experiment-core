@@ -3,13 +3,13 @@
     class="relative"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
+    :class="{'border-red-500': invalid}"
+    @wheel="scrollHandler"
   >
     <input 
-      :value="inputValue"
+      :value="currentRawValue"
       @input="handleInput"
       @change="handleChange"
-      @wheel="scrollHandler"
-      :class="{'border-red-500': invalid}"
       w-full
     />
     <Transition>
@@ -40,44 +40,51 @@ const props = withDefaults(defineProps<{
   default: 0
 })
 
-const inputValue = ref(model.value)
+const currentRawValue = ref(String(model.value))
 const isHovered = ref(false)
-const invalid = computed(() => {
-  const val = inputValue.value
-  if (typeof val !== 'number' || isNaN(val)) return true
-  return !isBetween(val, props.min, props.max)
-})
+
+const isValid = (val: number) => {
+  return !isNaN(val) && isBetween(val, props.min, props.max)
+}
+
+const invalid = computed(() => !isValid(Number(currentRawValue.value)))
 
 watch(model, (newValue) => {
-  inputValue.value = newValue
+  // console.log('👉 model value', newValue)
+  assert(isValid(newValue), 'NumberInput: provided v-model is invalid')
+  currentRawValue.value = String(newValue)
 })
 
 const handleInput = (e: Event) => {
-  const val = Number((e.target as HTMLInputElement).value)
-  if (typeof val === 'number' && !isNaN(val) && isBetween(val, props.min, props.max)) {
-    model.value = clamp(val, props.min, props.max)
+  const raw = (e.target as HTMLInputElement).value
+  currentRawValue.value = raw
+  const val = Number(raw)
+  if (raw != '' && isValid(val)) {
+    model.value = val
   }
+  // console.log('👉 handleInput', val, currentRawValue.value)
 }
 
-const handleChange = (e: Event) => {
-  const val = Number((e.target as HTMLInputElement).value)
-  if (typeof val !== 'number' || isNaN(val) || !isBetween(val, props.min, props.max)) {
-    inputValue.value = props.default
+
+const handleChange = () => {
+  const val = Number(currentRawValue.value)
+  // console.log('👉 handleChange', val)
+
+  if (isNaN(val)) {
     model.value = props.default
+    currentRawValue.value = String(props.default)
   } else {
-    inputValue.value = clamp(val, props.min, props.max)
-    model.value = inputValue.value
+    model.value = clamp(val, props.min, props.max)
+    currentRawValue.value = String(model.value)
   }
 }
 
 const scrollHandler = useScrollHandler((direction) => {
-  const newValue = inputValue.value + props.scrollStep * direction
-  inputValue.value = clamp(newValue, props.min, props.max)
-  model.value = inputValue.value
+  const newValue = model.value + props.scrollStep * direction
+  model.value = clamp(newValue, props.min, props.max)
 })
 
 const reset = () => {
-  inputValue.value = props.default
   model.value = props.default
 }
 
