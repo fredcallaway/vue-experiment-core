@@ -98,7 +98,6 @@ const applyCsvBonuses = () => {
         return
       }
       bonusOverrides.value[participantId] = val
-      userModifiedBonuses.value.add(participantId)
     }
   }
   bonusCsv.value = ''
@@ -203,19 +202,14 @@ const actionCounts = computed(() => {
   }
 })
 
-const executeActions = wrap(async () => {
-  const summary = Object.entries(actionCounts.value)
+const getActionsSummary = () => {
+  return Object.entries(actionCounts.value)
     .filter(([_, count]) => count > 0)
     .map(([action, count]) => `${action}: ${count}`)
     .join(', ')
+}
 
-  if (!summary) {
-    alert('No actions to execute')
-    return
-  }
-
-  if (!confirm(`Execute actions? ${summary}`)) return
-
+const getActionsPromises = () => {
   const promises: Promise<any>[] = []
   const toExecute = R.mapValues(groupedByAction.value, subs => subs.map(sub => sub.id))
   
@@ -232,12 +226,73 @@ const executeActions = wrap(async () => {
       promises.push(prolific.rejectSubmission(studyId, id))
     }
   }
-  await Promise.all(promises)
+  return promises
+}
+
+const getBonusesInfo = async () => {
+  return await prolific.assignBonuses(studyId, intendedBonuses.value)
+}
+
+const showExecuteModal = ref(false)
+const executeModalData = ref<{
+  actionsSummary: string
+  bonusesAmount: number
+  bonusesInfo?: { totalAmount: number; confirmPayment: () => Promise<void> }
+} | null>(null)
+const executeStatus = ref<{ actions?: 'pending' | 'success' | 'error', bonuses?: 'pending' | 'success' | 'error', error?: string }>({})
+
+const canExecute = computed(() => {
+  const actions = actionCounts.value
+  return actions.approve > 0 || actions.return > 0 || actions.reject > 0 || totalIntendedBonus.value > totalPaidBonus.value
 })
 
-const executeAll = wrap(async () => {
-  await executeActions()
-  await assignBonuses()
+const executeAll = async () => {
+  const actionsSummary = getActionsSummary()
+  if (!actionsSummary) {
+    return
+  }
+
+  const bonusesInfo = await getBonusesInfo()
+  
+  executeModalData.value = {
+    actionsSummary,
+    bonusesAmount: bonusesInfo.totalAmount,
+    bonusesInfo: bonusesInfo.totalAmount > 0 ? bonusesInfo : undefined
+  }
+  executeStatus.value = {}
+  showExecuteModal.value = true
+}
+
+const confirmExecute = wrap(async () => {
+  if (!executeModalData.value) return
+
+  executeStatus.value = { actions: 'pending', bonuses: 'pending' }
+  
+  try {
+    const actionsPromises = getActionsPromises()
+    await Promise.all(actionsPromises)
+    executeStatus.value.actions = 'success'
+  } catch (error) {
+    executeStatus.value.actions = 'error'
+    executeStatus.value.error = error instanceof Error ? error.message : String(error)
+  }
+
+  if (executeModalData.value.bonusesInfo) {
+    try {
+      if (executeModalData.value.bonusesAmount > 500_00) {
+        // Large amount warning could be added here if needed
+      }
+      await executeModalData.value.bonusesInfo.confirmPayment()
+      executeStatus.value.bonuses = 'success'
+    } catch (error) {
+      executeStatus.value.bonuses = 'error'
+      if (!executeStatus.value.error) {
+        executeStatus.value.error = error instanceof Error ? error.message : String(error)
+      }
+    }
+  } else {
+    executeStatus.value.bonuses = 'success'
+  }
 })
 
 const databaseBonuses = computed(() => {
@@ -255,21 +310,28 @@ const databaseBonuses = computed(() => {
 })
 
 const bonusOverrides = ref<Record<string, number | undefined>>({})
-const userModifiedBonuses = ref<Set<string>>(new Set())
-
-const intendedBonuses = computed(() => {
-  return R.pullObject(submissions.value, R.prop("participant_id"), sub => {
-    const override = bonusOverrides.value[sub.participant_id]
-    return override !== undefined ? override : (databaseBonuses.value[sub.participant_id] ?? 0)
-  })
-})
 
 const currentBonuses = computed(() => {
   return R.pullObject(submissions.value, R.prop("participant_id"), sub => sum(sub.bonus_payments))
 })
 
-const totalBonus = computed(() => {
+const defaultBonuses = computed(() => {
+  return R.mapValues(currentBonuses.value, (current, participantId) => Math.max(current, databaseBonuses.value[participantId] ?? 0))
+})
+
+const intendedBonuses = computed(() => {
+  return R.pullObject(submissions.value, R.prop("participant_id"), sub => {
+    const override = bonusOverrides.value[sub.participant_id]
+    return override !== undefined ? override : (defaultBonuses.value[sub.participant_id] ?? 0)
+  })
+})
+
+const totalIntendedBonus = computed(() => {
   return R.sum(Object.values(intendedBonuses.value))
+})
+
+const totalPaidBonus = computed(() => {
+  return R.sum(Object.values(currentBonuses.value))
 })
 
 const overrideStats = computed(() => {
@@ -286,37 +348,15 @@ const overrideStats = computed(() => {
   return { count, totalAdjustment }
 })
 
+
 const bonusPaidStatus = computed(() => {
   if (submissions.value.length === 0) return { text: 'UNPAID', color: 'text-amber-500' }
   
-  let allPaid = true
-  let anyPaid = false
-  
-  for (const sub of submissions.value) {
-    const intended = intendedBonuses.value[sub.participant_id] ?? 0
-    const current = currentBonuses.value[sub.participant_id] ?? 0
-    
-    if (intended > 0) {
-      if (current >= intended) {
-        anyPaid = true
-      } else {
-        allPaid = false
-        if (current > 0) {
-          anyPaid = true
-        }
-      }
-    }
-  }
-  
-  if (allPaid) return { text: 'PAID', color: 'text-green-600' }
-  if (!anyPaid) return { text: 'UNPAID', color: 'text-red-600' }
-  return { text: 'PARTIAL', color: 'text-amber-500' }
+  const unpaidAmount = totalIntendedBonus.value - totalPaidBonus.value
+  if (unpaidAmount === 0) return { text: 'PAID', color: 'text-green-600' }
+  if (totalPaidBonus.value === 0) return { text: 'UNPAID', color: 'text-red-600' }
+  return { text: `UNPAID: ${formatCents(unpaidAmount)}`, color: 'text-amber-500' }
 })
-
-const onBonusChange = (participantId: string) => {
-  userModifiedBonuses.value.add(participantId)
-}
-
 
 // ===== template helpers ===================================================
 
@@ -372,17 +412,16 @@ const getBonusBorderColor = (participantId: string) => {
 
 const getBonusValue = (participantId: string) => {
   const override = bonusOverrides.value[participantId]
-  return override !== undefined ? override : (databaseBonuses.value[participantId] ?? 0)
+  return override ?? (defaultBonuses.value[participantId] ?? 0)
 }
 
 const setBonusValue = (participantId: string, value: number) => {
-  const database = databaseBonuses.value[participantId] ?? 0
-  if (value === database) {
+  const defaultVal = defaultBonuses.value[participantId] ?? 0
+  if (value === defaultVal) {
     delete bonusOverrides.value[participantId]
   } else {
     bonusOverrides.value[participantId] = value
   }
-  userModifiedBonuses.value.add(participantId)
 }
 
 
@@ -546,28 +585,28 @@ const filteredSubmissions = computed(() => {
                 <span font-bold>Approve:</span>
                 <div>
                   <span mb-2 mr1 text-2xl i-mdi-check-circle text-green-600 />
-                  <span text-2xl >{{ actionCounts.approve }}</span>
+                  <span text-lg >{{ actionCounts.approve }}</span>
                 </div>
                 <div>
                   <span mb-2 mr1 text-2xl i-mdi-arrow-left-circle text-orange-500 />
-                  <span text-2xl >{{ actionCounts.return }}</span>
+                  <span text-lg >{{ actionCounts.return }}</span>
                 </div>
                 <div>
                   <span mb-2 mr1 text-2xl i-mdi-close-circle text-red-600 />
-                  <span text-2xl >{{ actionCounts.reject }}</span>
+                  <span text-lg >{{ actionCounts.reject }}</span>
                 </div>
                 <div>
                   <span mb-2 mr1 text-2xl i-mdi-minus-circle text-gray-500 />
-                  <span text-2xl >{{ actionCounts.none }}</span>
+                  <span text-lg >{{ actionCounts.none }}</span>
                 </div>
                 <div>
                   <span mb-2 mr1 text-2xl i-mdi-help-circle text-blue-600 />
-                  <span text-2xl >{{ actionCounts.unspecified }}</span>
+                  <span text-lg >{{ actionCounts.unspecified }}</span>
                 </div>
               </div>
               <div mb-2>
                 <div flex items-center gap-2>
-                  <span font-bold>Bonuses: {{ formatCents(totalBonus) }}</span>
+                  <span font-bold>Bonuses: {{ formatCents(totalIntendedBonus) }}</span>
                   <span :class="bonusPaidStatus.color" font-bold>
                     {{ bonusPaidStatus.text }}
                   </span>
@@ -582,7 +621,7 @@ const filteredSubmissions = computed(() => {
               <button
                 @click="executeAll"
                 btn-blue
-                :disabled="loading || (actionCounts.approve === 0 && actionCounts.return === 0 && actionCounts.reject === 0)"
+                :disabled="!canExecute"
               >
                 Execute
               </button>
@@ -719,10 +758,10 @@ const filteredSubmissions = computed(() => {
                 <td px-2 py-2 whitespace-nowrap font-mono text-sm flex items-center>
                   <NumberInput
                     :modelValue="getBonusValue(sub.participant_id)"
-                    :default="databaseBonuses[sub.participant_id]"
+                    :default="defaultBonuses[sub.participant_id]"
                     @update:modelValue="(val) => setBonusValue(sub.participant_id, val)"
                     :scroll-step="5"
-                    :min="0"
+                    :min="currentBonuses[sub.participant_id] ?? 0"
                     step="25"
                     input
                     font-mono
@@ -786,6 +825,97 @@ const filteredSubmissions = computed(() => {
             :disabled="loading || !bonusCsv.trim()"
           >
             Apply Bonuses
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Execute Actions Modal -->
+    <div
+      v-if="showExecuteModal && executeModalData"
+      fixed
+      inset-0
+      z-50
+      flex
+      items-center
+      justify-center
+      bg-black
+      bg-opacity-50
+      @click.self="showExecuteModal = false"
+    >
+      <div bg-white rounded-lg p-6 max-w-lg w-full mx-4>
+        <div flex justify-between items-center mb-4>
+          <h3 class="text-xl font-semibold">Execute Actions</h3>
+          <button
+            v-if="executeStatus.actions === undefined && executeStatus.bonuses === undefined"
+            @click="showExecuteModal = false"
+            class="text-gray-500 hover:text-gray-700"
+          >
+            <span i-mdi-close text-2xl />
+          </button>
+        </div>
+        
+        <div v-if="executeStatus.actions === undefined && executeStatus.bonuses === undefined" mb-4>
+          <div mb-2>
+            <div font-bold mb-1>Actions:</div>
+            <div>{{ executeModalData.actionsSummary }}</div>
+          </div>
+          <div mb-2>
+            <div font-bold mb-1>Bonuses:</div>
+            <div v-if="executeModalData.bonusesAmount > 0">
+              {{ formatCents(executeModalData.bonusesAmount) }}
+            </div>
+            <div v-else class="text-gray-400">
+              No bonuses to assign
+            </div>
+          </div>
+        </div>
+
+        <div v-else mb-4>
+          <div mb-2>
+            <div font-bold mb-1>Actions:</div>
+            <div flex items-center gap-2>
+              <span v-if="executeStatus.actions === 'pending'" class="text-gray-500">Processing...</span>
+              <span v-else-if="executeStatus.actions === 'success'" class="text-green-600">✓ Success</span>
+              <span v-else-if="executeStatus.actions === 'error'" class="text-red-600">✗ Error</span>
+            </div>
+          </div>
+          <div mb-2>
+            <div font-bold mb-1>Bonuses:</div>
+            <div flex items-center gap-2>
+              <span v-if="executeStatus.bonuses === 'pending'" class="text-gray-500">Processing...</span>
+              <span v-else-if="executeStatus.bonuses === 'success'" class="text-green-600">✓ Success</span>
+              <span v-else-if="executeStatus.bonuses === 'error'" class="text-red-600">✗ Error</span>
+              <span v-else-if="executeModalData.bonusesAmount === 0" class="text-gray-400">Skipped</span>
+            </div>
+          </div>
+          <div v-if="executeStatus.error" class="text-red-600 text-sm mt-2">
+            {{ executeStatus.error }}
+          </div>
+        </div>
+
+        <div flex gap-4 justify-end>
+          <button
+            v-if="executeStatus.actions === undefined && executeStatus.bonuses === undefined"
+            @click="showExecuteModal = false"
+            btn-gray
+          >
+            Cancel
+          </button>
+          <button
+            v-if="executeStatus.actions === undefined && executeStatus.bonuses === undefined"
+            @click="confirmExecute"
+            btn-blue
+            :disabled="loading"
+          >
+            Confirm
+          </button>
+          <button
+            v-if="executeStatus.actions !== undefined && (executeStatus.bonuses !== undefined || executeModalData.bonusesAmount === 0)"
+            @click="showExecuteModal = false"
+            btn-blue
+          >
+            Close
           </button>
         </div>
       </div>
