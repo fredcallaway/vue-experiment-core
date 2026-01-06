@@ -21,8 +21,6 @@ const step = computed(withEpoch((E) => E.step.value))
 const allowNext = computed(withEpoch((E) => maxCompletedStep.value >= E.step.value))
 const allowPrev = computed(withEpoch((E) => E.step.value > 0))
 
-useInspect({allowNext, allowPrev, maxCompletedStep, step})
-
 const enableNext = withEpoch((E) => {
   console.log('enableNext', E.step.value)
   maxCompletedStep.value = Math.max(maxCompletedStep.value, E.step.value)
