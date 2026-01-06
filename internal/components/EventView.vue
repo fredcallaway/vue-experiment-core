@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import stringify from "json-stringify-pretty-compact";
 
 type FormattedEvent = {
   eventType: string
@@ -21,7 +22,7 @@ const startTime = ref(START_TIME)
 const normalizeNewlines = (s: string) => s.replaceAll('\\n', '\n')
 const formatForPre = (value: unknown) => {
   if (typeof value === 'string') return normalizeNewlines(value)
-  return JSON.stringify(value, null, 2)
+  return stringify(value, { indent: 2 })
 }
 
 const formatErrorEvent = (data: Record<string, any>) => {
@@ -156,7 +157,7 @@ const eventViewHeight = computed(() => {
           <template v-if="event.isError">
             <pre v-if="event.errorMinimal !== undefined" text-xs>{{ event.errorMinimal }}</pre>
           </template>
-          <pre v-else-if="event.data !== undefined" text-xs>{{ event.data }}</pre>
+          <pre v-else-if="event.data !== undefined" text-xs>{{ stringify(event.data, { indent: 2 }) }}</pre>
         </div>
       </template>
     </div>
