@@ -8,9 +8,9 @@ const epochRef = computed<IndexableEpoch | null>(() => {
   return seq.value.epoch
 })
 
-const withEpoch = (f: (E: IndexableEpoch) => void) => {
-  return () => {
-    if (!epochRef.value) return false
+const withEpoch = <T>(f: (E: IndexableEpoch) => T | null) => {
+  return (): T | null => {
+    if (!epochRef.value) return null
     return f(epochRef.value)
   }
 }
@@ -26,10 +26,12 @@ const enableNext = withEpoch((E) => {
   maxCompletedStep.value = Math.max(maxCompletedStep.value, E.step.value)
 })
 
+watch(step, (newVal) => {
+  maxCompletedStep.value = Math.max(maxCompletedStep.value, (newVal ?? 0) - 1)
+})
+
 const goNext = withEpoch((E) => E.next())
 const goPrev = withEpoch((E) => E.prev())
-
-const bonus = useBonus()
 
 </script>
 
@@ -46,7 +48,7 @@ const bonus = useBonus()
 
       <PButton :class="allowNext ? 'btn-primary-sm' : 'btn-gray-sm'" text-2xl :disabled="!allowNext" @click="goNext" value="next">
         <div class="i-mdi-arrow-right-bold" />
-        <PKey v-if="allowNext" keys="RIGHT SPACE" @press="goNext" />
+        <PKey v-if="allowNext" keys="RIGHT" @press="goNext" />
       </PButton>
     </div>
 
