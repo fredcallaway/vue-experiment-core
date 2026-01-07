@@ -2,7 +2,7 @@
 
 const props = defineProps<{
   name?: string
-  autoNext?: boolean
+  prompt?: boolean
 }>()
 
 const epoch = useEpoch(props.name ?? 'EPage')
@@ -13,7 +13,7 @@ onMounted(() => emit('mounted', epoch))
 </script>
 
 <template>
-  <div class="EPage">
+  <div :class="{ 'prompt': prompt }" >
     <slot :epoch="epoch" :done="epoch.done" />
   </div>
 </template>

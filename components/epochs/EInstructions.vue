@@ -52,16 +52,16 @@ const goPrev = withEpoch((E) => E.prev())
       </PButton>
     </div>
 
-    <ESequence name="instructions" ref="seq">
+    <ESequence name="instructions" ref="seq" flex-center>
 
       <EPage @mounted="enableNext" name="welcome">
-        <header>
+        <div class="prompt">
           Thanks for participating in our experiment! We'll start with some instructions.
           Navigate with arrow keys or the buttons at the top.
           <div t4 r5 italic rotate-10 text-sm>
             click me!
           </div>
-        </header>
+        </div>
       </EPage>
 
       <slot :enableNext="enableNext" :goNext="goNext" />
@@ -72,12 +72,8 @@ const goPrev = withEpoch((E) => E.prev())
 
 <style>
 
-.instructions .EPage {
-  @apply flex-center flex-col w-800px;
-  
-  header {
-    @apply w-140 min-h-28 mx-auto text-lg line-height-snug mt-3 mb-3;
-  }
+.instructions .prompt { 
+  @apply w-160 mx-auto text-lg line-height-snug mt-2 mb-2;
 }
 
 </style>
