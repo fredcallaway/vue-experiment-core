@@ -1,5 +1,8 @@
 <script lang="ts" setup>
 
+const props = defineProps<{
+  skipWelcome?: boolean,
+}>()
 
 const seq = useTemplateRef<IndexableEpoch>('seq')
 const epochRef = computed<IndexableEpoch | null>(() => {
@@ -44,7 +47,7 @@ const goPrev = withEpoch((E) => E.prev())
         <PKey v-if="allowPrev" keys="LEFT" @press="goPrev" />
       </PButton>
       
-      <div v-if="epochRef" text-3xl font-bold>Instructions {{ epochRef.step.value + 1 }} of {{ epochRef.nSteps }}</div>
+      <div v-if="epochRef" text-3xl font-bold>Instructions {{ epochRef.step.value + 1 - Number(skipWelcome) }} of {{ epochRef.nSteps - Number(skipWelcome) }}</div>
 
       <PButton :class="allowNext ? 'btn-primary-sm' : 'btn-gray-sm'" text-2xl :disabled="!allowNext" @click="goNext" value="next">
         <div class="i-mdi-arrow-right-bold" />
@@ -54,7 +57,7 @@ const goPrev = withEpoch((E) => E.prev())
 
     <ESequence name="instructions" ref="seq" flex-center>
 
-      <EPage @mounted="enableNext" name="welcome">
+      <EPage v-if="!skipWelcome" @mounted="enableNext" name="welcome">
         <div class="prompt">
           Thanks for participating in our experiment! We'll start with some instructions.
           Navigate with arrow keys or the buttons at the top.
