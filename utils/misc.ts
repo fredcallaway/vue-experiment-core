@@ -93,7 +93,13 @@ export function stripUndefined<T extends Record<string, any>>(obj: T) {
 }
 
 export type NumberLike = number | `${number}`
-export function ensureNumber(x: NumberLike): number {
+
+export function ensureNumber(x: NumberLike | undefined, defaultValue: number): number;
+export function ensureNumber(x: NumberLike): number;
+export function ensureNumber(x: NumberLike | undefined, defaultValue?: number): number {
+  if (R.isDefined(defaultValue) && !R.isDefined(x)) {
+    return defaultValue
+  }
   const n = Number(x)
   if (isNaN(n)) {
     throw new Error(`Invalid number: ${x}`)
@@ -102,4 +108,3 @@ export function ensureNumber(x: NumberLike): number {
 }
 
 export const timeoutPromise = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-

@@ -1,7 +1,7 @@
 
 function assertNumeric(x: unknown): asserts x is number {
   if (typeof x !== 'number' || isNaN(x)) {
-    throw new Error(`Expected number, got ${typeof x}`)
+    throw new Error(`Expected a finite number, got ${JSON.stringify(x)}`)
   }
 }
 
