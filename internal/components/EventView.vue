@@ -16,8 +16,10 @@ const props = defineProps<{
 }>()
 
 const events = reactive<FormattedEvent[]>([])
-const whitelistFilter = ref(props.initialFilter ?? '')
+const whitelistFilter = useLocalStorage('eventView.filter', props.initialFilter ?? '')
 const startTime = ref(START_TIME)
+const showParticipant = useLocalStorage('eventView.showParticipant', true)
+const showEpoch = useLocalStorage('eventView.showEpoch', true)
 
 const normalizeNewlines = (s: string) => s.replaceAll('\\n', '\n')
 const formatForPre = (value: unknown) => {
@@ -113,7 +115,11 @@ useDebugBus().on(({message, info}) => {
 
 const filteredEvents = computed(() => {
   const eventFilter = createTextFilter(whitelistFilter.value)
-  return events.filter(({eventType}) => eventFilter(eventType))
+  return events.filter(({eventType}) => 
+    eventFilter(eventType)
+    && (showParticipant.value || !eventType.startsWith('participant'))
+    && (showEpoch.value || !eventType.startsWith('epoch'))
+  )
 })
 
 const fmtTimestamp = (timestamp: number) => {
@@ -145,6 +151,10 @@ const eventViewHeight = computed(() => {
   >
     <h2>Events</h2>
     <button absolute right-2 top-2 btn-gray btn-xs @click="events.length = 0">clear</button>
+    <div flex gap-4 mb-1>
+      <label><input type="checkbox" v-model="showParticipant"> participant</label>
+      <label><input type="checkbox" v-model="showEpoch"> epoch</label>
+    </div>
     <TextFilter v-model="whitelistFilter" placeholder="e.g. !epoch" mb-2 />
     <div flex="~ col gap-2" overflow-y-auto class="subtle-scrollbar">
       <template v-for="event in filteredEvents" :key="event.timestamp">
