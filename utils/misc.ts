@@ -88,6 +88,10 @@ export function string2array(str: string): string[] {
   return str.split(sep ?? ' ')
 }
 
+export function stripUndefined<T extends Record<string, any>>(obj: T) {
+  return R.pickBy(obj, R.isDefined) as Partial<T>
+}
+
 export type NumberLike = number | `${number}`
 export function ensureNumber(x: NumberLike): number {
   const n = Number(x)
