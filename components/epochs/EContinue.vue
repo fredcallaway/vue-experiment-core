@@ -1,30 +1,67 @@
+<script lang="ts">
+export const [provideContinueParams, useContinueParams, ProvideContinueParams] = defineParams({
+  name: 'EContinue',
+  button: false,
+  delay: 0,
+  prompt: false,
+  small: false,
+})
+export type ContinueParams = ReturnType<typeof useContinueParams>
+</script>
+
 <script lang="ts" setup>
 
-const props = defineProps<{ 
+const props = withDefaults(defineProps<{ 
   name?: string, 
   button?: boolean, 
   delay?: NumberLike,
   prompt?: boolean,
-}>()
+  small?: boolean,
+}>(), {
+  button: undefined, // this prevents casting undefined to false, needed for defineParams
+  prompt: undefined,
+  small: undefined,
+})
 
-const epoch = useEpoch(props.name ?? 'EContinue')
+const { name, button, delay, prompt, small } = useContinueParams({ 
+  ...props,
+  delay: R.isDefined(props.delay) ? ensureNumber(props.delay) : undefined, 
+})
+
+const epoch = useEpoch(name ?? 'EContinue')
 
 const emit = defineEmits<{ (e: 'mounted', epoch: Epoch): void }>()
 onMounted(() => emit('mounted', epoch))
 
-const ms = ensureNumber(props.delay ?? 0)
-const ready = useTimeout(replaceFast(ms, Math.max(200, ms / 5)))
+const waitTime = replaceFast(delay, clamp(delay / 5, 200, delay))
+const ready = useTimeout(waitTime)
 
 </script>
 
 <template>
-  <div>
+  <div flex-center flex-col>
     <div :class="{ 'prompt': prompt }">
       <slot />
     </div>
-    <PButton v-if="button" :disabled="!ready" value="Continue" @click="epoch.done" mt-2 />
+    <PButton v-if="button" :disabled="!ready" value="Continue" @click="epoch.done"
+    btn-primary
+    :class="[
+      delay > 0 && 'transition-opacity-300',
+      small && 'btn-sm',
+      small ? 'my-1' : 'my-2',
+    ]"
+    />
     <PKey v-else-if="ready" keys="SPACE" @press="epoch.done">
-      <div text-primary-300 font-italic text-center mt-2>press space to continue.</div>
+      <div text-primary-300 font-italic text-center
+        :class="[
+          delay > 0 && 'animate-fade-in ease-in-out',
+          small ? 'text-sm' : 'text-base',
+          small ? 'my-1' : 'my-2',
+        ]"
+        :style="{ animationDuration: `${clamp(waitTime / 2, 200, 1000 )}ms` }"
+      >
+        press space to continue.
+      </div>
     </PKey>
   </div>
 </template>
