@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 const props = defineProps<{
   value: string
+  label?: string
   unstyled?: boolean
   color?: 'primary' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'gray' // from uno.config.ts
   disabled?: boolean
@@ -92,6 +93,6 @@ const playbackFxClasses = computed(() => {
     @mousedown="P.emit('mousedown', value)"
   >
     <slot v-if="$slots.default" />
-    <template v-else>{{ value }}</template>
+    <template v-else>{{ label ?? value }}</template>
   </button>
 </template> 
