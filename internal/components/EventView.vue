@@ -18,8 +18,6 @@ const props = defineProps<{
 const events = reactive<FormattedEvent[]>([])
 const whitelistFilter = useLocalStorage('eventView.filter', props.initialFilter ?? '')
 const startTime = ref(START_TIME)
-const showParticipant = useLocalStorage('eventView.showParticipant', true)
-const showEpoch = useLocalStorage('eventView.showEpoch', true)
 
 const normalizeNewlines = (s: string) => s.replaceAll('\\n', '\n')
 const formatForPre = (value: unknown) => {
@@ -113,12 +111,23 @@ useDebugBus().on(({message, info}) => {
 })
 
 
+const eventFilters: Record<string, (eventType: string) => boolean> = {
+  participant: (t) => t.startsWith('participant'),
+  epoch: (t) => t.startsWith('epoch'),
+  hover: (t) => ['participant.hover', 'participant.mousedown'].includes(t),
+}
+
+const showFilters = R.mapValues(eventFilters, (_, name) => 
+  useLocalStorage(`eventView.show.${name}`, true)
+)
+
 const filteredEvents = computed(() => {
-  const eventFilter = createTextFilter(whitelistFilter.value)
+  const textFilter = createTextFilter(whitelistFilter.value)
   return events.filter(({eventType}) => 
-    eventFilter(eventType)
-    && (showParticipant.value || !eventType.startsWith('participant'))
-    && (showEpoch.value || !eventType.startsWith('epoch'))
+    textFilter(eventType)
+    && Object.entries(eventFilters).every(([name, matches]) => 
+      showFilters[name].value || !matches(eventType)
+    )
   )
 })
 
@@ -152,8 +161,9 @@ const eventViewHeight = computed(() => {
     <h2>Events</h2>
     <button absolute right-2 top-2 btn-gray btn-xs @click="events.length = 0">clear</button>
     <div flex gap-4 mb-1>
-      <label><input type="checkbox" v-model="showParticipant"> participant</label>
-      <label><input type="checkbox" v-model="showEpoch"> epoch</label>
+      <label v-for="(ref, name) in showFilters" :key="name">
+        <input type="checkbox" v-model="ref.value"> {{ name }}
+      </label>
     </div>
     <TextFilter v-model="whitelistFilter" placeholder="e.g. !epoch" mb-2 />
     <div flex="~ col gap-2" overflow-y-auto class="subtle-scrollbar">
