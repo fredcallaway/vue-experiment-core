@@ -61,7 +61,8 @@ const makeId = (name: string, parent: Epoch | MultistepEpoch) => {
 // TODO: doc
 export function useEpoch(name: string): Epoch {
   const attrs = useAttrs()  // properties passed to containing component
-  let disabled = attrs.disabled == "" || attrs.disabled == true
+  const flags = ["disabled", "no-epoch", "noEpoch"]
+  let disabled = flags.some(flag => attrs[flag] === "" || attrs[flag] === true)
 
   const parentEpoch = inject<Epoch>('__EPOCH__', TOP_EPOCH)
   const id = makeId(name, parentEpoch)
