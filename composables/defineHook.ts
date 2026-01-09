@@ -30,9 +30,9 @@ export function defineHook<S>(): Hook<S> {
 
     on(callback) {
       subscribers.add(callback)
-      return () => {
-        subscribers.delete(callback)
-      }
+      const unsubscribe = () => subscribers.delete(callback)
+      tryOnScopeDispose(unsubscribe)
+      return unsubscribe
     },
   }
 }
