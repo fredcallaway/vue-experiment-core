@@ -41,6 +41,7 @@ whenever(content, (el) => {
       }"
     >
       <slot />
+      <div id="main-content-overlay" absolute inset-0 wfull hfull pointer-events-none />
     </div>
     <div v-if="violated"
       inset-0 top-0 left-0 w-screen h-screen flex-center
@@ -65,7 +66,7 @@ whenever(content, (el) => {
 <style scoped>
 
 .main-content {
-  @apply flex flex-col items-center overflow-hidden mx-auto;
+  @apply relative flex flex-col items-center overflow-hidden mx-auto;
 
   & div {
     flex-shrink: 0;

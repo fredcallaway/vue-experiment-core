@@ -1,23 +1,15 @@
 <script lang="ts" setup>
-// import { mainContentRef } from '~/utils/globals'
+defineProps<{
+  class?: string
+}>()
 
-const style = computed(() => {
-  let rect = mainContentRef.value?.getBoundingClientRect()
-  if (!rect) {
-    rect = document.documentElement.getBoundingClientRect()
-  }
-  return {
-    width: rect.width + 'px',
-    height: rect.height + 'px',
-    top: rect.top + 'px',
-    left: rect.left + 'px',
-  }
-})
-
+const mounted = useMounted()
 </script>
 
 <template>
-  <div absolute :style="style">
-  <slot />
-  </div>
+  <Teleport v-if="mounted" to="#main-content-overlay">
+    <div absolute inset-0 pointer-events-auto :class="$props.class">
+      <slot />
+    </div>
+  </Teleport>
 </template>
