@@ -1,16 +1,40 @@
 import { defineComponent, h, type SetupContext, type SlotsType } from 'vue'
 
-interface PhasesOptions {
-  transition?: 'fade' | 'none'
-  transitionDuration?: number
+
+type DisplayPhasesOption = 
+| {
+    duration: number
+  }
+| {
+    inDuration?: number
+    outDuration?: number
+  }
+
+const normalizeOptions = (options: DisplayPhasesOption): { inDuration: number, outDuration: number } => {
+  const hasDuration = 'duration' in options
+  const hasIn = 'inDuration' in options
+  const hasOut = 'outDuration' in options
+  if (hasDuration) {
+    if (hasIn || hasOut) {
+      throw new Error('duration and inDuration or outDuration cannot be used together')
+    }
+    return {
+      inDuration: options.duration / 2,
+      outDuration: options.duration / 2,
+    }
+  }
+  return {
+    inDuration: options.inDuration ?? 0,
+    outDuration: options.outDuration ?? 0,
+  }
 }
 
-export const usePhases = <const T extends readonly string[]>(
+export const useDisplayPhases = <const T extends readonly string[]>(
   phases: T,
-  options: PhasesOptions = {}
+  options: DisplayPhasesOption = {}
 ) => {
   type Phase = T[number]
-  const { transition = 'fade', transitionDuration = 150 } = options
+  const { inDuration, outDuration } = normalizeOptions(options)
 
   const phase = ref<Phase>(phases[0])
   const previousPhase = shallowRef<Phase | null>(null)
@@ -22,22 +46,28 @@ export const usePhases = <const T extends readonly string[]>(
   const parseWhich = (which: string): Phase[] => which.split(/\s+/) as Phase[]
 
   const goToPhase = async (newPhase: Phase) => {
+    console.trace('goToPhase', newPhase)
+
     assertOneOf(newPhase, phases, `goToPhase: ${newPhase} is not a valid phase (${phases.join(', ')})`)
     if (phase.value === newPhase) return
-    if (transition === 'none' || duration === 0) {
-      phase.value = newPhase
-      return
-    }
     previousPhase.value = phase.value
     targetPhase.value = newPhase
-    transitionStage.value = 'out'
-    await new Promise(r => setTimeout(r, duration))
-    phase.value = newPhase
-    transitionStage.value = 'in'
-    await new Promise(r => setTimeout(r, duration))
-    transitionStage.value = null
-    previousPhase.value = null
-    targetPhase.value = null
+
+  
+    await withParticipantInputBlocked(async () => {
+      if (outDuration > 0) {
+        transitionStage.value = 'out'
+        await timeoutPromise(outDuration)
+      }
+      phase.value = newPhase
+      if (inDuration > 0) {
+        transitionStage.value = 'in'
+        await timeoutPromise(inDuration)
+      }
+      transitionStage.value = null
+      previousPhase.value = null
+      targetPhase.value = null
+    })
   }
 
   const nextPhase = () => {
@@ -45,6 +75,7 @@ export const usePhases = <const T extends readonly string[]>(
     return goToPhase(phases[(idx + 1) % phases.length])
   }
 
+  // TODO? a directive might make more sense here
   const Phase = defineComponent({
     name: 'Phase',
     props: {
@@ -75,9 +106,9 @@ export const usePhases = <const T extends readonly string[]>(
 
         const style: Record<string, string> = {}
         if (isFadingOut.value) {
-          style.animation = `fade-out ${transitionDuration/2}ms ease-out forwards`
+          style.animation = `fade-out ${outDuration}ms ease-out forwards`
         } else if (isFadingIn.value) {
-          style.animation = `fade-in ${transitionDuration/2}ms ease-in forwards`
+          style.animation = `fade-in ${inDuration}ms ease-in forwards`
         }
 
         return h('div', { ...attrs, style }, slots.default?.())
@@ -87,6 +118,8 @@ export const usePhases = <const T extends readonly string[]>(
 
   return {
     phase: readonly(phase),
+    transitionStage: readonly(transitionStage),
+    animating: computed(() => transitionStage.value !== null),
     nextPhase,
     goToPhase,
     Phase,
