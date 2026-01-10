@@ -21,7 +21,8 @@ export const usePhases = <const T extends readonly string[]>(
 
   const parseWhich = (which: string): Phase[] => which.split(/\s+/) as Phase[]
 
-  const goToPhase = async (newPhase: Phase, duration: number = transitionDuration) => {
+  const goToPhase = async (newPhase: Phase) => {
+    assertOneOf(newPhase, phases, `goToPhase: ${newPhase} is not a valid phase (${phases.join(', ')})`)
     if (phase.value === newPhase) return
     if (transition === 'none' || duration === 0) {
       phase.value = newPhase
