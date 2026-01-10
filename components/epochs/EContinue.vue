@@ -43,7 +43,7 @@ const ready = useTimeout(waitTime)
     <div :class="{ 'prompt': prompt }">
       <slot />
     </div>
-    <PButton v-if="button" :disabled="!ready" value="Continue" @click="epoch.done"
+    <PButton v-if="button" once :disabled="!ready" value="Continue" @click="epoch.done"
     btn-primary
     :class="[
       delay > 0 && 'transition-opacity-300',
