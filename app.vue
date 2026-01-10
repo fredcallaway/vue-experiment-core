@@ -88,12 +88,12 @@ h6 { font-size: 0.67em; font-weight: bold; }
 }
 
 /* used by usePhases transitions */
-keyframes fade-in {
+@keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-keyframes fade-out {
+@keyframes fade-out {
   from { opacity: 1; }
   to { opacity: 0; }
 }
