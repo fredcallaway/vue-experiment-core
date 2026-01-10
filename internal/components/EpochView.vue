@@ -28,6 +28,10 @@ const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
   return 'step' in epoch && 'nSteps' in epoch && 'prev' in epoch && 'goTo' in epoch
 }
 
+const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
+  return 'phase' in epoch && 'phases' in epoch && 'goTo' in epoch && 'Phase' in epoch
+}
+
 const route = useRoute()
 const router = useRouter()
 
@@ -98,7 +102,16 @@ const fast = useFastMode()
         <template v-for="(epoch, index) in stack" :key="epoch.id">
           <span v-if="index > 0" text-gray-400>/</span>
           <span>{{ epoch._name }}</span>
-          <template v-if="isMultistepEpoch(epoch)">
+          <template v-if="isPhaseEpoch(epoch)">
+            <select
+              :value="epoch.phase"
+              @change="epoch.goTo(($event.target as HTMLSelectElement).value)"
+              bg-white border="~ 2 gray-300" px-1 py-0.5 text-xs
+            >
+              <option v-for="p in epoch.phases" :key="p" :value="p">{{ p }}</option>
+            </select>
+          </template>
+          <template v-else-if="isMultistepEpoch(epoch)">
             <select v-if="isIndexableEpoch(epoch)"
               :value="epoch.step"
               @change="epoch.goTo(parseInt(($event.target as HTMLSelectElement).value))"
