@@ -6,6 +6,16 @@ export const PARTICIPANT_KEYS = [
   'NONE',  // an impossible-to-press key - disables the listener
 ] as const
 
+export const PARTICIPANT_INPUT_BLOCKED = ref(false)
+export async function withParticipantInputBlocked<T>(fn: () => Promise<T>): Promise<T> {
+  PARTICIPANT_INPUT_BLOCKED.value = true
+  try {
+    return await fn()
+  } finally {
+    PARTICIPANT_INPUT_BLOCKED.value = false
+  }
+}
+
 export type Key = typeof PARTICIPANT_KEYS[number]
 export type KeyPress = {key: Key, rt: number}
 export type KeySpec = 
@@ -66,6 +76,7 @@ export function useParticipant<
 
   // Event bus methods
   const emit = <E extends keyof TypeMap>(eventType: E, info: TypeMap[E]) => {
+    if (PARTICIPANT_INPUT_BLOCKED.value) return
     const event = logEvent(`participant.${String(eventType)}`, {pid: myPid, info}) as PEvent
     bus.emit(event)
   }

@@ -65,10 +65,10 @@ P.on('mousedown', (value: string) => {
 
 const attrs = useAttrs()
 
-const classes = computed(() => {
+const btnClass = computed(() => {
   const hasBtn = String(attrs.class ?? '').includes('btn-') || Object.keys(attrs).some(k => k.includes('btn-'))
-  if (hasBtn) return []
-  if (props.unstyled) return []
+  if (hasBtn) return false
+  if (props.unstyled) return false
   if (props.color) return `btn-${props.color}`
   return 'btn-primary'
 })
@@ -88,7 +88,11 @@ const playbackFxClasses = computed(() => {
 
 <template>
   <button v-if="!once || !clicked"
-    :class="[classes, playbackFxClasses]" 
+    :class="[
+      btnClass, 
+      playbackFxClasses,
+      PARTICIPANT_INPUT_BLOCKED && 'pointer-events-none',
+    ]" 
     :disabled="disabled"
     @click="P.emit('click', value)"
     @mouseenter="P.emit('hover', value)"
