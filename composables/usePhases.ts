@@ -17,21 +17,23 @@ export const usePhases = <const T extends readonly string[]>(
   const targetPhase = shallowRef<Phase | null>(null)
   const transitionStage = shallowRef<'out' | 'in' | null>(null)
 
+  useInspect({phase, previousPhase, targetPhase, transitionStage}, 'usePhases')
+
   const parseWhich = (which: string): Phase[] => which.split(/\s+/) as Phase[]
 
-  const goToPhase = async (newPhase: Phase) => {
+  const goToPhase = async (newPhase: Phase, duration: number = transitionDuration) => {
     if (phase.value === newPhase) return
-    if (transition === 'none') {
+    if (transition === 'none' || duration === 0) {
       phase.value = newPhase
       return
     }
     previousPhase.value = phase.value
     targetPhase.value = newPhase
     transitionStage.value = 'out'
-    await new Promise(r => setTimeout(r, transitionDuration))
+    await new Promise(r => setTimeout(r, duration))
     phase.value = newPhase
     transitionStage.value = 'in'
-    await new Promise(r => setTimeout(r, transitionDuration))
+    await new Promise(r => setTimeout(r, duration))
     transitionStage.value = null
     previousPhase.value = null
     targetPhase.value = null
