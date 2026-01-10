@@ -6,6 +6,7 @@ const props = defineProps<{
   color?: 'primary' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'gray' // from uno.config.ts
   disabled?: boolean
   delay?: NumberLike
+  once?: boolean
 }>()
 
 
@@ -19,7 +20,7 @@ const emit = defineEmits<{
 const ms = ensureNumber(props.delay ?? 0)
 const ready = useTimeout(replaceFast(ms, Math.max(200, ms / 5)))
 const disabled = computed(() => props.disabled || !ready.value)
-
+const clicked = ref(false)
 
 const playbackState = usePlaybackState().state
 const isPlaybackHover = ref(false)
@@ -42,6 +43,7 @@ P.on('click', (value: string) => {
     downOff.stop()
   }
   if (disabled.value) return
+  clicked.value = true
   emit('click', value)
 })
 P.on('hover', (value: string) => {
@@ -85,7 +87,7 @@ const playbackFxClasses = computed(() => {
 </script>
 
 <template>
-  <button 
+  <button v-if="!once || !clicked"
     :class="[classes, playbackFxClasses]" 
     :disabled="disabled"
     @click="P.emit('click', value)"
