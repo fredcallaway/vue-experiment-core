@@ -29,7 +29,7 @@ const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
 }
 
 const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
-  return 'phase' in epoch && 'phases' in epoch && 'goTo' in epoch && 'Phase' in epoch
+  return 'phase' in epoch
 }
 
 const route = useRoute()

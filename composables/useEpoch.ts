@@ -1,5 +1,4 @@
 import { logEvent, logDebug } from './logEvent'
-import { usePhases } from './usePhases'
 
 export type Epoch = {
   done: (result?: any) => void,
@@ -23,11 +22,10 @@ export type IndexableEpoch = Epoch & {
   goTo: (step: number) => void,
 }
 
-export type PhaseEpoch<T extends string = string> = Epoch & {
-  phase: Readonly<Ref<T>>,
+export type PhaseEpoch<T extends string = string> = IndexableEpoch & {
+  phase: ComputedRef<T>,
   phases: readonly T[],
-  goTo: (phase: T) => Promise<void>,
-  Phase: ReturnType<typeof usePhases>['Phase'],
+  goTo: (phase: T) => void,
 }
 
 // this should never be the currentEpoch
@@ -182,54 +180,39 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
   return E
 }
 
-
-const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
-  return 'step' in epoch && 'nSteps' in epoch && 'prev' in epoch && 'goTo' in epoch
-}
-
-export const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
-  return 'phase' in epoch && 'phases' in epoch && 'goTo' in epoch && 'Phase' in epoch
-}
-
-interface PhaseEpochOptions {
-  transition?: 'fade' | 'none'
-  transitionDuration?: number
-}
-
 export function usePhaseEpoch<const T extends readonly string[]>(
   name: string,
   phases: T,
-  options: PhaseEpochOptions = {}
 ): PhaseEpoch<T[number]> {
   type Phase = T[number]
 
-  const E = useEpoch(name) as PhaseEpoch<Phase>
-  const phasesResult = usePhases(phases, options)
+  const E = useIndexableEpoch(name, phases.length) as unknown as PhaseEpoch<Phase>
+  const baseGoTo = E.goTo
 
-  // Log phase changes
-  watch(phasesResult.phase, (newPhase, oldPhase) => {
-    if (oldPhase !== undefined) {
-      logEvent(`epoch.phase.${newPhase}`, { id: E.id, from: oldPhase })
+  E.goTo = (arg: Phase | number) => {
+    if (typeof arg === 'number') {
+      baseGoTo(arg)
+      return
     }
-  })
-
-  const nextPhase = async () => {
-    const idx = phases.indexOf(phasesResult.phase.value)
-    if (idx < phases.length - 1) {
-      await phasesResult.goToPhase(phases[idx + 1])
-    } else {
-      E.done()
-    }
+    const phase = assertOneOf(arg, phases, `PhaseEpoch ${name}: ${arg} is not a valid phase (${phases.join(', ')})`)
+    const step = phases.indexOf(phase)
+    baseGoTo(step)
   }
-
-  E.next = nextPhase
-  E.phase = phasesResult.phase
+  
+  E.phase = computed(() => phases[E.step.value])
   E.phases = phases
-  E.goTo = phasesResult.goToPhase
-  E.Phase = phasesResult.Phase
 
   return E
 }
+
+const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
+  return 'step' in epoch && 'goTo' in epoch
+}
+
+export const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
+  return 'phase' in epoch
+}
+
 
 export const jumpToEpoch = async (epochId: string) => {
   logDebug('jumpToEpoch', epochId)
