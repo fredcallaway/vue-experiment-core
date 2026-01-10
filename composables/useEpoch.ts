@@ -1,4 +1,5 @@
 import { logEvent, logDebug } from './logEvent'
+import { usePhases } from './usePhases'
 
 export type Epoch = {
   done: (result?: any) => void,
@@ -20,6 +21,13 @@ export type IndexableEpoch = Epoch & {
   nSteps: number,
   prev: () => void,
   goTo: (step: number) => void,
+}
+
+export type PhaseEpoch<T extends string = string> = Epoch & {
+  phase: Readonly<Ref<T>>,
+  phases: readonly T[],
+  goTo: (phase: T) => Promise<void>,
+  Phase: ReturnType<typeof usePhases>['Phase'],
 }
 
 // this should never be the currentEpoch
@@ -48,9 +56,11 @@ export const findEpoch = (predicate: (E: Epoch) => boolean): Epoch | null => {
   return null
 }
 
-const makeId = (name: string, parent: Epoch | MultistepEpoch) => {
+const makeId = (name: string, parent: Epoch | MultistepEpoch | PhaseEpoch) => {
   if (parent._name == '__TOP_EPOCH__') {
     return name
+  } else if ('phase' in parent && 'phases' in parent) {
+    return `${parent.id}[${parent.phase.value}]-${name}`
   } else if ('step' in parent) {
     return `${parent.id}[${parent.step.value}]-${name}`
   } else {
@@ -144,6 +154,13 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
   assert(R.isNumber(step.value), `step.value is not a number: ${step.value}`)
   E.nSteps = nSteps
   E.step = step
+
+  // Log step changes
+  watch(step, (newStep, oldStep) => {
+    if (oldStep !== undefined) {
+      logEvent(`epoch.step.${newStep}`, { id: E.id, from: oldStep })
+    }
+  })
   
   E.next = () => {
     if (step.value < E.nSteps-1) {
@@ -155,11 +172,11 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
 
   E.prev = () => step.value -= 1
   
-  E.goTo = (step: number) => {
-    if (step < 0 || step >= E.nSteps) {
-      console.warn(`Epoch ${name}: step ${step} is out of bounds [0, ${E.nSteps-1}]`)
+  E.goTo = (newStep: number) => {
+    if (newStep < 0 || newStep >= E.nSteps) {
+      console.warn(`Epoch ${name}: step ${newStep} is out of bounds [0, ${E.nSteps-1}]`)
     }
-    E.step.value = step
+    step.value = newStep
   }
 
   return E
@@ -168,6 +185,50 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
 
 const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
   return 'step' in epoch && 'nSteps' in epoch && 'prev' in epoch && 'goTo' in epoch
+}
+
+export const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
+  return 'phase' in epoch && 'phases' in epoch && 'goTo' in epoch && 'Phase' in epoch
+}
+
+interface PhaseEpochOptions {
+  transition?: 'fade' | 'none'
+  transitionDuration?: number
+}
+
+export function usePhaseEpoch<const T extends readonly string[]>(
+  name: string,
+  phases: T,
+  options: PhaseEpochOptions = {}
+): PhaseEpoch<T[number]> {
+  type Phase = T[number]
+
+  const E = useEpoch(name) as PhaseEpoch<Phase>
+  const phasesResult = usePhases(phases, options)
+
+  // Log phase changes
+  watch(phasesResult.phase, (newPhase, oldPhase) => {
+    if (oldPhase !== undefined) {
+      logEvent(`epoch.phase.${newPhase}`, { id: E.id, from: oldPhase })
+    }
+  })
+
+  const nextPhase = async () => {
+    const idx = phases.indexOf(phasesResult.phase.value)
+    if (idx < phases.length - 1) {
+      await phasesResult.goToPhase(phases[idx + 1])
+    } else {
+      E.done()
+    }
+  }
+
+  E.next = nextPhase
+  E.phase = phasesResult.phase
+  E.phases = phases
+  E.goTo = phasesResult.goToPhase
+  E.Phase = phasesResult.Phase
+
+  return E
 }
 
 export const jumpToEpoch = async (epochId: string) => {
