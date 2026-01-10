@@ -64,11 +64,10 @@ export const usePhaseEpoch = <const T extends readonly string[]>(
 
   const goToPhase = async (newPhase: Phase) => {
     if (phase.value === newPhase) return
-    
-    endPhaseEpoch()
-    
+        
     if (transition === 'none') {
       phase.value = newPhase
+      endPhaseEpoch()
       startPhaseEpoch(newPhase)
       return
     }
@@ -78,12 +77,14 @@ export const usePhaseEpoch = <const T extends readonly string[]>(
     await new Promise(r => setTimeout(r, transitionDuration))
     phase.value = newPhase
     transitionStage.value = 'in'
+    endPhaseEpoch()
+    startPhaseEpoch(newPhase)
+
     await new Promise(r => setTimeout(r, transitionDuration))
     transitionStage.value = null
     previousPhase.value = null
     targetPhase.value = null
     
-    startPhaseEpoch(newPhase)
   }
 
   const nextPhase = async () => {
