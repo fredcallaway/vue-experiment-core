@@ -32,13 +32,13 @@ const TOP_EPOCH = {
 }
 
 const currentEpoch = ref<Epoch>(TOP_EPOCH)
-
 export const useCurrentEpoch = () => currentEpoch
+// I think this is necessary for findEpoch, weird reactivity thing
+let _currentEpoch = TOP_EPOCH
 
-let _currentEopch = TOP_EPOCH
 
 export const findEpoch = (predicate: (E: Epoch) => boolean): Epoch | null => {
-  let epoch = _currentEopch
+  let epoch = _currentEpoch
   while (epoch._name !== '__TOP_EPOCH__') {
     if (predicate(epoch)) {
       return epoch
@@ -58,29 +58,40 @@ const makeId = (name: string, parent: Epoch | MultistepEpoch) => {
   }
 }
 
+const hasFlag = (attrs: Record<string, any>, flag: string) => attrs[flag] === "" || attrs[flag] === true
+
 // TODO: doc
 export function useEpoch(name: string): Epoch {
   const attrs = useAttrs()  // properties passed to containing component
-  const flags = ["disabled", "no-epoch", "noEpoch"]
-  let disabled = flags.some(flag => attrs[flag] === "" || attrs[flag] === true)
-
+  let disabled = hasFlag(attrs, "disabled")
+  const noEpoch = hasFlag(attrs, "no-epoch") || hasFlag(attrs, "noEpoch")
+  
   const parentEpoch = inject<Epoch>('__EPOCH__', TOP_EPOCH)
   const id = makeId(name, parentEpoch)
 
+
+  if (attrs.done) {
+    assert(R.isFunction(attrs.done), 'attrs.done is not a function')
+  }
+
   const done = R.once((_result?: any) => {
     if (disabled) return
+    if (noEpoch) {
+      // @ts-ignore
+      if (attrs.done) attrs.done()
+      return
+    }
+    // normal epoch behavior
     currentEpoch.value = parentEpoch
-    _currentEopch = parentEpoch
+    _currentEpoch = parentEpoch
 
-    if (R.isFunction(attrs.done)) {
+    if (attrs.done) {
       // @ts-ignore
       attrs.done(done)
-      return
-    } else if ('done' in attrs) {
-      console.warn('attrs.done is not a function', attrs.done)
+    } else {
+      // logEvent('epoch.done')
+      parentEpoch.next()
     }
-    // logEvent('epoch.done')
-    parentEpoch.next()
   })
 
   const epoch: Epoch = {
@@ -95,10 +106,10 @@ export function useEpoch(name: string): Epoch {
     disabled = true
   })
 
-  if (!disabled) {
+  if (!disabled && !noEpoch) {
     provide('__EPOCH__', epoch)
     currentEpoch.value = epoch
-    _currentEopch = epoch
+    _currentEpoch = epoch
     logEvent(`epoch.start.${name}`, {id})
 
   }
