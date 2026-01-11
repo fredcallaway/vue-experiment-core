@@ -4,17 +4,11 @@ const props = defineProps<{
   skipWelcome?: boolean,
 }>()
 
-const seq = useTemplateRef<IndexableEpoch>('seq')
-const epochRef = computed<IndexableEpoch | null>(() => {
-  if (!seq.value) return null
-  // @ts-ignore
-  return seq.value.epoch
-})
+const epoch = useIndexableEpoch('instructions', 0)
 
 const withEpoch = <T>(f: (E: IndexableEpoch) => T | null) => {
   return (): T | null => {
-    if (!epochRef.value) return null
-    return f(epochRef.value)
+    return f(epoch)
   }
 }
 
@@ -29,7 +23,7 @@ const enableNext = withEpoch((E) => {
   maxCompletedStep.value = Math.max(maxCompletedStep.value, E.step.value)
 })
 
-watch(step, (newVal) => {
+watch(() => epoch.step.value, (newVal) => {
   maxCompletedStep.value = Math.max(maxCompletedStep.value, (newVal ?? 0) - 1)
 })
 
@@ -47,7 +41,7 @@ const goPrev = withEpoch((E) => E.prev())
         <PKey v-if="allowPrev" keys="LEFT" @press="goPrev" />
       </PButton>
       
-      <div v-if="epochRef" text-3xl font-bold>Instructions {{ epochRef.step.value + 1 - Number(skipWelcome) }} of {{ epochRef.nSteps - Number(skipWelcome) }}</div>
+      <div text-3xl font-bold>Instructions {{ epoch.step.value + 1 - Number(skipWelcome) }} of {{ epoch.nSteps - Number(skipWelcome) }}</div>
 
       <PButton :class="allowNext ? 'btn-primary-sm' : 'btn-gray-sm'" text-2xl :disabled="!allowNext" @click="goNext" value="next">
         <div class="i-mdi-arrow-right-bold" />
@@ -55,7 +49,7 @@ const goPrev = withEpoch((E) => E.prev())
       </PButton>
     </div>
 
-    <ESequence name="instructions" ref="seq" flex-center>
+    <ESequence :epoch="epoch" flex-center>
 
       <EPage v-if="!skipWelcome" @mounted="enableNext" name="welcome">
         <div class="prompt">

@@ -37,6 +37,10 @@ export default defineComponent({
     step: {
       type: [Number],
       default: 0,
+    },
+    epoch: {
+      type: Object as PropType<IndexableEpoch>,
+      required: false
     }
   },
   setup(props, context) {
@@ -46,11 +50,18 @@ export default defineComponent({
 
     // each child element is a step (excluding comments)
     const nSteps = extractChildren(context.slots.default!()).length
-
     if (nSteps == 0) {
       throw new Error(`ESequence ${props.name} has no children`)
     }
-    const E = useIndexableEpoch(props.name, nSteps)
+    
+    // use prop epoch if provided; otherwise make a new one
+    const E = props.epoch ?? useIndexableEpoch(props.name, nSteps)
+    if (props.epoch) {
+      E.nSteps = nSteps
+      if (props.name && props.name !== 'ESequence') {
+        assert(props.name == E._name, `ESequence: props.name (${props.name}) != props.epoch.name (${E._name})`)
+      }
+    }
 
     // Get state from HMR store or use initial values
     E.step.value = hmrState.get(E.id) ?? props.step
