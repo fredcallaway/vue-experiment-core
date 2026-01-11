@@ -30,12 +30,17 @@ const route = useRoute()
 const router = useRouter()
 
 const pinnedEpochId = computed(() => route.query.jump as string | undefined)
-const isPinned = computed(() => pinnedEpochId.value !== undefined)
+const pinStatus = computed(() => {
+  if (pinnedEpochId.value === currentEpoch.value.id) return 'current'
+  if (pinnedEpochId.value !== undefined) return 'other'
+  return 'none'
+})
 
-const togglePin = () => {
+const cyclePin = () => {
   const { jump, ...rest } = route.query
+  const newPin = pinStatus.value == 'current' ? undefined : currentEpoch.value.id
   router.push({
-    query: isPinned.value ? rest : { ...route.query, jump: currentEpoch.value.id }
+    query: { ...route.query, jump: newPin }
   })
 }
 
@@ -46,7 +51,7 @@ const handleEpochChange = async (epoch: Epoch, newValue: string | number) => {
     epoch.goTo(newValue as string)
   }
   
-  if (isPinned.value) {
+  if (pinStatus.value != 'none') {
     await nextTick()
     router.push({ query: { ...route.query, jump: currentEpoch.value.id } })
   }
@@ -161,9 +166,10 @@ const fast = useFastMode()
             ]"
           />
         </button>
-        <button @click="togglePin">
-          <div i-mdi-pin text-2xl :class="[
-            isPinned ? 'text-blue-500' : 'text-gray-300'
+        <button @click="cyclePin">
+          <div text-2xl :class="[
+            pinStatus == 'other' ? 'i-mdi-pin-outline' : 'i-mdi-pin',
+            pinStatus != 'none' ? 'text-blue-500' : 'text-gray-300'
             ]"
           />
         </button>
