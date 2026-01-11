@@ -100,18 +100,16 @@ const sortedBookmarkKeys = computed(() => {
   return Object.keys(bookmarks.value).sort()
 })
 
-// Global Controls
-const globalControls = {
-  'next': () => {
-    if (currentEpoch.value._name == 'EPage') {
-      currentEpoch.value.done()
-    } else {
-      currentEpoch.value.next()
-    }
-  },
-  'copy': () => {
-    navigator.clipboard.writeText(currentEpoch.value.id)
-  },
+const handleNext = () => {
+  if (currentEpoch.value._name == 'EPage') {
+    currentEpoch.value.done()
+  } else {
+    currentEpoch.value.next()
+  }
+}
+
+const handleCopy = () => {
+  navigator.clipboard.writeText(currentEpoch.value.id)
 }
 
 const fast = useFastMode()
@@ -147,7 +145,16 @@ const fast = useFastMode()
         </template>
       </div>
       <div flex="~ items-center gap-2">
-        <button btn-gray-xs v-for="(control, key) in globalControls" :key="key" @click="control">{{ key }}</button>
+        <button @click="handleCopy">
+          <div i-mdi-clipboard-multiple text-2xl text-gray-400 hover:text-gray-700
+            active:translate-y-0.1 active:scale-94 transition-transform duration-75
+           />
+        </button>
+        <button @click="handleNext">
+          <div i-mdi-arrow-right-bold-box text-2xl text-gray-400 hover:text-gray-700
+            active:translate-y-0.1 active:scale-94 transition-transform duration-75
+           />
+        </button>
         <button @click="toggleBookmark">
           <div i-mdi-bookmark text-2xl :class="[
             isBookmarked ? 'text-blue-500' : 'text-gray-300'
