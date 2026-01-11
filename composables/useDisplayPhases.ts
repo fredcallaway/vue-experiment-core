@@ -53,7 +53,7 @@ export const useDisplayPhases = <const T extends readonly string[]>(
     previousPhase.value = phase.value
     targetPhase.value = newPhase
 
-  
+    // animate the transition
     await withParticipantInputBlocked(async () => {
       if (outDuration > 0) {
         transitionStage.value = 'out'
@@ -80,6 +80,7 @@ export const useDisplayPhases = <const T extends readonly string[]>(
     name: 'Phase',
     props: {
       which: { type: String, required: true },
+      persist: { type: Boolean, default: false },
     },
     slots: Object as SlotsType<{ default: () => any }>,
     setup(props, { slots, attrs }: SetupContext) {
@@ -92,6 +93,16 @@ export const useDisplayPhases = <const T extends readonly string[]>(
         targetPhase.value !== null && matchedPhases.value.includes(targetPhase.value)
       )
 
+      const isPersisting = computed(() => {
+        if (!props.persist) return false
+        // is the current phase in between the earliest and latest matche phase?
+        const currentIndex = phases.indexOf(phase.value)
+        const matchedIndices = matchedPhases.value.map(p => phases.indexOf(p))
+        const minIndex = Math.min(...matchedIndices)
+        const maxIndex = Math.max(...matchedIndices)
+        return currentIndex >= minIndex && currentIndex <= maxIndex
+      })
+
       // During 'out': show previous-matching phases (fading out if not also target)
       // During 'in': show current-matching phases (fading in if not also previous)
       const isVisible = computed(() => {
@@ -102,13 +113,17 @@ export const useDisplayPhases = <const T extends readonly string[]>(
       const isFadingIn = computed(() => transitionStage.value === 'in' && matchesCurrent.value && !matchedPrevious.value)
 
       return () => {
-        if (!isVisible.value) return null
-
+        if (!isVisible.value && !isPersisting.value) return null
+        
         const style: Record<string, string> = {}
         if (isFadingOut.value) {
           style.animation = `fade-out ${outDuration}ms ease-out forwards`
         } else if (isFadingIn.value) {
           style.animation = `fade-in ${inDuration}ms ease-in forwards`
+        } else if (isPersisting.value && !isVisible.value) {
+          style.opacity = '0'
+          style.position = 'absolute'
+          style.inset = '0'
         }
 
         return h('div', { ...attrs, style }, slots.default?.())
