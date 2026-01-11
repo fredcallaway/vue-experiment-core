@@ -10,7 +10,7 @@ export function useESequence(name: string) {
     slots: Object as SlotsType<{ default: () => any }>,
     setup(_props, { slots }: SetupContext) {
       return () => {
-        return h(ESequence, { epoch: E }, slots.default?.())
+        return h(ESequence, { epoch: E }, slots.default)
       }
     },
   })
