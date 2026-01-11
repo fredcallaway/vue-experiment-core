@@ -31,14 +31,14 @@ const router = useRouter()
 
 const pinnedEpochId = computed(() => route.query.jump as string | undefined)
 const pinStatus = computed(() => {
-  if (pinnedEpochId.value === currentEpoch.value.id) return 'current'
+  if (pinnedEpochId.value === getBookmarkJump(currentEpoch.value.id)) return 'current'
   if (pinnedEpochId.value !== undefined) return 'other'
   return 'none'
 })
 
 const cyclePin = () => {
   const { jump, ...rest } = route.query
-  const newPin = pinStatus.value == 'current' ? undefined : currentEpoch.value.id
+  const newPin = pinStatus.value == 'current' ? undefined : getBookmarkJump(currentEpoch.value.id)
   router.push({
     query: { ...route.query, jump: newPin }
   })
@@ -53,7 +53,7 @@ const handleEpochChange = async (epoch: Epoch, newValue: string | number) => {
   
   if (pinStatus.value != 'none') {
     await nextTick()
-    router.push({ query: { ...route.query, jump: currentEpoch.value.id } })
+    router.push({ query: { ...route.query, jump: getBookmarkJump(currentEpoch.value.id) } })
   }
 }
 
