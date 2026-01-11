@@ -11,6 +11,9 @@ export function defineHook<S>(): Hook<S> {
   const subscribers: Set<HookCallback<S>> = new Set()
 
   return {
+    
+    // called from the source component (the one where defineHook is called)
+    // await the result if you want to allow consumers to pause execution
     async emit(state) {
       const waiter = queue.shift()
       if (waiter) {
@@ -22,12 +25,16 @@ export function defineHook<S>(): Hook<S> {
       }
     },
 
+    // called from the consuming component
+    // callback specifies what to do while the source is paused (assuming it awaits the emit call)
+    // this function resolves AFTER the callback resolves
     receive(callback = () => {}) {
       return new Promise((resolve) => {
         queue.push({ resolve, callback })
       })
     },
 
+    // basic event listening without async
     on(callback) {
       subscribers.add(callback)
       const unsubscribe = () => subscribers.delete(callback)
