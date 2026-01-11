@@ -171,9 +171,7 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
   E.prev = () => step.value -= 1
   
   E.goTo = (newStep: number) => {
-    if (newStep < 0 || newStep >= E.nSteps) {
-      console.warn(`Epoch ${name}: step ${newStep} is out of bounds [0, ${E.nSteps-1}]`)
-    }
+    assert(isBetween(newStep, 0, E.nSteps-1),  `IndexableEpoch "${name}": goTo(${newStep}) is out of bounds [0, ${E.nSteps-1}]`)
     step.value = newStep
   }
 
@@ -194,7 +192,7 @@ export function usePhaseEpoch<const T extends readonly string[]>(
       baseGoTo(arg)
       return
     }
-    const phase = assertOneOf(arg, phases, `PhaseEpoch ${name}: ${arg} is not a valid phase (${phases.join(', ')})`)
+    const phase = assertOneOf(arg, phases, `PhaseEpoch "${name}": goTo(${arg}) is not a valid phase (${phases.join(', ')})`)
     const step = phases.indexOf(phase)
     baseGoTo(step)
   }
@@ -220,68 +218,69 @@ const indexableEpochPrefix = (epochId: string) => {
   return epochId.substring(0, lastBracketIndex + 1)
 }
 
-export const jumpToEpoch = async (epochId: string) => {
-  if (epochId === '') {
-    return
+const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
+
+  let expectedPrefix = ''
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]
+
+    // Extend expected prefix
+    if (i === 0) {
+      expectedPrefix = part
+    } else {
+      expectedPrefix += '-' + part
+    }
+
+    // Parse the part
+    const bracketMatch = part.match(/^([^[]+)\[([\d\w]+)\]$/)
+    if (!bracketMatch) {
+      throw new Error(`jumpToEpoch: part '${part}' does not match expected format 'name[index]'`)
+    }
+    const partName = bracketMatch[1]
+    const partIndex = bracketMatch[2]
+
+    // Find the epoch in the current hierarchy
+    const epoch = assertDefined(findEpoch((e) => e._name === partName))
+    assert(isIndexableEpoch(epoch))
+
+    // Go to the specified index (non-numeric string for PhaseEpoch)
+    await useDataWriter().withDisabled(async () => {
+      if (isPhaseEpoch(epoch)) {
+        epoch.goTo(partIndex)
+      } else {
+        epoch.goTo(parseInt(partIndex))
+      }
+    })
+
+    await nextTick()
   }
   
-  await useDataWriter().withDisabled(async () => {
-    const prefix = indexableEpochPrefix(epochId)
-    if (prefix === '') {
-      // No indexable prefix, nothing to do
-      return
-    }
-    
-    const parts = prefix.split('-')
-    logDebug(`jumpToEpoch: ${epochId}`)
+  // Confirm that we ended up where we expected
+  const currentPrefix = indexableEpochPrefix(currentEpoch.value.id)
+  assert(currentPrefix.startsWith(expectedPrefix))
 
-    let expectedPrefix = ''
-    
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i]
-      const bracketMatch = part.match(/^([^[]+)\[(\d+)\]$/)
-      if (!bracketMatch) {
-        throw new Error(`jumpToEpoch: part '${part}' does not match expected format 'name[index]'`)
-      }
-      
-      const partName = bracketMatch[1]
-      let partIndex = parseInt(bracketMatch[2])
-      
-      // Build expected prefix
-      if (i === 0) {
-        expectedPrefix = part
-      } else {
-        expectedPrefix += '-' + part
-      }
-      
-      // Find the epoch in the current hierarchy
-      const epoch = findEpoch((e) => e._name === partName && isIndexableEpoch(e))
-      if (!epoch || !isIndexableEpoch(epoch)) {
-        logDebug('jumpToEpoch: epoch not found', { partName, epochId, currentEpochId: currentEpoch.value.id })
-        const shortened = epochId.substring(0, epochId.lastIndexOf('-'))
-        if (shortened !== epochId) {
-          await jumpToEpoch(shortened)
-        }
-        return
-      }
-      if (partIndex >= epoch.nSteps) {
-        logDebug('jumpToEpoch: step out of bounds', { partName, partIndex, epochId, currentEpochId: currentEpoch.value.id })
-        partIndex = epoch.nSteps - 1
-      }
-      
-      epoch.goTo(partIndex)
-      await nextTick()
+  return expectedPrefix
+}
+
+
+export const jumpToEpoch = async (epochId: string): Promise<null | string> => {
+  logDebug(`jumpToEpoch: ${epochId}`)
+
+  const prefix = indexableEpochPrefix(epochId)
+  if (prefix === '') {
+    // No indexable prefix, nothing to do
+    return null
+  }
+  
+  const parts = prefix.split('-')
+  try {
+    return await jumpToEpochImpl(parts)
+  } catch (e) {
+    logError('error jumping to epoch', e)
+    const shortened = epochId.substring(0, epochId.lastIndexOf('-'))
+    if (shortened != epochId) {
+      return await jumpToEpoch(shortened)
     }
-    
-    // Check if current epochId matches expected prefix
-    const currentPrefix = indexableEpochPrefix(currentEpoch.value.id)
-    if (!currentPrefix.startsWith(expectedPrefix)) {
-      logDebug('jumpToEpoch: prefix mismatch', { expectedPrefix, currentPrefix, epochId })
-      const lastDashIndex = epochId.lastIndexOf('-')
-      if (lastDashIndex > 0) {
-        const shortened = epochId.substring(0, lastDashIndex)
-        await jumpToEpoch(shortened)
-      }
-    }
-  })
+    return null
+  }
 }
