@@ -45,6 +45,7 @@ const cyclePin = () => {
 }
 
 const handleEpochChange = async (epoch: Epoch, newValue: string | number) => {
+  logDebug(`handleEpochChange`, { epoch, newValue })
   if (isIndexableEpoch(epoch)) {
     epoch.goTo(typeof newValue === 'number' ? newValue : parseInt(newValue))
   } else if (isPhaseEpoch(epoch)) {
@@ -52,14 +53,14 @@ const handleEpochChange = async (epoch: Epoch, newValue: string | number) => {
   }
   
   if (pinStatus.value != 'none') {
+    const jump = epoch.id + '[' + newValue + ']'
     await nextTick()
-    router.push({ query: { ...route.query, jump: getBookmarkJump(currentEpoch.value.id) } })
+    router.push({ query: { ...route.query, jump } })
   }
 }
 
 // Bookmarks
 const bookmarks = useLocalStorage<Record<string, string>>('bookmarks', {})
-useInspect({bookmarks})
 
 const getBookmarkJump = (epochId: string) => {
   // strips everything after the last ]
