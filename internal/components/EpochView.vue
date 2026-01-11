@@ -35,13 +35,27 @@ const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
 const route = useRoute()
 const router = useRouter()
 
-const isPinned = computed(() => route.query.jump !== undefined)
+const pinnedEpochId = computed(() => route.query.jump as string | undefined)
+const isPinned = computed(() => pinnedEpochId.value !== undefined)
 
 const togglePin = () => {
   const { jump, ...rest } = route.query
   router.push({
     query: isPinned.value ? rest : { ...route.query, jump: currentEpoch.value.id }
   })
+}
+
+const handleEpochChange = async (epoch: Epoch, newValue: string | number) => {
+  if (isIndexableEpoch(epoch)) {
+    epoch.goTo(typeof newValue === 'number' ? newValue : parseInt(newValue))
+  } else if (isPhaseEpoch(epoch)) {
+    epoch.goTo(newValue as string)
+  }
+  
+  if (isPinned.value) {
+    await nextTick()
+    router.push({ query: { ...route.query, jump: currentEpoch.value.id } })
+  }
 }
 
 const getDefaultBookmarkName = () => {
@@ -105,7 +119,7 @@ const fast = useFastMode()
           <template v-if="isPhaseEpoch(epoch)">
             <select
               :value="epoch.phase"
-              @change="epoch.goTo(($event.target as HTMLSelectElement).value)"
+              @change="handleEpochChange(epoch, ($event.target as HTMLSelectElement).value)"
               bg-white border="~ 2 gray-300" px-1 py-0.5 text-xs
             >
               <option v-for="p in epoch.phases" :key="p" :value="p">{{ p }}</option>
@@ -114,7 +128,7 @@ const fast = useFastMode()
           <template v-else-if="isMultistepEpoch(epoch)">
             <select v-if="isIndexableEpoch(epoch)"
               :value="epoch.step"
-              @change="epoch.goTo(parseInt(($event.target as HTMLSelectElement).value))"
+              @change="handleEpochChange(epoch, parseInt(($event.target as HTMLSelectElement).value))"
               bg-white border="~ 2 gray-300" px-1 py-0.5 text-xs
             >
               <option v-for="i in epoch.nSteps" :key="i-1" :value="i-1">{{ i-1 }}</option>
@@ -125,7 +139,12 @@ const fast = useFastMode()
       </div>
       <div flex="~ items-center gap-2">
         <button btn-gray-xs v-for="(control, key) in globalControls" :key="key" @click="control">{{ key }}</button>
-        <button btn-gray-xs w-11 @click="togglePin">{{ isPinned ? 'unpin' : 'pin' }}</button>
+        <button @click="togglePin">
+          <div i-mdi-pin text-2xl :class="[
+            isPinned ? 'text-blue-500' : 'text-gray-300'
+            ]"
+          />
+        </button>
       </div>
     </div>
 
