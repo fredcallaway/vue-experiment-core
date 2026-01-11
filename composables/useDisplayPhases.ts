@@ -84,7 +84,13 @@ export const useDisplayPhases = <const T extends readonly string[]>(
     },
     slots: Object as SlotsType<{ default: () => any }>,
     setup(props, { slots, attrs }: SetupContext) {
-      const matchedPhases = computed(() => parseWhich(props.which))
+      const matchedPhases = computed(() => {
+        const which = parseWhich(props.which)
+        which.forEach(p => {
+          assert(phases.includes(p), `which includes an invalid phase ${p} (valid: ${phases.join(', ')})`)
+        })
+        return which
+      })
       const matchesCurrent = computed(() => matchedPhases.value.includes(phase.value))
       const matchedPrevious = computed(() =>
         previousPhase.value !== null && matchedPhases.value.includes(previousPhase.value)
@@ -95,7 +101,7 @@ export const useDisplayPhases = <const T extends readonly string[]>(
 
       const isPersisting = computed(() => {
         if (!props.persist) return false
-        // is the current phase in between the earliest and latest matche phase?
+        // is the current phase in between the earliest and latest matched phase?
         const currentIndex = phases.indexOf(phase.value)
         const matchedIndices = matchedPhases.value.map(p => phases.indexOf(p))
         const minIndex = Math.min(...matchedIndices)
