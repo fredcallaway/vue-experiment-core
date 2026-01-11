@@ -1,12 +1,6 @@
 <script lang="ts" setup>
 // import { currentEpoch, type Epoch, type MultistepEpoch, type IndexableEpoch, jumpToEpoch } from '@/composables/useEpoch'
 
-type Bookmark = {
-  name: string
-  jump: string
-}
-
-const bookmarks = useLocalStorage<Bookmark[]>('bookmarks', [])
 const currentEpoch = useCurrentEpoch()
 
 const stack = computed(() => {
@@ -58,6 +52,10 @@ const handleEpochChange = async (epoch: Epoch, newValue: string | number) => {
   }
 }
 
+// Bookmarks
+const bookmarks = useLocalStorage<Record<string, string>>('bookmarks', {})
+useInspect({bookmarks})
+
 const getDefaultBookmarkName = () => {
   const epochId = currentEpoch.value.id
   const parts = epochId.split('-')
@@ -67,19 +65,22 @@ const getDefaultBookmarkName = () => {
   for (let i = parts.length - 1; i >= 0; i--) {
     const part = parts[i]
     if (skipComponents.includes(part)) continue
-    return part.replace(/\[(\d+)\]/, (_, num) => ` ${parseInt(num) + 1}`)
+    return part.replace(/\[(\d+)\]/, (_, num) => ` ${parseInt(num)}`)
   }
   
   return epochId
 }
 
-const addBookmark = () => {
-  const name = getDefaultBookmarkName()
-  bookmarks.value.push({ name, jump: currentEpoch.value.id })
-}
+const isBookmarked = computed(() => currentEpoch.value.id in bookmarks.value)
 
-const deleteBookmark = (index: number) => {
-  bookmarks.value.splice(bookmarks.value.length - 1 - index, 1)
+const toggleBookmark = () => {
+  const epochId = currentEpoch.value.id
+  if (isBookmarked.value) {
+    delete bookmarks.value[epochId]
+  } else {
+    bookmarks.value[epochId] = getDefaultBookmarkName()
+    logDebug('bookmark added', { epochId, name: bookmarks.value[epochId] })
+  }
 }
 
 const jumpToBookmark = async (jump: string) => {
@@ -91,6 +92,15 @@ const jumpToBookmark = async (jump: string) => {
   }
 }
 
+const deleteBookmark = (jump: string) => {
+  delete bookmarks.value[jump]
+}
+
+const sortedBookmarkKeys = computed(() => {
+  return Object.keys(bookmarks.value).sort()
+})
+
+// Global Controls
 const globalControls = {
   'next': () => {
     if (currentEpoch.value._name == 'EPage') {
@@ -102,7 +112,6 @@ const globalControls = {
   'copy': () => {
     navigator.clipboard.writeText(currentEpoch.value.id)
   },
-  'bookmark': addBookmark,
 }
 
 const fast = useFastMode()
@@ -139,50 +148,54 @@ const fast = useFastMode()
       </div>
       <div flex="~ items-center gap-2">
         <button btn-gray-xs v-for="(control, key) in globalControls" :key="key" @click="control">{{ key }}</button>
+        <button @click="toggleBookmark">
+          <div i-mdi-bookmark text-2xl :class="[
+            isBookmarked ? 'text-blue-500' : 'text-gray-300'
+            ]"
+          />
+        </button>
         <button @click="togglePin">
           <div i-mdi-pin text-2xl :class="[
             isPinned ? 'text-blue-500' : 'text-gray-300'
             ]"
           />
         </button>
+        <button @click="fast = !fast">
+          <div i-mdi-speedometer text-2xl :class="[
+            fast ? 'text-blue-500' : 'text-gray-300'
+            ]"
+          />
+        </button>
       </div>
     </div>
 
-    <div v-if="bookmarks.length > 0" flex="~ wrap gap-2" mt-4>
+    <div v-if="Object.keys(bookmarks).length > 0" flex="~ wrap gap-2" mt-4>
       <div 
-        v-for="(bookmark, index) in R.reverse(bookmarks)" 
-        :key="index"
-        bg-white p-2 border="~ 2 gray-300" w-35
+        v-for="jump in sortedBookmarkKeys" 
+        :key="jump"
+        bg-white p-2 border="~ 2 gray-300" w-40
       >
         <EditableText 
-          v-model="bookmarks[bookmarks.length - 1 - index].name"
-          class="font-bold text-sm w-full"
+          v-model="bookmarks[jump]"
+          class="font-bold text-sm w-full ml--1"
         />
-        <EditableText 
-          v-model="bookmarks[bookmarks.length - 1 - index].jump"
-          class="text-xs text-gray-400 w-full"
-        />
+        <div class="text-10px text-gray-400 w-full">{{ jump }}</div>
 
         <div flex="~ gap-2" mt-1>
           <button 
-            @click="jumpToBookmark(bookmark.jump)"
+            @click="jumpToBookmark(jump)"
             class="px-2 py-1 text-xs bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
           >
             Jump
           </button>
           <button 
-            @click="deleteBookmark(index)"
+            @click="deleteBookmark(jump)"
             class="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
           >
             Delete
           </button>
         </div>
       </div>
-    </div>
-    
-    <div flex="~ items-center justify-end gap-2" mt2 float-right>
-      fast mode
-      <Toggle v-model="fast" />
     </div>
   </div>
 </template>
