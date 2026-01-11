@@ -61,30 +61,26 @@ const handleEpochChange = async (epoch: Epoch, newValue: string | number) => {
 const bookmarks = useLocalStorage<Record<string, string>>('bookmarks', {})
 useInspect({bookmarks})
 
-const getDefaultBookmarkName = () => {
-  const epochId = currentEpoch.value.id
-  const parts = epochId.split('-')
-  
-  const skipComponents = ['EKey', 'EPage', 'EContinue']
-  
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const part = parts[i]
-    if (skipComponents.includes(part)) continue
-    return part.replace(/\[(\d+)\]/, (_, num) => ` ${parseInt(num)}`)
-  }
-  
-  return epochId
+const getBookmarkJump = (epochId: string) => {
+  // strips everything after the last ]
+  const lastBracketIndex = epochId.lastIndexOf(']')
+  return epochId.substring(0, lastBracketIndex + 1)
 }
 
-const isBookmarked = computed(() => currentEpoch.value.id in bookmarks.value)
+const getDefaultBookmarkName = (epochId: string) => {
+  const parts = epochId.split('-')
+  return R.last(parts)!.replace('[0]', '')
+}
+
+const isBookmarked = computed(() => getBookmarkJump(currentEpoch.value.id) in bookmarks.value)
 
 const toggleBookmark = () => {
   const epochId = currentEpoch.value.id
+  const jump = getBookmarkJump(epochId)
   if (isBookmarked.value) {
-    delete bookmarks.value[epochId]
+    delete bookmarks.value[jump]
   } else {
-    bookmarks.value[epochId] = getDefaultBookmarkName()
-    logDebug('bookmark added', { epochId, name: bookmarks.value[epochId] })
+    bookmarks.value[jump] = getDefaultBookmarkName(epochId)
   }
 }
 
