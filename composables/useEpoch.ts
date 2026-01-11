@@ -214,89 +214,73 @@ export const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
 }
 
 
+const indexableEpochPrefix = (epochId: string) => {
+  // strips everything after the last ]
+  const lastBracketIndex = epochId.lastIndexOf(']')
+  return epochId.substring(0, lastBracketIndex + 1)
+}
+
 export const jumpToEpoch = async (epochId: string) => {
-  logDebug('jumpToEpoch', epochId)
+  if (epochId === '') {
+    return
+  }
+  
   await useDataWriter().withDisabled(async () => {
+    const prefix = indexableEpochPrefix(epochId)
+    if (prefix === '') {
+      // No indexable prefix, nothing to do
+      return
+    }
     
-    const parts = epochId.split('-')
-    // console.log('jumpToEpoch:', JSON.stringify({epochId, parts}))
-    
-    // Build the target prefix progressively
-    let builtPrefix = ''
-    let iterationCount = 0
+    const parts = prefix.split('-')
+    logDebug(`jumpToEpoch: ${epochId}`)
+
+    let expectedPrefix = ''
     
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i]
       const bracketMatch = part.match(/^([^[]+)\[(\d+)\]$/)
-      const partName = bracketMatch ? bracketMatch[1] : part
-      const partStep = bracketMatch ? parseInt(bracketMatch[2]) : null
-      
-      // Add to our expected prefix
-      if (i === 0) {
-        builtPrefix = part
-      } else {
-        builtPrefix += '-' + part
+      if (!bracketMatch) {
+        throw new Error(`jumpToEpoch: part '${part}' does not match expected format 'name[index]'`)
       }
       
-      // console.log('processing part:', JSON.stringify({i, part, partName, partStep, builtPrefix}))
+      const partName = bracketMatch[1]
+      let partIndex = parseInt(bracketMatch[2])
       
-      // Navigate until we find an epoch that contains this part in its hierarchy
-      while (true) {
-        if (iterationCount++ > 1000) {
-          throw new Error(`jumpToEpoch: iteration limit exceeded`)
+      // Build expected prefix
+      if (i === 0) {
+        expectedPrefix = part
+      } else {
+        expectedPrefix += '-' + part
+      }
+      
+      // Find the epoch in the current hierarchy
+      const epoch = findEpoch((e) => e._name === partName && isIndexableEpoch(e))
+      if (!epoch || !isIndexableEpoch(epoch)) {
+        logDebug('jumpToEpoch: epoch not found', { partName, epochId, currentEpochId: currentEpoch.value.id })
+        const shortened = epochId.substring(0, epochId.lastIndexOf('-'))
+        if (shortened !== epochId) {
+          await jumpToEpoch(shortened)
         }
-        
-        await nextTick()
-        
-        const currentEpochId = currentEpoch.value.id
-        // console.log('current:', JSON.stringify({currentEpochId, currentName: currentEpoch.value._name}))
-        
-        // Check if we've reached or passed the target
-        let re: RegExp
-        if (builtPrefix.includes('[')) {
-          // If builtPrefix contains brackets, match it exactly (with brackets)
-          const escapedPrefix = builtPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-          re = new RegExp(`(^|-)${escapedPrefix}(-|$)`)
-        } else {
-          // If no brackets, match as word boundary (allows B to match B[0] but not Baz)
-          const escapedPrefix = builtPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-          re = new RegExp(`(^|-)\\b${escapedPrefix}\\b(\\[|-|$)`)
-        }
-        if (re.test(currentEpochId)) {
-          break
-        }
-        
-        // Check if we can use goTo on a parent epoch
-        let epoch: Epoch = currentEpoch.value
-        let useGoTo = false
-        
-        while (epoch._parent) {
-          epoch = epoch._parent
-          if (epoch._name === partName && partStep !== null && isIndexableEpoch(epoch)) {
-            // console.log('using goTo on parent:', JSON.stringify({name: epoch._name, step: partStep}))
-            epoch.goTo(partStep)
-            useGoTo = true
-            break
-          }
-        }
-        
-        if (useGoTo) {
-          await nextTick()
-          continue
-        }
-        
-        // Otherwise advance normally
-        // console.log('advancing')
-        if (currentEpoch.value._name === 'EPage') {
-          currentEpoch.value.done()
-        } else {
-          currentEpoch.value.next()
-        }
-        
-        if (currentEpoch.value._name === '__TOP_EPOCH__') {
-          // console.log('reached TOP_EPOCH, not found')
-          throw new Error(`jumpToEpoch: '${epochId}' not found`)
-        }
+        return
+      }
+      if (partIndex >= epoch.nSteps) {
+        logDebug('jumpToEpoch: step out of bounds', { partName, partIndex, epochId, currentEpochId: currentEpoch.value.id })
+        partIndex = epoch.nSteps - 1
+      }
+      
+      epoch.goTo(partIndex)
+      await nextTick()
+    }
+    
+    // Check if current epochId matches expected prefix
+    const currentPrefix = indexableEpochPrefix(currentEpoch.value.id)
+    if (!currentPrefix.startsWith(expectedPrefix)) {
+      logDebug('jumpToEpoch: prefix mismatch', { expectedPrefix, currentPrefix, epochId })
+      const lastDashIndex = epochId.lastIndexOf('-')
+      if (lastDashIndex > 0) {
+        const shortened = epochId.substring(0, lastDashIndex)
+        await jumpToEpoch(shortened)
       }
     }
   })
