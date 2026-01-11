@@ -36,8 +36,9 @@ const pinStatus = computed(() => {
   return 'none'
 })
 
+useInspect({pinnedEpochId, pinStatus, currentEpoch: () => currentEpoch.value.id})
+
 const cyclePin = () => {
-  const { jump, ...rest } = route.query
   const newPin = pinStatus.value == 'current' ? undefined : getBookmarkJump(currentEpoch.value.id)
   router.push({
     query: { ...route.query, jump: newPin }
@@ -46,10 +47,11 @@ const cyclePin = () => {
 
 const handleEpochChange = async (epoch: Epoch, newValue: string | number) => {
   logDebug(`handleEpochChange`, { epoch, newValue })
-  if (isIndexableEpoch(epoch)) {
-    epoch.goTo(typeof newValue === 'number' ? newValue : parseInt(newValue))
-  } else if (isPhaseEpoch(epoch)) {
+  if (isPhaseEpoch(epoch)) {
     epoch.goTo(newValue as string)
+  } else if (isIndexableEpoch(epoch)) {
+    const idx = assertNumber(newValue)
+    epoch.goTo(idx)
   }
   
   if (pinStatus.value != 'none') {
