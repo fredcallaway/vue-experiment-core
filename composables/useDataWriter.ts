@@ -191,11 +191,11 @@ export class DataWriter {
     this.queueUpdate(fullPath, toSafeData(value))
   }
 
-  async withDisabled(f: () => Promise<void>) {
+  async withDisabled<T>(fn: () => Promise<T>): Promise<T> {
     const prevDisabled = this.disabled
     this.disabled = true
     try {
-      await f()
+      return await fn()
     } finally {
       // TODO: don't enable until ALL callbacks have finished (from other calls)
       this.disabled = prevDisabled
