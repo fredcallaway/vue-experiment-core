@@ -2,6 +2,7 @@
 // import { currentEpoch, type Epoch, type MultistepEpoch, type IndexableEpoch, jumpToEpoch } from '@/composables/useEpoch'
 
 const currentEpoch = useCurrentEpoch()
+const currentEpochIndex = useCurrentEpochIndex()
 
 const stack = computed(() => {
   const stack = []
@@ -29,24 +30,33 @@ const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
 const route = useRoute()
 const router = useRouter()
 
-const pinnedEpochId = computed(() => route.query.jump as string | undefined)
+const pinnedIndex = computed(() => route.query.jump as string | undefined)
 const pinStatus = computed(() => {
-  if (pinnedEpochId.value === getBookmarkJump(currentEpoch.value.id)) return 'current'
-  if (pinnedEpochId.value !== undefined) return 'other'
+  // console.log('pinStatus', {
+  //   name: currentEpoch.value._name,
+  //   step: currentEpoch.value,
+  // })
+  if (pinnedIndex.value === currentEpochIndex.value) return 'current'
+  if (pinnedIndex.value !== undefined) return 'other'
   return 'none'
 })
 
-useInspect({pinnedEpochId, pinStatus, currentEpoch: () => currentEpoch.value.id})
+useInspect({
+  pinnedIndex, 
+  pinStatus, 
+  currentEpochIndex,
+  currentEpochId: () => currentEpoch.value.id,
+  stack: () => stack.value.map(e => e.id),
+})
 
 const cyclePin = () => {
-  const newPin = pinStatus.value == 'current' ? undefined : getBookmarkJump(currentEpoch.value.id)
+  const newPin = pinStatus.value == 'current' ? undefined : currentEpochIndex.value
   router.push({
     query: { ...route.query, jump: newPin }
   })
 }
 
 const handleEpochChange = async (epoch: Epoch, newValue: string | number) => {
-  logDebug(`handleEpochChange`, { epoch, newValue })
   if (isPhaseEpoch(epoch)) {
     epoch.goTo(newValue as string)
   } else if (isIndexableEpoch(epoch)) {
@@ -64,22 +74,17 @@ const handleEpochChange = async (epoch: Epoch, newValue: string | number) => {
 // Bookmarks
 const bookmarks = useLocalStorage<Record<string, string>>('bookmarks', {})
 
-const getBookmarkJump = (epochId: string) => {
-  // strips everything after the last ]
-  const lastBracketIndex = epochId.lastIndexOf(']')
-  return epochId.substring(0, lastBracketIndex + 1)
-}
 
 const getDefaultBookmarkName = (epochId: string) => {
   const parts = epochId.split('-')
   return R.last(parts)!.replace('[0]', '')
 }
 
-const isBookmarked = computed(() => getBookmarkJump(currentEpoch.value.id) in bookmarks.value)
+const isBookmarked = computed(() => currentEpochIndex.value! in bookmarks.value)
 
 const toggleBookmark = () => {
   const epochId = currentEpoch.value.id
-  const jump = getBookmarkJump(epochId)
+  const jump = currentEpochIndex.value!
   if (isBookmarked.value) {
     delete bookmarks.value[jump]
   } else {

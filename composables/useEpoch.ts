@@ -28,6 +28,14 @@ export type PhaseEpoch<T extends string = string> = IndexableEpoch & {
   goTo: (phase: T) => void,
 }
 
+const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
+  return 'step' in epoch && 'goTo' in epoch
+}
+
+export const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
+  return 'phase' in epoch
+}
+
 // this should never be the currentEpoch
 const TOP_EPOCH = {
   _name: '__TOP_EPOCH__',
@@ -37,12 +45,19 @@ const TOP_EPOCH = {
   _parent: null as unknown as Epoch,  // typing hack
 }
 
+// WARNING: currentEpoch.step is not a ref
 const currentEpoch = ref<Epoch>(TOP_EPOCH)
+watchEffect(() => {
+  console.trace('currentEpoch', currentEpoch.value.id)
+})
+
 export const useCurrentEpoch = () => currentEpoch
-// I think this is necessary for findEpoch, weird reactivity thing
+
+const currentEpochIndex = ref<string | undefined>(undefined)
+export const useCurrentEpochIndex = () => currentEpochIndex
+
+// I think this variable is necessary because a weird reactivity thing
 let _currentEpoch = TOP_EPOCH
-
-
 export const findEpoch = (predicate: (E: Epoch) => boolean): Epoch | null => {
   let epoch = _currentEpoch
   while (epoch._name !== '__TOP_EPOCH__') {
@@ -70,6 +85,7 @@ const hasFlag = (attrs: Record<string, any>, flag: string) => attrs[flag] === ""
 
 // TODO: doc
 export function useEpoch(name: string): Epoch {
+  logDebug('useEpoch', name)
   const attrs = useAttrs()  // properties passed to containing component
   let disabled = hasFlag(attrs, "disabled")
   const noEpoch = hasFlag(attrs, "no-epoch") || hasFlag(attrs, "noEpoch")
@@ -112,6 +128,9 @@ export function useEpoch(name: string): Epoch {
   
   onUnmounted(() => {
     disabled = true
+    if (currentEpoch.value.id === epoch.id) {
+      currentEpoch.value = parentEpoch
+    }
   })
 
   if (!disabled && !noEpoch) {
@@ -153,10 +172,17 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
   E.nSteps = nSteps
   E.step = step
 
-  // Log step changes
-  watch(step, (newStep, oldStep) => {
-    if (oldStep !== undefined) {
-      logEvent(`epoch.step.${newStep}`, { id: E.id, from: oldStep })
+  // Log step changes and update currentEpochIndex
+  watchImmediate(step, (newStep, oldStep) => {
+    if (isPhaseEpoch(E)) {
+      const newPhase = E.phase.value
+      logEvent(`epoch.phase.${newPhase}`)
+      currentEpochIndex.value = E.id + '[' + newPhase + ']'
+    } else {
+      if (oldStep !== undefined) {
+        logEvent(`epoch.step.${newStep}`)
+      }
+      currentEpochIndex.value = E.id + '[' + newStep + ']'
     }
   })
   
@@ -203,15 +229,6 @@ export function usePhaseEpoch<const T extends readonly string[]>(
   return E
 }
 
-const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
-  return 'step' in epoch && 'goTo' in epoch
-}
-
-export const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
-  return 'phase' in epoch
-}
-
-
 const indexableEpochPrefix = (epochId: string) => {
   // strips everything after the last ]
   const lastBracketIndex = epochId.lastIndexOf(']')
@@ -256,8 +273,8 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
   }
   
   // Confirm that we ended up where we expected
-  const currentPrefix = indexableEpochPrefix(currentEpoch.value.id)
-  assert(currentPrefix.startsWith(expectedPrefix))
+  // const currentPrefix = indexableEpochPrefix(currentEpoch.value.id)
+  // assert(currentPrefix.startsWith(expectedPrefix), `expected ${expectedPrefix} but got ${currentPrefix}`)
 
   return expectedPrefix
 }

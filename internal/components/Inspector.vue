@@ -8,7 +8,10 @@ const entriesArray = computed(() => {
   if (global.data && Object.keys(global.data).length > 0) {
     result.unshift(global)
   }
-  return result
+  return result.map(entry => ({
+    ...entry,
+    data: R.mapValues(entry.data, toValue)
+  }))
 })
 </script>
 
@@ -19,10 +22,10 @@ const entriesArray = computed(() => {
   >
     
     <h2>Inspector</h2>
-    <div flex="~ row gap-2">
+    <div flex="~ wrap gap-2">
       <div v-for="entry in entriesArray" :key="entry.id" card-gray p-2>
         <div font-bold text-sm text-gray-600 mb-1>{{ entry.label }}</div>
-        <pre text-xs>{{ stringify(entry.data, { indent: 2, maxLength: 50 }) }}</pre>
+        <pre text-xs>{{ stringify(entry.data, { indent: 2, maxLength: 80 }) }}</pre>
       </div>
     </div>
   </div>

@@ -1,10 +1,10 @@
 <script lang="ts" setup>
 
 defineWindowSize({
-  width: 700,
+  width: 600,
   height: 500,
 })
-
+await nextTick()
 
 const phases = ['apple', 'banana', 'choice', 'durian', 'date'] as const
 const E = usePhaseEpoch('phases2', phases)
@@ -12,15 +12,11 @@ const E = usePhaseEpoch('phases2', phases)
 
 const { Phase, goToPhase, phase } = useDisplayPhases(phases, { duration: 200 })
 
-useInspect({
-  phase,
-  Ephase: E.phase,
-})
 watch(E.phase, (newPhase, oldPhase) => {
-  logDebug('phase changed', {newPhase, oldPhase})
   goToPhase(newPhase)
 })
 
+await nextTick()
 
 </script>
 
@@ -34,11 +30,16 @@ watch(E.phase, (newPhase, oldPhase) => {
     
     <Phase which="apple" flex-center flex-col gap-5>
       apple
-      <EButtons values="next" />
+      <ESequence name="applesequence" text-lg>
+        <EContinue button>Red Delicious</EContinue>
+        <EContinue button>Granny Smith</EContinue>
+        <EContinue button>Honeycrisp</EContinue>
+        <EButtons values="next" />
+      </ESequence>
     </Phase>
 
+
     <Phase which="banana" flex-center flex-col gap-5>
-      <OnMounted :fn="() => logDebug('banana mounted')" />
       banana
       <PButton value="next" @click="E.next" />
     </Phase>
