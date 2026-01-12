@@ -47,10 +47,6 @@ const TOP_EPOCH = {
 
 // WARNING: currentEpoch.step is not a ref
 const currentEpoch = ref<Epoch>(TOP_EPOCH)
-watchEffect(() => {
-  console.trace('currentEpoch', currentEpoch.value.id)
-})
-
 export const useCurrentEpoch = () => currentEpoch
 
 const currentEpochIndex = ref<string | undefined>(undefined)
@@ -85,7 +81,6 @@ const hasFlag = (attrs: Record<string, any>, flag: string) => attrs[flag] === ""
 
 // TODO: doc
 export function useEpoch(name: string): Epoch {
-  logDebug('useEpoch', name)
   const attrs = useAttrs()  // properties passed to containing component
   let disabled = hasFlag(attrs, "disabled")
   const noEpoch = hasFlag(attrs, "no-epoch") || hasFlag(attrs, "noEpoch")
@@ -176,11 +171,11 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
   watchImmediate(step, (newStep, oldStep) => {
     if (isPhaseEpoch(E)) {
       const newPhase = E.phase.value
-      logEvent(`epoch.phase.${newPhase}`)
+      logEvent(`epoch.phase.${newPhase}`, { id: E.id })
       currentEpochIndex.value = E.id + '[' + newPhase + ']'
     } else {
       if (oldStep !== undefined) {
-        logEvent(`epoch.step.${newStep}`)
+        logEvent(`epoch.step.${newStep}`, { id: E.id })
       }
       currentEpochIndex.value = E.id + '[' + newStep + ']'
     }

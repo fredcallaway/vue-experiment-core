@@ -32,22 +32,18 @@ const router = useRouter()
 
 const pinnedIndex = computed(() => route.query.jump as string | undefined)
 const pinStatus = computed(() => {
-  // console.log('pinStatus', {
-  //   name: currentEpoch.value._name,
-  //   step: currentEpoch.value,
-  // })
   if (pinnedIndex.value === currentEpochIndex.value) return 'current'
   if (pinnedIndex.value !== undefined) return 'other'
   return 'none'
 })
 
-useInspect({
-  pinnedIndex, 
-  pinStatus, 
-  currentEpochIndex,
-  currentEpochId: () => currentEpoch.value.id,
-  stack: () => stack.value.map(e => e.id),
-})
+// useInspect({
+//   pinnedIndex, 
+//   pinStatus, 
+//   currentEpochIndex,
+//   currentEpochId: () => currentEpoch.value.id,
+//   stack: () => stack.value.map(e => e.id),
+// })
 
 const cyclePin = () => {
   const newPin = pinStatus.value == 'current' ? undefined : currentEpochIndex.value
