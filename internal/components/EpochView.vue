@@ -80,8 +80,22 @@ const bookmarks = useLocalStorage<Record<string, string>>('bookmarks', {})
 
 
 const getDefaultBookmarkName = (epochId: string) => {
+  const skipNames = [
+    'EContinue',
+    'EPage',
+    'ERepeat',
+    'EDelay',
+    'EWait',
+    'EKey',
+    'EButtons',
+  ]
   const parts = epochId.split('-')
-  return R.last(parts)!.replace('[0]', '')
+  let name = R.last(parts)!.replace('[0]', '')
+  while (skipNames.includes(name)) {
+    parts.pop()
+    name = R.last(parts)!.replace('[0]', '')
+  }
+  return name
 }
 
 const isBookmarked = computed(() => currentEpochIndex.value! in bookmarks.value)
