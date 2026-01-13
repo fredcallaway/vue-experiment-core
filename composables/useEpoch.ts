@@ -333,18 +333,22 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
 }
 
 
-export const jumpToEpoch = async (epochId: string): Promise<null | string> => {
+export const jumpToEpoch = async (epochId: string, isFallback: boolean = false): Promise<null | string> => {
   logDebug(`jumpToEpoch: ${epochId}`)
   if (epochId === '') return null
   
   const parts = epochId.split('-')
   try {
-    return await jumpToEpochImpl(parts)
+    const result = await jumpToEpochImpl(parts)
+    if (!isFallback) {
+      logDebug('__JUMP_SUCCEEDED__', { epochId }) // sending a signal to EventView
+    }
+    return result
   } catch (e) {
     logError('error jumping to epoch', e)
     const shortened = epochId.substring(0, epochId.lastIndexOf('-'))
     if (shortened != epochId) {
-      return await jumpToEpoch(shortened)
+      return await jumpToEpoch(shortened, true)
     }
     return null
   }
