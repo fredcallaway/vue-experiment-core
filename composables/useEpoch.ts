@@ -175,8 +175,8 @@ function makeLeafEpoch(parentEpoch: Epoch, name: string): Epoch {
   }
 
   setCurrentEpoch(epoch)
-  provide('__EPOCH__', epoch)
   logEvent(`epoch.start`, {id})
+  // provide('__EPOCH__', epoch)
 
 
   return epoch
