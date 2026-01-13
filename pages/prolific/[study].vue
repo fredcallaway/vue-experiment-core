@@ -205,7 +205,7 @@ const getDefaultAction = (sub: Submission): SubmissionAction => {
   const codeType = getCodeType(sub.study_code)
   const dataStatus = getDataStatus(sub).text
   if (codeType === 'COMPLETED' && dataStatus === 'full') return 'approve'
-  if (sub.status === 'RETURNED') return 'none'
+  if (sub.status === 'RETURNED' && dataStatus !== 'full') return 'none'
   return null
 }
 
