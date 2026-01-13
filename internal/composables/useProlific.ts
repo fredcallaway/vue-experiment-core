@@ -547,6 +547,12 @@ export const useProlific = createGlobalState(() => {
 
   // NOTE: bonusesInCents is the TOTAL bonus (including already paid), newBonusTotal is only the NEW amount to pay
   const assignBonuses = async ( studyId: string, bonusesInCents: Record<string, number>, newBonusTotal: number ) => {
+    const lastBonusTimestamp = useLocalStorage<number>(`prolific_bonuses_timestamp_${studyId}`, 0)
+    if (Date.now() - lastBonusTimestamp.value < 10_000) {
+      throw new ProlificError(`Recently assigned bonuses for ${studyId}, please wait 10 seconds before assigning again.`)
+    }
+    lastBonusTimestamp.value = Date.now()
+
     const study = await studiesCache.getItemAsync(studyId)
 
     const submissions = study.submissions
