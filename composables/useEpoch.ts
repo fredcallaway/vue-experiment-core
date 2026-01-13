@@ -255,14 +255,17 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
     // Parse the part
     const bracketMatch = part.match(/^([^[]+)\[([\d\w]+)\]$/)
     if (!bracketMatch) {
-      throw new Error(`jumpToEpoch: part '${part}' does not match expected format 'name[index]'`)
+      // Check that the epoch exists in the stack
+      assertDefined(findEpoch((e) => e._name === part), `jumpToEpoch: epoch '${part}' not found`)
+      // Nothing to do; proceed to next part
+      continue
     }
     const partName = bracketMatch[1]
     const partIndex = bracketMatch[2]
 
     // Find the epoch in the current hierarchy
-    const epoch = assertDefined(findEpoch((e) => e._name === partName))
-    assert(isIndexableEpoch(epoch))
+    const epoch = assertDefined(findEpoch((e) => e._name === partName), `jumpToEpoch: epoch '${partName}' not found`)
+    assert(isIndexableEpoch(epoch), `jumpToEpoch: epoch '${partName}' is not indexable`)
 
     // Go to the specified index (non-numeric string for PhaseEpoch)
     await useDataWriter().withDisabled(async () => {
