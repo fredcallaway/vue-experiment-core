@@ -58,10 +58,6 @@ const setCurrentEpoch = (epoch: Epoch) => {
   currentEpoch.value = epoch
 }
 
-const currentEpochIndex = ref<string | undefined>(undefined)
-export const useCurrentEpochIndex = () => currentEpochIndex
-
-
 export const findEpoch = (predicate: (E: Epoch) => boolean): Epoch | null => {
   let epoch = _currentEpoch
   while (epoch._name !== '__TOP_EPOCH__') {
@@ -162,7 +158,7 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
 
 function makeLeafEpoch(parentEpoch: Epoch, name: string): Epoch {
   
-  const id = makeId(name, parentEpoch)
+  const id = makeId(name, parentEpoch).replace('-leaf', '')
 
   const done = R.once((_result?: any) => {
     setCurrentEpoch(parentEpoch)
@@ -182,9 +178,6 @@ function makeLeafEpoch(parentEpoch: Epoch, name: string): Epoch {
     // disabled = true
     logDebug('unmounting leaf', { E: epoch.id })
     return
-    if (currentEpoch.value.id === epoch.id) {
-      setCurrentEpoch(parentEpoch)
-    }
   })
 
   setCurrentEpoch(epoch)
@@ -215,15 +208,6 @@ export function useMultistepEpoch(name: string, nSteps: number, stepRef?: Ref<nu
   return E
 }
 
-
-const indexableEpochPrefix = (epochId: string, dropStep: boolean = false) => {
-  if (dropStep) {
-    return epochId.substring(0, epochId.lastIndexOf('['))
-  } else {
-    return epochId.substring(0, epochId.lastIndexOf(']') + 1)
-  }
-}
-
 export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<number>): IndexableEpoch {
   const E = useEpoch(name) as IndexableEpoch
   const step = stepRef ?? ref(0)
@@ -251,28 +235,6 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
     // onMounted is sooner (better), nextTick is backup
     onMounted(ensureChild)
     nextTick(ensureChild)
-    
-    // TODO: where should this happen?
-    // log phase changes and update currentEpochIndex
-    // skip if this isn't the current epoch
-    // const current = indexableEpochPrefix(currentEpoch.value.id, true)
-    // const mine = indexableEpochPrefix(E.id, true)
-    // if (current !== mine) {
-    //   logDebug('⚠️ mismatch', { 
-    //     current, mine, currentId: currentEpoch.value.id, mineId: E.id, isNoEpoch: E.isNoEpoch 
-    //   })
-    //   return
-    // }
-    // if (isPhaseEpoch(E)) {
-    //   const newPhase = E.phase.value
-    //   logEvent(`epoch.phase.${newPhase}`, { id: E.id })
-    //   currentEpochIndex.value = E.id + '[' + newPhase + ']'
-    // } else {
-    //   if (oldStep !== undefined) {
-    //     logEvent(`epoch.step.${newStep}`, { id: E.id })
-    //   }
-    //   currentEpochIndex.value = E.id + '[' + newStep + ']'
-    // }
   })
   
   E.next = () => {
@@ -373,14 +335,9 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
 
 export const jumpToEpoch = async (epochId: string): Promise<null | string> => {
   logDebug(`jumpToEpoch: ${epochId}`)
-
-  const prefix = indexableEpochPrefix(epochId)
-  if (prefix === '') {
-    // No indexable prefix, nothing to do
-    return null
-  }
+  if (epochId === '') return null
   
-  const parts = prefix.split('-')
+  const parts = epochId.split('-')
   try {
     return await jumpToEpochImpl(parts)
   } catch (e) {

@@ -34,7 +34,7 @@ await nextTick()
         <EContinue button>Red Delicious</EContinue>
         <EContinue button>Granny Smith</EContinue>
         <EContinue button>Honeycrisp</EContinue>
-        <EButtons values="next" />
+        <PButton value="next" @click="E.next" />
       </ESequence>
     </Phase>
 

@@ -5,28 +5,22 @@ const currentEpoch = useCurrentEpoch()
 // const currentEpochIndex = useCurrentEpochIndex()
 
 
-const indexableEpochPrefix = (epochId: string, dropStep: boolean = false) => {
-  if (dropStep) {
-    return epochId.substring(0, epochId.lastIndexOf('['))
-  } else {
-    return epochId.substring(0, epochId.lastIndexOf(']') + 1)
-  }
-}
-
 const currentEpochIndex = computed(() => {
-  return indexableEpochPrefix(currentEpoch.value.id, false)
+  const epochId = currentEpoch.value.id
+  return epochId.substring(0, epochId.lastIndexOf(']') + 1)
 })
-
 
 const stack = computed(() => {
   const stack = []
   let epoch = currentEpoch.value
   while (epoch) {
-    stack.push(epoch)
+    const skip = epoch.isLeaf || epoch._name == '__TOP_EPOCH__'
+    if (!skip) {
+      stack.push(epoch)
+    }
     epoch = epoch._parent
   }
-
-  return stack.slice(0, -1).reverse() // remove TOP_EPOCH
+  return stack.reverse()
 })
 
 const isMultistepEpoch = (epoch: Epoch): epoch is MultistepEpoch => {
