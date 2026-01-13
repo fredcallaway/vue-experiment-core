@@ -1,11 +1,12 @@
 <script lang="ts" setup>
 
 const props = defineProps<{
+  name?: string,
   skipWelcome?: boolean,
   disableNavigation?: boolean
 }>()
 
-const epoch = useIndexableEpoch('instructions', 0)
+const epoch = useIndexableEpoch(props.name ?? 'instructions', 0)
 
 const withEpoch = <T>(f: (E: IndexableEpoch) => T | null) => {
   return (): T | null => {
