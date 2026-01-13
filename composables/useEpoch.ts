@@ -232,9 +232,11 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
         _activeLeaf = null
       }
     })
-    // onMounted is sooner (better), nextTick is backup
-    onMounted(ensureChild)
-    nextTick(ensureChild)
+    if (getCurrentInstance()) {
+      onMounted(ensureChild)
+    } else {
+      nextTick(ensureChild)
+    }
   })
   
   E.next = () => {
