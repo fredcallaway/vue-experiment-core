@@ -48,7 +48,7 @@ const saveDebugData = async () => {
 
 <template>
   <div w-full>
-    <div mx-auto w-140 text-center>
+    <div mx-auto w-140 text-center select-text >
       <h1>Thanks!</h1>
       <p>You have completed the study. Your final bonus is ${{ useBonus().dollars.toFixed(2) }}.</p>
   
