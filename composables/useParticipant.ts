@@ -59,7 +59,7 @@ export const useParticipantBus = () => useEventBus<PEvent>(`participant`)
 
 export function useParticipant<
   TypeMap extends Record<string, any> = Record<string, any>
->(name?: string): Participant<TypeMap> {
+>(suffix?: string): Participant<TypeMap> {
   
   const { registerAsync } = useLocalAsync()
   
@@ -67,7 +67,7 @@ export function useParticipant<
 
   // unique identifier for each useParticipant value
   // should allow for later playback
-  name = useCurrentEpoch().value.id + ' P'
+  const name = useCurrentEpoch().value.id + (suffix ?? ' P')
   const idx = useNamedCounter(name).inc()
   const myPid = `${name}-${idx}`
   onUnmounted(() => {
