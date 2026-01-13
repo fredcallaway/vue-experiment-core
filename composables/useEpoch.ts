@@ -173,12 +173,6 @@ function makeLeafEpoch(parentEpoch: Epoch, name: string): Epoch {
     next: done,
     isLeaf: true,
   }
-  
-  onUnmounted(() => {
-    // disabled = true
-    logDebug('unmounting leaf', { E: epoch.id })
-    return
-  })
 
   setCurrentEpoch(epoch)
   provide('__EPOCH__', epoch)
