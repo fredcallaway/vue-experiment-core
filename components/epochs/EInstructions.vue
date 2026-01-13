@@ -37,14 +37,18 @@ const goPrev = withEpoch((E) => E.prev())
   <div class="instructions" relative>
     <!-- HEADER -->
     <div flex="~ row gap-4 justify-between items-center" mx-10>
-      <PButton btn-gray-sm text-2xl :disabled="!allowPrev" @click="goPrev" value="prev">
+      <PButton btn-gray-sm text-2xl :disabled="!allowPrev" @click="goPrev" value="prev" 
+        transition-all transition-duration-300 
+      >
         <span class="i-mdi-arrow-left-bold" />
         <PKey v-if="allowPrev" keys="LEFT" @press="goPrev" />
       </PButton>
       
       <div text-3xl font-bold>Instructions {{ epoch.step.value + 1 - Number(skipWelcome) }} of {{ epoch.nSteps - Number(skipWelcome) }}</div>
 
-      <PButton :class="allowNext ? 'btn-primary-sm' : 'btn-gray-sm'" text-2xl :disabled="!allowNext" @click="goNext" value="next">
+      <PButton :class="allowNext ? 'btn-primary-sm' : 'btn-gray-sm'" text-2xl :disabled="!allowNext" @click="goNext" value="next"
+        transition-all transition-duration-300 
+      >
         <div class="i-mdi-arrow-right-bold" />
         <PKey v-if="allowNext" keys="RIGHT" @press="goNext" />
       </PButton>
