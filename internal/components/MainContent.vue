@@ -23,12 +23,6 @@ whenever(content, (el) => {
   if (!el) return
   mainContentRef.value = el
 })
-
-const onError = (error: Error) => {
-  logError(error)
-  // const devtoolsClient = useNuxtDevTools()
-  // devtoolsClient.value?.devtools.navigate('/modules/error')
-}
 </script>
 
 <template>
@@ -46,17 +40,7 @@ const onError = (error: Error) => {
         height: props.fixedHeight ? `${minHeight - padding}px` : 'auto',
       }"
     >
-      <NuxtErrorBoundary @error=onError>
-        <slot />
-        <template #error="{ error, clearError }">
-          <p>An error occurred: {{ error }}</p>
-          <Error :error="error" />
-
-          <button btn @click="clearError">
-            reset
-          </button>
-        </template>
-      </NuxtErrorBoundary>
+      <slot />
       <div id="main-content-overlay" absolute inset-0 wfull hfull pointer-events-none />
     </div>
     <div v-if="violated"
