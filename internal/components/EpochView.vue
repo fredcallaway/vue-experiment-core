@@ -2,7 +2,21 @@
 // import { currentEpoch, type Epoch, type MultistepEpoch, type IndexableEpoch, jumpToEpoch } from '@/composables/useEpoch'
 
 const currentEpoch = useCurrentEpoch()
-const currentEpochIndex = useCurrentEpochIndex()
+// const currentEpochIndex = useCurrentEpochIndex()
+
+
+const indexableEpochPrefix = (epochId: string, dropStep: boolean = false) => {
+  if (dropStep) {
+    return epochId.substring(0, epochId.lastIndexOf('['))
+  } else {
+    return epochId.substring(0, epochId.lastIndexOf(']') + 1)
+  }
+}
+
+const currentEpochIndex = computed(() => {
+  return indexableEpochPrefix(currentEpoch.value.id, false)
+})
+
 
 const stack = computed(() => {
   const stack = []
@@ -37,13 +51,13 @@ const pinStatus = computed(() => {
   return 'none'
 })
 
-// useInspect({
-//   pinnedIndex, 
-//   pinStatus, 
-//   currentEpochIndex,
-//   currentEpochId: () => currentEpoch.value.id,
-//   stack: () => stack.value.map(e => e.id),
-// })
+useInspect({
+  pinnedIndex, 
+  currentEpochIndex,
+  pinStatus, 
+  currentEpochId: () => currentEpoch.value.id,
+  // stack: () => stack.value.map(e => e.id),
+})
 
 const cyclePin = () => {
   const newPin = pinStatus.value == 'current' ? undefined : currentEpochIndex.value
