@@ -7,6 +7,8 @@ export type Epoch = {
   // internal
   _name: string,
   _parent: Epoch,
+  isNoEpoch?: boolean,
+  isLeaf?: boolean,
   id: string,
 }
 
@@ -103,6 +105,10 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
   const noEpoch = hasFlag(attrs, "no-epoch") || hasFlag(attrs, "noEpoch")
   
   const parentEpoch = inject<Epoch>('__EPOCH__', TOP_EPOCH)
+  if (parentEpoch.isLeaf) {
+    logDebug('⚠️ useEpoch: parent epoch is a leaf', { parentEpoch: parentEpoch.id })
+    console.warn('⚠️ useEpoch: parent epoch is a leaf', { parentEpoch: parentEpoch.id })
+  }
   const id = makeId(name, parentEpoch)
 
 
@@ -135,6 +141,7 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
     _parent: parentEpoch,
     done,
     next: done, // is overriden by multistep epochs
+    isNoEpoch: noEpoch,
   }
   
   onUnmounted(() => {
@@ -147,7 +154,7 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
   if (!disabled && !noEpoch) {
     provide('__EPOCH__', epoch)
     setCurrentEpoch(epoch)
-    logEvent(`epoch.start.${name}`, {id})
+    logEvent(`epoch.start`, {id})
   }
 
   return epoch
@@ -167,7 +174,8 @@ function makeLeafEpoch(parentEpoch: Epoch, name: string): Epoch {
     id,
     _parent: parentEpoch,
     done,
-    next: done, // is overriden by multistep epochs
+    next: done,
+    isLeaf: true,
   }
   
   onUnmounted(() => {
@@ -180,13 +188,9 @@ function makeLeafEpoch(parentEpoch: Epoch, name: string): Epoch {
   })
 
   setCurrentEpoch(epoch)
+  provide('__EPOCH__', epoch)
+  logEvent(`epoch.start`, {id})
 
-  // if (!disabled && !noEpoch) {
-  //   provide('__EPOCH__', epoch)
-  //   currentEpoch.value = epoch
-  //   _currentEpoch = epoch
-  //   logEvent(`epoch.start.${name}`, {id})
-  // }
 
   return epoch
 }
@@ -231,11 +235,13 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
   let _activeLeaf: Epoch | null = null
 
   watchImmediate(step, (newStep, oldStep) => {
-
+    if (E.isNoEpoch) {
+      return
+    }
     // Create a leaf epoch if necessary
     const ensureChild = R.once(() => {
       if (_currentEpoch.id === E.id || _activeLeaf) {
-        logDebug('making leaf', { E: E.id })
+        // logDebug('making leaf', { E: E.id })
         _activeLeaf = makeLeafEpoch(E, 'leaf')
       } else {
         // logDebug('has child', { E: E.id, child: _currentEpoch.id })
@@ -249,22 +255,24 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
     // TODO: where should this happen?
     // log phase changes and update currentEpochIndex
     // skip if this isn't the current epoch
-    const current = indexableEpochPrefix(currentEpoch.value.id, true)
-    const mine = indexableEpochPrefix(E.id, true)
-    if (current !== mine) {
-      // logDebug('not updating', { current, mine })
-      return
-    }
-    if (isPhaseEpoch(E)) {
-      const newPhase = E.phase.value
-      logEvent(`epoch.phase.${newPhase}`, { id: E.id })
-      currentEpochIndex.value = E.id + '[' + newPhase + ']'
-    } else {
-      if (oldStep !== undefined) {
-        logEvent(`epoch.step.${newStep}`, { id: E.id })
-      }
-      currentEpochIndex.value = E.id + '[' + newStep + ']'
-    }
+    // const current = indexableEpochPrefix(currentEpoch.value.id, true)
+    // const mine = indexableEpochPrefix(E.id, true)
+    // if (current !== mine) {
+    //   logDebug('⚠️ mismatch', { 
+    //     current, mine, currentId: currentEpoch.value.id, mineId: E.id, isNoEpoch: E.isNoEpoch 
+    //   })
+    //   return
+    // }
+    // if (isPhaseEpoch(E)) {
+    //   const newPhase = E.phase.value
+    //   logEvent(`epoch.phase.${newPhase}`, { id: E.id })
+    //   currentEpochIndex.value = E.id + '[' + newPhase + ']'
+    // } else {
+    //   if (oldStep !== undefined) {
+    //     logEvent(`epoch.step.${newStep}`, { id: E.id })
+    //   }
+    //   currentEpochIndex.value = E.id + '[' + newStep + ']'
+    // }
   })
   
   E.next = () => {
@@ -285,9 +293,9 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
   return E
 }
 
-watchEffect(() => {
-  logDebug('currentEpoch', { currentEpoch: currentEpoch.value.id })
-})
+// watchEffect(() => {
+//   logDebug('currentEpoch', { currentEpoch: currentEpoch.value.id })
+// })
 
 
 export function usePhaseEpoch<const T extends readonly string[]>(
