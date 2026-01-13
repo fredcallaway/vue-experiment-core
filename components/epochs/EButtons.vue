@@ -7,12 +7,19 @@ const props = defineProps<{
 }>()
 
 const { done } = useEpoch(props.name ?? 'EButtons')
+const emit = defineEmits<{
+  (e: 'click', value: string): void
+}>()
 
+const handleClick = (value: string) => {
+  emit('click', value)
+  done()
+}
 </script>
 
 <template>
   <div>
     <slot />
-    <PButtons :disabled="props.disabled" :values="props.values" @click="done" mt-2 />
+    <PButtons :disabled="props.disabled" :values="props.values" @click="handleClick" mt-2 />
   </div>
 </template>
