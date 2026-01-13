@@ -5,6 +5,7 @@ export const useBonus = createGlobalState(() => {
   const store = reactive({
     points: 0,
     centsPerPoint: 1,
+    disabled: false,
     // get pointsPerCent() {
     //   return 1 / config.centsPerPoint
     // },
@@ -27,6 +28,7 @@ export const useBonus = createGlobalState(() => {
     //   return `one cent for every ${numString(config.pointsPerCent, "point", { skipOne: true })}`
     // },
     addPoints(n: number) {
+      if (this.disabled) return
       this.points += n
     },
     toCents(points: number) {
@@ -44,6 +46,17 @@ export const useBonus = createGlobalState(() => {
     },
     toDollarsString(points: number, allowNegative: boolean = false) {
       return `$${this.toDollars(points, allowNegative).toFixed(2)}`
+    },
+    disableWhileMounted() {
+      if (!getCurrentInstance()) {
+        throw new Error('disableWhileMounted can only be used in a component')
+      }
+      onMounted(() => {
+        this.disabled = true
+      })
+      onUnmounted(() => {
+        this.disabled = false
+      })
     }
   })
 
