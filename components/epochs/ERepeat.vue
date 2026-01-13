@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 
-const { name='ERepeat', count } = defineProps<{ name?: string, count: number }>()
+const { name='ERepeat', count } = defineProps<{ name?: string, count: NumberLike }>()
 
-const epoch = useIndexableEpoch(name, count)
+const epoch = useIndexableEpoch(name, ensureNumber(count))
 
 if (count == 0) {
   epoch.done()
