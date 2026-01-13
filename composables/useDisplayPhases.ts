@@ -46,8 +46,6 @@ export const useDisplayPhases = <const T extends readonly string[]>(
   const parseWhich = (which: string): Phase[] => which.split(/\s+/) as Phase[]
 
   const goToPhase = async (newPhase: Phase) => {
-    console.trace('goToPhase', newPhase)
-
     assertOneOf(newPhase, phases, `goToPhase: ${newPhase} is not a valid phase (${phases.join(', ')})`)
     if (phase.value === newPhase) return
     previousPhase.value = phase.value
