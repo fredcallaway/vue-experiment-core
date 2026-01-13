@@ -79,8 +79,17 @@ const makeId = (name: string, parent: Epoch | MultistepEpoch | PhaseEpoch) => {
 
 const hasFlag = (attrs: Record<string, any>, flag: string) => attrs[flag] === "" || attrs[flag] === true
 
-// TODO: doc
-export function useEpoch(name: string): Epoch {
+
+type NoHyphen<S extends string> =
+  S extends `${string}-${string}`
+    ? "epoch name cannot contain hyphens (-)"
+    : S
+
+export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
+  if (name.includes('-')) {
+    throw new Error(`useEpoch: name "${name}" contain hyphens (-)`)
+  }
+  
   const attrs = useAttrs()  // properties passed to containing component
   let disabled = hasFlag(attrs, "disabled")
   const noEpoch = hasFlag(attrs, "no-epoch") || hasFlag(attrs, "noEpoch")
