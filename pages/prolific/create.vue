@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PROLIFIC_FEE } from '#imports'
 
 import { PROLIFIC_FEE } from '#imports'
 
