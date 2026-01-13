@@ -1,43 +1,29 @@
-import { defineComponent, h, ref, type SetupContext, type SlotsType } from 'vue'
 import PButton from '../components/participant/PButton.vue'
-import type { ComponentPublicInstance } from 'vue'
-
+import type { SetupContext } from 'vue'
 type PButtonTypeMap = { click: string; hover: string; mousedown: string }
-type PButtonParticipant = ReturnType<typeof useParticipant<PButtonTypeMap>>
 
-type PButtonInstance = ComponentPublicInstance<{
-  on: PButtonParticipant['on']
-  promise: PButtonParticipant['promise']
-}>
+type PButtonProps = InstanceType<typeof PButton>['$props']
 
-export function usePButton() {
-  const P = useParticipant<PButtonTypeMap>('PButton')
+export function usePButton(props: PButtonProps) {
+  const P = useParticipant<PButtonTypeMap>()
   
   const Button = defineComponent({
-    name: 'PButton',
-    props: {
-      value: { type: String, required: true },
-      label: String,
-      unstyled: Boolean,
-      color: String as () => 'primary' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'gray',
-      disabled: Boolean,
-      delay: [Number, String],
-      once: Boolean,
-    },
-    slots: Object as SlotsType<{ default: () => any }>,
-    setup(props, { slots }: SetupContext) {
+    // name: `usePButton(${name})`,
+    setup(localProps, { slots }: SetupContext) {
       return () => {
-        // @ts-ignore
         return h(PButton, {
+          // value: name,
           ...props,
+          ...localProps,
           P,
         }, slots.default)
       }
     },
   })
-
+ 
   return {
-    P,
-    Button,
+    ...Button,
+    on: P.on,
+    promise: P.promise,
   }
 }
