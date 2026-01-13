@@ -4,6 +4,9 @@ const { name='ERepeat', count } = defineProps<{ name?: string, count: NumberLike
 
 const epoch = useIndexableEpoch(name, ensureNumber(count))
 
+const emit = defineEmits<{ (e: 'mounted', epoch: Epoch): void }>()
+onMounted(() => emit('mounted', epoch))
+
 if (count == 0) {
   epoch.done()
 }
