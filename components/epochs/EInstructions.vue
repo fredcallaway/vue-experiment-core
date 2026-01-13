@@ -2,6 +2,7 @@
 
 const props = defineProps<{
   skipWelcome?: boolean,
+  disableNavigation?: boolean
 }>()
 
 const epoch = useIndexableEpoch('instructions', 0)
@@ -15,8 +16,8 @@ const withEpoch = <T>(f: (E: IndexableEpoch) => T | null) => {
 const maxCompletedStep = ref(-1)
 
 const step = computed(withEpoch((E) => E.step.value))
-const allowNext = computed(withEpoch((E) => maxCompletedStep.value >= E.step.value))
-const allowPrev = computed(withEpoch((E) => E.step.value > 0))
+const allowNext = computed(withEpoch((E) => !props.disableNavigation && maxCompletedStep.value >= E.step.value))
+const allowPrev = computed(withEpoch((E) => !props.disableNavigation && E.step.value > 0))
 
 const enableNext = withEpoch((E) => {
   console.log('enableNext', E.step.value)
