@@ -7,6 +7,11 @@ const props = defineProps<{
   disabled?: boolean
   delay?: NumberLike
   once?: boolean
+  P?: Participant<{
+    click: string;
+    hover: string;
+    mousedown: string;
+  }>
 }>()
 
 
@@ -36,7 +41,8 @@ watch(playbackState, (s) => {
   downOff.stop()
 })
 
-const P = useParticipant<{click: string, hover: string, mousedown: string}>('PButton')
+const P = props.P ?? useParticipant<{click: string, hover: string, mousedown: string}>('PButton')
+
 P.on('click', (value: string) => {
   if (playbackState.value === 'playing') {
     isPlaybackDown.value = false
@@ -82,7 +88,10 @@ const playbackFxClasses = computed(() => {
   ].filter(Boolean)
 })
 
-
+defineExpose({
+  on: P.on,
+  promise: P.promise,
+})
 
 </script>
 

@@ -46,10 +46,10 @@ type Unsubscriber = () => void
 // TypeMap is a generic mapping of event names to payload types.
 // This enables type-safe emit/on/promise methods, ensuring that for each event name,
 // the associated payload type is enforced by TypeScript.
-type Participant<TypeMap extends Record<string, any> = Record<string, any>> = {
+export type Participant<TypeMap extends Record<string, any> = Record<string, any>> = {
   emit<E extends keyof TypeMap>(eventType: E, info: TypeMap[E]): void
   on<E extends keyof TypeMap>(eventType: E, handler: (info: TypeMap[E]) => void): Unsubscriber
-  promise<E extends keyof TypeMap>(eventType: E, predicate: (info: TypeMap[E]) => boolean): Promise<TypeMap[E]>
+  promise<E extends keyof TypeMap>(eventType: E, predicate?: (info: TypeMap[E]) => boolean): Promise<TypeMap[E]>
   onKeyPress(spec: KeySpec, handler: (keyPress: KeyPress) => void, options?: KeyPressOptions): Unsubscriber
   promiseKeyPress(spec: KeySpec): Promise<KeyPress>
   promiseKeyPress(spec: KeySpec, maxTime: number): Promise<KeyPress | 'TIMEOUT'>
