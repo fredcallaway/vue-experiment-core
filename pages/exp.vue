@@ -50,7 +50,6 @@ const validateSession = () => {
 const minWait = timeoutPromise(2000)
 
 initialized.then(async (result) => {
-  console.warn('👉', result)
   if (result !== true) {
     if (result instanceof Error) {
       if (result.message.includes('repeatSession.mismatch')) {
@@ -78,7 +77,12 @@ initialized.then(async (result) => {
 <template>
   <div flex-center min-h-80vh>
     <MainContent bg-white>
-      <Experiment />
+      <NuxtErrorBoundary @error="logError">
+        <Experiment />
+        <template #error="{ error }">
+          <ECompletion :error="error" />
+        </template>
+      </NuxtErrorBoundary>
     </MainContent>
 
     <div v-if="initStatus === 'loading'" fixed inset-0 bg-white flex-center z-100>
