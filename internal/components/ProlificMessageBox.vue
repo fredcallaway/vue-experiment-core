@@ -64,13 +64,21 @@ onMounted(scrollToBottom)
 
 const handleSend = async () => {
   isLoading.value = true
+  const { studyId, participantId } = props.correspondence
   try {
     const bonusDiff = intendedBonus.value - currentBonus.value
-    if (bonusDiff > 0) {
-      await messages.assignBonus(props.correspondence.studyId, props.correspondence.participantId, bonusDiff)
-    }
+    let msg = ''
     if (replyText.value.trim()) {
-      await messages.sendMessage(props.correspondence.studyId, props.correspondence.participantId, replyText.value.trim())
+      await messages.sendMessage(studyId, participantId, replyText.value.trim())
+      msg += `Message sent`
+    }
+    if (bonusDiff > 0) {
+      await prolific.assignBonuses(
+        studyId,
+        { [participantId]: intendedBonus.value },
+        bonusDiff
+      )
+      msg += `Bonus increased to ${intendedBonus.value}¢ (added ${bonusDiff}¢)\n`
     }
     replyText.value = ''
     emit('send', replyText.value, bonusDiff)
@@ -153,13 +161,12 @@ const handleResolve = async () => {
           class="w-11 text-sm input mr-5 px-2 py-1"
           :class="{'border-green-600': intendedBonus > currentBonus}"
         />
-        <button
-          @click="handleSend"
+        <ActionButton
+          name="Send"
+          :action="handleSend"
           :disabled="isLoading || !hasInput"
           class="btn-blue-sm flex-1"
-        >
-          Send
-        </button>
+        />
         <button
           @click="handleResolve"
           :disabled="isLoading"

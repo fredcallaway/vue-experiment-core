@@ -198,11 +198,6 @@ export const useProlificMessages = createGlobalState(() => {
     await db.update(`${MESSAGES_PATH}/${key}`, { resolved })
   }
 
-  const assignBonus = async (studyId: string, participantId: string, amountCents: number) => {
-    if (amountCents <= 0) return
-    await prolific.assignBonuses(studyId, { [participantId]: amountCents }, amountCents)
-  }
-
   const getCorrespondence = (studyId: string, participantId: string) => {
     const key = `${studyId}-${participantId}`
     return correspondences.value[key] ?? null
@@ -225,7 +220,6 @@ export const useProlificMessages = createGlobalState(() => {
     refreshCorrespondence,
     sendMessage,
     markResolved,
-    assignBonus,
     getCorrespondence,
     getOrCreateCorrespondence
   }
