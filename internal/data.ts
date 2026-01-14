@@ -9,6 +9,7 @@ export type SafeData =
 | boolean
 | number
 | string
+| null  // NOTE: RTDB will remove drop keys with null values
 | SafeData[]
 | { [k: string]: SafeData };
 
@@ -101,21 +102,31 @@ export type DBModeData = {
 // timestamp—index—eventType—uid
 
 export type DBEventKey = `${number}—${number}—${string}—${string}`
-export type DBEventData = SafeDataObject | false
+export type DBEventData = string | /* back compat */ SafeDataObject | false
 export type DBSessionEvents = Record<DBEventKey, DBEventData>
 
 export const compressEvent = (event: LogEvent): [DBEventKey, DBEventData] => {
   const eventType = event.eventType.replaceAll('.', ':')
   const key = `${event.timestamp}—${event.index}—${eventType}—${event.uid}` as DBEventKey
-  const data = Object.keys(event.data).length === 0 ? false : event.data
+  const data = Object.keys(event.data).length === 0 ? "" : JSON.stringify(event.data)
   // NOTE: we ignore currentEpochId because it can be reconstructed
   return [key, data]
 }
 
+const parseEventData = (d: any): SafeDataObject => {
+  if (typeof d !== 'string') {
+    // BACKWARD COMPAT: previously used objects (and false for {})
+    if (d === false) return {}
+    return d
+  }
+  // NEW: we store as json to avoid RTDB quirks
+  if (d === "") return {}
+  return JSON.parse(d)
+}
 export const decompressEvents = (record: DBSessionEvents): LogEvent[] => {
   let currentEpochId = ''
-  return R.entries(record).map(([key, data]) => {
-    if (data === false) data = {} // RTDB doesn't allow {} as a value
+  return R.entries(record).map(([key, rawData]) => {
+    const data = parseEventData(rawData)
     const [timestamp, index, eventTypeRaw, uid] = key.split('—')
     const eventType = eventTypeRaw.replaceAll(':', '.')
     if (eventType.startsWith('epoch.')) {
@@ -126,7 +137,7 @@ export const decompressEvents = (record: DBSessionEvents): LogEvent[] => {
       index: assertNumber(index),
       eventType,
       uid,
-      data: assertObject(data) as SafeDataObject,
+      data,
       currentEpochId,
     }
   })
@@ -166,11 +177,12 @@ export function toSafeData(input: unknown): SafeData {
     const t = typeof x;
     
     // primitives
-    if (t === "string" || t === "boolean") return x;
+    // NOTE: RTDB doesn't handle null, but we json it
+    if (t === "string" || t === "boolean" || x === null) return x;
     if (t === "number") return Number.isFinite(x) ? x : String(x);
 
     // cannot be represented as is, fall back to string
-    if (x === null || x === undefined || t === "function" || t === "symbol" || t === "bigint") {
+    if (x === undefined || t === "function" || t === "symbol" || t === "bigint") {
       return String(x)
     };
 
