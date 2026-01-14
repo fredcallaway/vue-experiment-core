@@ -345,21 +345,22 @@ const currentBonuses = computed(() => {
   return R.pullObject(submissions.value, R.prop("participant_id"), sub => sum(sub.bonus_payments))
 })
 
+const shouldUseDatabaseBonus = (sub: Submission) => {
+  const selectedAction = selectedActions.value[sub.id]
+  const dataStatus = getDataStatus(sub).text
+  const currentStatus = sub.status
+  
+  return selectedAction === 'approve' ||
+    dataStatus === 'full' ||
+    currentStatus === 'APPROVED'
+}
+
 const defaultBonuses = computed(() => {
   return R.mapValues(currentBonuses.value, (current, participantId) => {
     const sub = submissions.value.find(s => s.participant_id === participantId)
     if (!sub) return current
     
-    const selectedAction = selectedActions.value[sub.id]
-    const dataStatus = getDataStatus(sub).text
-    const currentStatus = sub.status
-    
-    const shouldUseDatabaseBonus = 
-      selectedAction === 'approve' ||
-      dataStatus === 'full' ||
-      currentStatus === 'APPROVED'
-    
-    const dbBonus = shouldUseDatabaseBonus ? (databaseBonuses.value[participantId] ?? 0) : 0
+    const dbBonus = shouldUseDatabaseBonus(sub) ? (databaseBonuses.value[participantId] ?? 0) : 0
     return Math.max(current, dbBonus)
   })
 })
@@ -440,6 +441,13 @@ const getSubmissionStatusLabel = (status: SubmissionStatus) => {
 const getBonusStatus = (sub: Submission) => {
   const current = currentBonuses.value[sub.participant_id] ?? 0
   const intended = intendedBonuses.value[sub.participant_id] ?? 0
+  
+  // Check if database bonus was zeroed out for incomplete sessions
+  const dbBonus = databaseBonuses.value[sub.participant_id] ?? 0
+  if (dbBonus > 0 && !shouldUseDatabaseBonus(sub)) {
+    return {text: `(${dbBonus})`, color: 'text-gray-400'}
+  }
+  
   if (intended === 0 && current === 0) return {text: 'NONE', color: 'text-gray-300'}
   if (current == 0) return {text: 'TODO', color: 'text-amber'}
   if (intended > current) return {text: 'UNDER', color: 'text-red-600'}
