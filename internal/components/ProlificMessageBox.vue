@@ -150,7 +150,7 @@ const handleResolve = async () => {
           :min="currentBonus"
           :scroll-step="5"
           :max="2000"
-          class="w-11 text-sm input mr-5"
+          class="w-11 text-sm input mr-5 px-2 py-1"
           :class="{'border-green-600': intendedBonus > currentBonus}"
         />
         <button
