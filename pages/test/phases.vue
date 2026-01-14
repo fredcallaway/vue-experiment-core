@@ -17,26 +17,17 @@ watch(E.phase, (newPhase, oldPhase) => {
 })
 
 await nextTick()
-  width: 1000,
-  height: 850,
-})
-
-
-const phases = ['apple', 'banana', 'choice', 'durian', 'date'] as const
-const E = usePhases(phases, { transition: 'fade', transitionDuration: 1000})
-const Phase = E.Phase
 
 </script>
 
 <template>
   <div flex-center flex-col text-2xl gap-10 relative>
     <PKey keys="T" />
-  <div flex-center flex-col text-3xl gap-10 relative>
 
     <Phase which="apple banana">
       the phase is currently either apple or banana
     </Phase>
-    
+
     <Phase which="apple" flex-center flex-col gap-5>
       apple
       <ESequence name="applesequence" text-lg>
@@ -51,13 +42,6 @@ const Phase = E.Phase
     <Phase which="banana" flex-center flex-col gap-5>
       banana
       <PButton value="next" @click="E.next" />
-      <PButton value="next" @click="E.nextPhase" />
-    </Phase>
-
-    <Phase which="banana" flex-center flex-col gap-5>
-      <OnMounted :fn="() => logDebug('banana mounted')" />
-      banana
-      <PButton value="next" @click="E.nextPhase" />
     </Phase>
 
     <Phase which="choice" flex-center flex-col gap-5>
@@ -76,3 +60,4 @@ const Phase = E.Phase
     </Phase>
   </div>
 </template>
+  
