@@ -490,6 +490,19 @@ const costString = computed(() => {
   return `${PROLIFIC_FEE} × (${formatCents(base)} + ${formatCents(bonus)}) = ${formatCents(total)}`
 })
 
+const averageBonus = computed(() => {
+  const eligible = submissions.value.filter(sub => {
+    const dataStatus = getDataStatus(sub).text
+    const codeType = getCodeType(sub.study_code)
+    return dataStatus === 'full' && codeType === 'COMPLETED'
+  })
+  
+  if (eligible.length === 0) return null
+  
+  const bonuses = eligible.map(sub => intendedBonuses.value[sub.participant_id] ?? 0)
+  return R.sum(bonuses) / eligible.length
+})
+
 const searchQuery = ref('')
 const filteredSubmissions = computed(() => {
   if (submissions.value.length === 0) return []
@@ -542,6 +555,7 @@ const filteredSubmissions = computed(() => {
 
             <div><b>Estimated Time:</b> {{ study.estimated_completion_time }} min</div>
             <div><b>Cost:</b> {{ costString }}</div>
+            <div><b>Average Bonus:</b> {{ averageBonus !== null ? formatCents(averageBonus) : 'N/A' }}</div>
             <a 
               :href="getStudyLink(study)"
               target="_blank"
