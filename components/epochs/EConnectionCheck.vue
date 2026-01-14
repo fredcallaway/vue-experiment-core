@@ -40,11 +40,15 @@ onMounted(async () => {
   }
 })
 
+const minWait = useTimeout(1000)
+const showError = computed(() => {
+  return minWait.value && !db.connected.value
+})
 
 </script>
 
 <template>
-  <div v-if="!db.connected.value" text-center>
+  <div v-if="showError" text-center>
     <h1>Connection Error</h1>
     <div>
       We are unable to establish a connection to the server.
