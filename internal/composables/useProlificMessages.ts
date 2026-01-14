@@ -9,7 +9,7 @@ export interface Correspondence {
   participantId: string
   resolved: boolean
   timestamp: number
-  messages: Message[]
+  messages: readonly Message[]
 }
 
 interface ProlificMessage {
