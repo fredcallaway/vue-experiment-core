@@ -114,6 +114,11 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
   })
 }
 
+const onDeploy = async () => {
+  await saveConfigToFile()
+  await deploy()
+}
+
 </script>
 
 <template>
@@ -131,7 +136,7 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
         <div class="flex flex-row gap-4 mb-4">
           <div flex-1>
             <label class="block mb-2 font-semibold">Reward (cents)</label>
-            <NumberInput text-base v-model="formData.reward" input w-35 />
+            <NumberInput :scroll-step="25" text-base v-model="formData.reward" input w-35 />
           </div>
 
           <div flex-1>
@@ -325,7 +330,7 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
         </button>
         <button
           v-else
-          @click="deploy"
+          @click="onDeploy"
           btn-blue
           :disabled="status !== 'ready'"
         >
