@@ -93,12 +93,10 @@ export class DataWriter {
       const newKey = key.replace('__PREINIT__', meta.sessionId).replace('dummy/', `${this.mode}/`)
       this.updates.value[newKey] = value
     }
-    logEvent('TEMP TEST')
     try {
       // ensure connection to database
       const db = useDatabase()
       await db.assertConnected()
-      logEvent('TEMP TEST 2')
 
       const snapshot = await db.get(this.dbPath('meta'))
       if (snapshot.exists()) {
