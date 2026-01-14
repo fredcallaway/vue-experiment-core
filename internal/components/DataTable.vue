@@ -47,6 +47,9 @@ const formatValue = (column: string, value: any, row: Record<string, any>) => {
 
 
 const formatObjectValue = (value: any): string => {
+  if (value === null || value === undefined) {
+    return 'null'
+  }
   switch (typeof value) {
     case 'object':
       if (R.isArray(value)) {
