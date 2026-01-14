@@ -35,10 +35,32 @@ export const getDatabasePath = async <T>(fullPath: string): Promise<T | null> =>
 
 const fetchSessionDataFromDb = async (mode: DataMode, sessionId: string): Promise<SessionData | null> => {
   const meta = await getDatabasePath<SessionMeta>(getDBPath(mode, sessionId, 'meta'))
-  if (!meta) return null
+  // if (!meta) return null
   const rawEvents = await getDatabasePath<DBSessionEvents>(getDBPath(mode, sessionId, 'events'))
   const other = await getDatabasePath<SafeDataObject>(getDBPath(mode, sessionId, 'other'))
   const events = decompressEvents(rawEvents ?? {})
+  if (!meta || !meta.sessionId) {
+    console.warn('⚠️ session meta has no sessionId', sessionId)
+    // HACK: I don't know how this happens, but we may be able to patch with event data
+    const db = useDatabase()
+    const initEvent = events[0]
+    if (initEvent?.eventType === 'DataWriter.initializeSession') {
+      const patchedMeta = {
+        ...meta,
+        ...initEvent.data,
+      } as SessionMeta
+      assert(patchedMeta.sessionId === sessionId, 'patchedMeta.sessionId must match sessionId')
+      await db.set(getDBPath(mode, sessionId, 'meta'), {...patchedMeta, _patchTime: Date.now()})
+      console.log('  ✅ patched session meta', patchedMeta)
+      return { meta: patchedMeta, events, other }
+    }
+    console.error('  ❌ could not patch session meta', {initEvent})
+    // move this meta entry out of the main database
+    await db.set(`/dev/brokenMetas/${sessionId}`, meta)
+    await db.set(getDBPath(mode, sessionId, 'meta'), null)
+    return null
+    // END HACK
+  }
   return { meta, events, other }
 }
 
@@ -124,8 +146,6 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
           if (dlTime >= dbm[sessionId].lastUpdateTime) {
             return
           }
-          // local data is stale -> update it
-          anyChanged = true
           const sessionData = await fetchSessionDataFromDb(mode, sessionId)
           if (!sessionData) {
             console.error('session data not found', sessionId)
@@ -135,6 +155,8 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
             console.error('sessionData.meta has no sessionId', sessionId, sessionData.meta,)
             return
           }
+          // local data is stale -> update it
+          anyChanged = true
           console.log(`Writing session ${sessionId}`)
           await writeLocalSessionData(sessionData, now)
           console.debug(`  done (${sessionId})`)
