@@ -41,7 +41,7 @@ export const useDisplayPhases = <const T extends readonly string[]>(
   const targetPhase = shallowRef<Phase | null>(null)
   const transitionStage = shallowRef<'out' | 'in' | null>(null)
 
-  useInspect({phase, previousPhase, targetPhase, transitionStage}, 'usePhases')
+  // useInspect({phase, previousPhase, targetPhase, transitionStage}, 'usePhases')
 
   const parseWhich = (which: string): Phase[] => which.split(/\s+/) as Phase[]
 

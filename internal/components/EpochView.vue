@@ -45,13 +45,13 @@ const pinStatus = computed(() => {
   return 'none'
 })
 
-useInspect({
-  pinnedIndex, 
-  currentEpochIndex,
-  pinStatus, 
-  currentEpochId: () => currentEpoch.value.id,
-  // stack: () => stack.value.map(e => e.id),
-})
+// useInspect({
+//   pinnedIndex, 
+//   currentEpochIndex,
+//   pinStatus, 
+//   currentEpochId: () => currentEpoch.value.id,
+//   // stack: () => stack.value.map(e => e.id),
+// })
 
 const cyclePin = () => {
   const newPin = pinStatus.value == 'current' ? undefined : currentEpochIndex.value
