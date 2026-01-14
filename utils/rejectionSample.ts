@@ -14,7 +14,7 @@ export function rejectionSample<T>(opt: RejectionSampleOptions<T>) {
       if (i > 0.5 * maxTry) {
         logDebug(`rejectionSample used more than half of maxTry: ${i+1}/${maxTry}`)
       } else {
-        logDebug(`rejectionSample accepted after ${i+1} tries`)
+        // logDebug(`rejectionSample accepted after ${i+1} tries`)
       }
       return t
     }
