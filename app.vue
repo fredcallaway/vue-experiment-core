@@ -1,4 +1,8 @@
+
 <script setup>
+import 'vue-sonner/style.css'
+import { Toaster } from 'vue-sonner'
+
 const config = useConfig()
 
 console.log('------------ initializing app ------------')
@@ -34,6 +38,7 @@ nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
 
 <template>
   <NuxtLayout>
+    <Toaster richColors closeButton position="top-left" />
     <NuxtPage />
   </NuxtLayout>
 </template>
@@ -98,6 +103,11 @@ h6 { font-size: 0.67em; font-weight: bold; }
 @keyframes fade-out {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+
+@keyframes pop {
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
 }
 
 </style>

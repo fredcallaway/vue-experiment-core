@@ -13,3 +13,5 @@ Math.random = () => {
   }
   return random.float()
 }
+
+export { toast } from 'vue-sonner'
