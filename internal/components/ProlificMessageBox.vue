@@ -14,7 +14,18 @@ const emit = defineEmits<{
 }>()
 
 const messages = useProlificMessages()
-messages.refreshCorrespondence(props.correspondence.studyId, props.correspondence.participantId)
+
+const refreshed = ref(false)
+messages.refreshCorrespondence(props.correspondence.studyId, props.correspondence.participantId).then(() => {
+  refreshed.value = true
+})
+
+const missingTimeout = useTimeout(1000)
+const showMissing = computed(() => !refreshed.value && missingTimeout.value)
+whenever(showMissing, () => {
+  console.log('showMissing', showMissing.value)
+  scrollToBottom()
+})
 
 const prolific = useProlific()
 const studyCache = prolific.getStudyCache(props.correspondence.studyId)
@@ -131,7 +142,15 @@ const handleResolve = async () => {
         </div>
       </div>
       <div v-if="messageList.length === 0" class="text-gray-400 text-sm text-center py-4">
-        No messages yet
+        <template v-if="showMissing || correspondence.timestamp === 0">
+          loading messages...
+        </template>
+        <template v-else>
+          no messages yet
+        </template>
+      </div>
+      <div v-if="showMissing" class="text-red-400 text-sm text-center py-4">
+        failed to load new messages!
       </div>
     </div>
 
