@@ -99,9 +99,9 @@ const handleResolve = async () => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full">
+  <div class="flex flex-col h-full w-100">
     <!-- Header -->
-    <div class="p-3 bg-gray-300 -mx-4 -mt-4 mb-2 rounded-t-lg">
+    <div class="p-3 bg-gray-300 rounded-t-lg">
       <div class="font-bold">{{ correspondence.participantId }}</div>
       <div v-if="showStudyLink" class="text-xs text-gray-500">
         Study: <NuxtLink :to="`/prolific/${correspondence.studyId}`">{{ correspondence.studyId }}</NuxtLink>
@@ -115,7 +115,8 @@ const handleResolve = async () => {
     </div>
 
     <!-- Messages -->
-    <div ref="messagesContainer" class="px-2 flex-1 overflow-y-auto max-h-60 p-2 flex flex-col gap-2 subtle-scrollbar">
+    <div ref="messagesContainer" 
+      class="px-2 py-4 flex-1 overflow-y-auto max-h-60 flex flex-col gap-2 subtle-scrollbar bg-gray-200">
       <div
         v-for="(msg, idx) in messageList"
         :key="idx"
@@ -135,7 +136,7 @@ const handleResolve = async () => {
     </div>
 
     <!-- Reply -->
-    <div class="p-3 bg-gray-300 -mx-4 -mb-4 mt-2 rounded-b-lg flex flex-col gap-2">
+    <div class="p-3 bg-gray-300 rounded-b-lg flex flex-col gap-2">
       <textarea
         v-model="replyText"
         placeholder="Reply..."

@@ -33,9 +33,9 @@ onMounted(() => {
 
     <div v-else class="flex gap-4 overflow-x-auto mt-2">
       <div
+        mb-2
         v-for="correspondence in sortedCorrespondences"
         :key="`${correspondence.studyId}-${correspondence.participantId}`"
-        class="flex-shrink-0 w-80 card-gray flex flex-col"
       >
         <ProlificMessageBox
           :correspondence="correspondence"

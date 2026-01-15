@@ -1008,19 +1008,11 @@ const filteredSubmissions = computed(() => {
       bg-opacity-50
       @click.self="closeMessageModal"
     >
-      <div bg-white rounded-lg p-4 w-96 max-h-[80vh] flex flex-col>
-        <div v-if="messageModalLoading" class="text-gray-500 p-8 text-center">
-          Loading messages...
-        </div>
-        <div v-else-if="messageModalCorrespondence" class="flex-1 min-h-0">
-          <ProlificMessageBox
-            :correspondence="messageModalCorrespondence"
-            show-session-link
-          />
-        </div>
-        <div v-else class="text-gray-500 p-8 text-center">
-          No messages found
-        </div>
+      <div v-if="messageModalCorrespondence" >
+        <ProlificMessageBox
+          :correspondence="messageModalCorrespondence"
+          show-session-link
+        />
       </div>
     </div>
   </div>
