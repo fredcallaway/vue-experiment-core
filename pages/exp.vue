@@ -78,12 +78,7 @@ initialized.then(async (result) => {
 <template>
   <div flex-center min-h-80vh>
     <MainContent bg-white>
-      <NuxtErrorBoundary @error="logError">
-        <Experiment />
-        <template #error="{ error }">
-          <ECompletion :error="error" />
-        </template>
-      </NuxtErrorBoundary>
+      <Experiment />
     </MainContent>
 
     <div v-if="initStatus === 'loading'" fixed inset-0 bg-white flex-center z-100>
