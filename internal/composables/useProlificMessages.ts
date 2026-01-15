@@ -35,6 +35,7 @@ export const useProlificMessages = createGlobalState(() => {
   const lastRefreshTimestamp = ref<number | null>(null)
 
   // Load correspondences from database
+  // TODO: we're using the DB for local state management FIX
   db.onValue(MESSAGES_PATH, (snap) => {
     correspondences.value = snap.val() || {}
   })
@@ -164,6 +165,7 @@ export const useProlificMessages = createGlobalState(() => {
 
   const refreshCorrespondence = async (studyId: string, participantId: string) => {
     console.debug('refreshCorrespondence', studyId, participantId)
+    // await timeoutPromise(5000) // DEBUG simulate delay
     const researcherId = await getResearcherId()
     const allMessages = await fetchUserMessages(participantId)
     const studyMessages = allMessages.filter(m => m.data.study_id === studyId)
@@ -180,6 +182,7 @@ export const useProlificMessages = createGlobalState(() => {
     )
     
     await db.set(`${MESSAGES_PATH}/${key}`, correspondence)
+    // TODO: should update local state here
   }
 
   const sendMessage = async (studyId: string, participantId: string, body: string) => {
@@ -203,13 +206,23 @@ export const useProlificMessages = createGlobalState(() => {
     return correspondences.value[key] ?? null
   }
 
-  const getOrCreateCorrespondence = async (studyId: string, participantId: string) => {
-    const existing = getCorrespondence(studyId, participantId)
+  const getOrCreateCorrespondence = async (studyId: string, participantId: string): Promise<Correspondence> => {
+    const key = `${studyId}-${participantId}`
+    const existing = correspondences.value[key]
     if (existing) return existing
     
-    // Fetch messages for this participant
-    await refreshCorrespondence(studyId, participantId)
-    return getCorrespondence(studyId, participantId)
+    const emptyCorrespondence: Correspondence = {
+      studyId,
+      participantId,
+      resolved: false, // TODO: this should come from DB
+      timestamp: 0,
+      messages: []
+    }
+    correspondences.value = { ...correspondences.value, [key]: emptyCorrespondence }
+
+    refreshCorrespondence(studyId, participantId)
+
+    return emptyCorrespondence
   }
 
   return {
