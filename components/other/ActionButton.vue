@@ -17,8 +17,6 @@ const props = withDefaults(defineProps<Props>(), {
 })
 const attrs = useAttrs()
 
-logDebug('ActionButton', props)
-
 const defineHandlers = () => {
   let { loading, success, error } = props
 
