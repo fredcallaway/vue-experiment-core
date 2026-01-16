@@ -77,7 +77,7 @@ initialized.then(async (result) => {
 
 <template>
   <div flex-center min-h-80vh>
-    <MainContent bg-white capture-errors>
+    <MainContent capture-errors>
       <Experiment />
     </MainContent>
 
