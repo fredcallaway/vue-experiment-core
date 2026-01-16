@@ -107,6 +107,7 @@ export const useErrorLogging = createGlobalState(() => {
     if (newEnabled) {
       if (unsubscribers.length > 0) return
       unsubscribers.push(useEventListener(window, 'unhandledrejection', event => {
+        if (event.reason === 'useLocalAsync:unmounted') return
         logError('app.unhandledrejection', event.reason)
       }));
 
