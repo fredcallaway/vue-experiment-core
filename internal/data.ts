@@ -28,6 +28,7 @@ export type SessionMeta = {
   bonus: number
   assignment: number
   conditions?: SafeDataObject
+  error?: string
 }
 
 export type LogEvent = {

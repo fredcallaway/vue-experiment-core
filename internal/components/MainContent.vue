@@ -42,6 +42,7 @@ nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
     const componentName = instance?.$options?.__name
     const componentPath = instance?.$options?.__file
     logError(err as Error, {info, componentName, componentPath})
+    useCurrentSession().error = String(err)
     error.value = true
     return
   }
