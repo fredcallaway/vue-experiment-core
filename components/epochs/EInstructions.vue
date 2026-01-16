@@ -62,7 +62,7 @@ const goPrev = withEpoch((E) => E.prev())
       </PButton>
     </div>
 
-    <ESequence :epoch="epoch" flex-center>
+    <ESequence :epoch="epoch" class="flex-center">
 
       <EPage v-if="!skipWelcome" @mounted="enableNext" name="welcome">
         <div class="prompt">
