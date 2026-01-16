@@ -18,7 +18,7 @@ const dataSaved = ref(false)
 // whenever(longWait, () => useUnload().disable())
 
 const code = computed(() => {
-  if (props.error !== undefined) return useCompletionCode('ERROR')
+  if (props.error) return useCompletionCode('ERROR')
   if (longWait.value && !dataSaved.value) return useCompletionCode('ABORTED')
   return useCompletionCode('COMPLETED')
 })
