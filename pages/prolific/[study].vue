@@ -493,7 +493,8 @@ const costString = computed(() => {
   // const base = sv.total_cost / PROLIFIC_FEE
   const base = sv.reward * sv.places_taken
 
-  const bonus = R.pipe(sv.submissions, R.map(sub => sum(sub.bonus_payments)), R.sum())
+  // const bonus = R.pipe(sv.submissions, R.map(sub => sum(sub.bonus_payments)), R.sum())
+  const bonus = sum(R.values(intendedBonuses.value))
   const total = (base + bonus)
   return `${PROLIFIC_FEE} × (${formatCents(base)} + ${formatCents(bonus)}) = ${formatCents(total)}`
 })
@@ -599,47 +600,37 @@ const filteredSubmissions = computed(() => {
 
           <!-- Published Study Actions -->
           <div v-else>
-            <div flex gap-2 mb-4>
+            <div flex gap-2 mb-4 items-center>
               <!-- set status -->
-              <button 
+              <ActionButton name="Pause Study" :action="pauseStudy" 
                 v-if="study.status === 'ACTIVE'" 
                 btn-yellow
-                @click="pauseStudy" 
                 :disabled="loading"
-              >
-                Pause Study
-              </button>
-              <button 
+              />
+              <ActionButton 
                 v-if="study.status === 'PAUSED'" 
-                @click="startStudy" 
+                name="Start Study" :action="startStudy" 
                 btn-green
                 :disabled="loading"
-              >
-                Start Study
-              </button>
-              <button 
+              />
+              <ActionButton 
                 v-if="study.status !== 'COMPLETED'"
-                @click="stopStudy" 
+                name="Stop Study" :action="stopStudy" 
                 btn-red
                 :disabled="loading"
-              >
-                Stop Study
-              </button>
+              />
 
               <!-- add places -->
-              <button 
-                @click="addPlaces" 
+              <ActionButton 
+                name="Add Places" :action="addPlaces" 
                 btn-blue
                 :disabled="loading || newPlaces <= 0"
-              >
-                Add Places
-              </button>
+              />
               <NumberInput 
                 v-model="newPlaces" 
                 :scroll-step="1"
                 :min="0"
-                text-lg
-                py-1
+                text-xl
                 input
                 w-20
                 step="10"
@@ -685,13 +676,11 @@ const filteredSubmissions = computed(() => {
                   No adjustments
                 </div>
               </div>
-              <button
-                @click="executeAll"
+              <ActionButton
+                name="Execute" :action="executeAll" 
                 btn-blue
                 :disabled="!canExecute"
-              >
-                Execute
-              </button>
+              />
             </div>
           </div>
         </div>
@@ -811,6 +800,7 @@ const filteredSubmissions = computed(() => {
                     v-model="selectedActions[sub.id]" 
                     @change="onActionChange(sub.id)"
                     input 
+                    cursor-pointer
                     px-1 
                     py-0.5 
                     text-xs
@@ -976,14 +966,12 @@ const filteredSubmissions = computed(() => {
           >
             Cancel
           </button>
-          <button
+          <ActionButton
             v-if="executeStatus.actions === undefined && executeStatus.bonuses === undefined"
-            @click="confirmExecute"
+            name="Confirm" :action="confirmExecute" 
             btn-blue
             :disabled="loading"
-          >
-            Confirm
-          </button>
+          />
           <button
             v-if="executeStatus.actions !== undefined && (executeStatus.bonuses !== undefined || executeModalData.bonusesAmount === 0)"
             @click="showExecuteModal = false"
