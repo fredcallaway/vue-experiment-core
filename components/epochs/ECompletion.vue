@@ -2,7 +2,7 @@
 useEpoch('Completion') // we never call done from here
 
 const props = defineProps<{
-  error?: Error
+  error?: boolean
 }>()
 
 const config = useConfig()
