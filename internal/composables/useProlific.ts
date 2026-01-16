@@ -345,7 +345,8 @@ export const useProlific = createGlobalState(() => {
       },
       {
         code_type: 'ERROR',
-        actions: [{ action: 'REQUEST_RETURN', return_reason: 'Experiment was not completed due to an error.' }]
+        // actions: [{ action: 'REQUEST_RETURN', return_reason: 'Experiment was not completed due to an error.' }]
+        actions: [{ action: 'MANUALLY_REVIEW' }]
       },
       {
         code_type: 'ABORTED',
