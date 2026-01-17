@@ -170,7 +170,7 @@ export const FilterSchema = z.object({
 export const SubmissionsConfigSchema = z.object({
   max_submissions_per_participant: z.number(),
   max_concurrent_submissions: z.number(),
-  auto_rejection_categories: z.array(z.string()),
+  auto_rejection_categories: z.array(z.string()).optional(),
 })
 
 export const AccessDetailSchema = z.object({

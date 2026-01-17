@@ -399,7 +399,7 @@ export const useProlific = createGlobalState(() => {
       submissions_config: {
         max_submissions_per_participant: 1,
         max_concurrent_submissions: -1,
-        auto_rejection_categories: ['EXCEPTIONALLY_FAST'],
+        // auto_rejection_categories: ['EXCEPTIONALLY_FAST'],
       },
       access_details: createAccessDetails(cfg.total_available_places),
       completion_codes: createCompletionCodes(),
