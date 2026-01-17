@@ -530,12 +530,10 @@ const filteredSubmissions = computed(() => {
       return filter(searchText)
     })
   }
-
-  return [...result].sort((a, b) => {
-    const aUncertain = selectedActions.value[a.id] === null ? 0 : 1
-    const bUncertain = selectedActions.value[b.id] === null ? 0 : 1
-    return aUncertain - bUncertain
-  })
+  return R.sortBy(result, 
+  (sub) => Number(getDefaultAction(sub) !== null),
+  (sub) => sub.id,
+  )
 })
 
 </script>
