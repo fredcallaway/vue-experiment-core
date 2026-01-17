@@ -132,7 +132,7 @@ export class DataWriter {
       }
 
       // watch for changes to the meta object and update the database
-      let prevMeta = structuredClone(toRaw(meta))
+      let prevMeta = R.clone(toRaw(meta))
       watchDeep(meta, () => {
         const changes: Record<string, any> = {}
         for (const key in meta) {
@@ -142,7 +142,7 @@ export class DataWriter {
             changes[typedKey] = meta[typedKey]
           }
         }
-        prevMeta = structuredClone(toRaw(meta))
+        prevMeta = R.clone(toRaw(meta))
 
         if (Object.keys(changes).length > 0) {
           this.updateMeta(changes as Partial<SessionMeta>)

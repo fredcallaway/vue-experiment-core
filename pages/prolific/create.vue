@@ -32,7 +32,7 @@ const dismissDeploymentError = () => {
   persistedDeploymentError.value = ''
 }
 
-const formData = ref<ProlificConfig>(structuredClone(getProlificConfig()))
+const formData = ref<ProlificConfig>(R.clone(getProlificConfig()))
 
 if (!formData.value.eligibility) {
   formData.value.eligibility = {
