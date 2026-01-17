@@ -53,6 +53,29 @@ const messageModalCorrespondence = computed(() => {
 const studyCache = prolific.getStudyCache(studyId)
 const { fullItem: study, error: studyError } = studyCache
 
+// ===== auto-refresh study cache =============================================
+
+const isWindowFocused = useWindowFocus()
+const { idle } = useIdle(60000)
+
+const isActiveForRefresh = computed(() =>
+  study.value?.status === 'ACTIVE' && isWindowFocused.value && !idle.value
+)
+
+const { pause: pauseStudyRefresh, resume: resumeStudyRefresh } = useIntervalFn(() => {
+  studyCache.refresh()
+}, 5000, { immediate: false })
+
+watch(isActiveForRefresh, (isActive) => {
+  if (isActive) {
+    console.log('refreshing study cache')
+    studyCache.refresh()
+    resumeStudyRefresh()
+    return
+  }
+  pauseStudyRefresh()
+}, { immediate: true })
+
 const submissions = computed(() => study.value?.submissions ?? [])
 
 // Auto-refresh correspondences on page load for relevant submissions
