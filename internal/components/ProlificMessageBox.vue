@@ -113,6 +113,11 @@ const handleSend = async () => {
   }
 }
 
+const handleSendAndResolve = async () => {
+  await handleSend()
+  await handleResolve()
+}
+
 const handleResolve = async () => {
   isLoading.value = true
   try {
@@ -203,7 +208,14 @@ const handleResolve = async () => {
           :disabled="isLoading || !hasInput"
           class="btn-blue-sm flex-1"
         />
-        <button
+        <ActionButton v-if="hasInput"
+          name="Send & Resolve"
+          :action="handleSendAndResolve"
+          success="result"
+          :disabled="isLoading || !hasInput"
+          class="btn-green-sm flex-1"
+        />
+        <button v-else
           @click="handleResolve"
           :disabled="isLoading"
           :class="[correspondence.resolved ? 'btn-yellow-sm' : 'btn-green-sm', 'flex-1']"
