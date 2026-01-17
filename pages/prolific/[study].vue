@@ -202,7 +202,7 @@ const getCodeType = (studyCode: string | null | undefined) => {
 type SubmissionAction = 'none' | 'approve' | 'return' | 'reject' | null
 
 const selectedActions = ref<Record<string, SubmissionAction>>({})
-const userModifiedActions = ref<Set<string>>(new Set())
+const actionOverrides = useLocalStorage<Record<string, SubmissionAction>>(`actionOverrides.${studyId}`, {})
 
 const getPossibleActions = (sub: Submission) => {
   switch (sub.status) {
@@ -232,16 +232,34 @@ const getDefaultAction = (sub: Submission): SubmissionAction => {
   return null
 }
 
-watch([submissions, sessions], () => {
+watch([submissions, sessions, actionOverrides], () => {
   for (const sub of submissions.value) {
-    if (!userModifiedActions.value.has(sub.id)) {
-      selectedActions.value[sub.id] = getDefaultAction(sub)
-    }
+    const override = actionOverrides.value[sub.id]
+    selectedActions.value[sub.id] = override !== undefined ? override : getDefaultAction(sub)
   }
 })
 
 const onActionChange = (submissionId: string) => {
-  userModifiedActions.value.add(submissionId)
+  const sub = submissions.value.find(item => item.id === submissionId)
+  if (!sub) throw new Error(`Unknown submission ID: ${submissionId}`)
+  
+  const selected = selectedActions.value[submissionId]
+  const defaultAction = getDefaultAction(sub)
+  if (selected === defaultAction) {
+    const { [submissionId]: _ignored, ...rest } = actionOverrides.value
+    actionOverrides.value = rest
+    return
+  }
+  actionOverrides.value = { ...actionOverrides.value, [submissionId]: selected }
+}
+
+const clearActionOverride = (submissionId: string) => {
+  const sub = submissions.value.find(item => item.id === submissionId)
+  if (!sub) throw new Error(`Unknown submission ID: ${submissionId}`)
+  
+  const { [submissionId]: _ignored, ...rest } = actionOverrides.value
+  actionOverrides.value = rest
+  selectedActions.value[submissionId] = getDefaultAction(sub)
 }
 
 const groupedByAction = computed(() => {
@@ -362,7 +380,7 @@ const databaseBonuses = computed(() => {
   return result
 })
 
-const bonusOverrides = ref<Record<string, number | undefined>>({})
+const bonusOverrides = useLocalStorage<Record<string, number | undefined>>(`bonusOverrides.${studyId}`, {})
 
 const currentBonuses = computed(() => {
   return R.pullObject(submissions.value, R.prop("participant_id"), sub => sum(sub.bonus_payments))
@@ -812,23 +830,34 @@ const filteredSubmissions = computed(() => {
                 </td>
                 <!-- Action -->
                 <td px-2 py-2 whitespace-nowrap text-left>
-                  <span v-if="isActionLocked(sub)" text-gray-400></span>
-                  <select 
-                    v-else 
-                    v-model="selectedActions[sub.id]" 
-                    @change="onActionChange(sub.id)"
-                    input 
-                    cursor-pointer
-                    px-1 
-                    py-0.5 
-                    text-xs
-                    :class="getActionColorClass(selectedActions[sub.id])"
-                  >
-                    <option v-if="selectedActions[sub.id] === null" :value="null"></option>
-                    <option v-for="action in getPossibleActions(sub)" :key="action" :value="action">
-                      {{ action }}
-                    </option>
-                  </select>
+                  <div w-25 mr--5>
+                    <span v-if="isActionLocked(sub)" text-gray-400></span>
+                    <select
+                      v-else
+                      v-model="selectedActions[sub.id]"
+                      @change="onActionChange(sub.id)"
+                      input
+                      cursor-pointer
+                      px-1
+                      py-0.5
+                      text-xs
+                      :class="getActionColorClass(selectedActions[sub.id])"
+                    >
+                      <option v-if="selectedActions[sub.id] === null" :value="null"></option>
+                      <option v-for="action in getPossibleActions(sub)" :key="action" :value="action">
+                        {{ action }}
+                      </option>
+                    </select>
+                    <button
+                      v-if="(actionOverrides[sub.id] !== undefined) && sub.status !== 'APPROVED'"
+                      @click="clearActionOverride(sub.id)"
+                      class="i-mdi-undo-variant"
+                      title="Clear override"
+                      ml-1
+                      :class="getActionColorClass(getDefaultAction(sub))"
+                      
+                    />
+                  </div>
                 </td>
                 <!-- Time Taken -->
                 <td px-2 py-2 whitespace-nowrap text-right>
