@@ -33,3 +33,43 @@ export const useBrowserMonitoring = useMemoize(() => {
     disable: () => enabled.value = false,
   }
 })
+
+export const getBrowserInfo = () => {
+
+  if (typeof navigator === 'undefined') {
+    throw new Error('Browser info unavailable: navigator is undefined.')
+  }
+  if (typeof screen === 'undefined') {
+    throw new Error('Browser info unavailable: screen is undefined.')
+  }
+  if (typeof window === 'undefined') {
+    throw new Error('Browser info unavailable: window is undefined.')
+  }
+
+  const nav = navigator as Navigator & { deviceMemory?: number }
+
+  return {
+    userAgent: nav.userAgent,
+    language: nav.language,
+    languages: nav.languages,
+    platform: nav.platform,
+    vendor: nav.vendor,
+    cookieEnabled: nav.cookieEnabled,
+    hardwareConcurrency: nav.hardwareConcurrency,
+    deviceMemory: nav.deviceMemory,
+    maxTouchPoints: nav.maxTouchPoints,
+    screen: {
+      width: screen.width,
+      height: screen.height,
+      availWidth: screen.availWidth,
+      availHeight: screen.availHeight,
+      colorDepth: screen.colorDepth,
+      pixelDepth: screen.pixelDepth,
+    },
+    window: {
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      devicePixelRatio: window.devicePixelRatio,
+    },
+  }
+}

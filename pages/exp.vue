@@ -9,6 +9,7 @@ const initialized = useDataWriter().initializeSession(meta)
 
 useErrorLogging()
 useBrowserMonitoring()
+useDataWriter().updateOther('browser', getBrowserInfo())
 
 const contactEmail = useConfig().contactEmail
 const { unloading, cancelUnload } = useUnload()
