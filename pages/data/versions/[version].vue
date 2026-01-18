@@ -161,6 +161,60 @@ const error = computed(() => {
   return syncError.value || preprocessError.value
 })
 
+const calcStats = (values: number[]) => {
+  if (values.length === 0) return null
+  const sorted = R.sortBy(values, x => x)
+  const total = R.sum(values)
+  const avg = total / values.length
+  const mid = Math.floor(values.length / 2)
+  const median = values.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+  return { total, avg, median, count: values.length }
+}
+
+const bonusStats = computed(() => {
+  return calcStats(mySessions.value.map(session => session.bonus))
+})
+
+const timeStats = computed(() => {
+  const durations = mySessions.value
+    .filter(session => session.completionTime)
+    .map(session => assertNumber(session.completionTime) - session.startTime)
+  return calcStats(durations)
+})
+
+const errorStats = computed(() => {
+  const sessionErrors = mySessions.value.filter(session => session.error).length
+  const eventErrors = mySessionData.value
+    ? R.sum(mySessionData.value.map(session => session.events.filter(isErrorEvent).length))
+    : 0
+  return { sessionErrors, eventErrors }
+})
+
+const conditionStatusCounts = computed(() => {
+  const sessions = mySessions.value
+  if (sessions.length === 0) return []
+  const conditionKeys = R.unique(sessions.flatMap(session => Object.keys(session.conditions ?? {})))
+  return conditionKeys.map((condition: string) => {
+    const grouped = R.groupBy(sessions, session => {
+      const conditions = session.conditions ?? {}
+      const value = assertDefined(conditions[condition], `Missing condition "${condition}" for session ${session.sessionId}`)
+      return String(value)
+    })
+    const values = Object.entries(grouped).map(([value, group]) => {
+      const raw = R.countBy(group, sessionStatus)
+      const counts = {
+        active: raw.active ?? 0,
+        completed: raw.completed ?? 0,
+        idle: raw.idle ?? 0,
+        quit: raw.quit ?? 0,
+        error: raw.error ?? 0,
+      }
+      return { value, counts, total: group.length }
+    })
+    return { condition, values }
+  })
+})
+
 
 </script>
 
@@ -213,6 +267,64 @@ const error = computed(() => {
       </div> -->
 
       <TabContainer :default-tab="0" id="version-tabs">
+        <Tab title="overview">
+          <div v-if="mySessions.length === 0" class="text-gray-500">
+            No sessions available
+          </div>
+          <div v-else class="grid grid-cols-1 gap-6">
+            <div>
+              <h3 class="mb-2">Condition status counts</h3>
+              <div v-if="conditionStatusCounts.length === 0" class="text-gray-500">
+                No conditions found
+              </div>
+              <div v-else class="grid grid-cols-1 gap-3">
+                <div v-for="group in conditionStatusCounts" :key="group.condition">
+                  <div class="font-semibold">{{ group.condition }}</div>
+                  <div v-for="row in group.values" :key="row.value">
+                    <span class="font-mono">{{ row.value }}</span> —
+                    completed {{ row.counts.completed }},
+                    active {{ row.counts.active }},
+                    idle {{ row.counts.idle }},
+                    quit {{ row.counts.quit }},
+                    error {{ row.counts.error }}
+                    ({{ row.total }})
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="mb-2">Bonus</h3>
+              <div v-if="bonusStats">
+                <div><b>Total:</b> {{ formatCents(bonusStats.total) }}</div>
+                <div><b>Average:</b> {{ formatCents(bonusStats.avg) }}</div>
+                <div><b>Median:</b> {{ formatCents(bonusStats.median) }}</div>
+              </div>
+              <div v-else class="text-gray-500">
+                No bonus data available
+              </div>
+            </div>
+
+            <div>
+              <h3 class="mb-2">Time taken (completed)</h3>
+              <div v-if="timeStats">
+                <div><b>Total:</b> {{ formatTime(timeStats.total) }}</div>
+                <div><b>Average:</b> {{ formatTime(timeStats.avg) }}</div>
+                <div><b>Median:</b> {{ formatTime(timeStats.median) }}</div>
+                <div><b>Count:</b> {{ timeStats.count }}</div>
+              </div>
+              <div v-else class="text-gray-500">
+                No completed sessions
+              </div>
+            </div>
+
+            <div>
+              <h3 class="mb-2">Errors</h3>
+              <div><b>Sessions with errors:</b> {{ errorStats.sessionErrors }}</div>
+              <div><b>Error events:</b> {{ errorStats.eventErrors }}</div>
+            </div>
+          </div>
+        </Tab>
         <Tab title="sessions">
           <DataTable v-if="mySessions.length > 0" :data="sessionList" placeholder="e.g. active,complete 11/5" />
         </Tab>
