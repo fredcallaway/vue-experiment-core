@@ -22,7 +22,19 @@ useMouseTracking({ minPixels: 1, minRate: 0, maxRate: 60, maxFrames: 500 })
 const totalTimeoutSeconds = 150
 const { idle } = useIdle(30_000)
 const timer = useTimer(120_000, { immediate: false })
-timer.onDone(() => abortExperiment('TIMEOUT'))
+
+// unmounted check shouldn't be necessary, but better safe than sorry
+onUnmounted(() => {
+  timer.cancel()
+})
+let unmounted = false
+timer.onDone(() => {
+  if (unmounted) {
+    logEvent('warning.timerDoneAfterUnmount')
+    return
+  }
+  abortExperiment('TIMEOUT')
+})
 
 watchEffect(() => {
   if (idle.value && timer.status.value === 'paused') {
