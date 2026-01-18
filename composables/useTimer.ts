@@ -71,6 +71,10 @@ export const useTimer = (timeMs: number, { immediate = true }: TimerOptions = {}
   }
   
   const cancel = () => {
+    if (status.value === 'canceled') {
+      console.warn('Timer canceled twice')
+      return
+    }
     if (!['running', 'paused'].includes(status.value)) throw new Error('Cannot cancel timeout with status ' + status.value)
 
     clearTimeout(assertDefined(timeoutId))
@@ -83,6 +87,16 @@ export const useTimer = (timeMs: number, { immediate = true }: TimerOptions = {}
   if (immediate) {
     resume()
   }
+
+  onScopeDispose(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+      timeoutId = null
+    }
+    callbacks.length = 0
+    status.value = 'canceled'
+    // NOTE: the promise is left hanging
+  })
   
   return {
     reset,
