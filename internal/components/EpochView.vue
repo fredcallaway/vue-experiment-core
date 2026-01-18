@@ -141,10 +141,15 @@ const handleCopy = () => {
 
 const fast = useFastMode()
 
+const { minWidth } = useWindowEnforcer()
+const width = computed(() => {
+  return max(minWidth.value, 800)
+})
+
 </script>
 
 <template>
-  <div bg-gray-100 p-4 rounded-lg flex="~ col">
+  <div bg-gray-100 p-4 rounded-lg flex="~ col" :style="{ width: `${width}px` }">
     <div flex="~ wrap justify-between">
       <div flex="~ items-center gap-2" text-sm>
         <template v-for="(epoch, index) in stack" :key="epoch.id">
