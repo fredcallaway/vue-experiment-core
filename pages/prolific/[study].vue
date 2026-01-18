@@ -78,13 +78,16 @@ watch(isActiveForRefresh, (isActive) => {
 
 const submissions = computed(() => study.value?.submissions ?? [])
 
-// Auto-refresh correspondences on page load for relevant submissions
 onMounted(() => {
+  // check for new *received* messages
+  prolificMessages.refresh()
+  // check for messages prolific sent for us (not picked up by refresh)
   watchOnce(submissions, (subs) => {
     if (!subs || subs.length === 0) return
     
     for (const sub of subs) {
       const codeType = getCodeType(sub.study_code)
+      if (sub.status == 'APPROVED') continue
       
       // Refresh if: code type is not COMPLETED or NOCODE
       // OR status is AWAITING REVIEW and code type is not COMPLETED
