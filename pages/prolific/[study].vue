@@ -618,12 +618,24 @@ const filteredSubmissions = computed(() => {
   if (searchQuery.value.trim()) {
     const filter = createTextFilter(searchQuery.value)
     result = submissions.value.filter(sub => {
+      const startedText = sub.started_at ? formatDateTime(sub.started_at) : 'never'
+      const statusText = getSubmissionStatusLabel(sub.status)
+      const timeText = sub.time_taken ? formatTime(sub.time_taken * 1000) : 'N/A'
+      const bonusValue = getBonusValue(sub.participant_id)
+      const bonusStatus = getBonusStatus(sub).text
       const searchText = [
-        sub.participant_id,
         sub.id,
+        sub.participant_id,
+        startedText,
+        statusText,
         sub.status.replace('REVIEW', ''),
         sub.study_code || '',
-        getCodeType(sub.study_code)
+        getCodeType(sub.study_code),
+        getDataStatus(sub).text,
+        selectedActions.value[sub.id],
+        timeText,
+        bonusValue,
+        bonusStatus
       ].join(' ')
       return filter(searchText)
     })
