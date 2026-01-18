@@ -110,8 +110,8 @@ export class DataWriter {
           meta.lastUpdateTime = Date.now()
           await db.set(this.dbPath('meta'), meta)
         } else {
-          // don't allow restarting if the actual experiment has begun
-          if (oldMeta.noReturnTime) {
+          // don't allow restarting if the actual experiment has begun or errored
+          if (oldMeta.noReturnTime || oldMeta.error) {
             logEvent('DataWriter.repeatSession.alreadyStarted')
             throw new Error("DataWriter.repeatSession.alreadyStarted")
           }

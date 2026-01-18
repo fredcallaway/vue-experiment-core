@@ -5,14 +5,17 @@ const saidNo = ref(false)
 const aborted = ref(false)
 
 // TODO: should mark this somehow to prevent refresh and continue
-const abortExperiment = (reason: 'TIMEOUT' | 'ABORTED') => {
+const abortExperiment = async (reason: 'TIMEOUT' | 'ABORTED') => {
   if (aborted.value) return
-  if (useConfig().completion.mode === 'prolific' && useCurrentSession().mode === 'live') {
+  aborted.value = true
+  const meta = useCurrentSession()
+  if (useConfig().completion.mode === 'prolific' && meta.mode === 'live') {
+    logEvent('experiment.abort', { reason })
+    meta.error = reason
+    await useDataWriter().flush()
     useUnload().disable()
     const code = useCompletionCode(reason)
     window.location.href = `https://app.prolific.co/submissions/complete?cc=${code}`
-  } else {
-    aborted.value = true
   }
 }
 
