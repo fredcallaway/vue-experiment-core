@@ -188,9 +188,10 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
   return { sessions, syncLocalData, syncStatus, lastSyncTime, lastUpdateTime, isMissing, isLoading }
 }
 
-export type SessionStatus = 'active' | 'completed' | 'idle' | 'quit'
+export type SessionStatus = 'active' | 'completed' | 'idle' | 'quit' | 'error'
 
 export const sessionStatus = (meta: SessionMeta): SessionStatus => {
+  if (meta.error) return 'error'
   if (meta.completionTime) return 'completed'
   const minutesSinceUpdate = (Date.now() - meta.lastUpdateTime) / 60000
   if (minutesSinceUpdate < 1) return 'active'
@@ -257,19 +258,19 @@ export const makeSessionList = (sessions: Record<string, SessionMeta> | SessionM
     Object.values(sessions),
     R.sortBy(meta => -(meta.startTime || 0)),
     R.map(meta => ({
-      ...meta,
+      sessionId: meta.sessionId,
+      version: meta.version,
+      ...(meta.conditions ?? {}),
       status: sessionStatus(meta),
+      bonus: meta.bonus,
+      startTime: meta.startTime,
+      noReturnTime: meta.noReturnTime,
+      completionTime: meta.completionTime,
+      lastUpdateTime: meta.lastUpdateTime,
+      participantId: meta.participantId,
+      assignment: meta.assignment,
+      studyId: meta.studyId,
     })),
-    R.map(R.pick([
-      'sessionId',
-      'version',
-      'status',
-      'startTime',
-      'lastUpdateTime',
-      'participantId',
-      'studyId',
-      'conditions'
-    ])),
   )
 }
 

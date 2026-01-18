@@ -91,12 +91,31 @@ const syncView = async (viewName: string) => {
   }
 }
 
+const syncSessions = async () => {
+  try {
+    await $fetch(`/api/data/processed/${mode}/${version}/sessions.csv`, {
+      method: 'POST',
+      body: sessionList.value,
+    })
+    lastSyncTimes.value.sessions = Date.now()
+    preprocessError.value = null
+  } catch (error: any) {
+    preprocessError.value = {
+      message: 'Sync Failed: ' + (error?.data?.message || error?.message || 'Unknown error'),
+      statusCode: error?.statusCode || error?.status,
+      statusMessage: error?.statusMessage || error?.statusText || 'Unknown status',
+      viewName: 'sessions',
+    }
+    console.error('Failed to sync sessions:', { error })
+  }
+}
+
 const syncAllViews = async () => {
   await refreshMySessionData()
   if (syncError.value) {
     console.error('local data sync failed, skipping view sync', syncError.value)
   }
-  await Promise.all(Object.keys(dataViews).map(syncView))
+  await Promise.all([syncSessions(), ...Object.keys(dataViews).map(syncView)])
 }
 
 const isViewSynced = (viewName: string) => {
