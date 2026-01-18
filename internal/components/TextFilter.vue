@@ -13,6 +13,7 @@ const emit = defineEmits<{
 const inputRef = templateRef<HTMLInputElement>('input')
 
 onKeyStroke('/', (event) => {
+  if (isTextInputFocused()) return
   event.preventDefault()
   event.stopPropagation()
   inputRef.value?.focus()
