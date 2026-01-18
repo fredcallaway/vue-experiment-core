@@ -157,7 +157,10 @@ const assignmentsToReplace = computed(() => {
       if (!session) throw new Error(`Missing session meta for submission ${sub.id}`)
       return { submission: sub, session }
     })
-    .filter(({ session }) => sessionStatus(session) !== 'completed')
+    .filter(({ session, submission }) => (
+      sessionStatus(session) !== 'completed' ||
+      getDataStatus(submission).text !== 'full'
+    ))
     .reduce<Record<number, number>>((acc, { session }) => {
       const assignment = session.assignment
       assert(assignment >= 0 && assignment < accessDetails.length, `Invalid assignment ${assignment}`)
