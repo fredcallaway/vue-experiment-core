@@ -601,49 +601,46 @@ const filteredSubmissions = computed(() => {
 
           <!-- Draft Study Actions -->
           <div v-if="study.status === 'UNPUBLISHED'" class="flex gap-2">
-            <!-- TODO (maybe) allow publishing drafts (need to pull logic from create.vue) -->
-              <button 
-                @click="publishStudy" 
-                class="btn btn-green"
+              <ActionButton 
+                name="Publish Study" :action="publishStudy" success
+                btn-green
                 :disabled="loading"
-              >
-                Publish Study
-              </button>
+              />
 
-              <button 
-                @click="deleteStudy" 
+              <ActionButton 
+                name="Delete Study" :action="deleteStudy" success
                 btn-red
                 :disabled="loading"
-              >
-                Delete Study
-              </button>
+              />
           </div>
 
           <!-- Published Study Actions -->
           <div v-else>
             <div flex gap-2 mb-4 items-center>
+              
               <!-- set status -->
-              <ActionButton name="Pause Study" :action="pauseStudy" 
+              <ActionButton 
                 v-if="study.status === 'ACTIVE'" 
+                name="Pause Study" :action="pauseStudy" success
                 btn-yellow
                 :disabled="loading"
               />
               <ActionButton 
                 v-if="study.status === 'PAUSED'" 
-                name="Start Study" :action="startStudy" 
+                name="Start Study" :action="startStudy" success
                 btn-green
                 :disabled="loading"
               />
               <ActionButton 
                 v-if="study.status !== 'COMPLETED'"
-                name="Stop Study" :action="stopStudy" 
+                name="Stop Study" :action="stopStudy" success
                 btn-red
                 :disabled="loading"
               />
 
               <!-- add places -->
               <ActionButton 
-                name="Add Places" :action="addPlaces" 
+                name="Add Places" :action="addPlaces" success
                 btn-blue
                 :disabled="loading || newPlaces <= 0"
               />
