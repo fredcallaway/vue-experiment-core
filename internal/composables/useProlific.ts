@@ -327,12 +327,12 @@ export const useProlific = createGlobalState(() => {
     return { pause, resume, isActive, interval}
   }
 
-  const createAccessDetails = (totalAvailablePlaces: number) => {
-
+  const createAccessDetails = (length: number, start: number = 0) => {
+    if (length < 0) throw new ProlificError('Invalid access_details range')
     const baseUrl = getProlificBaseUrl(prolificConfig)
     const url = baseUrl + '/exp?PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}&SESSION_ID={{%SESSION_ID%}}'
-    return range(totalAvailablePlaces).map(i => ({
-      external_url: `${url}&assignment=${i}`,
+    return range(length).map(i => ({
+      external_url: `${url}&assignment=${i + start}`,
       total_allocation: 1,
     }))
   }
@@ -458,7 +458,17 @@ export const useProlific = createGlobalState(() => {
         total_available_places: newTotal
       })
     } else {
-      const newAccessDetails = createAccessDetails(newTotal)
+      const accessDetails = assertDefined(study.access_details, 'Study lacks access_details')
+      const currentTotal = sum(accessDetails.map(detail => detail.total_allocation))
+      if (newTotal < currentTotal) {
+        throw new ProlificError(`newTotal (${newTotal}) cannot be less than current total_allocation (${currentTotal})`)
+      }
+      if (newTotal === currentTotal) {
+        return
+      }
+      const extraCount = newTotal - currentTotal
+      const extraDetails = createAccessDetails(extraCount, accessDetails.length)
+      const newAccessDetails = [...accessDetails, ...extraDetails]
       console.debug('updatePlaces: newAccessDetails', newAccessDetails)
       await request<any>('PATCH', `/studies/${studyId}/`, {
         access_details: newAccessDetails
@@ -477,25 +487,33 @@ export const useProlific = createGlobalState(() => {
     return updatePlaces(studyId, currentPlaces + additionalPlaces)
   }
 
-  const replaceAssignments = async (studyId: string, assignmentIds: number[]): Promise<{ replaced: number }> => {
+  const replaceAssignments = async (
+    studyId: string,
+    assignmentCounts: Record<number, number>
+  ): Promise<{ replaced: number }> => {
     const study = await studiesCache.getItemAsync(studyId)
     const oldAccessDetails = assertDefined(study.access_details, 'Study lacks access_details')
-    const toIncrement = new Set(assignmentIds)
+    const assignments = Object.entries(assignmentCounts).map(([key, count]) => ({
+      id: Number(key),
+      count
+    }))
 
-    // validate assignmentIds
-    assert(toIncrement.size === assignmentIds.length, 'Assignment IDs are not unique')
-    assert(assignmentIds.length > 0, 'Assignment IDs are empty')
-    assert(assignmentIds.every(id => id >= 0 && id < oldAccessDetails.length), 'assignmentIds are out of range')
+    assert(assignments.length > 0, 'Assignment counts are empty')
+    assert(
+      assignments.every(({ id, count }) => Number.isInteger(id) && Number.isInteger(count) && count > 0),
+      'Assignment counts must be positive integers'
+    )
+    assert(assignments.every(({ id }) => id >= 0 && id < oldAccessDetails.length), 'assignmentIds are out of range')
 
-    let nInc = 0 // extra safety
+    const replaced = R.sum(assignments.map(a => a.count))
+    let applied = 0
     const updatedAccessDetails = oldAccessDetails.map((detail, index) => {
-      if (toIncrement.has(index)) {
-        nInc++
-        return { ...detail, total_allocation: detail.total_allocation + 1 }
-      }
-      return detail
+      const increment = assignmentCounts[index] ?? 0
+      if (increment === 0) return detail
+      applied += increment
+      return { ...detail, total_allocation: detail.total_allocation + increment }
     })
-    assert(nInc === assignmentIds.length, 'replaceAssignments is broken')
+    assert(applied === replaced, 'replaceAssignments is broken')
 
     await request('PATCH', `/studies/${studyId}/`, {
       access_details: updatedAccessDetails
@@ -503,7 +521,7 @@ export const useProlific = createGlobalState(() => {
 
     const updatedStudy = await fetchStudy(studyId)
     studiesCache.updateItem(updatedStudy)
-    return { replaced: assignmentIds.length }
+    return { replaced }
   }
 
   const approveSubmissions = async (

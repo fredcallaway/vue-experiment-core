@@ -136,9 +136,15 @@ const addPlaces = wrap(async () => {
   }
 })
 
-const invalidAssignments = computed(() => {
-  if (!sessions.value) return []
-  return submissions.value
+const assignmentsToReplace = computed(() => {
+  if (!sessions.value) return {}
+  if (!study.value?.access_details) return {}
+
+  const accessDetails = study.value.access_details
+  const replacementsPosted = accessDetails.map(detail => detail.total_allocation - 1)
+  assert(replacementsPosted.every(n => Number.isInteger(n) && n >= 0), 'Invalid access_details total_allocation')
+
+  const invalidCounts = submissions.value
     .filter(sub => sub.status === 'APPROVED')
     .map(sub => {
       const session = sessionsBySessionId.value[sub.id]
@@ -146,11 +152,32 @@ const invalidAssignments = computed(() => {
       return { submission: sub, session }
     })
     .filter(({ session }) => sessionStatus(session) !== 'completed')
+    .reduce<Record<number, number>>((acc, { session }) => {
+      const assignment = session.assignment
+      assert(assignment >= 0 && assignment < accessDetails.length, `Invalid assignment ${assignment}`)
+      acc[assignment] = (acc[assignment] ?? 0) + 1
+      return acc
+    }, {})
+
+  return accessDetails.reduce<Record<number, number>>((acc, _, index) => {
+    const remaining = (invalidCounts[index] ?? 0) - (replacementsPosted[index] ?? 0)
+    if (remaining > 0) acc[index] = remaining
+    return acc
+  }, {})
+})
+
+const assignmentsToReplaceSummary = computed(() => {
+  return Object.entries(assignmentsToReplace.value)
+    .map(([assignment, count]) => ({ assignment: Number(assignment), count }))
+    .sort((a, b) => a.assignment - b.assignment)
+})
+
+const totalAssignmentsToReplace = computed(() => {
+  return R.sum(Object.values(assignmentsToReplace.value))
 })
 
 const replaceInvalidAssignments = wrap(async () => {
-  const assignmentIds = invalidAssignments.value.map(({ session }) => session.assignment)
-  const { replaced } = await prolific.replaceAssignments(studyId, assignmentIds)
+  const { replaced } = await prolific.replaceAssignments(studyId, assignmentsToReplace.value)
   return `Posted ${replaced} new places to replace assignments`
 })
 
@@ -692,26 +719,22 @@ const filteredSubmissions = computed(() => {
             </div>
 
             <!-- invalid assignment replacement -->
-            <div>
-              <h2>Invalid Assignments</h2>
-              <div v-if="invalidAssignments.length === 0">
-                No invalid assignments
-              </div>
-              <div v-else>
-                <div>Invalid completed submissions: {{ invalidAssignments.length }}</div>
-                <div>Assignments:</div>
-                <div v-for="item in invalidAssignments" :key="item.session.sessionId">
-                  {{ item.session.sessionId }}: {{ item.session.assignment }} ({{item.session.conditions}})
-                </div>
+            <div v-if="totalAssignmentsToReplace > 0" mb-4>
+              <div font-bold>Found {{ totalAssignmentsToReplace }} approved submissions with incomplete data</div>
+              <div text-sm v-for="item in assignmentsToReplaceSummary" :key="item.assignment">
+                {{ item.assignment }}: {{ item.count }}
               </div>
               <ActionButton
-                name="Replace Invalid Assignments"
+                name="Replace Incomplete Assignments"
                 :action="replaceInvalidAssignments"
                 success="result"
                 btn-blue
-                :disabled="loading || invalidAssignments.length === 0"
+                :disabled="loading || totalAssignmentsToReplace === 0"
               />
             </div>
+            <!-- <div v-else>
+              <div font-italic text-sm mb-4 mt--2>No incomplete assignments found</div>
+            </div> -->
 
             <div mb-4>
               <h2>Review</h2>
