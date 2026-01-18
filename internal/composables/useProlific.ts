@@ -477,6 +477,35 @@ export const useProlific = createGlobalState(() => {
     return updatePlaces(studyId, currentPlaces + additionalPlaces)
   }
 
+  const replaceAssignments = async (studyId: string, assignmentIds: number[]): Promise<{ replaced: number }> => {
+    const study = await studiesCache.getItemAsync(studyId)
+    const oldAccessDetails = assertDefined(study.access_details, 'Study lacks access_details')
+    const toIncrement = new Set(assignmentIds)
+
+    // validate assignmentIds
+    assert(toIncrement.size === assignmentIds.length, 'Assignment IDs are not unique')
+    assert(assignmentIds.length > 0, 'Assignment IDs are empty')
+    assert(assignmentIds.every(id => id >= 0 && id < oldAccessDetails.length), 'assignmentIds are out of range')
+
+    let nInc = 0 // extra safety
+    const updatedAccessDetails = oldAccessDetails.map((detail, index) => {
+      if (toIncrement.has(index)) {
+        nInc++
+        return { ...detail, total_allocation: detail.total_allocation + 1 }
+      }
+      return detail
+    })
+    assert(nInc === assignmentIds.length, 'replaceAssignments is broken')
+
+    await request('PATCH', `/studies/${studyId}/`, {
+      access_details: updatedAccessDetails
+    })
+
+    const updatedStudy = await fetchStudy(studyId)
+    studiesCache.updateItem(updatedStudy)
+    return { replaced: assignmentIds.length }
+  }
+
   const approveSubmissions = async (
     studyId: string,
     participantIds?: string[]
@@ -662,6 +691,7 @@ export const useProlific = createGlobalState(() => {
     startStudy,
     updatePlaces,
     addPlaces,
+    replaceAssignments,
     approveSubmissions,
     approveSubmission,
     requestReturn,

@@ -136,6 +136,24 @@ const addPlaces = wrap(async () => {
   }
 })
 
+const invalidAssignments = computed(() => {
+  if (!sessions.value) return []
+  return submissions.value
+    .filter(sub => sub.status === 'APPROVED')
+    .map(sub => {
+      const session = sessionsBySessionId.value[sub.id]
+      if (!session) throw new Error(`Missing session meta for submission ${sub.id}`)
+      return { submission: sub, session }
+    })
+    .filter(({ session }) => sessionStatus(session) !== 'completed')
+})
+
+const replaceInvalidAssignments = wrap(async () => {
+  const assignmentIds = invalidAssignments.value.map(({ session }) => session.assignment)
+  const { replaced } = await prolific.replaceAssignments(studyId, assignmentIds)
+  return `Posted ${replaced} new places to replace assignments`
+})
+
 // ===== bonuses ============================================================
 
 const bonusCsv = ref('')
@@ -670,6 +688,28 @@ const filteredSubmissions = computed(() => {
                 input
                 w-20
                 step="10"
+              />
+            </div>
+
+            <!-- invalid assignment replacement -->
+            <div>
+              <h2>Invalid Assignments</h2>
+              <div v-if="invalidAssignments.length === 0">
+                No invalid assignments
+              </div>
+              <div v-else>
+                <div>Invalid completed submissions: {{ invalidAssignments.length }}</div>
+                <div>Assignments:</div>
+                <div v-for="item in invalidAssignments" :key="item.session.sessionId">
+                  {{ item.session.sessionId }}: {{ item.session.assignment }} ({{item.session.conditions}})
+                </div>
+              </div>
+              <ActionButton
+                name="Replace Invalid Assignments"
+                :action="replaceInvalidAssignments"
+                success="result"
+                btn-blue
+                :disabled="loading || invalidAssignments.length === 0"
               />
             </div>
 
