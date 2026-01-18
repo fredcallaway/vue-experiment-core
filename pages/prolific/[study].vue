@@ -129,11 +129,14 @@ const { copy } = useClipboard()
 
 const newPlaces = ref(0)
 const addPlaces = wrap(async () => {
-  if (newPlaces.value <= 0) return
-  if (confirm(`Add ${newPlaces.value} places?`)) {
-    await prolific.addPlaces(studyId, newPlaces.value)
+  const toAdd = newPlaces.value
+  if (toAdd <= 0) return `No places to add`
+  if (confirm(`Add ${toAdd} places?`)) {
+    await prolific.addPlaces(studyId, toAdd)
     newPlaces.value = 0
+    return `Added ${toAdd} places`
   }
+  throw new Error('User cancelled - no places added')
 })
 
 const assignmentsToReplace = computed(() => {
@@ -177,8 +180,11 @@ const totalAssignmentsToReplace = computed(() => {
 })
 
 const replaceInvalidAssignments = wrap(async () => {
-  const { replaced } = await prolific.replaceAssignments(studyId, assignmentsToReplace.value)
-  return `Posted ${replaced} new places to replace assignments`
+  if (confirm(`Post ${totalAssignmentsToReplace.value} new places?`)) {
+    const { replaced } = await prolific.replaceAssignments(studyId, assignmentsToReplace.value)
+    return `Posted ${replaced} new places`
+  }
+  throw new Error('User cancelled - no assignments replaced')
 })
 
 // ===== bonuses ============================================================
@@ -703,7 +709,7 @@ const filteredSubmissions = computed(() => {
 
               <!-- add places -->
               <ActionButton 
-                name="Add Places" :action="addPlaces" success
+                name="Add Places" :action="addPlaces" success="result"
                 btn-blue
                 :disabled="loading || newPlaces <= 0"
               />
