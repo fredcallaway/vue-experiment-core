@@ -85,6 +85,8 @@ export const writeLocalSessionData = async (session: SessionData, _downloadTime:
     body: fsData,
     timeout: 30000,
   })
+  console.debug('  data written', session.meta.sessionId)
+
 }
 
 export const readLocalSessionData = (mode: DataMode, sessionId: string): Promise<StoredSessionData> => {
@@ -146,6 +148,7 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
           if (dlTime >= dbm[sessionId].lastUpdateTime) {
             return
           }
+          console.debug('fetching session data', sessionId)
           const sessionData = await fetchSessionDataFromDb(mode, sessionId)
           if (!sessionData) {
             console.error('session data not found', sessionId)
@@ -157,7 +160,6 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
           }
           // local data is stale -> update it
           anyChanged = true
-          console.log(`Writing session ${sessionId}`)
           await writeLocalSessionData(sessionData, now)
           console.debug(`  done (${sessionId})`)
           fsm[sessionId] = {

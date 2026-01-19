@@ -139,10 +139,14 @@ const writeFile = async (filePath: string, content: any) => {
   try {
     // Create directory if it doesn't exist
     const dirPath = dirname(filePath)
+    console.log(`.  existsSync(${dirPath})`)
     if (!existsSync(dirPath)) {
+      console.log(`.  mkdir(${dirPath})`)
       await mkdir(dirPath, { recursive: true })
     }
+    console.log(`.  writeFileAsync(${filePath})`)
     await writeFileAsync(filePath, content, 'utf-8')
+    console.log(`.  done`)
   } catch (error: any) {
     throw createError({
       statusCode: 500,
@@ -193,7 +197,8 @@ export default defineEventHandler(async (event) => {
       })
     }
     await writeFile(filePath, body)
-    return
+    console.log(`.  RETURN`)
+    return null
   } 
   
   else {
