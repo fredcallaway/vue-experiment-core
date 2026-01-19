@@ -79,12 +79,13 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
     syncLoading.value = true
     
     try {
+      const now = Date.now()
       const result = await $fetch(`/api/syncData`, {
         method: 'POST',
         body: { mode },
       })
       fsMeta.value = result.meta
-      console.log(`synced ${result.numUpdated} local sessions`)
+      console.log(`synced ${result.numUpdated} local sessions in ${Date.now() - now}ms`)
     } catch (error) {
       console.error('error syncing local data', error)
       throw error
