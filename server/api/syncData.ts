@@ -127,33 +127,43 @@ const syncSessions = async (mode: DataMode) => {
   
   console.log(`--- syncing ${sessionsToUpdate.length} sessions ---`)
   let numUpdated = 0
-  for (const { sessionId, meta } of sessionsToUpdate) {
-    const now = Date.now()
-    const sessionData = await fetchSessionDataFromDb(meta)
-    console.log(`fetchSessionDataFromDb(${sessionId}) took ${Date.now() - now}ms`)
-    if (!sessionData) {
-      console.error('session data not found', sessionId)
-      continue
-    }
-    if (!sessionData.meta.sessionId) {
-      console.error('sessionData.meta has no sessionId', sessionId, sessionData.meta)
-      continue
-    }
-    numUpdated++
-    await writeLocalSessionData(mode, sessionData, now)
-    fsMeta[sessionId] = {
-      ...sessionData.meta,
-      _downloadTime: now,
-    }
+  const batchSize = 5
+  for (let i = 0; i < sessionsToUpdate.length; i += batchSize) {
+    const batch = sessionsToUpdate.slice(i, i + batchSize)
+    const results = await Promise.all(batch.map(async ({ sessionId, meta }) => {
+      const now = Date.now()
+      const sessionData = await fetchSessionDataFromDb(meta)
+      // console.log(`fetchSessionDataFromDb(${sessionId}) took ${Date.now() - now}ms`)
+      if (!sessionData) {
+        console.error('session data not found', sessionId)
+        return null
+      }
+      if (!sessionData.meta.sessionId) {
+        console.error('sessionData.meta has no sessionId', sessionId, sessionData.meta)
+        return null
+      }
+      await writeLocalSessionData(mode, sessionData, now)
+      return {
+        sessionId,
+        meta: sessionData.meta,
+        downloadTime: now,
+      }
+    }))
+    const updated = results.filter((item): item is { sessionId: string; meta: SessionMeta; downloadTime: number } => item !== null)
+    numUpdated += updated.length
+    updated.forEach(({ sessionId, meta, downloadTime }) => {
+      fsMeta[sessionId] = {
+        ...meta,
+        _downloadTime: downloadTime,
+      }
+    })
     // checkpointing in case of interruption
-    if (numUpdated % 10 === 0) {
-      await writeJsonFile(fsMetaPath, fsMeta)
-    }
-  }
-
-  if (numUpdated > 0) {
     await writeJsonFile(fsMetaPath, fsMeta)
   }
+
+  // if (numUpdated > 0) {
+  //   await writeJsonFile(fsMetaPath, fsMeta)
+  // }
   return { meta: fsMeta, numUpdated }
 }
 
