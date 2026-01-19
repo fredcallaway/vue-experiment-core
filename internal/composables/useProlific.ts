@@ -555,10 +555,10 @@ export const useProlific = createGlobalState(() => {
 
     // refresh study until statuses are updated
     watchStudy(studyId, {
-      interval: 2000,
+      interval: 5000,
       maxCall: 30,
       callback: (study) => {
-        console.log('checking submissions', study.submissions.map(sub => sub.status))
+        console.log('checking submissions')
         const allApproved = study.submissions.every(sub => sub.status === 'APPROVED' || !toApprove.includes(sub.id))
         if (allApproved) {
           return true // stop listening
@@ -677,7 +677,7 @@ export const useProlific = createGlobalState(() => {
     // refresh study until bonuses are updated
     // TODO (maybe) we make a lot of unnecessary calls to fetch the study (only need submissions)
     watchStudy(studyId, {
-      interval: 2000,
+      interval: 5000,
       maxCall: 30,
       callback: (study) => {
         console.log('checking bonuses')
