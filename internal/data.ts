@@ -1,7 +1,7 @@
 // ============================================================================
 // Core Types
 // ============================================================================
-
+import { assertNumber, assertString } from '~/core/utils/asserts'  // no auto-imports on server
 export type DataMode = 'live' | 'debug'
 
 // data that can be reliably stored in the database (firebase RTDB)
@@ -126,7 +126,7 @@ const parseEventData = (d: any): SafeDataObject => {
 }
 export const decompressEvents = (record: DBSessionEvents): LogEvent[] => {
   let currentEpochId = ''
-  return R.entries(record).map(([key, rawData]) => {
+  return Object.entries(record).map(([key, rawData]) => {
     const data = parseEventData(rawData)
     const [timestamp, index, eventTypeRaw, uid] = key.split('—')
     const eventType = eventTypeRaw.replaceAll(':', '.')

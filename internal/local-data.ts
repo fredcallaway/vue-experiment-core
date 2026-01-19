@@ -28,8 +28,10 @@ export const useDatabasePath = <T>(path: string, listen: boolean) => {
 }
 
 export const getDatabasePath = async <T>(fullPath: string): Promise<T | null> => {
+  const now = Date.now()
   const { db } = useDatabase()
   const snapshot = await get(dbRef(db, fullPath))
+  console.log(`getDatabasePath(${fullPath}) took ${Date.now() - now}ms`)
   return snapshot.val()
 }
 
@@ -123,62 +125,25 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
   })
 
   const syncLocalData = async () => {
+    // await timeoutPromise(1000)
+    // await getDatabasePath('debug/meta')
+
+    // console.log(await getDatabasePath('debug/meta'))
+    // console.log()
+    // console.warn('NOT syncing local data'); return;
+
     console.log('syncing local data')
     // wait for last sync to complete before starting a new one
     await until(syncLoading).toBe(false)
     syncLoading.value = true
     
     try {
-      // wait for db and fs meta to be ready
-      await until(dbMeta).toBeTruthy();
-      await until(fsMeta).toBeTruthy();
-      const now = Date.now()
-      const dbm = dbMeta.value!
-      const fsm = fsMeta.value!
-
-      let anyChanged = false
-      // Process sessions with concurrency limit to avoid overwhelming the backend
-      const sessionIds = Object.keys(dbm)
-      const concurrencyLimit = 1
-      for (let i = 0; i < sessionIds.length; i += concurrencyLimit) {
-        const batch = sessionIds.slice(i, i + concurrencyLimit)
-        await Promise.all(batch.map(async (sessionId) => {
-          // skip if session has been downloaded after the last update
-          const dlTime = (fsm[sessionId]?._downloadTime || 0)
-          if (dlTime >= dbm[sessionId].lastUpdateTime) {
-            return
-          }
-          console.debug('fetching session data', sessionId)
-          const sessionData = await fetchSessionDataFromDb(mode, sessionId)
-          if (!sessionData) {
-            console.error('session data not found', sessionId)
-            return
-          }
-          if (!sessionData.meta.sessionId) {
-            console.error('sessionData.meta has no sessionId', sessionId, sessionData.meta,)
-            return
-          }
-          // local data is stale -> update it
-          anyChanged = true
-          await writeLocalSessionData(sessionData, now)
-          console.debug(`  done (${sessionId})`)
-          fsm[sessionId] = {
-            ...dbm[sessionId],
-            _downloadTime: now,
-          }
-        }))
-      }
-      // update fs meta if any changes were made
-      if (anyChanged) {
-        await $fetch(`/api/data/raw/${mode}/_meta.json`, {
-          method: 'PUT',
-          body: fsm,
-        })
-        fsMeta.value = fsm
-        console.log('synced local data', fsm)
-      } else {
-        console.log('no changes to local data')
-      }
+      const result = await $fetch(`/api/syncData`, {
+        method: 'POST',
+        body: { mode },
+      })
+      fsMeta.value = result.meta
+      console.log(`synced ${result.numUpdated} local sessions`)
     } catch (error) {
       console.error('error syncing local data', error)
       throw error
