@@ -35,61 +35,10 @@ export const getDatabasePath = async <T>(fullPath: string): Promise<T | null> =>
   return snapshot.val()
 }
 
-const fetchSessionDataFromDb = async (mode: DataMode, sessionId: string): Promise<SessionData | null> => {
-  const meta = await getDatabasePath<SessionMeta>(getDBPath(mode, sessionId, 'meta'))
-  // if (!meta) return null
-  const rawEvents = await getDatabasePath<DBSessionEvents>(getDBPath(mode, sessionId, 'events'))
-  const other = await getDatabasePath<SafeDataObject>(getDBPath(mode, sessionId, 'other'))
-  const events = decompressEvents(rawEvents ?? {})
-  if (!meta || !meta.sessionId) {
-    console.warn('⚠️ session meta has no sessionId', sessionId)
-    // HACK: I don't know how this happens, but we may be able to patch with event data
-    const db = useDatabase()
-    const initEvent = events[0]
-    if (initEvent?.eventType === 'DataWriter.initializeSession') {
-      const patchedMeta = {
-        ...meta,
-        ...initEvent.data,
-      } as SessionMeta
-      assert(patchedMeta.sessionId === sessionId, 'patchedMeta.sessionId must match sessionId')
-      await db.set(getDBPath(mode, sessionId, 'meta'), {...patchedMeta, _patchTime: Date.now()})
-      console.log('  ✅ patched session meta', patchedMeta)
-      return { meta: patchedMeta, events, other }
-    }
-    console.error('  ❌ could not patch session meta', {initEvent})
-    // move this meta entry out of the main database
-    await db.set(`/dev/brokenMetas/${sessionId}`, meta)
-    await db.set(getDBPath(mode, sessionId, 'meta'), null)
-    return null
-    // END HACK
-  }
-  return { meta, events, other }
-}
-
 // LOCAL DATA ON FILE SYSTEM
 
 type StoredSessionData = SessionData & { _downloadTime: number }
 type StoredSessionMeta = SessionMeta & { _downloadTime: number }
-
-export const writeLocalSessionData = async (session: SessionData, _downloadTime: number = Date.now()) => {
-  console.debug('writing session data to filesystem', session.meta.sessionId)
-  if (!session.meta.sessionId) {
-    console.error('session meta has no sessionId', session.meta)
-    return
-  }
-  const { mode, sessionId } = session.meta
-  const fsData: StoredSessionData = {
-    ...session,
-    _downloadTime,
-  }
-  await $fetch(`/api/data/raw/${mode}/${sessionId}.json`, {
-    method: 'PUT',
-    body: fsData,
-    timeout: 30000,
-  })
-  console.debug('  data written', session.meta.sessionId)
-
-}
 
 export const readLocalSessionData = (mode: DataMode, sessionId: string): Promise<StoredSessionData> => {
   return $fetch<StoredSessionData>(`/api/data/raw/${mode}/${sessionId}.json`)
@@ -123,18 +72,10 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
     if (lastSyncTime.value < lastUpdateTime.value) return 'stale'
     return 'synced'
   })
-
   const syncLocalData = async () => {
-    // await timeoutPromise(1000)
-    // await getDatabasePath('debug/meta')
-
-    // console.log(await getDatabasePath('debug/meta'))
-    // console.log()
-    // console.warn('NOT syncing local data'); return;
-
-    console.log('syncing local data')
     // wait for last sync to complete before starting a new one
     await until(syncLoading).toBe(false)
+    console.log('syncing local data')
     syncLoading.value = true
     
     try {
