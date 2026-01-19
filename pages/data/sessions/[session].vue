@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import '~/preprocessing'
+import stringify from "json-stringify-pretty-compact";
 
 definePageMeta({
   layout: 'dashboard',
@@ -23,12 +24,12 @@ const dataViews = useDataViews()
 const processedData = computed(() => {
   const dv = data.value
   if (!dv) return null
-  return R.mapValues(dataViews, fn => {
+  return R.mapValues(dataViews, view => {
     try {
-      const result = fn(dv)
-      return { success: true, data: result }
+      const result = view.fn(dv)
+      return { success: true, format: view.format, data: result }
     } catch (error) {
-      return { success: false, error }
+      return { success: false, error, format: view.format }
     }
   })
 })
@@ -97,7 +98,8 @@ const correspondence = computed(() => {
 
         <Tab v-for="(val, name) in processedData" :key="String(name)" :title="String(name)">
           <Error v-if="val && !val.success" :error="val.error" />
-          <DataTable v-else-if="val && val.success && val.data" :data="val.data" />
+          <DataTable v-else-if="val && val.success && val.format === 'csv'" :data="val.data" />
+          <pre v-else-if="val && val.success && val.format === 'json'" class="bg-gray-100 p-4 rounded overflow-auto max-h-96 text-xs">{{ stringify(val.data, { indent: 2 }) }}</pre>
         </Tab>
 
         <Tab title="meta">

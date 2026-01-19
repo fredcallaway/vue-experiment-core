@@ -108,3 +108,13 @@ export function ensureNumber(x: NumberLike | undefined, defaultValue?: number): 
 }
 
 export const timeoutPromise = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+export function findMatch<T extends string>(input: string, patterns: Record<T, RegExp>): T {
+  const entries = Object.entries(patterns) as [T, RegExp][]
+  const match = entries.find(([, regex]) => {
+    const flags = regex.flags.replace('g', '')
+    return new RegExp(regex.source, flags).test(input)
+  })
+  if (!match) throw new Error(`findMatch: no match for "${input}"`)
+  return match[0]
+}

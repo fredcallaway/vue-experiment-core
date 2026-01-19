@@ -265,6 +265,7 @@ const getPossibleActions = (sub: Submission) => {
   switch (sub.status) {
     case 'AWAITING REVIEW': return ['approve', 'return', 'reject', 'none']
     case 'RETURNED': return ['approve', 'none']
+    case 'TIMED-OUT': return ['approve', 'none']
     default: return ['none']
   }
 }
@@ -646,6 +647,11 @@ const filteredSubmissions = computed(() => {
   )
 })
 
+const versions = computed(() => {
+  if (!sessions.value) return []
+  return R.unique(Object.values(sessions.value).map(session => session.version))
+})
+
 </script>
 
 <template>
@@ -664,6 +670,14 @@ const filteredSubmissions = computed(() => {
 
           <div class="grid grid-cols-1 gap-2">
             <div><b>Name:</b> {{ study.name }}</div>
+            <div>
+              <b>Data Version: </b>
+              <div v-for="version in versions" :key="version" flex gap-4 inline>
+                <NuxtLink :to="`/data/versions/${version}`">
+                  {{ version }}
+                </NuxtLink>
+              </div>
+            </div>
             <div><b>Status:</b> {{ study.status }}</div>
             <div><b>Study ID:</b> {{ study.id }}</div>
             <div><b>Reward:</b> ${{ (study.reward / 100).toFixed(2) }}</div>

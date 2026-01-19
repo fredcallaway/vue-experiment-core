@@ -64,14 +64,24 @@ const lastSyncTimes = useLocalStorage<Record<string, number | null>>(`lastSyncTi
 const preprocessError = ref<any>(null)
 
 const dataViews = useDataViews()
+const csvViews = computed(() => {
+  return R.pipe(
+    dataViews,
+    R.entries(),
+    R.filter(([_, view]) => view.format == 'csv'),
+    R.fromEntries()
+  )
+})
 
 const syncView = async (viewName: string) => {
   syncLoading.value[viewName] = true
   try {
+    console.log('syncing view', viewName)
     const view = dataViews[viewName]
     if (!view) throw new Error(`View "${viewName}" not found`)
+    if (view.format !== 'csv') throw new Error(`View "${viewName}" is not csv`)
     
-    const rows = prepareCombinedData(view)
+    const rows = prepareCombinedData(view.fn)
     await $fetch(`/api/data/processed/${mode}/${version}/${viewName}.csv`, { 
       method: 'POST',
       body: rows
@@ -115,7 +125,7 @@ const syncAllViews = async () => {
   if (syncError.value) {
     console.error('local data sync failed, skipping view sync', syncError.value)
   }
-  await Promise.all([syncSessions(), ...Object.keys(dataViews).map(syncView)])
+  await Promise.all([syncSessions(), ...Object.keys(csvViews.value).map(syncView)])
 }
 
 const isViewSynced = (viewName: string) => {
@@ -131,7 +141,7 @@ const allViewsSynced = computed(() => {
   // TODO: need some kind of hash checking because preprocessing code could have changed
   return false
   if (!versionMeta.value?.latestUpdateTime) return false
-  return Object.keys(dataViews).every(isViewSynced)
+  return Object.keys(csvViews.value).every(isViewSynced)
 })
 
 const lastSyncTime = computed(() => {
@@ -331,8 +341,8 @@ const conditionStatusCounts = computed(() => {
         <Tab title="events">
           <DataTable v-if="eventList" :data="Object.values(eventList)" placeholder="e.g. key:SPACE !instructions" />
         </Tab>
-        <Tab v-for="(view, key) in dataViews" :key="key" :title="key">
-          <DataTable v-if="mySessionData" :data="prepareCombinedData(view)" />
+        <Tab v-for="(view, key) in csvViews" :key="key" :title="key">
+          <DataTable v-if="mySessionData" :data="prepareCombinedData(view.fn as any)" />
           <div v-else class="text-gray-500">
             No session data available
           </div>

@@ -1,4 +1,13 @@
-type DataView = (sessionData: SessionData) => object[]
+
+export type CsvDataView = {
+  format: 'csv'
+  fn: (sessionData: SessionData) => Record<string, any>[]
+}
+export type JsonDataView = {
+  format: 'json'
+  fn: (sessionData: SessionData) => SafeData // JSON-friendly, see data.ts
+}
+type DataView = CsvDataView | JsonDataView
 
 const dataViews = reactive({} as Record<string, DataView>)
 
@@ -7,7 +16,12 @@ export const useDataViews = () => {
 }
 
 export const declareDataView = (name: string, fn: (sessionData: SessionData) => object[]) => {
-  dataViews[name] = fn
+  dataViews[name] = {format: 'csv', fn}
+  return fn
+}
+
+export const declareDataViewJson  = (name: string, fn: (sessionData: SessionData) => SafeData) => {
+  dataViews[name] = {format: 'json', fn}
   return fn
 }
 
