@@ -72,6 +72,14 @@ const csvViews = computed(() => {
     R.fromEntries()
   )
 })
+const jsonViews = computed(() => {
+  return R.pipe(
+    dataViews,
+    R.entries(),
+    R.filter(([_, view]) => view.format == 'json'),
+    R.fromEntries()
+  )
+})
 
 const syncView = async (viewName: string) => {
   syncLoading.value[viewName] = true
@@ -79,12 +87,13 @@ const syncView = async (viewName: string) => {
     console.log('syncing view', viewName)
     const view = dataViews[viewName]
     if (!view) throw new Error(`View "${viewName}" not found`)
-    if (view.format !== 'csv') throw new Error(`View "${viewName}" is not csv`)
-    
-    const rows = prepareCombinedData(view.fn)
-    await $fetch(`/api/data/processed/${mode}/${version}/${viewName}.csv`, { 
+    const ext = view.format === 'csv' ? 'csv' : 'json'
+    const body = view.format === 'csv'
+      ? prepareCombinedData(view.fn)
+      : prepareCombinedJson(view.fn)
+    await $fetch(`/api/data/processed/${mode}/${version}/${viewName}.${ext}`, {
       method: 'POST',
-      body: rows
+      body,
     })
     lastSyncTimes.value[viewName] = Date.now()
     preprocessError.value = null
@@ -125,7 +134,11 @@ const syncAllViews = async () => {
   if (syncError.value) {
     console.error('local data sync failed, skipping view sync', syncError.value)
   }
-  await Promise.all([syncSessions(), ...Object.keys(csvViews.value).map(syncView)])
+  await Promise.all([
+    syncSessions(),
+    ...Object.keys(csvViews.value).map(syncView),
+    ...Object.keys(jsonViews.value).map(syncView),
+  ])
 }
 
 const isViewSynced = (viewName: string) => {
@@ -155,6 +168,13 @@ const prepareCombinedData = (view: (sessionData: SessionData) => object[] ) => {
     mySessionData.value,
     R.flatMap(sessionData => view(sessionData).map(x => ({session_id: sessionData.meta.sessionId, ...x})))
   )
+}
+const prepareCombinedJson = (view: (sessionData: SessionData) => SafeData) => {
+  if (!mySessionData.value) return []
+  return R.mapToObj(mySessionData.value, sessionData => [
+    sessionData.meta.sessionId,
+    view(sessionData),
+  ])
 }
 
 const eventList = computed(() => {
