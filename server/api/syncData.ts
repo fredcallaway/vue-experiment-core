@@ -127,6 +127,7 @@ const syncSessions = async (mode: DataMode) => {
   
   console.log(`--- syncing ${sessionsToUpdate.length} sessions ---`)
   let numUpdated = 0
+  let numError = 0
   const batchSize = 5
   for (let i = 0; i < sessionsToUpdate.length; i += batchSize) {
     const batch = sessionsToUpdate.slice(i, i + batchSize)
@@ -136,10 +137,12 @@ const syncSessions = async (mode: DataMode) => {
       // console.log(`fetchSessionDataFromDb(${sessionId}) took ${Date.now() - now}ms`)
       if (!sessionData) {
         console.error('session data not found', sessionId)
+        numError++
         return null
       }
       if (!sessionData.meta.sessionId) {
         console.error('sessionData.meta has no sessionId', sessionId, sessionData.meta)
+        numError++
         return null
       }
       await writeLocalSessionData(mode, sessionData, now)
@@ -149,7 +152,7 @@ const syncSessions = async (mode: DataMode) => {
         downloadTime: now,
       }
     }))
-    const updated = results.filter((item): item is { sessionId: string; meta: SessionMeta; downloadTime: number } => item !== null)
+    const updated = results.filter((item) => item !== null)
     numUpdated += updated.length
     updated.forEach(({ sessionId, meta, downloadTime }) => {
       fsMeta[sessionId] = {
@@ -164,7 +167,7 @@ const syncSessions = async (mode: DataMode) => {
   // if (numUpdated > 0) {
   //   await writeJsonFile(fsMetaPath, fsMeta)
   // }
-  return { meta: fsMeta, numUpdated }
+  return { meta: fsMeta, numUpdated, numError }
 }
 
 export default defineEventHandler(async (event) => {

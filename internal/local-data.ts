@@ -86,6 +86,9 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
       })
       fsMeta.value = result.meta
       console.log(`synced ${result.numUpdated} local sessions in ${Date.now() - now}ms`)
+      if (result.numError > 0) {
+        console.warn(`error syncing ${result.numError} local sessions`)
+      }
     } catch (error) {
       console.error('error syncing local data', error)
       throw error
