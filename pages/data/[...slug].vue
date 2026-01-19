@@ -51,7 +51,7 @@ const defaultTab = computed(() => {
 })
 
 // load data and prepare tables
-const { sessions, syncStatus, syncLocalData, lastUpdateTime } = useAllData(mode)
+const { sessions, syncStatus, syncLocalData, lastSyncTime } = useAllData(mode)
 
 const versionList = computed(() => {
   if (!sessions.value) return []
@@ -73,9 +73,16 @@ const sessionList = computed(() => {
   return makeSessionList(sessions.value)
 })
 
+// sync status: assume synced for first second to prevent jitter
+const syncTimeout = useTimeout(1000)
+const optimisticIsSynced = computed(() => {
+  return syncStatus.value === 'synced' || !syncTimeout.value
+})
 onMounted(() => {
   syncLocalData()
 })
+
+
 
 </script>
 
@@ -91,13 +98,13 @@ onMounted(() => {
 
     <div min-h-6 flex items-center>
       <span class="font-mono">data/{{ mode }}/raw/</span>&nbsp;
-      <span v-if="syncStatus === 'synced'">is up to date</span>
+      <span v-if="optimisticIsSynced">is up to date</span>
       <span v-else>
         was last updated at 
         <RefreshButton
           :refresh="syncLocalData"
           :is-loading="syncStatus === 'loading'"
-          :timestamp="lastUpdateTime"
+          :timestamp="lastSyncTime"
           label=""
         />
       </span>
