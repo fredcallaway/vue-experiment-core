@@ -128,7 +128,7 @@ const syncSessions = async (mode: DataMode) => {
   console.log(`--- syncing ${sessionsToUpdate.length} sessions ---`)
   let numUpdated = 0
   let numError = 0
-  const batchSize = 5
+  const batchSize = 20
   for (let i = 0; i < sessionsToUpdate.length; i += batchSize) {
     const batch = sessionsToUpdate.slice(i, i + batchSize)
     const results = await Promise.all(batch.map(async ({ sessionId, meta }) => {
