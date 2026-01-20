@@ -92,7 +92,7 @@ const slots = useSlots()
   </div>
   <!-- main screen -->
   <div v-else class="bg-white">
-    <div class="max-w-4xl mx-auto px-4">
+    <div class="max-w-3xl mx-auto px-4">
       <div class="bg-white">
         <h2>We need your consent to proceed</h2>
         <div class="text-red-500 mb-4">
