@@ -2,7 +2,7 @@
 useErrorLogging()
 const { violated } = useWindowEnforcer()
 
-const devTools = ref(true)
+const devTools = ref(!getUrlFlag('noDev'))
 
 </script>
 
@@ -24,9 +24,9 @@ const devTools = ref(true)
       </div>
     </div>
   </div>
-  <div v-else flex-center min-h-80vh>
+  <div v-else >
     <NavBar mb-2/>
-    <MainContent bg-white fixed-width fixed-height >
+    <MainContent bg-white  >
       <Experiment />
     </MainContent>
   </div>
