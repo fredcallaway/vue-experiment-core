@@ -3,6 +3,7 @@
 const props = defineProps<{ 
   name?: string, 
   values: string | string[],
+  classes?: string | string[],
   disabled?: boolean
 }>()
 
@@ -20,6 +21,6 @@ const handleClick = (value: string) => {
 <template>
   <div>
     <slot />
-    <PButtons :disabled="props.disabled" :values="props.values" @click="handleClick" mt-2 />
+    <PButtons :disabled="props.disabled" :values="props.values" :classes="props.classes" @click="handleClick" mt-2 />
   </div>
 </template>
