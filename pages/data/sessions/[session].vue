@@ -40,6 +40,11 @@ const correspondence = computed(() => {
   return prolificMessages.getCorrespondence(meta.value.studyId, meta.value.participantId)
 })
 
+watchEffect(() => {
+  console.log('correspondence', correspondence.value)
+})
+
+
 </script>
 
 <template>
@@ -65,10 +70,15 @@ const correspondence = computed(() => {
           </span>
           <h2 class="mb-4">Session <span class="font-mono">{{ sessionId }}</span></h2>
           <div class="grid grid-cols-1 gap-2">
-            <div><b>Participant ID:</b> <span class="font-mono text-xs">{{ meta.participantId || 'N/A' }}</span></div>
-            <div><b>Study ID:</b> <span class="font-mono text-xs">{{ meta.studyId || 'N/A' }}</span></div>
-            <div><b>Version:</b> {{ meta.version || 'N/A' }}</div>
-            <div><b>Mode:</b> {{ meta.mode || 'N/A' }}</div>
+            <!-- <div><b>Participant ID:</b> <span class="font-mono text-xs">{{ meta.participantId || 'N/A' }}</span></div> -->
+            <!-- <div><b>Study ID:</b> <span class="font-mono text-xs">{{ meta.studyId || 'N/A' }}</span></div> -->
+            <div>
+              <b>Version: </b>
+              <NuxtLink :to="`/data/versions/${assertDefined(meta.version, `Missing version for session ${sessionId}`)}?mode=${mode}`">
+                {{ assertDefined(meta.version, `Missing version for session ${sessionId}`) }}
+              </NuxtLink>
+            </div>
+            <!-- <div><b>Mode:</b> {{ meta.mode || 'N/A' }}</div> -->
             <div><b>Start Time:</b> {{ formatDateTime(meta.startTime) }}</div>
             <div><b>Last Update:</b> {{ formatDateTime(meta.lastUpdateTime) }}</div>
             <div><b>Last Download:</b> {{ formatDateTime(downloadTime) }}</div>

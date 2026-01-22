@@ -133,7 +133,7 @@ const handleResolve = async () => {
   <div class="flex flex-col h-full w-100">
     <!-- Header -->
     <div class="p-3 bg-gray-300 rounded-t-lg">
-      <div class="font-bold">{{ correspondence.participantId }}</div>
+      <div class="font-bold">Participant {{ correspondence.participantId }}</div>
       <div v-if="showStudyLink" class="text-xs text-gray-500">
         Study: <NuxtLink :to="`/prolific/${correspondence.studyId}`">{{ correspondence.studyId }}</NuxtLink>
       </div>

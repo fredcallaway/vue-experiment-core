@@ -34,7 +34,7 @@ const openMessageModal = async (participantId: string) => {
   messageModalParticipantId.value = participantId
   messageModalLoading.value = true
   try {
-    await prolificMessages.getOrCreateCorrespondence(studyId, participantId)
+    prolificMessages.getOrCreateCorrespondence(studyId, participantId)
   } finally {
     messageModalLoading.value = false
   }

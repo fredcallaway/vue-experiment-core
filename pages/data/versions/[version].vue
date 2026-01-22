@@ -205,6 +205,18 @@ const bonusStats = computed(() => {
   return calcStats(mySessions.value.map(session => session.bonus))
 })
 
+const studyIdsForVersion = computed(() => {
+  if (!allSessions.value) return null
+  const ids = R.unique(mySessions.value.map(session => session.studyId))
+  if (ids.length === 0) throw new Error(`No studies found for version: ${version}`)
+  return ids
+})
+
+const studyLabel = computed(() => {
+  if (!studyIdsForVersion.value) return null
+  return studyIdsForVersion.value.length === 1 ? 'Study' : 'Studies'
+})
+
 const timeStats = computed(() => {
   const durations = mySessions.value
     .filter(session => session.completionTime)
@@ -259,6 +271,18 @@ const conditionStatusCounts = computed(() => {
         <h2 class="mb-4">Version <span class="font-mono">{{ version }}</span></h2>
         <div class="grid grid-cols-1 gap-2">
           <!-- <div><b>Session Count:</b> {{ versionMeta.sessionCount }}</div> -->
+          <div v-if="studyIdsForVersion">
+            <b>{{ studyLabel }}: </b>
+            <span
+              v-for="(studyId, index) in studyIdsForVersion"
+              :key="studyId"
+            >
+              <NuxtLink :to="`/prolific/${studyId}`">
+                {{ studyId }}
+              </NuxtLink>
+              <span v-if="index < studyIdsForVersion.length - 1">, </span>
+            </span>
+          </div>
           <div><b>Earliest Start:</b> {{ formatDateTime(versionMeta.earliestStartTime) }}</div>
           <div><b>Latest Start:</b> {{ formatDateTime(versionMeta.latestStartTime) }}</div>
           <div><b>Latest Update:</b> {{ formatDateTime(versionMeta.latestUpdateTime) }}</div>

@@ -206,7 +206,7 @@ export const useProlificMessages = createGlobalState(() => {
     return correspondences.value[key] ?? null
   }
 
-  const getOrCreateCorrespondence = async (studyId: string, participantId: string): Promise<Correspondence> => {
+  const getOrCreateCorrespondence = (studyId: string, participantId: string): Correspondence => {
     const key = `${studyId}-${participantId}`
     const existing = correspondences.value[key]
     if (existing) return existing
