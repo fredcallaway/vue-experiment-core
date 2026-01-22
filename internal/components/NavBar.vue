@@ -12,6 +12,19 @@ const router = useRouter()
 
 const route = useRoute()
 
+const getSectionSegment = (path: string) => {
+  const [segment] = path.split('/').filter(Boolean)
+  if (!segment) throw new Error(`Expected top-level segment in path: ${path}`)
+  return segment
+}
+
+const getTopPath = (path: string) => `/${getSectionSegment(path)}`
+
+const lastSubroutesBySection = useSessionStorage<Record<string, string>>(
+  'nav:last-subroute',
+  {},
+)
+
 const topNavLinks = [
   { label: 'Experiment', path: '/dev' },
   { label: 'Prolific', path: '/prolific' },
@@ -24,6 +37,25 @@ const isActiveLink = (linkPath: string) => {
   const linkSegments = linkPath.split('/').filter(Boolean)
   return routeSegments[0] === linkSegments[0]
 }
+
+watchImmediate(
+  () => route.path,
+  (path) => {
+    const section = getSectionSegment(path)
+    const topPath = getTopPath(path)
+    if (path === topPath) {
+      delete lastSubroutesBySection.value[section]
+      return
+    }
+    lastSubroutesBySection.value[section] = path
+  },
+)
+
+const getNavTarget = (linkPath: string) => {
+  if (isActiveLink(linkPath)) return linkPath
+  const section = getSectionSegment(linkPath)
+  return lastSubroutesBySection.value[section] ?? linkPath
+}
 </script>
 
 <template>
@@ -32,7 +64,7 @@ const isActiveLink = (linkPath: string) => {
       <NuxtLink
         v-for="link in topNavLinks"
         :key="link.path"
-        :to="link.path"
+        :to="getNavTarget(link.path)"
         :class="isActiveLink(link.path) ? 'text-black cursor-default' : 'text-gray-300'"
       >
         {{ link.label }}
