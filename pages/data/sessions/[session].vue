@@ -51,6 +51,18 @@ const getEndEvents = (eventType: string) => {
   const events = data.value?.events ?? []
   const beginCount = events.filter(event => event.eventType === `${eventType}.begin`).length
   const endEvents = events.filter(event => event.eventType === `${eventType}.end`)
+  if (eventType === 'browser.unfocused') {
+    const relevant = events
+      .filter(event => event.eventType.startsWith(eventType))
+      .sort((a, b) => a.timestamp - b.timestamp || a.index - b.index)
+    const first = relevant[0]
+    if (first?.eventType === `${eventType}.end`) {
+      if (endEvents.length !== beginCount + 1) {
+        throw new Error(`Mismatched ${eventType} begin/end events for session ${sessionId}`)
+      }
+      return endEvents.filter(event => event !== first)
+    }
+  }
   if (beginCount !== endEvents.length) {
     throw new Error(`Mismatched ${eventType} begin/end events for session ${sessionId}`)
   }
