@@ -33,34 +33,42 @@ const getDatabasePath = async <T>(fullPath: string): Promise<T | null> => {
 
 const setDatabasePath = async (fullPath: string, value: null | object) => {
   const url = `${DATABASE_URL}/${fullPath}.json`
+  if (value === null) {
+    await $fetch(url, { method: 'DELETE' })
+    return
+  }
   await $fetch(url, { method: 'PUT', body: value })
 }
 
-const fetchSessionDataFromDb = async (meta: SessionMeta): Promise<SessionData | null> => {
-  const { mode, sessionId } = meta
-  const rawEvents = await getDatabasePath<DBSessionEvents>(getDBPath(mode, sessionId, 'events'))
-  const other = await getDatabasePath<SafeDataObject>(getDBPath(mode, sessionId, 'other'))
-  const events = decompressEvents(rawEvents ?? {})
-  if (!meta.sessionId) {
-    console.warn('⚠️ session meta has no sessionId', sessionId)
-    // HACK: I don't know how this happens, but we may be able to patch with event data
-    const initEvent = events[0]
-    if (initEvent?.eventType === 'DataWriter.initializeSession') {
-      const patchedMeta = {
-        ...meta,
-        ...initEvent.data,
-      } as SessionMeta
-      assert(patchedMeta.sessionId === sessionId, 'patchedMeta.sessionId must match sessionId')
-      await setDatabasePath(getDBPath(mode, sessionId, 'meta'), { ...patchedMeta, _patchTime: Date.now() })
-      console.log('  ✅ patched session meta', patchedMeta)
-      return { meta: patchedMeta, events, other }
-    }
-    console.error('  ❌ could not patch session meta', { initEvent })
-    // move this meta entry out of the main database
-    await setDatabasePath(`dev/brokenMetas/${sessionId}`, meta)
-    await setDatabasePath(getDBPath(mode, sessionId, 'meta'), null)
+
+const fetchSessionDataFromDb = async (mode: DataMode, sessionId: string, meta: SessionMeta): Promise<SessionData | null> => {
+  if (!sessionId) {
+    console.error('⚠️ sessionId is missing', {sessionId, meta})
     return null
-    // END HACK
+  } else if (meta.sessionId && sessionId !== meta.sessionId) {
+    console.error('⚠️ sessionId mismatch', {sessionId, meta})
+    return null
+  }
+  const rawEvents = await getDatabasePath<DBSessionEvents>(getDBPath(mode, sessionId, 'events'))
+  const events = decompressEvents(rawEvents ?? {})
+  const other = await getDatabasePath<SafeDataObject>(getDBPath(mode, sessionId, 'other'))
+
+  if (!meta.sessionId) {
+    // this occasionally happens when people leave very quickly
+    const veryShort = (
+      events.length < 2 ||
+      events[events.length - 1]!.timestamp - events[0]!.timestamp < 10_000
+    )
+    if (veryShort) {
+      console.warn('removing incomplete (very short) session from database', { sessionId, meta })
+      await setDatabasePath(`dev/brokenMetas/${sessionId}`, meta)
+      assert(!!mode && !!sessionId, 'CANNOT UPDATE DATABASE')
+      console.info('\n\n***', getDBPath(mode, sessionId, 'meta'), '\n\n')
+      await setDatabasePath(getDBPath(mode, sessionId, 'meta'), null)
+    } else {
+      console.error('⚠️ session has no sessionId', { sessionId, meta })
+    }
+    return null
   }
   return { meta, events, other }
 }
@@ -133,7 +141,7 @@ const syncSessions = async (mode: DataMode) => {
     const batch = sessionsToUpdate.slice(i, i + batchSize)
     const results = await Promise.all(batch.map(async ({ sessionId, meta }) => {
       const now = Date.now()
-      const sessionData = await fetchSessionDataFromDb(meta)
+      const sessionData = await fetchSessionDataFromDb(mode, sessionId, meta)
       // console.log(`fetchSessionDataFromDb(${sessionId}) took ${Date.now() - now}ms`)
       if (!sessionData) {
         console.error('session data not found', sessionId)

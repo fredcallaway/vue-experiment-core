@@ -145,7 +145,7 @@ export const decompressEvents = (record: DBSessionEvents): LogEvent[] => {
 }
 
 export const getDBPath = (mode: DataMode, sessionId: string, kind: keyof SessionData, key: string = '') => {
-  return `${mode}/${kind}/${sessionId}/${key}`
+  return `${mode}/${kind}/${sessionId}${key ? `/${key}` : ''}`
 }
 
 // export const dbPaths = {
