@@ -383,7 +383,8 @@ const slots = useSlots()
         v-bind="containerProps"
         :style="{
           // don't start scrolling until full table is visible
-          overflow: containerIsVisible ? 'auto' : 'hidden',
+          overflowY: containerIsVisible ? 'auto' : 'hidden',
+          overflowX: 'auto',
         }"
       >
         <div v-bind="wrapperProps" >
