@@ -44,6 +44,65 @@ watchEffect(() => {
   console.log('correspondence', correspondence.value)
 })
 
+type TimeInterval = { start: number, end: number }
+const MIN_IDLE_DURATION = 30 * 1000
+
+const getEndEvents = (eventType: string) => {
+  const events = data.value?.events ?? []
+  const beginCount = events.filter(event => event.eventType === `${eventType}.begin`).length
+  const endEvents = events.filter(event => event.eventType === `${eventType}.end`)
+  if (beginCount !== endEvents.length) {
+    throw new Error(`Mismatched ${eventType} begin/end events for session ${sessionId}`)
+  }
+  return endEvents
+}
+
+const getIntervals = (eventType: string, minDuration: number) => {
+  return getEndEvents(eventType)
+    .map((event): TimeInterval | null => {
+      const duration = event.data?.duration
+      if (typeof duration !== 'number' || !Number.isFinite(duration)) {
+        throw new Error(`Missing duration for ${event.eventType} in session ${sessionId}`)
+      }
+      if (duration < minDuration) return null
+      return { start: event.timestamp - duration, end: event.timestamp }
+    })
+    .filter((interval): interval is TimeInterval => interval !== null)
+}
+
+const mergeIntervals = (intervals: TimeInterval[]) => {
+  const sorted = R.sortBy(intervals, interval => interval.start)
+  return sorted.reduce<TimeInterval[]>((acc, interval) => {
+    const last = acc[acc.length - 1]
+    if (!last || interval.start > last.end) return [...acc, interval]
+    return [...acc.slice(0, -1), { start: last.start, end: Math.max(last.end, interval.end) }]
+  }, [])
+}
+
+const totalTimeMs = computed(() => {
+  if (!meta.value) return null
+  const endTime = meta.value.completionTime ?? meta.value.lastUpdateTime
+  if (!endTime) throw new Error(`Missing end time for session ${sessionId}`)
+  return endTime - meta.value.startTime
+})
+
+const inactiveTimeMs = computed(() => {
+  if (!meta.value) return null
+  const intervals = [
+    ...getIntervals('browser.idle', MIN_IDLE_DURATION),
+    ...getIntervals('browser.unfocused', 0),
+  ]
+  const merged = mergeIntervals(intervals)
+  return R.sum(merged.map(interval => interval.end - interval.start))
+})
+
+const activeTimeMs = computed(() => {
+  if (totalTimeMs.value === null || inactiveTimeMs.value === null) return null
+  const active = totalTimeMs.value - inactiveTimeMs.value
+  if (active < 0) throw new Error(`Active time is negative for session ${sessionId}`)
+  return active
+})
+
 
 </script>
 
@@ -79,9 +138,11 @@ watchEffect(() => {
               </NuxtLink>
             </div>
             <!-- <div><b>Mode:</b> {{ meta.mode || 'N/A' }}</div> -->
+            <!-- <div><b>Last Download:</b> {{ formatDateTime(downloadTime) }}</div> -->
             <div><b>Start Time:</b> {{ formatDateTime(meta.startTime) }}</div>
             <div><b>Last Update:</b> {{ formatDateTime(meta.lastUpdateTime) }}</div>
-            <div><b>Last Download:</b> {{ formatDateTime(downloadTime) }}</div>
+            <div><b>Total Time:</b> {{ totalTimeMs !== null ? formatTime(totalTimeMs) : 'N/A' }}</div>
+            <div><b>Active Time:</b> {{ activeTimeMs !== null ? formatTime(activeTimeMs) : 'N/A' }}</div>
             <div><b>Bonus:</b> ${{ (meta.bonus || 0).toFixed(2) }}</div>
           </div>
         </div>
