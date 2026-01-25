@@ -181,9 +181,10 @@ export function toSafeData(input: unknown): SafeData {
     // NOTE: RTDB doesn't handle null, but we json it
     if (t === "string" || t === "boolean" || x === null) return x;
     if (t === "number") return Number.isFinite(x) ? x : String(x);
+    if (t === "function") return x.name || String(x);
 
     // cannot be represented as is, fall back to string
-    if (x === undefined || t === "function" || t === "symbol" || t === "bigint") {
+    if (x === undefined || t === "symbol" || t === "bigint") {
       return String(x)
     };
 
