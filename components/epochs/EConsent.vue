@@ -22,31 +22,31 @@ const abortExperiment = async (reason: 'TIMEOUT' | 'ABORTED') => {
 // this provides basic bot-detection
 useMouseTracking({ minPixels: 1, minRate: 0, maxRate: 60, maxFrames: 500 })
 
-const totalTimeoutSeconds = 150
-const { idle } = useIdle(30_000)
-const timer = useTimer(120_000, { immediate: false })
+// const totalTimeoutSeconds = 150
+// const { idle } = useIdle(30_000)
+// const timer = useTimer(120_000, { immediate: false })
 
-// unmounted check shouldn't be necessary, but better safe than sorry
-onUnmounted(() => {
-  timer.cancel()
-})
-let unmounted = false
-timer.onDone(() => {
-  if (unmounted) {
-    logEvent('warning.timerDoneAfterUnmount')
-    return
-  }
-  abortExperiment('TIMEOUT')
-})
+// // unmounted check shouldn't be necessary, but better safe than sorry
+// onUnmounted(() => {
+//   timer.cancel()
+// })
+// let unmounted = false
+// timer.onDone(() => {
+//   if (unmounted) {
+//     logEvent('warning.timerDoneAfterUnmount')
+//     return
+//   }
+//   abortExperiment('TIMEOUT')
+// })
 
-watchEffect(() => {
-  if (idle.value && timer.status.value === 'paused') {
-    timer.resume()
-  }
-  if (!idle.value) {
-    timer.reset()
-  }
-})
+// watchEffect(() => {
+//   if (idle.value && timer.status.value === 'paused') {
+//     timer.resume()
+//   }
+//   if (!idle.value) {
+//     timer.reset()
+//   }
+// })
 
 const slots = useSlots()
 
@@ -59,7 +59,7 @@ const slots = useSlots()
     <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=700" alt="cat" >
   </div>
   <!-- idle screen -->
-  <div v-else-if="idle" class="w150 text-center p-8 mx-auto">
+  <!-- <div v-else-if="idle" class="w150 text-center p-8 mx-auto">
     <h1 class="text-2xl font-bold mb-4">Are you there?</h1>
     <div class="text-gray-600 mb-6">
       It looks like you've left the page.
@@ -68,7 +68,7 @@ const slots = useSlots()
       <div text-4xl mt5>{{ timer.secondsLeft }} </div>
       seconds.
     </div>
-  </div>
+  </div> -->
   <!-- deny consent screen -->
   <div v-else-if="saidNo" class="flex items-center justify-center">
     <div class="w-150 text-center p-8">
@@ -83,7 +83,7 @@ const slots = useSlots()
           Back to consent
         </PButton>
 
-        <PButton value="decline" btn-red @click="abortExperiment('TIMEOUT')" >
+        <PButton value="decline" btn-red @click="abortExperiment('ABORTED')" >
           <span i-mdi-close />
           Abort Experiment
         </PButton>
@@ -95,10 +95,10 @@ const slots = useSlots()
     <div class="max-w-3xl mx-auto px-4">
       <div class="bg-white">
         <h2>We need your consent to proceed</h2>
-        <div class="text-red-500 mb-4">
+        <!-- <div class="text-red-500 mb-4">
           Warning: the experiment will timeout if you leave this page idle
           for more than {{ totalTimeoutSeconds }} seconds.
-        </div>
+        </div> -->
     
         <div class="p-6 border-2 text-sm overflow-y-auto h-100 ">
           <div w-110 mx-auto mt20 v-if="!slots.default">
