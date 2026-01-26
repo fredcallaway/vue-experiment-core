@@ -589,6 +589,11 @@ export const useProlific = createGlobalState(() => {
     await request('POST', `/submissions/${submissionId}/transition/`, {
       action: 'REJECT',
       rejection_category: 'NO_DATA',
+      message: `
+        Your submission has been rejected because you did not complete the study.
+        Send us a message if you would like to return the study instead (we will
+        remove the rejection).
+      `.trim()
     })
     await studiesCache.getItemAsync(studyId)
   }
