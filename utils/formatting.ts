@@ -26,8 +26,11 @@ export function numString(n: number, noun?: string, options: { skipOne?: boolean
   return res
 }
 
+export function formatDollars(dollars: number, prefix: string = '$') {
+  return `${prefix}${round2(dollars).toFixed(2)}`
+}
 export function formatCents(cents: number, prefix: string = '$') {
-  return `${prefix}${round2(cents / 100).toFixed(2)}`
+  return formatDollars(cents / 100, prefix)
 }
 
 export function formatTime(ms: number) {

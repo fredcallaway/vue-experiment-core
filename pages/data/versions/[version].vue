@@ -202,7 +202,10 @@ const calcStats = (values: number[]) => {
 }
 
 const bonusStats = computed(() => {
-  return calcStats(mySessions.value.map(session => session.bonus))
+  const bonuses = mySessions.value
+    .filter(session => sessionStatus(session) === 'completed')
+    .map(session => session.bonus)
+  return calcStats(bonuses)
 })
 
 const studyIdsForVersion = computed(() => {
@@ -219,7 +222,7 @@ const studyLabel = computed(() => {
 
 const timeStats = computed(() => {
   const durations = mySessions.value
-    .filter(session => session.completionTime)
+    .filter(session => sessionStatus(session) === 'completed')
     .map(session => assertNumber(session.completionTime) - session.startTime)
   return calcStats(durations)
 })
@@ -232,7 +235,21 @@ const errorStats = computed(() => {
   return { sessionErrors, eventErrors }
 })
 
-const conditionStatusCounts = computed(() => {
+const overallStatusCounts = computed(() => {
+  const sessions = mySessions.value
+  if (sessions.length === 0) return null
+  const raw = R.countBy(sessions, sessionStatus)
+  return {
+    active: raw.active ?? 0,
+    completed: raw.completed ?? 0,
+    idle: raw.idle ?? 0,
+    quit: raw.quit ?? 0,
+    error: raw.error ?? 0,
+    total: sessions.length,
+  }
+})
+
+const completedByCondition = computed(() => {
   const sessions = mySessions.value
   if (sessions.length === 0) return []
   const conditionKeys = R.unique(sessions.flatMap(session => Object.keys(session.conditions ?? {})))
@@ -243,15 +260,8 @@ const conditionStatusCounts = computed(() => {
       return String(value)
     })
     const values = Object.entries(grouped).map(([value, group]) => {
-      const raw = R.countBy(group, sessionStatus)
-      const counts = {
-        active: raw.active ?? 0,
-        completed: raw.completed ?? 0,
-        idle: raw.idle ?? 0,
-        quit: raw.quit ?? 0,
-        error: raw.error ?? 0,
-      }
-      return { value, counts, total: group.length }
+      const completed = group.filter(session => sessionStatus(session) === 'completed').length
+      return { value, completed, total: group.length }
     })
     return { condition, values }
   })
@@ -327,20 +337,28 @@ const conditionStatusCounts = computed(() => {
           </div>
           <div v-else class="grid grid-cols-1 gap-6">
             <div>
-              <h3 class="mb-2">Condition status counts</h3>
-              <div v-if="conditionStatusCounts.length === 0" class="text-gray-500">
+              <h3 class="mb-2">Status counts</h3>
+              <div v-if="overallStatusCounts">
+                completed {{ overallStatusCounts.completed }},
+                active {{ overallStatusCounts.active }},
+                idle {{ overallStatusCounts.idle }},
+                quit {{ overallStatusCounts.quit }},
+                error {{ overallStatusCounts.error }}
+                ({{ overallStatusCounts.total }})
+              </div>
+            </div>
+
+            <div>
+              <h3 class="mb-2">Completed by condition</h3>
+              <div v-if="completedByCondition.length === 0" class="text-gray-500">
                 No conditions found
               </div>
               <div v-else class="grid grid-cols-1 gap-3">
-                <div v-for="group in conditionStatusCounts" :key="group.condition">
+                <div v-for="group in completedByCondition" :key="group.condition">
                   <div class="font-semibold">{{ group.condition }}</div>
                   <div v-for="row in group.values" :key="row.value">
                     <span class="font-mono">{{ row.value }}</span> —
-                    completed {{ row.counts.completed }},
-                    active {{ row.counts.active }},
-                    idle {{ row.counts.idle }},
-                    quit {{ row.counts.quit }},
-                    error {{ row.counts.error }}
+                    completed {{ row.completed }}
                     ({{ row.total }})
                   </div>
                 </div>
@@ -350,9 +368,10 @@ const conditionStatusCounts = computed(() => {
             <div>
               <h3 class="mb-2">Bonus</h3>
               <div v-if="bonusStats">
-                <div><b>Total:</b> {{ formatCents(bonusStats.total) }}</div>
-                <div><b>Average:</b> {{ formatCents(bonusStats.avg) }}</div>
-                <div><b>Median:</b> {{ formatCents(bonusStats.median) }}</div>
+                <div><b>Total:</b> {{ formatDollars(bonusStats.total) }}</div>
+                <div><b>Average:</b> {{ formatDollars(bonusStats.avg) }}</div>
+                <div><b>Median:</b> {{ formatDollars(bonusStats.median) }}</div>
+                <div><b>Count:</b> {{ bonusStats.count }}</div>
               </div>
               <div v-else class="text-gray-500">
                 No bonus data available
@@ -362,7 +381,6 @@ const conditionStatusCounts = computed(() => {
             <div>
               <h3 class="mb-2">Time taken (completed)</h3>
               <div v-if="timeStats">
-                <div><b>Total:</b> {{ formatTime(timeStats.total) }}</div>
                 <div><b>Average:</b> {{ formatTime(timeStats.avg) }}</div>
                 <div><b>Median:</b> {{ formatTime(timeStats.median) }}</div>
                 <div><b>Count:</b> {{ timeStats.count }}</div>
