@@ -594,7 +594,7 @@ const costString = computed(() => {
 
   // const bonus = R.pipe(sv.submissions, R.map(sub => sum(sub.bonus_payments)), R.sum())
   const bonus = sum(R.values(intendedBonuses.value))
-  const total = (base + bonus)
+  const total = PROLIFIC_FEE * (base + bonus)
   return `${PROLIFIC_FEE} × (${formatCents(base)} + ${formatCents(bonus)}) = ${formatCents(total)}`
 })
 
