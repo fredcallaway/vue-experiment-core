@@ -11,12 +11,16 @@ export default defineEventHandler(async (event) => {
       .join('\n')
       .trim()
     const sha = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim().substring(0, 8)
-    return { sha, dirty: gitStatusOutput !== '', gitStatusOutput }
+    return { 
+      sha, 
+      dirty: gitStatusOutput !== '', 
+      gitStatusOutput
+    }
   } catch (error: any) {
     return {
       sha: 'unknown (git status failed)',
       dirty: true,
-      gitStatusOutput: error.message,
+      gitStatusOutput: String(error),
     } 
   }
 })

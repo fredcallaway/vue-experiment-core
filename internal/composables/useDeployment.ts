@@ -30,11 +30,16 @@ export const useDeployment = () => {
 
 
   const checkGitStatus = async () => {
-    const response = await fetch('/api/prolific/git-status')
-    const { sha, dirty, gitStatusOutput } = await response.json()
-    localSha.value = sha
-    isDirty.value = dirty
-    gitStatus.value = gitStatusOutput
+    try {
+      const { sha, dirty, gitStatusOutput } = await $fetch('/api/prolific/git-status', {
+        timeout: 1000
+      })
+      localSha.value = sha
+      isDirty.value = dirty
+      gitStatus.value = gitStatusOutput
+    } catch {
+      console.warn('checkGitStatus timed out')
+    }
   }
   checkGitStatus()
   useIntervalFn(checkGitStatus, 3000)
