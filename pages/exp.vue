@@ -15,13 +15,13 @@ const contactEmail = useConfig().contactEmail
 const { unloading, cancelUnload } = useUnload()
 useUnload().disable()
 
-const { violated } = useWindowEnforcer()
+const { violated, width, height } = useWindowEnforcer()
 
 watchImmediate(violated, (isViolated) => {
   if (isViolated) {
-    logEvent('experiment.window.violated')
+    logEvent('experiment.window.violated', { width, height })
   } else {
-    logEvent('experiment.window.ok')
+    logEvent('experiment.window.ok', { width, height })
   }
 })
 
