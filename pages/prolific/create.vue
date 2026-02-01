@@ -326,39 +326,41 @@ const onDeploy = async () => {
         >
           Dismiss Error
         </button>
-        <button
+
+        <ActionButton
           v-else
-          @click="onDeploy"
+          loading
+          :name="status == 'loading' ? 'Deploying...' : 'Deploy Website'"
+          :action="onDeploy"
           btn-blue
           :disabled="status !== 'ready'"
-        >
-          {{ status == 'loading' ? 'Deploying...' : 'Deploy Website' }}
-        </button>
+        />
       </div>
     </div>
 
     <div class="mt-6 flex gap-4">
-      <button
-        @click="saveConfigToFile"
+      <ActionButton
+        success
+        :name="saveConfig.loading.value ? 'Saving...' : 'Save Config'"
+        :action="saveConfigToFile"
         btn-gray
         :disabled="saveConfig.loading.value"
-      >
-        {{ saveConfig.loading.value ? 'Saving...' : 'Save Config' }}
-      </button>
-      <button 
-        @click="createStudy({publish: false})" 
-        class="btn-gray"
+      />
+      <ActionButton
+        loading
+        :name="create.loading.value ? 'Creating...' : 'Create Draft'"
+        :action="() => createStudy({publish: false})"
+        btn-gray
         :disabled="!canSubmit || create.loading.value"
-      >
-        {{ create.loading.value ? 'Creating...' : 'Create Draft' }}
-      </button>
-      <button 
-        @click="createStudy({publish: true})" 
-        class="btn-green"
+      />
+      <ActionButton
+        loading
+        :name="create.loading.value ? 'Creating...' : 'Create & Publish Study'"
+        :action="() => createStudy({publish: true})"
+        btn-green
+        success
         :disabled="!canSubmit || create.loading.value"
-      >
-        {{ create.loading.value ? 'Creating...' : 'Create & Publish Study' }}
-      </button>
+      />
     </div>
   </div>
 </template>
