@@ -3,13 +3,17 @@
 </script>
 
 <template>
-  <div min-w-1000px p2>
-    <NavBar />
-    <SizeScaler />
-    <div>
-      <slot />
+  <div min-w-1000px>
+    <div sticky top-0 z-50 bg-white p2 bg-opacity-70 backdrop-blur-sm >
+      <NavBar />
     </div>
-    <Inspector />
+    <div p2>
+      <SizeScaler />
+      <div>
+        <slot />
+      </div>
+      <Inspector />
+    </div>
   </div>
 </template>
 
