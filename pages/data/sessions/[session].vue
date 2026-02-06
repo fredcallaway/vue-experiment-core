@@ -58,13 +58,13 @@ const getEndEvents = (eventType: string) => {
     const first = relevant[0]
     if (first?.eventType === `${eventType}.end`) {
       if (endEvents.length !== beginCount + 1) {
-        throw new Error(`Mismatched ${eventType} begin/end events for session ${sessionId}`)
+        console.warn(`Mismatched ${eventType} begin/end events for session ${sessionId}`)
       }
       return endEvents.filter(event => event !== first)
     }
   }
   if (beginCount !== endEvents.length) {
-    throw new Error(`Mismatched ${eventType} begin/end events for session ${sessionId}`)
+    console.warn(`Mismatched ${eventType} begin/end events for session ${sessionId}`)
   }
   return endEvents
 }
@@ -111,7 +111,10 @@ const inactiveTimeMs = computed(() => {
 const activeTimeMs = computed(() => {
   if (totalTimeMs.value === null || inactiveTimeMs.value === null) return null
   const active = totalTimeMs.value - inactiveTimeMs.value
-  if (active < 0) throw new Error(`Active time is negative for session ${sessionId}`)
+  if (active < 0) {
+    console.warn(`Active time is negative for session ${sessionId}`)
+    return  null
+  }
   return active
 })
 
