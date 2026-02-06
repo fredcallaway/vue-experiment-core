@@ -44,53 +44,6 @@ watchEffect(() => {
   console.log('correspondence', correspondence.value)
 })
 
-type TimeInterval = { start: number, end: number }
-const MIN_IDLE_DURATION = 30 * 1000
-
-const getEndEvents = (eventType: string) => {
-  const events = data.value?.events ?? []
-  const beginCount = events.filter(event => event.eventType === `${eventType}.begin`).length
-  const endEvents = events.filter(event => event.eventType === `${eventType}.end`)
-  if (eventType === 'browser.unfocused') {
-    const relevant = events
-      .filter(event => event.eventType.startsWith(eventType))
-      .sort((a, b) => a.timestamp - b.timestamp || a.index - b.index)
-    const first = relevant[0]
-    if (first?.eventType === `${eventType}.end`) {
-      if (endEvents.length !== beginCount + 1) {
-        console.warn(`Mismatched ${eventType} begin/end events for session ${sessionId}`)
-      }
-      return endEvents.filter(event => event !== first)
-    }
-  }
-  if (beginCount !== endEvents.length) {
-    console.warn(`Mismatched ${eventType} begin/end events for session ${sessionId}`)
-  }
-  return endEvents
-}
-
-const getIntervals = (eventType: string, minDuration: number) => {
-  return getEndEvents(eventType)
-    .map((event): TimeInterval | null => {
-      const duration = event.data?.duration
-      if (typeof duration !== 'number' || !Number.isFinite(duration)) {
-        throw new Error(`Missing duration for ${event.eventType} in session ${sessionId}`)
-      }
-      if (duration < minDuration) return null
-      return { start: event.timestamp - duration, end: event.timestamp }
-    })
-    .filter((interval): interval is TimeInterval => interval !== null)
-}
-
-const mergeIntervals = (intervals: TimeInterval[]) => {
-  const sorted = R.sortBy(intervals, interval => interval.start)
-  return sorted.reduce<TimeInterval[]>((acc, interval) => {
-    const last = acc[acc.length - 1]
-    if (!last || interval.start > last.end) return [...acc, interval]
-    return [...acc.slice(0, -1), { start: last.start, end: Math.max(last.end, interval.end) }]
-  }, [])
-}
-
 const totalTimeMs = computed(() => {
   if (!meta.value) return null
   const endTime = meta.value.completionTime ?? meta.value.lastUpdateTime
@@ -99,13 +52,7 @@ const totalTimeMs = computed(() => {
 })
 
 const inactiveTimeMs = computed(() => {
-  if (!meta.value) return null
-  const intervals = [
-    ...getIntervals('browser.idle', MIN_IDLE_DURATION),
-    ...getIntervals('browser.unfocused', 0),
-  ]
-  const merged = mergeIntervals(intervals)
-  return R.sum(merged.map(interval => interval.end - interval.start))
+  return null  // TODO
 })
 
 const activeTimeMs = computed(() => {
