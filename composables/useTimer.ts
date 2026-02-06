@@ -16,8 +16,9 @@ export const useTimer = (timeMs: number, { immediate = true }: TimerOptions = {}
     callbacks.push(callback)
   }
  
+  const minDigits = timeMs > 600_000 ? 2 : 1
   const formattedTimeLeft = computed(() => {
-    return formatTime(1000 * secondsLeft.value)
+    return formatTime(1000 * secondsLeft.value, minDigits)
   })
 
   const getTimeLeft = () => {
@@ -52,9 +53,13 @@ export const useTimer = (timeMs: number, { immediate = true }: TimerOptions = {}
     }
   }
 
-  
   const resume = () => {
-    if (status.value !== 'paused') throw new Error('Cannot resume timeout with status ' + status.value)
+    if (status.value === 'running') {
+      console.warn('Trying to resume timer that is already running')
+      return
+    } else if (status.value !== 'paused') {
+      throw new Error('Cannot resume timer with status ' + status.value)
+    }
     
     status.value = 'running'
     lastResumeTime = Date.now()
@@ -62,7 +67,10 @@ export const useTimer = (timeMs: number, { immediate = true }: TimerOptions = {}
   }
   
   const pause = () => {
-    if (status.value !== 'running') throw new Error('Cannot pause timeout with status ' + status.value)
+    if (status.value !== 'running') {
+      console.warn('Trying to pause timer with status ' + status.value)
+      return
+    }
     
     clearTimeout(assertDefined(timeoutId))
     timeoutId = null
@@ -71,11 +79,10 @@ export const useTimer = (timeMs: number, { immediate = true }: TimerOptions = {}
   }
   
   const cancel = () => {
-    if (status.value === 'canceled') {
-      console.warn('Timer canceled twice')
+    if (status.value == 'done' || status.value == 'canceled') {
+      console.warn('Trying to cancel timer with status ' + status.value)
       return
     }
-    if (!['running', 'paused'].includes(status.value)) throw new Error('Cannot cancel timeout with status ' + status.value)
 
     clearTimeout(assertDefined(timeoutId))
     timeoutId = null

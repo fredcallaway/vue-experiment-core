@@ -33,11 +33,11 @@ export function formatCents(cents: number, prefix: string = '$') {
   return formatDollars(cents / 100, prefix)
 }
 
-export function formatTime(ms: number) {
+export function formatTime(ms: number, minDigits: 1 | 2 = 1) {
   const seconds = Math.floor(ms / 1000)
   const minutes = Math.floor(seconds / 60)
   const remainingSeconds = seconds % 60
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
+  return `${minutes.toString().padStart(minDigits, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
 export function formatDateTime(val: number | string | Date | null | undefined, defaultValue: string): string
