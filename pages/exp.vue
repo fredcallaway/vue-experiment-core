@@ -130,9 +130,9 @@ const initLoading = computed(() => {
         <div flex="~ row gap-4 justify-center" mt-4>
           <PButton value="phCheck" @click="handleCheckAgain">I disabled it</PButton>
         </div>
-        <p v-if="phStatus == 'loading'" class="mt-4">
+        <div v-if="phStatus == 'loading'" class="mt-4">
           <div mt-3 mx-auto class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300" />
-        </p>
+        </div>
         <p v-if="failedCheck" class="mt-4">
           Hmm...it looks like your ad blocker is still enabled. Please try again.
           Usually, you can disable it by clicking an icon in your browser's toolbar.
