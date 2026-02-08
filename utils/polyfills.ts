@@ -1,4 +1,3 @@
-console.log('THIS IS RUNNING')
 
 type PromiseWithResolvers<T> = {
   promise: Promise<T>
