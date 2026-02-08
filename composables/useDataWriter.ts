@@ -1,7 +1,6 @@
-import { serverTimestamp } from 'firebase/database'
 import { useStorage } from '@vueuse/core'
-import { z } from 'zod'
 import { logError, logEvent } from './logEvent'
+import { useInactivityTracker } from './useInactivityTracker'
 let dbInstance: DataWriter | null = null
 
 const online = useOnline()
@@ -137,7 +136,8 @@ export class DataWriter {
         const changes: Record<string, any> = {}
         for (const key in meta) {
           const typedKey = key as keyof SessionMeta
-          if (typedKey === 'lastUpdateTime') continue
+          // these are handled separately because they are updated in _flush
+          if (typedKey === 'lastUpdateTime' || typedKey === 'inactiveTime') continue
           if (!R.isDeepEqual(meta[typedKey], prevMeta[typedKey])) {
             changes[typedKey] = meta[typedKey]
           }
@@ -210,6 +210,7 @@ export class DataWriter {
       return
     }
     // ensure meta is fully up to date
+    this.syncIdleTime()
     const db = useDatabase()
     await db.set(this.dbPath('meta'), this.meta)
 
@@ -221,11 +222,18 @@ export class DataWriter {
   private async _flush() {
     if (!online.value) return
     if (this.disabled) return
-    if (!this.initialized) return
+    if (!this.meta) return
+
+    const now = Date.now()
+
+    this.syncIdleTime()
 
     // pull out current updates
-    const toFlush = toRaw(this.updates.value)
+    const toFlush = toRaw(this.updates.value)    
     this.updates.value = {}
+    // update lastUpdateTime
+    this.meta.lastUpdateTime = now
+    toFlush[this.dbPath('meta', 'lastUpdateTime')] = now
 
     if (this.mode === 'dummy') {
       console.debug(`fake-flushed ${Object.keys(toFlush).length} updates`, toFlush)
@@ -234,10 +242,6 @@ export class DataWriter {
     
     try {
       const db = useDatabase()
-    
-      const lastUpdateTime = serverTimestamp() as unknown as number
-      const path = this.dbPath('meta', 'lastUpdateTime')
-      toFlush[path] = lastUpdateTime
 
       // this should be impossible, will remove when I'm more confident
       if (Object.keys(toFlush).some(key => key.includes('__PREINIT__'))) {
@@ -266,6 +270,14 @@ export class DataWriter {
 
   private dbPath(kind: keyof SessionData, key?: string): string {
     return getDBPath(this.mode as DataMode, this.sessionId, kind, key)
+  }
+
+  private syncIdleTime() {
+    if (!this.meta) return
+    const inactiveTime = useInactivityTracker().getTotalInactiveTime()
+    this.meta.inactiveTime = inactiveTime
+    if (typeof inactiveTime !== 'number' || !Number.isFinite(inactiveTime)) return
+    this.updates.value[this.dbPath('meta', 'idleTime')] = inactiveTime
   }
 
   private queueUpdate(fullPath: string, value: SafeData) {

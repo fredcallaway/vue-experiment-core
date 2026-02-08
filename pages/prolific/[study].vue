@@ -236,6 +236,23 @@ const sessionsBySessionId = computed(() => {
   return R.pullObject(sessions.value, R.prop('sessionId'), R.identity())
 })
 
+const getSessionTimes = (sub: Submission) => {
+  const session = sessionsBySessionId.value[sub.id]
+  if (!session) return { totalMs: null, activeMs: null }
+  const endTime = session.completionTime ?? session.lastUpdateTime
+  if (!endTime) return { totalMs: null, activeMs: null }
+  const totalMs = endTime - session.startTime
+  const inactiveTime = session.inactiveTime
+  if (!R.isDefined(inactiveTime)) return { totalMs, activeMs: null }
+  const activeMs = totalMs - inactiveTime
+  return { totalMs, activeMs: activeMs >= 0 ? activeMs : null }
+}
+
+const getActiveTimeText = (sub: Submission) => {
+  const { activeMs } = getSessionTimes(sub)
+  return activeMs === null ? 'N/A' : formatTime(activeMs)
+}
+
 const getDataStatus = (sub: Submission) => {
   const session = sessionsBySessionId.value[sub.id]
   if (!session) return { text: 'missing', color: 'text-gray-400' }
@@ -868,7 +885,7 @@ const versions = computed(() => {
                 <th px-2 py-2 text-left whitespace-nowrap>Code</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Data</th>
                 <th px-2 py-2 text-left whitespace-nowrap>Action</th>
-                <th px-2 py-2 text-left whitespace-nowrap>Time</th>
+                <th px-2 py-2 text-left whitespace-nowrap>Time (total/active)</th>
                 <th px-2 py-2 text-left whitespace-nowrap>
                   <div flex items-center gap-2>
                     <span>Bonus</span>
@@ -962,7 +979,8 @@ const versions = computed(() => {
                 </td>
                 <!-- Time Taken -->
                 <td px-2 py-2 whitespace-nowrap text-right>
-                  {{ sub.time_taken ? formatTime(sub.time_taken * 1000) : 'N/A' }}
+                  <div>{{ sub.time_taken ? formatTime(sub.time_taken * 1000) : 'N/A' }}</div>
+                  <div class="text-xs text-gray-500">active: {{ getActiveTimeText(sub) }}</div>
                 </td>
                 <!-- Bonus -->
                 <td px-2 py-2 whitespace-nowrap font-mono text-sm flex items-center>

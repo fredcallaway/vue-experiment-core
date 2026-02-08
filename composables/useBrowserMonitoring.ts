@@ -1,9 +1,7 @@
-const not = (x: MaybeRef<boolean>) => computed(() => !toValue(x))
-const IDLE_TIME = 10 * 1000
 
 const logTransitions = (enabled: Ref<boolean>, state: Ref<boolean>, eventPrefix: string) => {
   let startTime = NaN
-  watch(() => toValue(state), (isActive) => {
+  watch(state, (isActive) => {
     if (!enabled.value) return
     if (isActive) {
       logEvent(`${eventPrefix}.begin`)
@@ -18,10 +16,9 @@ const logTransitions = (enabled: Ref<boolean>, state: Ref<boolean>, eventPrefix:
 }
 
 export const useBrowserMonitoring = useMemoize(() => {
-  const offline = not(useOnline())
-  const { idle } = useIdle(IDLE_TIME)
-  const unfocused = not(useWindowFocus())
   const enabled = ref(true)
+  const offline = computed(() => !useOnline().value)
+  const { idle, unfocused } = useInactivityTracker()
 
   logTransitions(enabled, idle, 'browser.idle')
   logTransitions(enabled, offline, 'browser.offline')
@@ -34,6 +31,7 @@ export const useBrowserMonitoring = useMemoize(() => {
   }
 })
 
+// this turns out to not be very useful for determining the user's actual browser...
 export const getBrowserInfo = () => {
 
   if (typeof navigator === 'undefined') {

@@ -80,6 +80,7 @@ export const useCurrentSession = createGlobalState<() => SessionMeta>(() => {
     version: useConfig().version,
     startTime: START_TIME,
     lastUpdateTime: Date.now(),
+    inactiveTime: 0,
     bonus: 0,
     assignment,
   }

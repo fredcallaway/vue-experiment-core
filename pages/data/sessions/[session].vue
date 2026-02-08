@@ -52,7 +52,8 @@ const totalTimeMs = computed(() => {
 })
 
 const inactiveTimeMs = computed(() => {
-  return null  // TODO
+  if (!meta.value) return null
+  return meta.value.inactiveTime ?? null
 })
 
 const activeTimeMs = computed(() => {

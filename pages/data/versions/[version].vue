@@ -227,6 +227,23 @@ const timeStats = computed(() => {
   return calcStats(durations)
 })
 
+const activeTimeStats = computed(() => {
+  const durations = mySessions.value
+    .filter(session => sessionStatus(session) === 'completed')
+    .map(session => {
+      const total = assertNumber(session.completionTime ?? session.lastUpdateTime) - session.startTime
+      if (!R.isDefined(session.inactiveTime)) return null
+      const active = total - session.inactiveTime
+      if (active < 0) {
+        console.warn(`Active time is negative for session ${session.sessionId}`)
+        return null
+      }
+      return active
+    })
+    .filter((x): x is number => x !== null)
+  return calcStats(durations)
+})
+
 const errorStats = computed(() => {
   const sessionErrors = mySessions.value.filter(session => session.error).length
   const eventErrors = mySessionData.value
@@ -381,9 +398,12 @@ const completedByCondition = computed(() => {
             <div>
               <h3 class="mb-2">Time taken (completed)</h3>
               <div v-if="timeStats">
-                <div><b>Average:</b> {{ formatTime(timeStats.avg) }}</div>
-                <div><b>Median:</b> {{ formatTime(timeStats.median) }}</div>
+                <div><b>Total Average:</b> {{ formatTime(timeStats.avg) }}</div>
+                <div><b>Total Median:</b> {{ formatTime(timeStats.median) }}</div>
+                <div><b>Active Average:</b> {{ activeTimeStats ? formatTime(activeTimeStats.avg) : 'N/A' }}</div>
+                <div><b>Active Median:</b> {{ activeTimeStats ? formatTime(activeTimeStats.median) : 'N/A' }}</div>
                 <div><b>Count:</b> {{ timeStats.count }}</div>
+                <div><b>Active Count:</b> {{ activeTimeStats ? activeTimeStats.count : 0 }}</div>
               </div>
               <div v-else class="text-gray-500">
                 No completed sessions
@@ -413,4 +433,3 @@ const completedByCondition = computed(() => {
     </div>
   </div>
 </template>
-

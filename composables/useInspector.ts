@@ -34,12 +34,11 @@ export const useInspect = (data: any, label?: string): Record<string, any> => {
   }
 
   const componentName = componentInstance.type.__name || componentInstance.type.name || 'Unknown'
-  const id = `${componentName}-${componentInstance.uid}`
-  const finalLabel = label || componentName
-
+  const id = `${componentName}-${componentInstance.uid}-${label}`
+  
   const entry: InspectorEntry = {
     id,
-    label: finalLabel,
+    label: componentName + (label ? `.${label}` : ''),
     data
   }
 
