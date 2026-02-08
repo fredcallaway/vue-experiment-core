@@ -113,6 +113,28 @@ export const sessionStatus = (meta: SessionMeta): SessionStatus => {
   return 'quit' // TODO: check if they actually left the page?
 }
 
+export type SessionTimeInfo = {
+  endTime: number | null
+  totalMs: number | null
+  inactiveMs: number | null
+  activeMs: number | null
+}
+
+export const getSessionTimeInfo = (meta: SessionMeta): SessionTimeInfo => {
+  const endTime = meta.completionTime ?? meta.lastUpdateTime
+  const totalMs = endTime - meta.startTime
+
+  if (!R.isDefined(meta.inactiveTime)) {
+    return { endTime, totalMs, inactiveMs: null, activeMs: null }
+  }
+
+  const activeMs = totalMs - meta.inactiveTime
+  if (activeMs < 0) {
+    console.warn(`Active time is negative for session ${meta.sessionId}`)
+  }
+  return { endTime, totalMs, inactiveMs: meta.inactiveTime, activeMs }
+}
+
 type ReactiveSession = {
   downloadTime: ComputedRef<number>
   meta: ComputedRef<SessionMeta | null>
@@ -176,6 +198,7 @@ export const makeSessionList = (sessions: Record<string, SessionMeta> | SessionM
       version: meta.version,
       ...(meta.conditions ?? {}),
       status: sessionStatus(meta),
+      activeDuration: getSessionTimeInfo(meta).activeMs,
       bonus: meta.bonus,
       startTime: meta.startTime,
       noReturnTime: meta.noReturnTime,
@@ -236,4 +259,3 @@ export const makeVersionInfo = (sessions: SessionMeta[]) => {
     latestUpdateTime: Math.max(...sessions.map(session => session.lastUpdateTime)),
   }
 }
-

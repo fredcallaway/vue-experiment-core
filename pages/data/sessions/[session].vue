@@ -44,26 +44,9 @@ watchEffect(() => {
   console.log('correspondence', correspondence.value)
 })
 
-const totalTimeMs = computed(() => {
-  if (!meta.value) return null
-  const endTime = meta.value.completionTime ?? meta.value.lastUpdateTime
-  if (!endTime) throw new Error(`Missing end time for session ${sessionId}`)
-  return endTime - meta.value.startTime
-})
-
-const inactiveTimeMs = computed(() => {
-  if (!meta.value) return null
-  return meta.value.inactiveTime ?? null
-})
-
-const activeTimeMs = computed(() => {
-  if (totalTimeMs.value === null || inactiveTimeMs.value === null) return null
-  const active = totalTimeMs.value - inactiveTimeMs.value
-  if (active < 0) {
-    console.warn(`Active time is negative for session ${sessionId}`)
-    return  null
-  }
-  return active
+const timeInfo = computed(() => {
+  if (!meta.value) return { totalMs: null, activeMs: null }
+  return getSessionTimeInfo(meta.value)
 })
 
 
@@ -104,8 +87,8 @@ const activeTimeMs = computed(() => {
             <!-- <div><b>Last Download:</b> {{ formatDateTime(downloadTime) }}</div> -->
             <div><b>Start Time:</b> {{ formatDateTime(meta.startTime) }}</div>
             <div><b>Last Update:</b> {{ formatDateTime(meta.lastUpdateTime) }}</div>
-            <div><b>Total Time:</b> {{ totalTimeMs !== null ? formatTime(totalTimeMs) : 'N/A' }}</div>
-            <div><b>Active Time:</b> {{ activeTimeMs !== null ? formatTime(activeTimeMs) : 'N/A' }}</div>
+            <div><b>Total Time:</b> {{ timeInfo.totalMs === null ? 'N/A' : formatTime(timeInfo.totalMs) }}</div>
+            <div><b>Active Time:</b> {{ timeInfo.activeMs === null ? 'N/A' : formatTime(timeInfo.activeMs) }}</div>
             <div><b>Bonus:</b> ${{ (meta.bonus || 0).toFixed(2) }}</div>
           </div>
         </div>

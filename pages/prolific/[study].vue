@@ -236,20 +236,10 @@ const sessionsBySessionId = computed(() => {
   return R.pullObject(sessions.value, R.prop('sessionId'), R.identity())
 })
 
-const getSessionTimes = (sub: Submission) => {
-  const session = sessionsBySessionId.value[sub.id]
-  if (!session) return { totalMs: null, activeMs: null }
-  const endTime = session.completionTime ?? session.lastUpdateTime
-  if (!endTime) return { totalMs: null, activeMs: null }
-  const totalMs = endTime - session.startTime
-  const inactiveTime = session.inactiveTime
-  if (!R.isDefined(inactiveTime)) return { totalMs, activeMs: null }
-  const activeMs = totalMs - inactiveTime
-  return { totalMs, activeMs: activeMs >= 0 ? activeMs : null }
-}
-
 const getActiveTimeText = (sub: Submission) => {
-  const { activeMs } = getSessionTimes(sub)
+  const session = sessionsBySessionId.value[sub.id]
+  if (!session) return 'N/A'
+  const activeMs = getSessionTimeInfo(session).activeMs
   return activeMs === null ? 'N/A' : formatTime(activeMs)
 }
 

@@ -230,16 +230,7 @@ const timeStats = computed(() => {
 const activeTimeStats = computed(() => {
   const durations = mySessions.value
     .filter(session => sessionStatus(session) === 'completed')
-    .map(session => {
-      const total = assertNumber(session.completionTime ?? session.lastUpdateTime) - session.startTime
-      if (!R.isDefined(session.inactiveTime)) return null
-      const active = total - session.inactiveTime
-      if (active < 0) {
-        console.warn(`Active time is negative for session ${session.sessionId}`)
-        return null
-      }
-      return active
-    })
+    .map(session => getSessionTimeInfo(session).activeMs)
     .filter((x): x is number => x !== null)
   return calcStats(durations)
 })
