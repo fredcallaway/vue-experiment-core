@@ -1,7 +1,7 @@
 <script lang="ts">
 export const [provideContinueParams, useContinueParams, ProvideContinueParams] = defineParams({
   name: 'EContinue',
-  button: false,
+  button: false as boolean | string,
   delay: 0,
   prompt: false,
   small: false,
@@ -13,7 +13,7 @@ export type ContinueParams = ReturnType<typeof useContinueParams>
 
 const props = withDefaults(defineProps<{ 
   name?: string, 
-  button?: boolean, 
+  button?: boolean | string, 
   delay?: NumberLike,
   prompt?: boolean,
   small?: boolean,
@@ -36,6 +36,8 @@ onMounted(() => emit('mounted', epoch))
 const waitTime = replaceFast(delay, clamp(delay / 5, 200, delay))
 const ready = useTimeout(waitTime)
 
+const buttonText = computed(() => typeof button === 'string' ? button : 'Continue')
+
 </script>
 
 <template>
@@ -43,7 +45,7 @@ const ready = useTimeout(waitTime)
     <div :class="{ 'prompt': prompt }">
       <slot />
     </div>
-    <PButton v-if="button" once :disabled="!ready" value="Continue" @click="epoch.done"
+    <PButton v-if="button" once :disabled="!ready" :value="buttonText" @click="epoch.done"
     btn-primary
     :class="[
       delay > 0 && 'transition-opacity-300',
