@@ -121,10 +121,8 @@ const syncSessions = async (mode: DataMode) => {
 
   const dbMeta = await getDatabasePath<Record<string, SessionMeta>>(`${mode}/meta`)
   if (!dbMeta) {
-    throw createError({
-      statusCode: 404,
-      message: 'No session metadata found in database',
-    })
+    console.warn('no session metadata found in database for mode ', mode)
+    return { meta: {}, numUpdated: 0, numError: 0 }
   }
 
   const { fsMeta, fsMetaPath } = await getFsMeta(mode)
@@ -186,6 +184,7 @@ export default defineEventHandler(async (event) => {
     })
   }
   if (syncRunning) {
+    console.error('sync is already running')
     throw createError({
       statusCode: 429,
       message: 'Sync is already running',
@@ -202,7 +201,11 @@ export default defineEventHandler(async (event) => {
   try {
     syncRunning = true
     return await syncSessions(mode)
-  } finally {
+  } catch (error) {
+    console.error('error syncing data', error)
+    throw error
+  }
+  finally {
     syncRunning = false
   }
 })
