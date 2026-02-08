@@ -65,7 +65,7 @@ const goPrev = withEpoch((E) => E.prev())
     <div flex-center>
       <ESequence :epoch="epoch">
         <EPage v-if="!skipWelcome" @mounted="enableNext" name="welcome">
-          <div class="prompt">
+          <div class="prompt" max-w-130>
             Thanks for participating in our experiment! We'll start with some instructions.
             Navigate with arrow keys or the buttons at the top.
             <div t0 r10 italic rotate-10 text-sm>
