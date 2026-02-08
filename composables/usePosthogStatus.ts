@@ -2,6 +2,10 @@ export const usePosthogStatus = (debug: boolean = false) => {
   
   const { $posthog } = useNuxtApp()
   const posthog = $posthog()
+  posthog.onSessionId((sessionId) => {
+    console.log('posthog.sessionId', sessionId)
+    logEvent('posthog.sessionId', { sessionId })
+  })
   posthog.debug(debug)
 
   const status = ref<'loading' | 'blocked' | 'ready'>('loading')

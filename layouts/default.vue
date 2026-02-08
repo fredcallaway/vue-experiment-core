@@ -1,8 +1,16 @@
 <script lang="ts" setup>
+
 useErrorLogging()
 const { violated } = useWindowEnforcer()
 
 const devTools = ref(!getUrlFlag('noDev'))
+
+// onMounted(() => {
+//   // wait for loggers to load
+//   setTimeout(() => {
+//     usePosthogStatus()
+//   }, 1000)
+// })
 
 </script>
 
