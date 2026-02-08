@@ -76,7 +76,7 @@ const sessionList = computed(() => {
 // sync status: assume synced for first second to prevent jitter
 const syncTimeout = useTimeout(1000)
 const optimisticIsSynced = computed(() => {
-  return syncStatus.value === 'synced' || !syncTimeout.value
+  return syncStatus.value === 'synced' || (syncStatus.value == 'loading' && !syncTimeout.value)
 })
 onMounted(() => {
   syncLocalData()

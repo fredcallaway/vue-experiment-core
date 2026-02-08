@@ -68,7 +68,9 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
 
   const syncLoading = ref(false)
   const syncStatus = computed(() => {
-    if ( !isDefined(lastSyncTime.value) || !isDefined(lastUpdateTime.value) || syncLoading.value ) return 'loading'
+    // if ( !isDefined(lastSyncTime.value) || !isDefined(lastUpdateTime.value) || syncLoading.value ) return 'loading'
+    if ( syncLoading.value ) return 'loading'
+    if ( !isDefined(lastSyncTime.value) || !isDefined(lastUpdateTime.value) ) return 'unknown'
     if (lastSyncTime.value < lastUpdateTime.value) return 'stale'
     return 'synced'
   })
