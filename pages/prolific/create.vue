@@ -92,6 +92,11 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
       ...formData.value,
       internal_name: internalName.value
     })
+    await useStudies().addStudy(study.id, {
+      sha: deployedSha.value,
+      version: useConfig().version,
+      completionCodes: Object.fromEntries(study.completion_codes.map((x) => [x.code_type, x.code])),
+    })
         
     if (publish) {
       // Validate deployment one last time before submitting
@@ -99,12 +104,7 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
         throw new Error(`Problem submitting: ${cannotSubmitReason.value}`)
       }
       await prolific.publishStudy(study.id)
-      await addStudy(study.id, {
-        sha: deployedSha.value,
-        publishTime: Date.now(),
-        version: useConfig().version,
-        completionCodes: Object.fromEntries(study.completion_codes.map((x) => [x.code_type, x.code])),
-      })
+      await useStudies().publishStudy(study.id)
     }
     
     // await prolific.getStudiesCache().refresh()

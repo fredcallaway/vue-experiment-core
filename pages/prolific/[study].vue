@@ -126,6 +126,7 @@ const stopStudy = wrap(async () => {
 
 const publishStudy = wrap(async () => {
   await prolific.publishStudy(studyId)
+  await useStudies().publishStudy(studyId)
 })
 
 const { copy } = useClipboard()
