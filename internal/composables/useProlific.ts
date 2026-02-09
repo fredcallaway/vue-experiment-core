@@ -1,15 +1,11 @@
-import '~/prolific.config.ts'
-
 const PAGE_SIZE = 5
 const API_INTERVAL = 1000
 const API_CONCURRENCY_LIMIT = 3
 
 export const useProlific = createGlobalState(() => {
-  const prolificConfig = getProlificConfig()
+  const { config: prolificConfig } = useProlificConfig()
   const token = ref('')
-  // TODO: check the rest of the file for places to update
-  // const projectId = ref(prolificConfig.projectId)
-  const projectId = ref(useConfig().prolificProjectId)
+  const projectId = toRef(useConfig(), 'prolificProjectId')
 
   const loadToken = async () => {
     try {
@@ -74,10 +70,6 @@ export const useProlific = createGlobalState(() => {
     const result = await baseRequest('GET', `/projects/${newProjectId}`)
     if (result.ok) {
       status.value = 'ok'
-      if (prolificConfig.projectId !== newProjectId) {
-        prolificConfig.projectId = newProjectId
-        await writeProlificConfig(prolificConfig)
-      }
     } else if (result.status === 401) {
       status.value = 'invalidToken'
     } else if (result.status == 404) {
@@ -331,7 +323,7 @@ export const useProlific = createGlobalState(() => {
 
   const createAccessDetails = (length: number, start: number = 0) => {
     if (length < 0) throw new ProlificError('Invalid access_details range')
-    const baseUrl = getProlificBaseUrl(prolificConfig)
+    const baseUrl = getProlificBaseUrl(prolificConfig.value)
     const url = baseUrl + '/exp?PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}&SESSION_ID={{%SESSION_ID%}}'
     return range(length).map(i => ({
       external_url: `${url}&assignment=${i + start}`,

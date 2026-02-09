@@ -1,9 +1,10 @@
-
+import type { ProlificConfig } from '../prolific'
 type StudyData = {
   sha: string
   publishTime?: number
   version: string
   completionCodes: Record<string, string>
+  prolificConfig?: ProlificConfig
 }
 
 export const useStudies = () => {

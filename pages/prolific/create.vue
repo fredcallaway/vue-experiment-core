@@ -11,6 +11,7 @@ const { deploy, localSha, deployedSha, status, error: deploymentError, gitStatus
 const MIN_WAGE = 8
 
 const config = useConfig()
+const { config: formData } = useProlificConfig()
 
 // Persist deployment error to localStorage
 const persistedDeploymentError = useLocalStorage('prolific-deployment-error', '')
@@ -32,32 +33,12 @@ const dismissDeploymentError = () => {
   persistedDeploymentError.value = ''
 }
 
-const formData = ref<ProlificConfig>(R.clone(getProlificConfig()))
-
-if (!formData.value.eligibility) {
-  formData.value.eligibility = {
-    allowUK: true,
-    minSubmissions: 50,
-    maxSubmissions: 100000,
-    minApprovalRate: 99,
-    requireEnglishFluency: true,
-    requireEnglishPrimary: true,
-  }
-}
-
 const bypassGitCheck = ref(false)
 const bypassDeployedCheck = ref(false)
 
 const internalName = computed(() => {
   return `${config.version || 'unknown'} (git ${localSha.value})`
 })
-
-const saveConfig = useAsyncRunner()
-const saveConfigToFile = async () => {
-  await saveConfig.run(async () => {
-    await writeProlificConfig(formData.value)
-  })
-}
 
 const hourlyWage = computed(() => {
   if (!formData.value.reward || !formData.value.estimated_completion_time || formData.value.estimated_completion_time === 0) {
@@ -96,6 +77,7 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
       sha: deployedSha.value,
       version: useConfig().version,
       completionCodes: Object.fromEntries(study.completion_codes.map((x) => [x.code_type, x.code])),
+      prolificConfig: R.clone(formData.value),
     })
         
     if (publish) {
@@ -113,7 +95,6 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
 }
 
 const onDeploy = async () => {
-  await saveConfigToFile()
   await deploy()
 }
 
@@ -126,7 +107,7 @@ const onDeploy = async () => {
 
     <h2 mb2 mt4>Create New Study</h2>
 
-    <Error :error="create.error.value || deploymentError || saveConfig.error.value" />
+    <Error :error="create.error.value || deploymentError" />
 
     <div class="grid grid-cols-2 gap-6">
       <!-- Reward/Time/Wage/Places/Cost Card -->
@@ -340,13 +321,6 @@ const onDeploy = async () => {
 
     <div class="mt-6 flex gap-4">
       <ActionButton
-        success
-        :name="saveConfig.loading.value ? 'Saving...' : 'Save Config'"
-        :action="saveConfigToFile"
-        btn-gray
-        :disabled="saveConfig.loading.value"
-      />
-      <ActionButton
         loading
         :name="create.loading.value ? 'Creating...' : 'Create Draft'"
         :action="() => createStudy({publish: false})"
@@ -364,4 +338,3 @@ const onDeploy = async () => {
     </div>
   </div>
 </template>
-

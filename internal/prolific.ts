@@ -29,14 +29,22 @@ export type ProlificConfig = {
   }[]
 }
 
-let _prolificConfig: ProlificConfig | null = null
-
-export const defineProlificConfig = (config: ProlificConfig): ProlificConfig => {
-  _prolificConfig = config
-  if (config.baseUrl === 'FIREBASE_DEFAULT') {
-    config.baseUrl = `https://${firebaseConfig.projectId}.web.app/`
-  }
-  return config
+export const DEFAULT_PROLIFIC_CONFIG: ProlificConfig = {
+  baseUrl: 'FIREBASE_DEFAULT',
+  name: 'Psychology Experiment',
+  description: 'I should probably put a description here...',
+  estimated_completion_time: 10,
+  maximum_allowed_time: 60,
+  reward: 200,
+  total_available_places: 5,
+  eligibility: {
+    allowUK: true,
+    minSubmissions: 50,
+    maxSubmissions: 100000,
+    minApprovalRate: 99,
+    requireEnglishFluency: true,
+    requireEnglishPrimary: true,
+  },
 }
 
 export const getProlificBaseUrl = (config: ProlificConfig): string => {
@@ -45,19 +53,6 @@ export const getProlificBaseUrl = (config: ProlificConfig): string => {
   }
   assert(config.baseUrl.startsWith('https://'), 'Prolific base URL must start with https://')
   return config.baseUrl
-}
-
-export const getProlificConfig = (): ProlificConfig => {
-  if (!_prolificConfig) throw new Error('Prolific config not initialized. Import prolific.config.ts first.')
-  return _prolificConfig
-}
-
-export const writeProlificConfig = async (config: ProlificConfig) => {
-  await fetch('/api/prolific/config', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(config)
-  })
 }
 
 export const eligibilityToFilters = (eligibility: EligibilityConfig): Filter[] => {
@@ -219,4 +214,3 @@ export class ProlificError extends Error {
     this.name = 'ProlificError'
   }
 }
-
