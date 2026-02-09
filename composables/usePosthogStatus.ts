@@ -46,8 +46,9 @@ export const usePosthogStatus = (debug: boolean = false) => {
 
   checkStatus()
 
-  whenever(() => status.value === 'ready', () => {
-    posthog.capture('posthog.ready')
+  const bus = useLogEventBus()
+  bus.on((event) => {
+    posthog.capture(event.eventType, event)
   })
 
   return {
