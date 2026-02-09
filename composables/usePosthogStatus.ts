@@ -5,6 +5,7 @@ export const usePosthogStatus = (debug: boolean = false) => {
   posthog.onSessionId((sessionId) => {
     console.log('posthog.sessionId', sessionId)
     logEvent('posthog.sessionId', { sessionId })
+    useDataWriter().updateOther('posthog/sessionId', sessionId)
   })
   posthog.debug(debug)
 
