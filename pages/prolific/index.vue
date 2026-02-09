@@ -12,7 +12,6 @@ const prolific = useProlific()
 const { token, setToken, projectId, status, studyList, deleteStudy } = prolific
 
 const tokenInput = ref(token.value)
-const projectIdInput = ref(projectId.value)
 
 watch(token, (newToken) => {
   tokenInput.value = newToken
@@ -53,11 +52,6 @@ const handleTokenUpdate = async () => {
   if (!tokenInput.value.trim()) return
   await setToken(tokenInput.value)
 }
-
-const handleProjectIdUpdate = () => {
-  projectId.value = projectIdInput.value
-}
-
 const debounceTokenUpdate = useDebounceFn(handleTokenUpdate, 1000)
 
 const deleteAllDrafts = async () => {
@@ -140,13 +134,11 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
             </span>
           </div>
           <input 
-            v-model="projectIdInput" 
+            v-model="projectId" 
             type="text" 
             input-mono
             w-55
             placeholder="Enter project ID or leave blank"
-            @keyup.enter="handleProjectIdUpdate"
-            @blur="handleProjectIdUpdate"
           />
         </div>
 

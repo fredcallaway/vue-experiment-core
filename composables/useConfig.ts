@@ -4,7 +4,6 @@ export type Config = {
   version: string
   contactEmail: string
   completion: { mode: 'prolific' } | { mode: 'link', link: string}
-  prolificProjectId: string
 }
 
 

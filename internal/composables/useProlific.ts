@@ -4,8 +4,8 @@ const API_CONCURRENCY_LIMIT = 3
 
 export const useProlific = createGlobalState(() => {
   const { config: prolificConfig } = useProlificConfig()
+  const projectId = useDatabase().sync('/prolificProjectId', '')
   const token = ref('')
-  const projectId = toRef(useConfig(), 'prolificProjectId')
 
   const loadToken = async () => {
     try {
@@ -31,8 +31,6 @@ export const useProlific = createGlobalState(() => {
     }
   }
 
-  loadToken()
-
   const baseRequest = async (method: string, path: string, body?: any) => {
     const now = performance.now()
 
@@ -57,17 +55,17 @@ export const useProlific = createGlobalState(() => {
 
   const status = ref<('unknown' | 'ok' | 'invalidToken' | 'invalidProjectId')>('unknown')
 
-  watchImmediate([token, projectId], async ([_, newProjectId]) => {
-    console.log('checking status', token.value, newProjectId)
+  const checkStatus = async (token: string, projectId: string) => {
+    console.log('checking status', token, projectId)
     status.value = 'unknown'
-    if (token.value.length < 10) {
+    if (token.length < 10) {
       status.value = 'invalidToken'
       return
-    } else if (newProjectId.length < 10) {
+    } else if (projectId.length < 10) {
       status.value = 'invalidProjectId'
       return
     }
-    const result = await baseRequest('GET', `/projects/${newProjectId}`)
+    const result = await baseRequest('GET', `/projects/${projectId}`)
     if (result.ok) {
       status.value = 'ok'
     } else if (result.status === 401) {
@@ -76,6 +74,20 @@ export const useProlific = createGlobalState(() => {
       status.value = 'invalidProjectId'
     } else {
       console.error('Prolific status check failed', result)
+    }
+  }
+  // check status immediately when token and projectId are loaded
+  Promise.all([loadToken(), until(() => projectId.ready).toBe(true)]).then(() => {
+    checkStatus(token.value, projectId.value)
+  })
+
+  // debounce check status for later updates, but immediately verify if status was 'ok'
+  const debouncedCheckStatus = useDebounceFn(checkStatus, 500)
+  watch([token, projectId], async ([newToken, newProjectId]) => {
+    if (status.value === 'ok') {
+      checkStatus(newToken, newProjectId)
+    } else {
+      debouncedCheckStatus(newToken, newProjectId)
     }
   })
 
