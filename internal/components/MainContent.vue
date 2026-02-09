@@ -38,6 +38,14 @@ nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
     // console.debug('caught useLocalAsync:unmounted')
     return
   }
+  const { $posthog } = useNuxtApp()
+  const posthog = $posthog()
+  posthog.captureException(err, {
+    vue_info: info, // string
+    component_name: instance?.$options?.__name,
+    component_path: instance?.$options?.__file,
+    current_epoch: useCurrentEpoch().value.id,
+  })
 
   if (props.captureErrors) {
     const componentName = instance?.$options?.__name
