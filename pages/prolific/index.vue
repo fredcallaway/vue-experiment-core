@@ -9,13 +9,7 @@ definePageMeta({
 const N_PRELOAD_STUDIES = 0
 
 const prolific = useProlific()
-const { token, setToken, projectId, status, studyList, deleteStudy } = prolific
-
-const tokenInput = ref(token.value)
-
-watch(token, (newToken) => {
-  tokenInput.value = newToken
-})
+const { token, projectId, status, studyList, deleteStudy } = prolific
 
 const { items: studies, timestamp: studiesTimestamp, isLoading: loading } = studyList.value
 const cacheError = ref<Error | null>(null)
@@ -47,12 +41,6 @@ const error = computed(() => {
   }
   return ''
 })
-
-const handleTokenUpdate = async () => {
-  if (!tokenInput.value.trim()) return
-  await setToken(tokenInput.value)
-}
-const debounceTokenUpdate = useDebounceFn(handleTokenUpdate, 1000)
 
 const deleteAllDrafts = async () => {
   if (!studies.value) return
@@ -109,14 +97,11 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
             </span>
           </div>
           <input 
-            v-model="tokenInput" 
+            v-model="token" 
             type="text" 
             input-mono
             w-full
             placeholder="Enter your Prolific API token"
-            @keyup.enter="handleTokenUpdate"
-            @blur="handleTokenUpdate"
-            @input="debounceTokenUpdate"
           />
         </div>
 

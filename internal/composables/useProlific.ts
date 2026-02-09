@@ -18,14 +18,13 @@ export const useProlific = createGlobalState(() => {
     }
   }
 
-  const setToken = async (newToken: string) => {
+  const writeToken = async (newToken: string) => {
     try {
       await fetch('/api/prolific/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: newToken })
       })
-      token.value = newToken.trim()
     } catch (error) {
       throw new ProlificError(`Failed to save token: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
@@ -57,37 +56,54 @@ export const useProlific = createGlobalState(() => {
 
   const checkStatus = async (token: string, projectId: string) => {
     console.log('checking status', token, projectId)
-    status.value = 'unknown'
     if (token.length < 10) {
       status.value = 'invalidToken'
-      return
     } else if (projectId.length < 10) {
       status.value = 'invalidProjectId'
-      return
     }
-    const result = await baseRequest('GET', `/projects/${projectId}`)
-    if (result.ok) {
-      status.value = 'ok'
-    } else if (result.status === 401) {
-      status.value = 'invalidToken'
-    } else if (result.status == 404) {
-      status.value = 'invalidProjectId'
-    } else {
-      console.error('Prolific status check failed', result)
+    else {
+      const result = await baseRequest('GET', `/projects/${projectId}`)
+      if (result.ok) {
+        status.value = 'ok'
+      } else if (result.status === 401) {
+        status.value = 'invalidToken'
+      } else if (result.status == 404) {
+        status.value = 'invalidProjectId'
+      } else {
+        console.error('Prolific status check failed', result)
+        status.value = 'unknown'
+      }
     }
+    return status.value
   }
-  // check status immediately when token and projectId are loaded
-  Promise.all([loadToken(), until(() => projectId.ready).toBe(true)]).then(() => {
-    checkStatus(token.value, projectId.value)
-  })
-
-  // debounce check status for later updates, but immediately verify if status was 'ok'
+  
+  const tokenPromise = loadToken()
+  
   const debouncedCheckStatus = useDebounceFn(checkStatus, 500)
-  watch([token, projectId], async ([newToken, newProjectId]) => {
-    if (status.value === 'ok') {
-      checkStatus(newToken, newProjectId)
+  watch([token, projectId], async ([newToken, newProjectId], [oldToken, oldProjectId]) => {
+    if (status.value === 'invalidToken' && oldToken === newToken) return
+    if (status.value === 'invalidProjectId' && oldProjectId === newProjectId || newProjectId.length === 0) return
+    if (status.value === 'unknown') {
+      await tokenPromise
+      await until(() => projectId.ready).toBe(true)
+      await checkStatus(newToken, newProjectId)
+    } else if (status.value === 'ok') {
+      await checkStatus(newToken, newProjectId)
     } else {
-      debouncedCheckStatus(newToken, newProjectId)
+      await debouncedCheckStatus(newToken, newProjectId)
+    }
+  })
+  
+  // save token when it's valid OR it's been completeley cleared
+  watch(status, (newStatus) => {
+    console.log('watch status', newStatus)
+    if (newStatus === 'ok') {
+      writeToken(token.value)
+    }
+  })
+  watch(token, (newToken) => {
+    if (newToken.length === 0) {
+      writeToken(newToken)
     }
   })
 
@@ -107,10 +123,10 @@ export const useProlific = createGlobalState(() => {
     try {
       await Promise.any([
         until(status).toBe('ok'),
-        timeoutPromise(2000)
+        timeoutPromise(5000)
       ])
       if (status.value !== 'ok') {
-        throw new ProlificError('invalid status: ' + status.value)
+        throw new ProlificError('processRequest: invalidstatus: ' + status.value)
       }
       const response = await baseRequest(queued.method, queued.path, queued.body)
 
@@ -706,7 +722,6 @@ export const useProlific = createGlobalState(() => {
 
   return {
     token,
-    setToken,
     projectId,
     status: readonly(status),
     studyList,
