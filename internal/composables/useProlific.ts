@@ -7,7 +7,9 @@ const API_CONCURRENCY_LIMIT = 3
 export const useProlific = createGlobalState(() => {
   const prolificConfig = getProlificConfig()
   const token = ref('')
-  const projectId = ref(prolificConfig.projectId)
+  // TODO: check the rest of the file for places to update
+  // const projectId = ref(prolificConfig.projectId)
+  const projectId = ref(useConfig().prolificProjectId)
 
   const loadToken = async () => {
     try {

@@ -13,7 +13,6 @@ export type EligibilityConfig = {
 }
 
 export type ProlificConfig = {
-  projectId: string
   baseUrl: string
   name: string
   description: string
