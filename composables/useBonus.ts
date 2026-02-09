@@ -12,6 +12,9 @@ export const useBonus = createGlobalState(() => {
     get pointValueString() {
       return this.toCentsString(1)
     },
+    get pointsPerCent() {
+      return Math.round(1 / (this.centsPerPoint))
+    },
     get pointsPerDollar() {
       return Math.round(100 / (this.centsPerPoint))
     },
