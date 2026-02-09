@@ -43,14 +43,47 @@ export const useDatabase = createGlobalState(() => {
     }
   }
 
+  const sync = <T>(path: string, initialValue: T, { deep = true, debounce = 500, maxWait = 2000 } = {}) => {
+    const data = ref(initialValue)
+    const ready = ref(false)
+
+    const unsubValue = onValue(dbRef(db, path), (snap) => {
+      if (!snap.exists()) {
+        set(dbRef(db, path), data.value)
+        ready.value = true
+        return
+      }
+      const val = snap.val()
+      data.value = val
+      ready.value = true
+    })
+
+    const unsubWatch = watchDebounced(data, () => {
+      set(dbRef(db, path), data.value)
+    }, { deep, debounce, maxWait })
+
+    const unsubscribe = () => {
+      unsubValue()
+      unsubWatch()
+    }
+    onScopeDispose(unsubscribe)
+
+    return extendRef(data, {
+      syncImmediate: () => set(dbRef(db, path), data.value),
+      unsubscribe,
+      ready
+     })
+  }
+
   return {
     db,
     connected,
     disconnectedSeconds,
     assertConnected,
+    sync,
     get: (path: string) => get(dbRef(db, path)),
     set: (path: string, value: any) => set(dbRef(db, path), value),
-    update: (path: string, value: any) => update(dbRef(db, path), value),
+    update: (path: string, value: object) => update(dbRef(db, path), value),
     onValue: (path: string, callback: (snap: DataSnapshot) => void) => onValue(dbRef(db, path), callback)
   }
 })
