@@ -232,7 +232,7 @@ export const makeEventList = (session: SessionData) => {
     }
     return {
       sessionId: session.meta.sessionId,
-      timeRaw: event.timestamp,
+      time: event.timestamp,
       epoch: currentEpoch,
       eventType: event.eventType,
       data: payload,
