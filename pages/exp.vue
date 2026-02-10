@@ -77,10 +77,13 @@ initialized.then(async (result) => {
 </script>
 
 <template>
-  <div flex-center min-h-80vh>
-    <MainContent capture-errors>
-      <Experiment />
-    </MainContent>
+
+  <div fixed inset-0 bg-gray-600 relative>
+    <div flex-center h-100vh >
+      <MainContent capture-errors bg-white border-4>
+        <Experiment />
+      </MainContent>
+    </div>
 
     <div v-if="initStatus === 'loading'" fixed inset-0 bg-white flex-center z-100>
       <div shrink-0 w600px mx-auto p-3 text-center>

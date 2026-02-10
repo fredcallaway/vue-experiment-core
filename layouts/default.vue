@@ -24,12 +24,16 @@ const devTools = ref(!getUrlFlag('noDev'))
       </div>
     </div>
   </div>
-  <div v-else >
-    <NavBar mb-2/>
-    <MainContent bg-white  >
-      <Experiment />
-    </MainContent>
-  </div>
+  <template v-else >
+    <div fixed inset-0 bg-gray-600 >
+      <NavBar mb-2/>
+      <div flex-center min-h-80vh>
+        <MainContent bg-white border-4>
+          <Experiment />
+        </MainContent>
+      </div>
+    </div>
+  </template>
 </template>
 
 
