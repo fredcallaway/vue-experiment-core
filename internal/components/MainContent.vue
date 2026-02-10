@@ -102,6 +102,10 @@ nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
             <p mt-3 text-base w-80 mx-auto>
               If you can't make it bigger, you can't participate in this experiment. Sorry!
             </p>
+            <p mt-30 font-italic text-base w-100 mx-auto opacity-30 text-xs>
+              Tip: you can try zooming out in your browser
+              (usually cmd/ctrl and +/-). Make sure you can still read the text though!
+            </p>
         </div>
       </div>
     </template>
