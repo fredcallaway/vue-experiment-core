@@ -187,7 +187,7 @@ const getCellLinkRoute = (column: string, row: Record<string, any>) => {
 
 // only render items that are visible 
 const { list: virtualList, containerProps, wrapperProps, scrollTo } = useVirtualList(filteredTableData, {
-  itemHeight: 30,
+  itemHeight: 35,
   overscan: 20
 })
 
@@ -361,8 +361,11 @@ const slots = useSlots()
     </div>
     <div v-else>
       <div class="overflow-x-auto subtle-scrollbar">
-        <div class="bg-gray-200 border-b border-gray-300">
-          <table class="text-sm" :style="{ tableLayout: 'fixed', width: `${tableWidth}px` }">
+        <div class="border-b border-gray-300">
+          <table
+            class="datatable-table text-sm"
+            :style="{ tableLayout: 'fixed', width: `${tableWidth}px`, borderCollapse: 'separate', borderSpacing: '0' }"
+          >
             <colgroup>
               <col
                 v-for="col in columns"
@@ -375,7 +378,7 @@ const slots = useSlots()
                 <th 
                   v-for="col in columns" 
                   :key="col"
-                  px-2 py-2 text-left whitespace-nowrap
+                  px-2 py-2 text-left whitespace-nowrap bg-gray-200
                   :style="columnStyle(col)"
                 >
                   {{ col }}
@@ -386,10 +389,10 @@ const slots = useSlots()
         </div>
 
         <div
-          class="overflow-y-auto overflow-x-hidden subtle-scrollbar"
+          class="overflow-y-auto subtle-scrollbar"
           v-bind="containerProps"
           :style="{
-            width: `${tableWidth}px`,
+            width: '100%',
             height: `${TABLE_HEIGHT}px`,
             // don't start scrolling until full table is visible
             overflowY: containerIsVisible ? 'auto' : 'hidden',
@@ -397,7 +400,7 @@ const slots = useSlots()
         >
           <div v-bind="wrapperProps" >
             <table
-              class="text-sm"
+              class="datatable-table text-sm"
               border-white
               :style="{ tableLayout: 'fixed', width: `${tableWidth}px`, borderCollapse: 'separate', borderSpacing: '0' }"
             >
@@ -429,7 +432,11 @@ const slots = useSlots()
                       <a
                         v-if="'href' in (getCellLinkRoute(col, row.original) || {})"
                         :href="(getCellLinkRoute(col, row.original) as { href: string }).href"
-                        class="datatable-cell-text cursor-pointer"
+                        :class="[
+                          'datatable-cell-text',
+                          shouldShowOverflowViewer(col, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
+                          'cursor-pointer',
+                        ]"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
@@ -438,12 +445,24 @@ const slots = useSlots()
                       <NuxtLink
                         v-else
                         :to="getCellLinkRoute(col, row.original)"
-                        class="datatable-cell-text cursor-pointer"
+                        :class="[
+                          'datatable-cell-text',
+                          shouldShowOverflowViewer(col, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
+                          'cursor-pointer',
+                        ]"
                       >
                         {{ getCellDisplayText(col, row) }}
                       </NuxtLink>
                     </template>
-                    <span v-else class="datatable-cell-text">{{ getCellDisplayText(col, row) }}</span>
+                    <span
+                      v-else
+                      :class="[
+                        'datatable-cell-text',
+                        shouldShowOverflowViewer(col, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
+                      ]"
+                    >
+                      {{ getCellDisplayText(col, row) }}
+                    </span>
 
                     <details
                       v-if="shouldShowOverflowViewer(col, row)"
@@ -465,13 +484,25 @@ const slots = useSlots()
 </template>
 
 <style scoped>
+.datatable-table th,
+.datatable-table td {
+  box-sizing: border-box;
+}
+
 .datatable-cell-text {
   display: block;
   min-width: 0;
   flex: 1 1 auto;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.datatable-cell-text--ellipsis {
+  text-overflow: ellipsis;
+}
+
+.datatable-cell-text--clip {
+  text-overflow: clip;
 }
 
 .overflow-viewer {
