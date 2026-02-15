@@ -136,13 +136,14 @@ const getCellLink = (column: string, row: Record<string, any>) => {
   }
 }
 
+const route = useRoute()
+
 const getCellLinkRoute = (column: string, row: Record<string, any>) => {
   const link = getCellLink(column, row)
   if (!link) return undefined
-  
+
   if (typeof link === 'string') {
     const [path, queryString] = link.split('?')
-    const route = useRoute()
     const query: Record<string, string> = {}
     
     Object.entries(route.query).forEach(([key, val]) => {
@@ -162,7 +163,6 @@ const getCellLinkRoute = (column: string, row: Record<string, any>) => {
   }
   
   if (link.external) {
-    const route = useRoute()
     const query: Record<string, string> = {}
     
     Object.entries(route.query).forEach(([key, val]) => {
@@ -240,61 +240,42 @@ const containerIsVisible = useElementVisibility(containerProps.ref, {
   threshold: 1.0, // 100% visible
 })
 
-// Sync horizontal scroll between header and body
-const headerWrapperRef = ref<HTMLDivElement>()
-
-let scrollCleanup: (() => void) | null = null
-
-const syncHorizontalScroll = () => {
-  if (scrollCleanup) {
-    scrollCleanup()
-    scrollCleanup = null
-  }
-  
-  const container = containerProps.ref.value
-  const headerWrapper = headerWrapperRef.value
-  if (!container || !headerWrapper) return
-  
-  const handleScroll = () => {
-    headerWrapper.scrollLeft = container.scrollLeft
-  }
-  
-  container.addEventListener('scroll', handleScroll)
-  scrollCleanup = () => {
-    container.removeEventListener('scroll', handleScroll)
-  }
+const estimateTextWidth = (text: string, scale:number = 1): number => {
+  return text.length * 7.5 * scale
 }
 
-watch(containerIsVisible, (visible) => {
-  if (visible) {
-    nextTick(() => {
-      syncHorizontalScroll()
-    })
+const TABLE_HEIGHT = 600
+const TABLE_ROW_HEIGHT = 35
+const MIN_COL_WIDTH = 80
+const MAX_COL_WIDTH = 200
+const CELL_HORIZONTAL_PADDING = 16
+
+const getCellDisplayText = (
+  column: string,
+  row: { formatted: Record<string, string>, original: Record<string, any> }
+): string => {
+  const rawValue = row.original[column]
+
+  if (rawValue === null || rawValue === undefined) {
+    return ''
   }
-})
 
-onMounted(() => {
-  nextTick(() => {
-    syncHorizontalScroll()
-  })
-})
-
-tryOnScopeDispose(() => {
-  if (scrollCleanup) {
-    scrollCleanup()
+  if (typeof rawValue === 'object') {
+    if (R.isArray(rawValue)) {
+      return rawValue.map(formatObjectValue).join(', ')
+    }
+    const entries = Object.entries(rawValue)
+    if (entries.length === 0) {
+      return formatObjectValue(rawValue)
+    }
+    return entries.map(([key, value]) => `${key}:${formatObjectValue(value)}`).join('  ')
   }
-})
 
-const estimateTextWidth = (text: string, scale:number = 1): number => {
-  return text.length * 7.5
+  return String(row.formatted[column] ?? '')
 }
 
 const columnWidths = computed(() => {
   if (!formattedTableData.value.length || !columns.value.length) return {}
-  
-  const padding = 16 // px-2 on both sides = 8px * 2
-  const minColWidth = 80
-  const maxColWidth = Infinity
   
   const widths: Record<string, number> = {}
   
@@ -304,23 +285,45 @@ const columnWidths = computed(() => {
     
     // Measure all cell values for this column
     formattedTableData.value.forEach(row => {
-      const value = row.formatted[col] ?? ''
-      let text = String(value)
-      if (text == '[object Object]') {
-        text = Object.entries(row.original[col]).map(([key, value]) => `${key}:${value} `).join(' ')
-      }
+      const text = getCellDisplayText(col, row)
       const width = estimateTextWidth(text)
       if (width > measuredWidth) {
         measuredWidth = width
       }
     })
     
-    // Add padding and apply min/max constraints
-    widths[col] = Math.max(minColWidth, Math.min(maxColWidth, measuredWidth + padding))
+    widths[col] = Math.max(
+      MIN_COL_WIDTH,
+      Math.min(MAX_COL_WIDTH, measuredWidth + CELL_HORIZONTAL_PADDING)
+    )
   })
   
   return widths
 })
+
+const tableWidth = computed(() => {
+  return columns.value.reduce((total, col) => {
+    return total + (columnWidths.value[col] ?? MIN_COL_WIDTH)
+  }, 0)
+})
+
+const columnStyle = (column: string) => {
+  const width = columnWidths.value[column] ?? MIN_COL_WIDTH
+  return {
+    width: `${width}px`,
+    minWidth: `${width}px`,
+    maxWidth: `${width}px`,
+  }
+}
+
+const shouldShowOverflowViewer = (
+  column: string,
+  row: { formatted: Record<string, string>, original: Record<string, any> }
+) => {
+  const availableWidth = (columnWidths.value[column] ?? MIN_COL_WIDTH) - CELL_HORIZONTAL_PADDING
+  const estimatedTextWidth = estimateTextWidth(getCellDisplayText(column, row))
+  return estimatedTextWidth > availableWidth
+}
 
 const slots = useSlots()
 
@@ -357,91 +360,104 @@ const slots = useSlots()
       </div>
     </div>
     <div v-else>
-      <div 
-        ref="headerWrapperRef" 
-        class="overflow-x-auto header-scrollbar-hide" 
-        style="scrollbar-width: none; -ms-overflow-style: none;"
-      >
-        <table class="text-sm" style="table-layout: fixed; width: 100%;">
-          <thead>
-            <tr class="bg-gray-200">
-              <th 
-                v-for="col in columns" 
+      <div class="overflow-x-auto subtle-scrollbar">
+        <div class="bg-gray-200 border-b border-gray-300">
+          <table class="text-sm" :style="{ tableLayout: 'fixed', width: `${tableWidth}px` }">
+            <colgroup>
+              <col
+                v-for="col in columns"
                 :key="col"
-                px-2 py-2 text-left whitespace-nowrap
-                :style="columnWidths[col] ? { width: `${columnWidths[col]}px` } : {}"
+                :style="columnStyle(col)"
               >
-                {{ col }}
-              </th>
-            </tr>
-          </thead>
-        </table>
-      </div>
-      <div 
-        class="overflow-auto subtle-scrollbar"
-        style="height: 600px;"
-        v-bind="containerProps"
-        :style="{
-          // don't start scrolling until full table is visible
-          overflowY: containerIsVisible ? 'auto' : 'hidden',
-          overflowX: 'auto',
-        }"
-      >
-        <div v-bind="wrapperProps" >
-          <table class="text-sm" border-white style="table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0;">
-            <tbody>
-              <tr 
-                v-for="{ data: row, index: idx } in virtualList" 
-                :key="idx" 
-                class="hover:bg-gray-100 transition-colors"
-                :class="{
-                  'animate-[fadeIn_0.5s_ease-out]': newRowIndices.has(idx)
-                }"
-                style="height: 35px;"
-              >
-                <td 
+            </colgroup>
+            <thead>
+              <tr>
+                <th 
                   v-for="col in columns" 
                   :key="col"
-                  px-2 py-2
-                  style="white-space: nowrap; overflow: hidden;"
-                  :style="columnWidths[col] ? { width: `${columnWidths[col]+2}px` } : {}"
+                  px-2 py-2 text-left whitespace-nowrap
+                  :style="columnStyle(col)"
                 >
-                  <template v-if="getCellLinkRoute(col, row.original)">
-                    <a
-                      v-if="'href' in (getCellLinkRoute(col, row.original) || {})"
-                      :href="(getCellLinkRoute(col, row.original) as { href: string }).href"
-                      class="cursor-pointer"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {{ row.formatted[col] }}
-                    </a>
-                    <NuxtLink
-                      v-else
-                      :to="getCellLinkRoute(col, row.original)"
-                      class="cursor-pointer"
-                    >
-                      {{ row.formatted[col] }}
-                    </NuxtLink>
-                  </template>
-                  <span v-else-if="typeof row.original[col] === 'object'">
-                    <template v-if="Object.entries(row.original[col] || {}).length > 0">
-                      <span
-                        v-for="([key, value], idx) in Object.entries(row.original[col] || {})"
-                        :key="key"
-                        style="white-space: nowrap; display: inline-block;"
-                      >
-                        <span class="text-gray-400">{{ key }}</span>:
-                        <span>{{ formatObjectValue(value)}}</span>
-                        <span v-if="idx < Object.entries(row.original[col] || {}).length - 1">&nbsp;&nbsp;</span>
-                      </span>
-                    </template>
-                  </span>
-                  <span v-else>{{ row.formatted[col] }}</span>
-                </td>
+                  {{ col }}
+                </th>
               </tr>
-            </tbody>
+            </thead>
           </table>
+        </div>
+
+        <div
+          class="overflow-y-auto overflow-x-hidden subtle-scrollbar"
+          v-bind="containerProps"
+          :style="{
+            width: `${tableWidth}px`,
+            height: `${TABLE_HEIGHT}px`,
+            // don't start scrolling until full table is visible
+            overflowY: containerIsVisible ? 'auto' : 'hidden',
+          }"
+        >
+          <div v-bind="wrapperProps" >
+            <table
+              class="text-sm"
+              border-white
+              :style="{ tableLayout: 'fixed', width: `${tableWidth}px`, borderCollapse: 'separate', borderSpacing: '0' }"
+            >
+              <colgroup>
+                <col
+                  v-for="col in columns"
+                  :key="col"
+                  :style="columnStyle(col)"
+                >
+              </colgroup>
+              <tbody>
+                <tr 
+                  v-for="{ data: row, index: idx } in virtualList" 
+                  :key="idx" 
+                  class="hover:bg-gray-100 transition-colors"
+                  :class="{
+                    'animate-[fadeIn_0.5s_ease-out]': newRowIndices.has(idx)
+                  }"
+                  :style="{ height: `${TABLE_ROW_HEIGHT}px` }"
+                >
+                  <td 
+                    v-for="col in columns" 
+                    :key="col"
+                    px-2 py-2 whitespace-nowrap
+                    :style="columnStyle(col)"
+                  >
+                    <div class="flex items-center gap-1 min-w-0">
+                    <template v-if="getCellLinkRoute(col, row.original)">
+                      <a
+                        v-if="'href' in (getCellLinkRoute(col, row.original) || {})"
+                        :href="(getCellLinkRoute(col, row.original) as { href: string }).href"
+                        class="datatable-cell-text cursor-pointer"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {{ getCellDisplayText(col, row) }}
+                      </a>
+                      <NuxtLink
+                        v-else
+                        :to="getCellLinkRoute(col, row.original)"
+                        class="datatable-cell-text cursor-pointer"
+                      >
+                        {{ getCellDisplayText(col, row) }}
+                      </NuxtLink>
+                    </template>
+                    <span v-else class="datatable-cell-text">{{ getCellDisplayText(col, row) }}</span>
+
+                    <details
+                      v-if="shouldShowOverflowViewer(col, row)"
+                      class="overflow-viewer"
+                    >
+                      <summary class="overflow-toggle" title="Show full value">...</summary>
+                      <div class="overflow-popover">{{ getCellDisplayText(col, row) }}</div>
+                    </details>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -449,8 +465,49 @@ const slots = useSlots()
 </template>
 
 <style scoped>
-.header-scrollbar-hide::-webkit-scrollbar {
+.datatable-cell-text {
+  display: block;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overflow-viewer {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+}
+
+.overflow-toggle {
+  list-style: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.overflow-toggle::-webkit-details-marker {
   display: none;
+}
+
+.overflow-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  min-width: 200px;
+  max-width: 420px;
+  max-height: 280px;
+  overflow: auto;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
+  padding: 8px;
+  white-space: normal;
+  word-break: break-word;
 }
 
 @keyframes fadeIn {
