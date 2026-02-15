@@ -69,20 +69,6 @@ h6 { font-size: 0.67em; font-weight: bold; }
   scrollbar-gutter: stable;
 }
 
-.subtle-scrollbar {
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
-}
-
-.subtle-scrollbar::-webkit-scrollbar {
-  width: 8px;
-}
-
-.subtle-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
 /* used by usePhases transitions */
 @keyframes fade-in {
   from { opacity: 0; }
