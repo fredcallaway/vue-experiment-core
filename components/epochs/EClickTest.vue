@@ -5,7 +5,9 @@ export const [provideClickTestParams, useClickTestParams, ProvideClickTestParams
   delayMin: 200,
   delayMax: 200,
   pointsPerClick: 1,
-  boardSize: 600,
+  // boardSize: 600,
+  boardWidth: 600,
+  boardHeight: 600,
   circleRadius: 20,
   minPadding: 12,
 })
@@ -42,15 +44,6 @@ logClickTestParams(params)
 const { sleep } = useLocalAsync()
 const bonus = useBonus()
 
-assert(params.durationMs > 0, 'durationMs must be > 0')
-assert(params.pointsPerClick >= 0, 'pointsPerClick must be >= 0')
-assert(params.boardSize > 0, 'boardSize must be > 0')
-assert(params.circleRadius > 0, 'circleRadius must be > 0')
-assert(
-  params.boardSize > (params.circleRadius + params.minPadding) * 2,
-  'boardSize must be large enough to fit the circle with padding'
-)
-
 const phases = ['start', 'play', 'feedback','done'] as const
 const E = usePhaseEpoch('clicktest', phases)
 const { Phase, goToPhase } = useDisplayPhases(phases, { duration: 0 })
@@ -68,8 +61,8 @@ const pad = computed(() => params.circleRadius + params.minPadding)
 const circleSize = computed(() => params.circleRadius * 2)
 
 const spawnCircle = () => {
-  circle.x = random.int(pad.value, params.boardSize - pad.value)
-  circle.y = random.int(pad.value, params.boardSize - pad.value)
+  circle.x = random.int(pad.value, params.boardWidth - pad.value)
+  circle.y = random.int(pad.value, params.boardHeight - pad.value)
   circleId.value++
 }
 
@@ -102,7 +95,6 @@ watchImmediate(E.phase, async (currentPhase) => {
       })
     },
     done: async () => {
-      logDebug('EClickTest.done')
       // await sleep(1500)
       E.done()
     },
@@ -140,7 +132,7 @@ const onCircleClick = () => {
     gap-1
     :class="E.phase.value === 'done' && 'fade-out'"
   >
-    <div flex justify-between text-xl fw-bold w-full>
+    <div flex justify-between text-xl fw-bold :style="{ width: `${params.boardWidth}px` }">
       <div>Time: {{ timer.formattedTimeLeft }}</div>
       <div>Score: {{ score }}</div>
     </div>
@@ -148,7 +140,7 @@ const onCircleClick = () => {
     <div
       relative
       class="bg-white border-4 border-black"
-      :style="{ width: `${params.boardSize}px`, height: `${params.boardSize}px` }"
+      :style="{ width: `${params.boardWidth}px`, height: `${params.boardHeight}px` }"
     >
 
       <Phase which="start" class="overlay">
