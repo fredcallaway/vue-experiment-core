@@ -141,6 +141,7 @@ export const findEpoch = (predicate: (E: Epoch) => boolean): Epoch | null => {
     }
     epoch = epoch._parent
   }
+  console.warn('findEpoch failed on ' + _currentEpoch.id )
   return null
 }
 

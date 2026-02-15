@@ -104,9 +104,10 @@ const traverseTimeline = async () => {
   }
 
   const doTraversal = () => new Promise((resolve) => {
+    console.log('👉 doTraversal')
     
     unwatch = watchImmediate(currentEpoch, async (epoch) => {
-      console.log('👉 ', epoch.id)
+      console.debug('traverse: ', epoch.id)
       if (epoch.id === '__TOP_EPOCH__') {
         unwatch()
         resolve(true)
