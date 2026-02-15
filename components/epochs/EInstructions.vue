@@ -21,7 +21,6 @@ const allowNext = computed(withEpoch((E) => !props.disableNavigation && maxCompl
 const allowPrev = computed(withEpoch((E) => !props.disableNavigation && E.step.value > 1)) // no back to welcome
 
 const enableNext = withEpoch((E) => {
-  console.log('enableNext', E.step.value)
   maxCompletedStep.value = Math.max(maxCompletedStep.value, E.step.value)
 })
 
