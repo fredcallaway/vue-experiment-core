@@ -82,6 +82,8 @@ export const useDisplayPhases = <const T extends readonly string[]>(
     props: {
       which: { type: String, required: true },
       persist: { type: Boolean, default: false },
+      constant: { type: Boolean, default: false },
+      static: { type: Boolean, default: false },
     },
     slots: Object as SlotsType<{ default: () => any }>,
     setup(props, { slots, attrs }: SetupContext) {
@@ -101,6 +103,7 @@ export const useDisplayPhases = <const T extends readonly string[]>(
       )
 
       const isPersisting = computed(() => {
+        if (props.constant) return true
         if (!props.persist) return false
         // is the current phase in between the earliest and latest matched phase?
         const currentIndex = phases.indexOf(phase.value)
@@ -123,14 +126,19 @@ export const useDisplayPhases = <const T extends readonly string[]>(
         if (!isVisible.value && !isPersisting.value) return null
         
         const style: Record<string, string> = {}
+        if (props.static) {
+          style.position = 'static'
+        }
         if (isFadingOut.value) {
           style.animation = `fade-out ${outDuration}ms ease-out forwards`
         } else if (isFadingIn.value) {
           style.animation = `fade-in ${inDuration}ms ease-in forwards`
         } else if (isPersisting.value && !isVisible.value) {
           style.opacity = '0'
-          style.position = 'absolute'
-          style.inset = '0'
+          if (!props.static) {
+            style.position = 'absolute'
+            style.inset = '0'
+          }
         }
 
         return h('div', { ...attrs, style }, slots.default?.())
