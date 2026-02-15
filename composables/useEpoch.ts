@@ -227,15 +227,17 @@ function makeLeafEpoch(parent: Epoch, name: string): Epoch {
   // epoch.id = epoch.id.replace('-leaf', '')
 
   // TODO: do we really need to override this?
-  epoch.done = R.once((_result?: any) => {
-    if (_currentEpoch.id == epoch.id) {
-      setCurrentEpoch(parent)
-      parent.next()
-    }
-  })
+  // epoch.done = R.once((_result?: any) => {
+  //   console.log('LEAF DONE')
+  //   if (_currentEpoch.id == epoch.id) {
+  //     setCurrentEpoch(parent)
+  //     parent.next()
+  //   }
+  // })
 
   setCurrentEpoch(epoch)
   logEvent(`epoch.start`, {id: epoch.id})
+  console.log('LEAF EPOCH', epoch.id)
 
   return epoch
 }
@@ -277,11 +279,11 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
     // Create a leaf epoch if necessary
     const ensureChild = R.once(() => {
       // NOTE: this was (_currentEpoch.id === E.id || _activeLeaf) before, but I think was a mistake
-      if (_currentEpoch.id === E.id) {
-        // logDebug('making leaf', { E: E.id })
+      if (_currentEpoch.id === E.id || _currentEpoch.id === _activeLeaf?.id) {
+        logDebug('making leaf', { E: E.id })
         _activeLeaf = makeLeafEpoch(E, 'leaf' + String(step.value))
       } else {
-        // logDebug('has child', { E: E.id, child: _currentEpoch.id })
+        logDebug('has child', { E: E.id, child: _currentEpoch.id })
         _activeLeaf = null
       }
     })
@@ -345,6 +347,7 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
   let expectedPrefix = ''
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i]
+    console.log('jump', part)
 
     // Extend expected prefix
     if (i === 0) {
