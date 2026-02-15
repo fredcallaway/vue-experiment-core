@@ -37,12 +37,15 @@ type EpochTreeNode = {
   children: Record<string, EpochTreeNode>
 }
 
-type DisplayNode = {
+type GanttBar = {
   token: string
   prefix: string
   depth: number
+  leftPct: number
+  widthPct: number
   count: number
   childCount: number
+  hiddenChildCount: number
 }
 
 const rootNode = ref<EpochTreeNode>({
@@ -58,9 +61,19 @@ const hasBuilt = ref(false)
 const processedJumpCount = ref(0)
 const discoveredJumpCount = ref(0)
 const visitedEpochIds = ref(0)
-const collapsedPrefixes = ref<Set<string>>(new Set())
+
+const displayRootPrefix = ref('')
+
+const BAR_HEIGHT = 28
+const BAR_GAP = 6
+const MIN_CHILD_WIDTH_PX = 50
+
+const chartViewportEl = ref<HTMLElement | null>(null)
+const chartWidthPx = ref(1000)
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const sortTokens = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true })
 
 const getStack = (): Epoch[] => {
   const stack: Epoch[] = []
@@ -115,43 +128,159 @@ const resetTree = () => {
   visitedEpochIds.value = 0
   hasBuilt.value = false
   error.value = null
+  displayRootPrefix.value = ''
 }
 
-const sortTokens = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true })
+const sortedChildren = (node: EpochTreeNode) =>
+  Object.values(node.children).sort((a, b) => sortTokens(a.token, b.token))
 
-const toggleCollapsed = (prefix: string) => {
-  const next = new Set(collapsedPrefixes.value)
-  if (next.has(prefix)) {
-    next.delete(prefix)
-  } else {
-    next.add(prefix)
-  }
-  collapsedPrefixes.value = next
-}
+const nodeByPrefix = computed(() => {
+  const map = new Map<string, EpochTreeNode>()
 
-const visibleNodes = computed<DisplayNode[]>(() => {
-  const rows: DisplayNode[] = []
-
-  const visit = (node: EpochTreeNode, depth: number) => {
-    const children = Object.values(node.children).sort((a, b) => sortTokens(a.token, b.token))
-    for (const child of children) {
-      rows.push({
-        token: child.token,
-        prefix: child.prefix,
-        depth,
-        count: child.count,
-        childCount: Object.keys(child.children).length,
-      })
-
-      if (!collapsedPrefixes.value.has(child.prefix)) {
-        visit(child, depth + 1)
-      }
+  const walk = (node: EpochTreeNode) => {
+    for (const child of sortedChildren(node)) {
+      map.set(child.prefix, child)
+      walk(child)
     }
   }
 
-  visit(rootNode.value, 0)
-  return rows
+  walk(rootNode.value)
+  return map
 })
+
+const syntheticRoot = computed<EpochTreeNode>(() => ({
+  token: '(all)',
+  prefix: '',
+  count: visitedEpochIds.value,
+  children: rootNode.value.children,
+}))
+
+const displayRootNode = computed<EpochTreeNode>(() => {
+  if (!displayRootPrefix.value) return syntheticRoot.value
+  return nodeByPrefix.value.get(displayRootPrefix.value) ?? syntheticRoot.value
+})
+
+const getParentPrefix = (prefix: string) => {
+  if (!prefix) return null
+  const idx = prefix.lastIndexOf('-')
+  if (idx === -1) return ''
+  return prefix.slice(0, idx)
+}
+
+const canZoomOut = computed(() => displayRootPrefix.value !== '')
+
+const zoomOut = () => {
+  if (!canZoomOut.value) return
+  const parent = getParentPrefix(displayRootPrefix.value)
+  displayRootPrefix.value = parent ?? ''
+}
+
+const zoomTo = (prefix: string) => {
+  if (isBuilding.value) return
+  displayRootPrefix.value = prefix
+}
+
+const breadcrumbs = computed(() => {
+  if (!displayRootPrefix.value) {
+    return [{ prefix: '', token: '(all)' }]
+  }
+
+  const segments = displayRootPrefix.value.split('-')
+  const out: { prefix: string, token: string }[] = [{ prefix: '', token: '(all)' }]
+
+  let prefix = ''
+  for (const seg of segments) {
+    prefix = prefix ? `${prefix}-${seg}` : seg
+    const node = nodeByPrefix.value.get(prefix)
+    out.push({ prefix, token: node?.token ?? seg })
+  }
+
+  return out
+})
+
+const showLabel = (bar: GanttBar) => bar.widthPct >= 7
+
+const ganttBars = computed<GanttBar[]>(() => {
+  const bars: GanttBar[] = []
+  const widthPx = max(chartWidthPx.value, 320)
+
+  const walk = (
+    node: EpochTreeNode,
+    depth: number,
+    leftPct: number,
+    widthPct: number,
+    currentWidthPx: number,
+  ) => {
+    const children = sortedChildren(node)
+    const bar: GanttBar = {
+      token: node.token,
+      prefix: node.prefix,
+      depth,
+      leftPct,
+      widthPct,
+      count: node.count,
+      childCount: children.length,
+      hiddenChildCount: 0,
+    }
+    bars.push(bar)
+
+    if (children.length === 0) return
+
+    const childWidthPx = currentWidthPx / children.length
+    if (childWidthPx < MIN_CHILD_WIDTH_PX) {
+      bar.hiddenChildCount = children.length
+      return
+    }
+
+    const childWidthPct = widthPct / children.length
+    children.forEach((child, idx) => {
+      walk(
+        child,
+        depth + 1,
+        leftPct + childWidthPct * idx,
+        childWidthPct,
+        childWidthPx,
+      )
+    })
+  }
+
+  walk(displayRootNode.value, 0, 0, 100, widthPx)
+  return bars
+})
+
+const maxDepth = computed(() => {
+  if (ganttBars.value.length === 0) return 0
+  return max(...ganttBars.value.map((b) => b.depth))
+})
+
+const canvasHeight = computed(() => {
+  return (maxDepth.value + 1) * (BAR_HEIGHT + BAR_GAP) + 12
+})
+
+const barStyle = (bar: GanttBar) => ({
+  left: `${bar.leftPct}%`,
+  width: `${bar.widthPct}%`,
+  top: `${bar.depth * (BAR_HEIGHT + BAR_GAP)}px`,
+  height: `${BAR_HEIGHT}px`,
+})
+
+const barClass = (bar: GanttBar) => {
+  if (bar.prefix === displayRootPrefix.value) return 'bg-blue-700/90 hover:bg-blue-800/90'
+  if (bar.hiddenChildCount > 0) return 'bg-amber-500/90 hover:bg-amber-600/90'
+  return 'bg-sky-500/90 hover:bg-sky-600/90'
+}
+
+const barLabel = (bar: GanttBar) => {
+  const hidden = bar.hiddenChildCount > 0 ? ` (hidden ${bar.hiddenChildCount})` : ''
+  return `${bar.token}${hidden} · seen ${bar.count}`
+}
+
+const updateChartWidth = () => {
+  const nextWidth = chartViewportEl.value?.clientWidth
+  if (nextWidth && nextWidth > 0) {
+    chartWidthPx.value = nextWidth
+  }
+}
 
 const runTraversal = async () => {
   if (isBuilding.value) return
@@ -216,6 +345,8 @@ const runTraversal = async () => {
     }
 
     hasBuilt.value = true
+    await nextTick()
+    updateChartWidth()
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {
@@ -223,18 +354,27 @@ const runTraversal = async () => {
   }
 }
 
-const jumpToPrefix = async (prefix: string) => {
-  if (!prefix || isBuilding.value) return
-  await jumpToEpoch(prefix)
-}
-
 onMounted(async () => {
+  updateChartWidth()
+  window.addEventListener('resize', updateChartWidth)
   await runTraversal()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateChartWidth)
 })
 </script>
 
 <template>
   <div p-4>
+    <div mb-4 rounded border="~ blue-200" bg-blue-50 px-3 py-2 text-sm text-blue-900>
+      <div font-semibold mb-1>How to Use This View</div>
+      <div>Read top-to-bottom: each row is one hierarchy level, and sibling bars split width equally.</div>
+      <div>Click any bar to zoom into that node; use <b>Up One Level</b> or the breadcrumb buttons to navigate back out.</div>
+      <div>If a node has many children, its children are automatically hidden when there is less than 50px per child.</div>
+      <div>Use <b>Build Tree</b>/<b>Rebuild Tree</b> to refresh after experiment structure changes.</div>
+    </div>
+
     <div mb-4 flex="~ items-center gap-3 wrap">
       <button
         class="px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-40"
@@ -242,6 +382,14 @@ onMounted(async () => {
         @click="runTraversal"
       >
         {{ hasBuilt ? 'Rebuild Tree' : 'Build Tree' }}
+      </button>
+
+      <button
+        class="px-3 py-1 rounded bg-gray-600 text-white disabled:opacity-40"
+        :disabled="!canZoomOut || isBuilding"
+        @click="zoomOut"
+      >
+        Up One Level
       </button>
 
       <span text-sm text-gray-500>
@@ -261,35 +409,44 @@ onMounted(async () => {
       </span>
     </div>
 
-    <div border="~ gray-200" rounded p-3 max-h="70vh" overflow-auto bg-white>
-      <div v-if="visibleNodes.length === 0" text-sm text-gray-500>
+    <div mb-3 flex="~ items-center gap-2 wrap" text-sm>
+      <button
+        v-for="crumb in breadcrumbs"
+        :key="crumb.prefix || '__root__'"
+        class="px-2 py-0.5 rounded border border-gray-300 bg-white hover:bg-gray-50"
+        :class="crumb.prefix === displayRootPrefix ? 'text-blue-700 border-blue-400' : 'text-gray-700'"
+        @click="zoomTo(crumb.prefix)"
+      >
+        {{ crumb.token }}
+      </button>
+    </div>
+
+    <div text-sm text-gray-500 mb-2>
+      Equal-width sibling layout. Children are hidden when available width is under {{ MIN_CHILD_WIDTH_PX }}px per child. Click any node to zoom into it.
+    </div>
+
+    <div ref="chartViewportEl" border="~ gray-200" rounded p-3 max-h="75vh" overflow-auto bg-white>
+      <div v-if="ganttBars.length === 0" text-sm text-gray-500>
         No epoch nodes discovered yet.
       </div>
 
-      <div
-        v-for="node in visibleNodes"
-        :key="node.prefix"
-        class="flex items-center gap-2 py-0.5 font-mono text-sm"
-        :style="{ paddingLeft: `${node.depth * 14}px` }"
-      >
+      <div v-else class="relative" :style="{ height: `${canvasHeight}px`, minWidth: '900px' }">
         <button
-          class="w-5 text-gray-400 hover:text-gray-700"
-          :disabled="node.childCount === 0"
-          @click="toggleCollapsed(node.prefix)"
+          v-for="bar in ganttBars"
+          :key="bar.prefix || '__root_bar__'"
+          class="absolute px-2 text-left font-mono text-xs truncate border border-white/70 rounded transition-colors"
+          :class="barClass(bar)"
+          :style="barStyle(bar)"
+          :title="barLabel(bar)"
+          @click="zoomTo(bar.prefix)"
         >
-          {{ node.childCount === 0 ? '·' : (collapsedPrefixes.has(node.prefix) ? '+' : '−') }}
+          <span v-if="showLabel(bar)">
+            {{ bar.token }}
+            <template v-if="bar.hiddenChildCount > 0"> (hidden {{ bar.hiddenChildCount }})</template>
+            · {{ bar.count }}
+          </span>
+          <span v-else>·</span>
         </button>
-
-        <button
-          class="text-left hover:text-blue-700"
-          @click="jumpToPrefix(node.prefix)"
-        >
-          {{ node.token }}
-        </button>
-
-        <span text-xs text-gray-400>
-          seen {{ node.count }}x
-        </span>
       </div>
     </div>
 
