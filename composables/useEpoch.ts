@@ -53,15 +53,19 @@ const makeEpoch = (props: EpochProps): Epoch => {
         console.log(`ignoring done() on disabled epoch: ${epoch.id}`)
         return
       }
+      // NOT disabled -> call listeners
       for (const listener of doneListeners) {
         listener(_result)
       }
       if (epoch.isNoEpoch) return
+      // NOT detached from the epoch system -> return control to parent
       setCurrentEpoch(epoch._parent)
       epoch._parent.next()
     },
 
     next() {
+      if (epoch.isNoEpoch || epoch.isDisabled) return
+
       if (props.next) {
         props.next()
       } else {
@@ -75,7 +79,7 @@ const makeEpoch = (props: EpochProps): Epoch => {
   }
 
   // register with parent unless we have already (e.g. backward navigation in instructions)
-  if (props.parent) {
+  if (!epoch.isNoEpoch && !epoch.isDisabled && props.parent) {
     if (!props.parent.children.some(e => e.id === epoch.id)) {
       props.parent.children.push(epoch)
     }
