@@ -88,7 +88,7 @@ const guideLeft = (level: number) => {
 </script>
 
 <template>
-  <div rounded-lg border="~ 2 gray-300" bg-white p-3>
+  <div rounded-lg border="~ 2 gray-300" bg-white p-3 cursor-default>
 
     <div v-if="!root" text-sm text-gray-500>
       Waiting for first epoch...
@@ -103,14 +103,12 @@ const guideLeft = (level: number) => {
           relative
           rounded
           px-2
-          py-1
-          mb-0.5
           flex="~ items-center gap-1"
           :style="{ paddingLeft: `${depth * indentStep + indentBase}px` }"
           :class="[
             isCurrent(node) ? 'font-bold text-blue-500' : '',
             !isCurrent(node) && isAncestor(node) ? 'font-semibold text-gray-600' : '',
-            !isCurrent(node) && !isAncestor(node) ? 'text-gray-400 hover:bg-gray-100' : '',
+            !isCurrent(node) && !isAncestor(node) ? 'text-gray-400' : '',
           ]"
           @click="toggleCollapse(node)"
         >
@@ -121,11 +119,11 @@ const guideLeft = (level: number) => {
             <span
               v-for="level in depth"
               :key="`${node.id}-guide-${level}`"
-              class="absolute inset-y-0 w-px bg-gray-200"
+              class="absolute inset-y-0 w-px bg-gray-100"
               :style="{ left: guideLeft(level) }"
             />
           </div>
-
+          <!-- {{ node.children.length }} -->
           <button
             v-if="hasChildren(node)"
             @click.stop="toggleCollapse(node)"
@@ -138,7 +136,7 @@ const guideLeft = (level: number) => {
           >
             <span :class="isExpanded(node) ? 'i-mdi-chevron-down' : 'i-mdi-chevron-right'" />
           </button>
-          <span v-else w-4 h-4 />
+          <div v-else w-4 h-4 flex-center i-mdi-circle-outline scale-60 ></div>
 
           <span truncate>{{ node._name }}</span>
         </div>
