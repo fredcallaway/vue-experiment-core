@@ -89,25 +89,49 @@ const handleClickNode = (node: EpochNode) => {
   jumpToEpoch(node.id)
 }
 
-const traverseTimeline = () => {
+
+
+const traverseTimeline = async () => {
   const previous = currentEpoch.value
+  let unwatch: any = null
 
-  const unwatch = watchImmediate(currentEpoch, async (epoch) => {
-    // console.log('👉 ', epoch.id)
-    if (epoch.id === '__TOP_EPOCH__') {
-      unwatch()
-      await nextTick()
-      setCurrentEpoch(TOP_EPOCH.children[0])
-      // current
-      jumpToEpoch(previous.id)
-      return
-    }
+  // ignore errors during traversal
+  const nuxtApp = useNuxtApp()
+  const originalHandler = nuxtApp.vueApp.config.errorHandler
+  nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
+    if (err === 'useLocalAsync:unmounted') return
+    console.error('Error traversing timeline:', err)
+  }
 
-    if (epoch.isLeaf || !('step' in epoch)) {
-      await nextTick()
-      epoch.done()
-    }
+  const doTraversal = () => new Promise((resolve) => {
+    
+    unwatch = watchImmediate(currentEpoch, async (epoch) => {
+      console.log('👉 ', epoch.id)
+      if (epoch.id === '__TOP_EPOCH__') {
+        unwatch()
+        resolve(true)
+        return
+      }
+
+      if (epoch.isLeaf || !('step' in epoch)) {
+        await nextTick()
+        epoch.done()
+      }
+    })
   })
+
+  try {
+    await doTraversal()
+  } catch (error) {
+    console.error('Error traversing timeline:', error)
+  } finally {
+    unwatch?.()
+    await nextTick()
+    // retore original epoch
+    setCurrentEpoch(TOP_EPOCH.children[0])
+    jumpToEpoch(previous.id)
+    nuxtApp.vueApp.config.errorHandler = originalHandler
+  }
 }
 
 // inspect({
