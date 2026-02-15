@@ -94,6 +94,70 @@ const captureChain = (leafEpoch: Epoch): CapturedNode[] => {
   })
 }
 
+type EpochNode = {
+  name: string
+  id: string
+  parentId: string | null
+  children: EpochNode[]
+}
+
+const buildTree = () => new Promise((resolve) => {
+  const currentEpoch = useCurrentEpoch()
+  const nodeMap = new Map<string, EpochNode>()
+  
+  const addNode = (epoch: Epoch) => {
+    const node = {
+      name: epoch._name,
+      id: epoch.id,
+      parentId: epoch._parent.id,
+      children: [],
+    }
+    nodeMap.set(epoch.id, node)
+    return node
+  }  
+  // step through the epochs, recording new epochs as they occur
+  const unwatch = watchImmediate(currentEpoch, async (epoch) => {
+    if (epoch.id === '__TOP_EPOCH__') {
+      unwatch()
+      resolve(nodeMap)
+      return
+    }
+
+    if (epoch.isLeaf || !('step' in epoch)) {
+      if (nodeMap.has(epoch.id)) {
+        console.warn('duplicate node id found!')
+        return
+      }
+      // create node for this epoch
+      const node = addNode(epoch)
+      nodeMap.set(epoch.id, node)
+
+      // add to parent's children
+      const parent = assertDefined(nodeMap.get(epoch._parent.id))
+      parent.children.push(node)
+
+      
+      
+      let ancestorEpoch: Epoch = epoch._parent
+      while (ancestorEpoch.id != '__TOP_EPOCH') {
+        if (nodeMap.has(epoch.id)) {
+          nodeMap.get(epoch.id)!.children.push(node)
+          break
+        }
+
+        const ancestorNode = addNode(ancestorEpoch)
+
+        ancestorNode.children.push(node)
+        ancestorId = ancestor.parentId
+      }
+
+
+      await nextTick()
+      epoch.done()
+    }
+  })
+})
+
 const getLeaves = () => new Promise<CapturedLeaf[]>((resolve) => {
   const currentEpoch = useCurrentEpoch()
   const leaves: CapturedLeaf[] = []
