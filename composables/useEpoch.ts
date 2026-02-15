@@ -7,6 +7,7 @@ export type Epoch = {
   // internal
   _name: string,
   _parent: Epoch,
+  children: Epoch[]  // only includes children that have been mounted
   isNoEpoch?: boolean,
   isLeaf?: boolean,
   id: string,
@@ -39,12 +40,13 @@ export const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
 }
 
 // this should never be the currentEpoch
-const TOP_EPOCH = {
+export const TOP_EPOCH = {
   _name: '__TOP_EPOCH__',
   id: '__TOP_EPOCH__',
   done: () => {console.warn('TOP_EPOCH.done() called')},
   next: () => console.warn('TOP_EPOCH.next() called'),
   _parent: null as unknown as Epoch,  // typing hack
+  children: [] as Epoch[]
 }
 
 // WARNING: currentEpoch.step is not a ref
@@ -85,7 +87,7 @@ const makeId = (name: string, parent: Epoch | MultistepEpoch | PhaseEpoch) => {
 
 const hasFlag = (attrs: Record<string, any>, flag: string) => attrs[flag] === "" || attrs[flag] === true
 
-
+// this is a trick to do string validation with typescript
 type NoHyphen<S extends string> =
   S extends `${string}-${string}`
     ? "epoch name cannot contain hyphens (-)"
@@ -99,18 +101,23 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
   const attrs = useAttrs()  // properties passed to containing component
   let disabled = hasFlag(attrs, "disabled")
   const noEpoch = hasFlag(attrs, "no-epoch") || hasFlag(attrs, "noEpoch")
-  
-  const parentEpoch = inject<Epoch>('__EPOCH__', TOP_EPOCH)
-  if (parentEpoch.isLeaf) {
-    logDebug('⚠️ useEpoch: parent epoch is a leaf', { parentEpoch: parentEpoch.id })
-    console.warn('⚠️ useEpoch: parent epoch is a leaf', { parentEpoch: parentEpoch.id })
-  }
-  const id = makeId(name, parentEpoch)
-
-
   if (attrs.done) {
     assert(R.isFunction(attrs.done), 'attrs.done is not a function')
   }
+
+  const parentEpoch = inject<Epoch>('__EPOCH__', TOP_EPOCH)
+  if (parentEpoch.isLeaf) {
+    logWarn('useEpoch: parent epoch is a leaf', { parentEpoch: parentEpoch.id })
+  }
+  if (parentEpoch.id !== _currentEpoch.id) {
+    logWarn('useEpoch: parent epoch is not the current epoch', { 
+      parentEpoch: parentEpoch.id, 
+      currentEpoch: _currentEpoch.id,
+      name,
+    })
+  }
+
+  const id = makeId(name, parentEpoch)
 
   const done = R.once((_result?: any) => {
     if (disabled) return
@@ -124,7 +131,7 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
 
     if (attrs.done) {
       // @ts-ignore
-      attrs.done(done)
+      attrs.done(done) // TODO: consider removing done as argument
     } else {
       // logEvent('epoch.done')
       parentEpoch.next()
@@ -135,12 +142,18 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
     _name: name,
     id,
     _parent: parentEpoch,
+    children: [],
     done,
     next: done, // is overriden by multistep epochs
     isNoEpoch: noEpoch,
   }
+  // register with parent unless we have already (e.g. backward navigation in instructions)
+  if (!parentEpoch.children.some(e => e.id === id)) {
+    parentEpoch.children.push(epoch)
+  }
   
   onUnmounted(() => {
+    // TODO: should we return immediately if disabled was already true?
     disabled = true
     if (currentEpoch.value.id === epoch.id) {
       setCurrentEpoch(parentEpoch)
@@ -171,6 +184,7 @@ function makeLeafEpoch(parentEpoch: Epoch, name: string): Epoch {
     _name: name,
     id,
     _parent: parentEpoch,
+    children: [],
     done,
     next: done,
     isLeaf: true,
@@ -214,7 +228,7 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
 
   let _activeLeaf: Epoch | null = null
 
-  watchImmediate(step, (newStep, oldStep) => {
+  watchImmediate(step, () => {
     if (E.isNoEpoch) {
       return
     }
