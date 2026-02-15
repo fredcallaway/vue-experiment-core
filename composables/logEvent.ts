@@ -45,6 +45,11 @@ export const logDebug = (message: string, info?: any) => {
   console.log('logDebug', message, info)
 }
 
+export const logWarn = (message: string, info?: unknown) => {
+  console.warn('⚠️', message, info)
+  logEvent('warn', { message, info })
+}
+
 export const declareEventLogger = <T extends SafeDataObject>(name: string) => {
   const logger = (data: T) => {
     logEvent(name, data)
