@@ -5,6 +5,19 @@ definePageMeta({
 })
 useDataWriter().disable()
 
+// supress expected errors from console
+const nuxtApp = useNuxtApp()
+const defaultHandler = nuxtApp.vueApp.config.errorHandler
+nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
+
+  // this error is expected behavior; see useLocalAsync.ts
+  if (err === 'useLocalAsync:unmounted') {
+    // console.debug('caught useLocalAsync:unmounted')
+    return
+  }
+  defaultHandler!(err, instance, info)
+}
+
 const currentEpoch = useCurrentEpoch()
 
 const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
