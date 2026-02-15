@@ -3,6 +3,7 @@ import { logEvent, logDebug } from './logEvent'
 export type Epoch = {
   done: (result?: any) => void,
   next: () => void,
+  onDone: (fn: (result?: any) => void) => void
   
   // internal
   _name: string,
@@ -10,7 +11,77 @@ export type Epoch = {
   children: Epoch[]  // only includes children that have been mounted
   isNoEpoch?: boolean,
   isLeaf?: boolean,
+  isDisabled?: boolean
   id: string,
+}
+
+type EpochProps = {
+  name: string,
+  parent: Epoch,
+  children?: Epoch[],
+  id?: string,
+  isDisabled?: boolean,
+  isNoEpoch?: boolean,
+  isLeaf?: boolean,
+  next?: () => void,
+}
+
+const makeEpoch = (props: EpochProps): Epoch => {
+  assert(props.name === '__TOP_EPOCH__' || R.isDefined(props.parent), 
+    'epochs must have a parent (except TOP_EPOCH)'
+  )
+  assert(props.name.length > 0, 'epoch names cannot be empty')
+
+  const doneListeners = new Set<(result?: any) => void>()
+
+  const epoch = {
+    _name: props.name,
+    _parent: props.parent,
+    children: props.children ?? [],
+    isNoEpoch: props.isNoEpoch ?? false,
+    isLeaf: props.isLeaf ?? false,
+    isDisabled: props.isDisabled,
+    id: props.id ?? makeId(props.name, props.parent),
+
+    done(_result?: any) {
+      if (epoch._name == '__TOP_EPOCH__') {
+        console.warn('TOP_EPOCH.done() called')
+        return
+      }
+      // NOTE: isDisabled is mutated by useEpoch onUnmounted
+      if (epoch.isDisabled) {
+        console.log(`ignoring done() on disabled epoch: ${epoch.id}`)
+        return
+      }
+      for (const listener of doneListeners) {
+        listener(_result)
+      }
+      if (epoch.isNoEpoch) return
+      setCurrentEpoch(epoch._parent)
+      epoch._parent.next()
+    },
+
+    next() {
+      if (props.next) {
+        props.next()
+      } else {
+        epoch.done()
+      }
+    },
+
+    onDone(fn: (result?: any) => void) {
+      doneListeners.add(fn)
+    }
+  }
+
+  // register with parent unless we have already (e.g. backward navigation in instructions)
+  if (props.parent) {
+    if (!props.parent.children.some(e => e.id === epoch.id)) {
+      props.parent.children.push(epoch)
+    }
+  }
+
+  return epoch
 }
 
 export type MultistepEpoch = Epoch & {
@@ -39,15 +110,13 @@ export const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
   return 'phase' in epoch
 }
 
-// this should never be the currentEpoch
-export const TOP_EPOCH = {
-  _name: '__TOP_EPOCH__',
+// a dummy root node
+export const TOP_EPOCH = makeEpoch({
+  name: '__TOP_EPOCH__',
+  parent: null as unknown as Epoch,  // typing hack; referring to parent of TOP_EPOCH is disallowed
   id: '__TOP_EPOCH__',
-  done: () => {console.warn('TOP_EPOCH.done() called')},
   next: () => console.warn('TOP_EPOCH.next() called'),
-  _parent: null as unknown as Epoch,  // typing hack
-  children: [] as Epoch[]
-}
+})
 
 // WARNING: currentEpoch.step is not a ref
 const currentEpoch = ref<Epoch>(TOP_EPOCH)
@@ -55,7 +124,7 @@ export const useCurrentEpoch = () => currentEpoch
 
 // I think this variable is necessary because a weird reactivity thing
 let _currentEpoch = TOP_EPOCH
-const setCurrentEpoch = (epoch: Epoch) => {
+export const setCurrentEpoch = (epoch: Epoch) => {
   _currentEpoch = epoch
   currentEpoch.value = epoch
 }
@@ -99,101 +168,69 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
   }
   
   const attrs = useAttrs()  // properties passed to containing component
-  let disabled = hasFlag(attrs, "disabled")
+  const isDisabled = hasFlag(attrs, "disabled")
   const noEpoch = hasFlag(attrs, "no-epoch") || hasFlag(attrs, "noEpoch")
   if (attrs.done) {
-    assert(R.isFunction(attrs.done), 'attrs.done is not a function')
+    throw new Error('useEpoch: done attribute is no longer supported')
   }
 
   const parentEpoch = inject<Epoch>('__EPOCH__', TOP_EPOCH)
   if (parentEpoch.isLeaf) {
     logWarn('useEpoch: parent epoch is a leaf', { parentEpoch: parentEpoch.id })
   }
-  if (parentEpoch.id !== _currentEpoch.id) {
-    logWarn('useEpoch: parent epoch is not the current epoch', { 
-      parentEpoch: parentEpoch.id, 
-      currentEpoch: _currentEpoch.id,
-      name,
-    })
-  }
+  // TODO: figure out why this happens frequently without breaking anything
+  // if (parentEpoch.id !== _currentEpoch.id) {
+  //   logWarn('useEpoch: parent epoch is not the current epoch', { 
+  //     parentEpoch: parentEpoch.id, 
+  //     currentEpoch: _currentEpoch.id,
+  //     name,
+  //   })
+  // }
 
-  const id = makeId(name, parentEpoch)
-
-  const done = R.once((_result?: any) => {
-    if (disabled) return
-    if (noEpoch) {
-      // @ts-ignore
-      if (attrs.done) attrs.done()
-      return
-    }
-    // normal epoch behavior
-    setCurrentEpoch(parentEpoch)
-
-    if (attrs.done) {
-      // @ts-ignore
-      attrs.done(done) // TODO: consider removing done as argument
-    } else {
-      // logEvent('epoch.done')
-      parentEpoch.next()
-    }
+  const epoch = makeEpoch({
+    name,
+    parent: parentEpoch,
+    isNoEpoch: noEpoch,
+    isDisabled: isDisabled,
   })
 
-  const epoch: Epoch = {
-    _name: name,
-    id,
-    _parent: parentEpoch,
-    children: [],
-    done,
-    next: done, // is overriden by multistep epochs
-    isNoEpoch: noEpoch,
-  }
-  // register with parent unless we have already (e.g. backward navigation in instructions)
-  if (!parentEpoch.children.some(e => e.id === id)) {
-    parentEpoch.children.push(epoch)
-  }
-  
   onUnmounted(() => {
-    // TODO: should we return immediately if disabled was already true?
-    disabled = true
+    // return control to parent on unmount
+    // NOTE: unlike done(), this does NOT call parent.next()
+    epoch.isDisabled = true
     if (currentEpoch.value.id === epoch.id) {
       setCurrentEpoch(parentEpoch)
     }
   })
 
-  if (!disabled && !noEpoch) {
+  if (!isDisabled && !noEpoch) {
     provide('__EPOCH__', epoch)
     setCurrentEpoch(epoch)
-    logEvent(`epoch.start`, {id})
+    logEvent(`epoch.start`, {id: epoch.id})
   }
 
   return epoch
 }
 
-function makeLeafEpoch(parentEpoch: Epoch, name: string): Epoch {
-  
-  const id = makeId(name, parentEpoch).replace('-leaf', '')
+function makeLeafEpoch(parent: Epoch, name: string): Epoch {
+  const epoch = makeEpoch({
+    name,
+    parent,
+    isLeaf: true
+  })
 
-  const done = R.once((_result?: any) => {
-    if (_currentEpoch.id == id) {
-      setCurrentEpoch(parentEpoch)
-      parentEpoch.next()
+  epoch.id = epoch.id.replace('-leaf', '')
+
+  // TODO: do we really need to override this?
+  epoch.done = R.once((_result?: any) => {
+    if (_currentEpoch.id == epoch.id) {
+      setCurrentEpoch(parent)
+      parent.next()
     }
   })
 
-  const epoch: Epoch = {
-    _name: name,
-    id,
-    _parent: parentEpoch,
-    children: [],
-    done,
-    next: done,
-    isLeaf: true,
-  }
-
   setCurrentEpoch(epoch)
-  logEvent(`epoch.start`, {id})
-  // provide('__EPOCH__', epoch)
-
+  logEvent(`epoch.start`, {id: epoch.id})
 
   return epoch
 }
