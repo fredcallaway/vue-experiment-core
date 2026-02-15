@@ -20,7 +20,8 @@ const devTools = ref(!getUrlFlag('noDev'))
 
       <div w="600px" relative  v-if="!violated">
         <Inspector mb-2/>
-        <EventView flex-1 ref="eventViewRef"/>
+        <EpochOutline />
+        <!-- <EventView flex-1 ref="eventViewRef"/> -->
       </div>
     </div>
   </div>
