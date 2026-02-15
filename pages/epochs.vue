@@ -1,26 +1,11 @@
 <script lang="ts" setup>
-import type { Epoch, IndexableEpoch, PhaseEpoch } from '../composables/useEpoch'
 
 definePageMeta({
   layout: 'bare',
 })
+useDataWriter().disable()
 
 const currentEpoch = useCurrentEpoch()
-const meta = useCurrentSession()
-const params = parseUrlParams()
-
-if (params.sessionId || params.mode) {
-  if (params.mode === 'live') {
-    console.error('refusing to initialize session in live mode on /dev/epochs')
-    meta.mode = 'debug'
-  }
-
-  useDataWriter().initializeSession(meta).then((initError) => {
-    if (initError instanceof Error) {
-      logError('Failed to initialize data writer; check firebase.config.json', initError)
-    }
-  })
-}
 
 const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
   return 'step' in epoch && 'nSteps' in epoch && 'prev' in epoch && 'goTo' in epoch
@@ -265,7 +250,7 @@ const barStyle = (bar: GanttBar) => ({
 })
 
 const barClass = (bar: GanttBar) => {
-  if (bar.prefix === displayRootPrefix.value) return 'bg-blue-700/90 hover:bg-blue-800/90'
+  if (bar.prefix === displayRootPrefix.value) return 'bg-blue-600/90 hover:bg-blue-700/90'
   if (bar.hiddenChildCount > 0) return 'bg-amber-500/90 hover:bg-amber-600/90'
   return 'bg-sky-500/90 hover:bg-sky-600/90'
 }
