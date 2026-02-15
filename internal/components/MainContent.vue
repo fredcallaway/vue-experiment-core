@@ -49,6 +49,7 @@ nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
   
   if (defaultHandler) {
     console.log('calling default handler')
+    console.error(err)
     // TODO don't use default handler so that the developer interface is maintained
     // could add devtools navigation here
     // const devtoolsClient = useNuxtDevTools()
