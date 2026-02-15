@@ -224,7 +224,7 @@ function makeLeafEpoch(parent: Epoch, name: string): Epoch {
     isLeaf: true
   })
 
-  epoch.id = epoch.id.replace('-leaf', '')
+  // epoch.id = epoch.id.replace('-leaf', '')
 
   // TODO: do we really need to override this?
   epoch.done = R.once((_result?: any) => {
@@ -279,7 +279,7 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
       // NOTE: this was (_currentEpoch.id === E.id || _activeLeaf) before, but I think was a mistake
       if (_currentEpoch.id === E.id) {
         // logDebug('making leaf', { E: E.id })
-        _activeLeaf = makeLeafEpoch(E, 'leaf')
+        _activeLeaf = makeLeafEpoch(E, 'leaf' + String(step.value))
       } else {
         // logDebug('has child', { E: E.id, child: _currentEpoch.id })
         _activeLeaf = null
