@@ -82,39 +82,12 @@ const visibleNodes = computed<VisibleNode[]>(() => {
 
 <template>
   <div rounded-lg border="~ 2 gray-300" bg-white p-3>
-    <div text-sm font-semibold text-gray-700 mb-2>Epoch Outline</div>
 
     <div v-if="!root" text-sm text-gray-500>
       Waiting for first epoch...
     </div>
 
     <div v-else>
-      <div
-        v-if="ancestorPath.length > 0"
-        sticky top-0 z-1
-        bg="white/95"
-        backdrop-blur-sm
-        border="~ 1 gray-200"
-        rounded-md
-        p-2
-        mb-2
-      >
-        <div text="10px gray-500 uppercase" tracking-wider mb-1>Pinned ancestors</div>
-        <div flex="~ wrap gap-1">
-          <span
-            v-for="node in ancestorPath"
-            :key="`pin-${node.id}`"
-            px-2 py-0.5
-            rounded
-            text-xs
-            bg-amber-100
-            text-amber-900
-          >
-            {{ node._name }}
-          </span>
-        </div>
-      </div>
-
       <div max-h-130 overflow-y-auto pr-1>
         <div
           v-for="{ node, depth } in visibleNodes"
@@ -127,9 +100,9 @@ const visibleNodes = computed<VisibleNode[]>(() => {
           flex="~ items-center gap-1"
           :style="{ paddingLeft: `${depth * 14 + 8}px` }"
           :class="[
-            isCurrent(node) ? 'bg-blue-100 text-blue-900 font-semibold ring-1 ring-blue-300' : '',
-            !isCurrent(node) && isAncestor(node) ? 'bg-amber-50 text-amber-900 font-medium' : '',
-            !isCurrent(node) && !isAncestor(node) ? 'text-gray-700 hover:bg-gray-100' : '',
+            isCurrent(node) ? 'font-bold text-blue-500' : '',
+            !isCurrent(node) && isAncestor(node) ? 'font-semibold text-gray-600' : '',
+            !isCurrent(node) && !isAncestor(node) ? 'text-gray-400 hover:bg-gray-100' : '',
           ]"
           @click="toggleCollapse(node)"
         >
@@ -148,14 +121,6 @@ const visibleNodes = computed<VisibleNode[]>(() => {
           <span v-else w-4 h-4 />
 
           <span truncate>{{ node._name }}</span>
-
-          <span
-            v-if="isPinned(node)"
-            i-mdi-pin
-            text-amber-700
-            ml-auto
-            title="Pinned ancestor"
-          />
         </div>
       </div>
     </div>
