@@ -1,43 +1,53 @@
 <script lang="ts" setup>
-
 definePageMeta({
   layout: 'bare',
 })
+
 useDataWriter().disable()
 
-// supress expected errors from console
+// suppress expected errors from console
 const nuxtApp = useNuxtApp()
 const defaultHandler = nuxtApp.vueApp.config.errorHandler
 nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
-
-  // this error is expected behavior; see useLocalAsync.ts
   if (err === 'useLocalAsync:unmounted') {
-    // console.debug('caught useLocalAsync:unmounted')
     return
   }
-  defaultHandler!(err, instance, info)
+  defaultHandler?.(err, instance, info)
 }
 
-const currentEpoch = useCurrentEpoch()
+const getLeaves = () => new Promise<string[]>((resolve) => {
+  const currentEpoch = useCurrentEpoch()
+  const leaves: string[] = []
+  const unwatch = watchImmediate(currentEpoch, async (epoch) => {
+    if (epoch.id === '__TOP_EPOCH__') {
+      unwatch()
+      resolve(leaves)
+    } else if (epoch.isLeaf || !('step' in epoch)) {
+      leaves.push(epoch.id)
+      await nextTick()
+      epoch.done()
+    }
+  })
+})
 
-const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
-  return 'step' in epoch && 'nSteps' in epoch && 'prev' in epoch && 'goTo' in epoch
-}
-
-const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
-  return 'phase' in epoch
+type ParsedSegment = {
+  name: string
+  childIndex: number | null
 }
 
 type EpochTreeNode = {
+  id: string
   token: string
-  prefix: string
   count: number
-  children: Record<string, EpochTreeNode>
+  parentId: string | null
+  childrenBySlot: Record<string, EpochTreeNode>
+  childSlots: number[]
+  nextImplicitSlot: number
 }
 
 type GanttBar = {
+  id: string
   token: string
-  prefix: string
   depth: number
   leftPct: number
   widthPct: number
@@ -46,21 +56,23 @@ type GanttBar = {
   hiddenChildCount: number
 }
 
-const rootNode = ref<EpochTreeNode>({
-  token: '__ROOT__',
-  prefix: '',
+const makeNode = (id: string, token: string, parentId: string | null): EpochTreeNode => ({
+  id,
+  token,
   count: 0,
-  children: {},
+  parentId,
+  childrenBySlot: {},
+  childSlots: [],
+  nextImplicitSlot: 0,
 })
 
+const treeRoot = ref<EpochTreeNode>(makeNode('__ROOT__', '(all)', null))
 const isBuilding = ref(false)
 const error = ref<string | null>(null)
 const hasBuilt = ref(false)
-const processedJumpCount = ref(0)
-const discoveredJumpCount = ref(0)
-const visitedEpochIds = ref(0)
-
-const displayRootPrefix = ref('')
+const leafCount = ref(0)
+const rawLeaves = ref<string[]>([])
+const displayRootId = ref<string>('')
 
 const BAR_HEIGHT = 28
 const BAR_GAP = 6
@@ -69,129 +81,124 @@ const MIN_CHILD_WIDTH_PX = 50
 const chartViewportEl = ref<HTMLElement | null>(null)
 const chartWidthPx = ref(1000)
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const parseSegment = (segment: string): ParsedSegment | null => {
+  const match = segment.match(/^([^[]+?)(?:\[(\d+)\])?$/)
+  if (!match) return null
+  return {
+    name: match[1]!,
+    childIndex: match[2] == null ? null : Number.parseInt(match[2]!, 10),
+  }
+}
 
-const sortTokens = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true })
+const parseLeafPath = (leafPath: string): ParsedSegment[] | null => {
+  const rawParts = leafPath.split('-').filter(Boolean)
+  const parts: ParsedSegment[] = []
 
-const getStack = (): Epoch[] => {
-  const stack: Epoch[] = []
-  let epoch = currentEpoch.value
-  while (epoch) {
-    const skip = epoch.isLeaf || epoch._name === '__TOP_EPOCH__'
-    if (!skip) {
-      stack.push(epoch)
+  for (const raw of rawParts) {
+    const parsed = parseSegment(raw)
+    if (!parsed) return null
+    parts.push(parsed)
+  }
+
+  return parts
+}
+
+const ensureChildAtSlot = (parent: EpochTreeNode, slot: number, token: string): EpochTreeNode => {
+  const slotKey = String(slot)
+  const existing = parent.childrenBySlot[slotKey]
+  if (existing) {
+    return existing
+  }
+
+  const id = parent.id === '__ROOT__'
+    ? token
+    : `${parent.id}>${slot}:${token}`
+  const child = makeNode(id, token, parent.id)
+
+  parent.childrenBySlot[slotKey] = child
+  parent.childSlots.push(slot)
+  parent.childSlots.sort((a, b) => a - b)
+
+  return child
+}
+
+const buildTreeFromLeaves = (leaves: string[]): EpochTreeNode => {
+  const root = makeNode('__ROOT__', '(all)', null)
+
+  for (const leaf of leaves) {
+    const parts = parseLeafPath(leaf)
+    if (!parts || parts.length === 0) continue
+
+    let node = root
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i]!
+      const slot = i === 0
+        ? 0
+        : (parts[i - 1]!.childIndex ?? node.nextImplicitSlot++)
+
+      node = ensureChildAtSlot(node, slot, part.name)
+      node.count += 1
     }
-    epoch = epoch._parent
   }
-  return stack.reverse()
-}
 
-const indexPrefix = (epochId: string) => {
-  const bracketIndex = epochId.lastIndexOf(']')
-  if (bracketIndex === -1) return epochId
-  return epochId.slice(0, bracketIndex + 1)
-}
-
-const addEpochIdToTree = (epochId: string) => {
-  const tokens = epochId.split('-').filter(Boolean)
-  let node = rootNode.value
-  let prefix = ''
-
-  for (const token of tokens) {
-    prefix = prefix ? `${prefix}-${token}` : token
-
-    if (!node.children[token]) {
-      node.children[token] = {
-        token,
-        prefix,
-        count: 0,
-        children: {},
-      }
-    }
-
-    node = node.children[token]
-    node.count += 1
-  }
-}
-
-const resetTree = () => {
-  rootNode.value = {
-    token: '__ROOT__',
-    prefix: '',
-    count: 0,
-    children: {},
-  }
-  processedJumpCount.value = 0
-  discoveredJumpCount.value = 0
-  visitedEpochIds.value = 0
-  hasBuilt.value = false
-  error.value = null
-  displayRootPrefix.value = ''
+  return root
 }
 
 const sortedChildren = (node: EpochTreeNode) =>
-  Object.values(node.children).sort((a, b) => sortTokens(a.token, b.token))
+  node.childSlots.map((slot) => node.childrenBySlot[String(slot)]!).filter(Boolean)
 
-const nodeByPrefix = computed(() => {
+const nodeById = computed(() => {
   const map = new Map<string, EpochTreeNode>()
 
   const walk = (node: EpochTreeNode) => {
+    map.set(node.id, node)
     for (const child of sortedChildren(node)) {
-      map.set(child.prefix, child)
       walk(child)
     }
   }
 
-  walk(rootNode.value)
+  walk(treeRoot.value)
   return map
 })
 
-const syntheticRoot = computed<EpochTreeNode>(() => ({
-  token: '(all)',
-  prefix: '',
-  count: visitedEpochIds.value,
-  children: rootNode.value.children,
-}))
-
-const displayRootNode = computed<EpochTreeNode>(() => {
-  if (!displayRootPrefix.value) return syntheticRoot.value
-  return nodeByPrefix.value.get(displayRootPrefix.value) ?? syntheticRoot.value
+const displayRootNode = computed(() => {
+  if (!displayRootId.value) return treeRoot.value
+  return nodeById.value.get(displayRootId.value) ?? treeRoot.value
 })
 
-const getParentPrefix = (prefix: string) => {
-  if (!prefix) return null
-  const idx = prefix.lastIndexOf('-')
-  if (idx === -1) return ''
-  return prefix.slice(0, idx)
-}
+const canZoomOut = computed(() => displayRootNode.value.parentId != null)
 
-const canZoomOut = computed(() => displayRootPrefix.value !== '')
+const zoomTo = (id: string) => {
+  if (isBuilding.value) return
+  displayRootId.value = id
+}
 
 const zoomOut = () => {
   if (!canZoomOut.value) return
-  const parent = getParentPrefix(displayRootPrefix.value)
-  displayRootPrefix.value = parent ?? ''
-}
-
-const zoomTo = (prefix: string) => {
-  if (isBuilding.value) return
-  displayRootPrefix.value = prefix
+  const parentId = displayRootNode.value.parentId
+  displayRootId.value = parentId === '__ROOT__' || parentId == null ? '' : parentId
 }
 
 const breadcrumbs = computed(() => {
-  if (!displayRootPrefix.value) {
-    return [{ prefix: '', token: '(all)' }]
+  const out: { id: string, token: string }[] = [{ id: '', token: '(all)' }]
+
+  if (!displayRootId.value) {
+    return out
   }
 
-  const segments = displayRootPrefix.value.split('-')
-  const out: { prefix: string, token: string }[] = [{ prefix: '', token: '(all)' }]
+  const stack: EpochTreeNode[] = []
+  let cursor: EpochTreeNode | undefined = displayRootNode.value
 
-  let prefix = ''
-  for (const seg of segments) {
-    prefix = prefix ? `${prefix}-${seg}` : seg
-    const node = nodeByPrefix.value.get(prefix)
-    out.push({ prefix, token: node?.token ?? seg })
+  while (cursor && cursor.id !== '__ROOT__') {
+    stack.push(cursor)
+    if (!cursor.parentId) break
+    cursor = nodeById.value.get(cursor.parentId)
   }
+
+  stack.reverse().forEach((node) => {
+    out.push({ id: node.id, token: node.token })
+  })
 
   return out
 })
@@ -202,6 +209,10 @@ const ganttBars = computed<GanttBar[]>(() => {
   const bars: GanttBar[] = []
   const widthPx = max(chartWidthPx.value, 320)
 
+  const startNodes = displayRootId.value
+    ? [displayRootNode.value]
+    : sortedChildren(treeRoot.value)
+
   const walk = (
     node: EpochTreeNode,
     depth: number,
@@ -210,9 +221,10 @@ const ganttBars = computed<GanttBar[]>(() => {
     currentWidthPx: number,
   ) => {
     const children = sortedChildren(node)
+
     const bar: GanttBar = {
+      id: node.id,
       token: node.token,
-      prefix: node.prefix,
       depth,
       leftPct,
       widthPct,
@@ -242,7 +254,17 @@ const ganttBars = computed<GanttBar[]>(() => {
     })
   }
 
-  walk(displayRootNode.value, 0, 0, 100, widthPx)
+  if (startNodes.length === 0) {
+    return bars
+  }
+
+  const sliceWidthPct = 100 / startNodes.length
+  const sliceWidthPx = widthPx / startNodes.length
+
+  startNodes.forEach((node, idx) => {
+    walk(node, 0, sliceWidthPct * idx, sliceWidthPct, sliceWidthPx)
+  })
+
   return bars
 })
 
@@ -263,14 +285,14 @@ const barStyle = (bar: GanttBar) => ({
 })
 
 const barClass = (bar: GanttBar) => {
-  if (bar.prefix === displayRootPrefix.value) return 'bg-blue-600/90 hover:bg-blue-700/90'
+  if (bar.id === displayRootId.value) return 'bg-blue-700/90 hover:bg-blue-800/90'
   if (bar.hiddenChildCount > 0) return 'bg-amber-500/90 hover:bg-amber-600/90'
   return 'bg-sky-500/90 hover:bg-sky-600/90'
 }
 
 const barLabel = (bar: GanttBar) => {
   const hidden = bar.hiddenChildCount > 0 ? ` (hidden ${bar.hiddenChildCount})` : ''
-  return `${bar.token}${hidden} · seen ${bar.count}`
+  return `${bar.token}${hidden} · leaves ${bar.count}`
 }
 
 const updateChartWidth = () => {
@@ -280,69 +302,21 @@ const updateChartWidth = () => {
   }
 }
 
-const runTraversal = async () => {
+const runBuild = async () => {
   if (isBuilding.value) return
 
   isBuilding.value = true
-  resetTree()
-
-  const queued = new Set<string>()
-  const processed = new Set<string>()
-  const visited = new Set<string>()
-  const queue: string[] = []
-
-  const enqueue = (jump: string | null | undefined) => {
-    if (!jump) return
-    if (queued.has(jump) || processed.has(jump)) return
-    queued.add(jump)
-    queue.push(jump)
-  }
+  error.value = null
+  hasBuilt.value = false
 
   try {
-    await nextTick()
-    await sleep(30)
-
-    enqueue(indexPrefix(currentEpoch.value.id))
-
-    while (queue.length > 0) {
-      const jump = queue.shift()!
-      processed.add(jump)
-      processedJumpCount.value = processed.size
-
-      const result = await jumpToEpoch(jump)
-      await nextTick()
-
-      if (!result) {
-        continue
-      }
-
-      const currentId = currentEpoch.value.id
-      if (!visited.has(currentId)) {
-        visited.add(currentId)
-        visitedEpochIds.value = visited.size
-      }
-
-      addEpochIdToTree(currentId)
-
-      const stack = getStack()
-      for (const epoch of stack) {
-        if (!isIndexableEpoch(epoch)) continue
-
-        if (isPhaseEpoch(epoch)) {
-          for (const phase of epoch.phases) {
-            enqueue(`${epoch.id}[${phase}]`)
-          }
-        } else {
-          for (let step = 0; step < epoch.nSteps; step++) {
-            enqueue(`${epoch.id}[${step}]`)
-          }
-        }
-      }
-
-      discoveredJumpCount.value = queued.size
-    }
-
+    const leaves = await getLeaves()
+    rawLeaves.value = leaves
+    leafCount.value = leaves.length
+    treeRoot.value = buildTreeFromLeaves(leaves)
+    displayRootId.value = ''
     hasBuilt.value = true
+
     await nextTick()
     updateChartWidth()
   } catch (e) {
@@ -355,7 +329,7 @@ const runTraversal = async () => {
 onMounted(async () => {
   updateChartWidth()
   window.addEventListener('resize', updateChartWidth)
-  await runTraversal()
+  await runBuild()
 })
 
 onUnmounted(() => {
@@ -367,17 +341,17 @@ onUnmounted(() => {
   <div p-4>
     <div mb-4 rounded border="~ blue-200" bg-blue-50 px-3 py-2 text-sm text-blue-900>
       <div font-semibold mb-1>How to Use This View</div>
-      <div>Read top-to-bottom: each row is one hierarchy level, and sibling bars split width equally.</div>
-      <div>Click any bar to zoom into that node; use <b>Up One Level</b> or the breadcrumb buttons to navigate back out.</div>
-      <div>If a node has many children, its children are automatically hidden when there is less than 50px per child.</div>
-      <div>Use <b>Build Tree</b>/<b>Rebuild Tree</b> to refresh after experiment structure changes.</div>
+      <div>Bars represent epochs only. Child slot indices from the leaf list are used only to place sibling order left-to-right.</div>
+      <div>Click any bar to zoom into that node. Use <b>Up One Level</b> or the breadcrumbs to zoom back out.</div>
+      <div>Children are auto-hidden when available width drops below {{ MIN_CHILD_WIDTH_PX }}px per child.</div>
+      <div>Use <b>Build Tree</b>/<b>Rebuild Tree</b> to regenerate from the current leaf list.</div>
     </div>
 
     <div mb-4 flex="~ items-center gap-3 wrap">
       <button
         class="px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-40"
         :disabled="isBuilding"
-        @click="runTraversal"
+        @click="runBuild"
       >
         {{ hasBuilt ? 'Rebuild Tree' : 'Build Tree' }}
       </button>
@@ -391,13 +365,7 @@ onUnmounted(() => {
       </button>
 
       <span text-sm text-gray-500>
-        processed jumps: {{ processedJumpCount }}
-      </span>
-      <span text-sm text-gray-500>
-        discovered jumps: {{ discoveredJumpCount }}
-      </span>
-      <span text-sm text-gray-500>
-        visited epoch ids: {{ visitedEpochIds }}
+        leaves: {{ leafCount }}
       </span>
       <span v-if="isBuilding" text-sm text-blue-600>
         Building...
@@ -410,17 +378,13 @@ onUnmounted(() => {
     <div mb-3 flex="~ items-center gap-2 wrap" text-sm>
       <button
         v-for="crumb in breadcrumbs"
-        :key="crumb.prefix || '__root__'"
+        :key="crumb.id || '__root__'"
         class="px-2 py-0.5 rounded border border-gray-300 bg-white hover:bg-gray-50"
-        :class="crumb.prefix === displayRootPrefix ? 'text-blue-700 border-blue-400' : 'text-gray-700'"
-        @click="zoomTo(crumb.prefix)"
+        :class="crumb.id === displayRootId ? 'text-blue-700 border-blue-400' : 'text-gray-700'"
+        @click="zoomTo(crumb.id)"
       >
         {{ crumb.token }}
       </button>
-    </div>
-
-    <div text-sm text-gray-500 mb-2>
-      Equal-width sibling layout. Children are hidden when available width is under {{ MIN_CHILD_WIDTH_PX }}px per child. Click any node to zoom into it.
     </div>
 
     <div ref="chartViewportEl" border="~ gray-200" rounded p-3 max-h="75vh" overflow-auto bg-white>
@@ -431,12 +395,12 @@ onUnmounted(() => {
       <div v-else class="relative" :style="{ height: `${canvasHeight}px`, minWidth: '900px' }">
         <button
           v-for="bar in ganttBars"
-          :key="bar.prefix || '__root_bar__'"
+          :key="bar.id"
           class="absolute px-2 text-left font-mono text-xs truncate border border-white/70 rounded transition-colors"
           :class="barClass(bar)"
           :style="barStyle(bar)"
           :title="barLabel(bar)"
-          @click="zoomTo(bar.prefix)"
+          @click="zoomTo(bar.id)"
         >
           <span v-if="showLabel(bar)">
             {{ bar.token }}
@@ -446,6 +410,10 @@ onUnmounted(() => {
           <span v-else>·</span>
         </button>
       </div>
+    </div>
+
+    <div mt-3 text-xs text-gray-500>
+      {{ rawLeaves.length }} leaf paths captured.
     </div>
 
     <div
