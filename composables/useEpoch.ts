@@ -161,8 +161,10 @@ function makeLeafEpoch(parentEpoch: Epoch, name: string): Epoch {
   const id = makeId(name, parentEpoch).replace('-leaf', '')
 
   const done = R.once((_result?: any) => {
-    setCurrentEpoch(parentEpoch)
-    parentEpoch.next()
+    if (_currentEpoch.id == id) {
+      setCurrentEpoch(parentEpoch)
+      parentEpoch.next()
+    }
   })
 
   const epoch: Epoch = {
@@ -218,7 +220,8 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
     }
     // Create a leaf epoch if necessary
     const ensureChild = R.once(() => {
-      if (_currentEpoch.id === E.id || _activeLeaf) {
+      // NOTE: this was (_currentEpoch.id === E.id || _activeLeaf) before, but I think was a mistake
+      if (_currentEpoch.id === E.id) {
         // logDebug('making leaf', { E: E.id })
         _activeLeaf = makeLeafEpoch(E, 'leaf')
       } else {
