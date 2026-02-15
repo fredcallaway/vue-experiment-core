@@ -27,7 +27,6 @@ const currentPath = computed<EpochNode[]>(() => {
     path.push(node)
     node = node._parent
   }
-  console.log('currentPath', path)
   return path.reverse()
 })
 
@@ -89,6 +88,38 @@ const guideLeft = (level: number) => {
 const handleClickNode = (node: EpochNode) => {
   jumpToEpoch(node.id)
 }
+
+const traverseTimeline = () => {
+  const previous = currentEpoch.value
+
+  const unwatch = watchImmediate(currentEpoch, async (epoch) => {
+    // console.log('👉 ', epoch.id)
+    if (epoch.id === '__TOP_EPOCH__') {
+      unwatch()
+      await nextTick()
+      setCurrentEpoch(TOP_EPOCH.children[0])
+      // current
+      jumpToEpoch(previous.id)
+      return
+    }
+
+    if (epoch.isLeaf || !('step' in epoch)) {
+      await nextTick()
+      epoch.done()
+    }
+  })
+}
+
+inspect({
+  currentEpoch: () => currentEpoch.value.id,
+  currentEpochName: () => currentEpoch.value._name,
+  currentPath: () => currentPath.value.map(node => node.id),
+})
+
+onMounted(() => {
+  nextTick(traverseTimeline)
+})
+
 </script>
 
 <template>
