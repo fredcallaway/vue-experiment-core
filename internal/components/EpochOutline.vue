@@ -110,11 +110,11 @@ const traverseTimeline = () => {
   })
 }
 
-inspect({
-  currentEpoch: () => currentEpoch.value.id,
-  currentEpochName: () => currentEpoch.value._name,
-  currentPath: () => currentPath.value.map(node => node.id),
-})
+// inspect({
+//   currentEpoch: () => currentEpoch.value.id,
+//   currentEpochName: () => currentEpoch.value._name,
+//   currentPath: () => currentPath.value.map(node => node.id),
+// })
 
 onMounted(() => {
   nextTick(traverseTimeline)
@@ -123,59 +123,54 @@ onMounted(() => {
 </script>
 
 <template>
-  <div rounded-lg border="~ 2 gray-300" bg-white p-3 cursor-default>
+  <div rounded-lg border="~ 2 gray-300" bg-white pr2 cursor-default >
 
     <div v-if="!root" text-sm text-gray-500>
       Waiting for first epoch...
     </div>
 
-    <div v-else>
-      <div max-h-130 overflow-y-auto pr-1>
+    <div v-else max-h-130 overflow-y-auto pr-1 subtle-scrollbar >
+      <div
+        v-for="{ node, depth } in visibleNodes"
+        :key="node.id"
+        class="outline-row"
+        relative
+        flex="~ items-center gap-1"
+        :style="{ paddingLeft: `${depth * indentStep + indentBase}px` }"
+        :class="[
+          isCurrent(node) ? 'font-bold text-blue-500' : '',
+          !isCurrent(node) && isAncestor(node) ? 'font-semibold text-gray-600' : '',
+          !isCurrent(node) && !isAncestor(node) ? 'text-gray-400' : '',
+        ]"
+      >
         <div
-          v-for="{ node, depth } in visibleNodes"
-          :key="node.id"
-          class="outline-row"
-          relative
-          rounded
-          px-2
-          flex="~ items-center gap-1"
-          :style="{ paddingLeft: `${depth * indentStep + indentBase}px` }"
-          :class="[
-            isCurrent(node) ? 'font-bold text-blue-500' : '',
-            !isCurrent(node) && isAncestor(node) ? 'font-semibold text-gray-600' : '',
-            !isCurrent(node) && !isAncestor(node) ? 'text-gray-400' : '',
-          ]"
+          v-if="depth > 0"
+          class="pointer-events-none absolute inset-y-0 left-0"
         >
-          <div
-            v-if="depth > 0"
-            class="pointer-events-none absolute inset-y-0 left-0"
-          >
-            <span
-              v-for="level in depth"
-              :key="`${node.id}-guide-${level}`"
-              class="absolute inset-y-0 w-px bg-gray-100"
-              :style="{ left: guideLeft(level) }"
-            />
-          </div>
-          <!-- {{ node.children.length }} -->
-          <button
-            v-if="hasChildren(node)"
-            @click.stop="toggleCollapse(node)"
-            w-4 h-4
-            flex-center
-            rounded
-            text-gray-500
-            hover:bg-gray-200
-            :title="isPinned(node) ? 'Pinned ancestor' : (isExpanded(node) ? 'Collapse' : 'Expand')"
-          >
-            <span :class="isExpanded(node) ? 'i-mdi-chevron-down' : 'i-mdi-chevron-right'" />
-          </button>
-          <div v-else w-4 h-4 flex-center i-mdi-circle-outline scale-60 ></div>
+          <span
+            v-for="level in depth"
+            :key="`${node.id}-guide-${level}`"
+            class="absolute inset-y-0 w-px bg-gray-200"
+            :style="{ left: guideLeft(level) }"
+          />
+        </div>
+        <!-- {{ node.children.length }} -->
+        <button
+          v-if="hasChildren(node)"
+          @click.stop="toggleCollapse(node)"
+          w-4 h-4
+          flex-center
+          rounded
+          hover:bg-gray-200
+          :title="isPinned(node) ? 'Pinned ancestor' : (isExpanded(node) ? 'Collapse' : 'Expand')"
+        >
+          <span :class="isExpanded(node) ? 'i-mdi-chevron-down' : 'i-mdi-chevron-right'" />
+        </button>
+        <div v-else w-4 h-4 flex-center i-mdi-circle-outline scale-60 ></div>
 
-          <span truncate @click="handleClickNode(node)" cursor-pointer >{{ node._name }}</span>
+        <span truncate @click="handleClickNode(node)" cursor-pointer >{{ node._name }}</span>
           
 
-        </div>
       </div>
     </div>
   </div>
