@@ -1,6 +1,6 @@
 import { Random }  from 'random'
 
-export type ResetRandom = Random & {reset: () => void}
+export type ResetRandom = Random & {reset: () => ResetRandom}
 
 interface UseRandomOptions {
   storeState?: boolean
@@ -32,8 +32,9 @@ export const useRandom = useMemoize((name: string, opt: UseRandomOptions = { sto
     state.value.w = state.value.w ^ ((state.value.w >>> 19) ^ t ^ (t >>> 8))
     return (state.value.w >>> 0) / 0x1_00_00_00_00
   }
+  const rng = new Random(next) as ResetRandom
 
-  const reset = () => {
+  rng.reset = () => {
     // console.log('useRandom.reset', seed)
     state.value.x = 0
     state.value.y = 0
@@ -45,14 +46,12 @@ export const useRandom = useMemoize((name: string, opt: UseRandomOptions = { sto
       state.value.x ^= seed.charCodeAt(i) | 0
       next()
     }
-  }
-  
-  if (R.isDeepEqual(state.value, initState)) {
-    reset()
+    return rng
   }
 
-  const rng = new Random(next) as ResetRandom
-  rng.reset = reset
+  if (R.isDeepEqual(state.value, initState)) {
+    rng.reset()
+  }
 
   return rng
 })
