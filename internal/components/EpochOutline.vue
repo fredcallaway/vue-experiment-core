@@ -93,7 +93,7 @@ const handleClickNode = (node: EpochNode) => {
 
 const traverseTimeline = async () => {
   const previous = currentEpoch.value
-  let unwatch: any = null
+  let unwatch = null as (() => void) | null
 
   // ignore errors during traversal
   const nuxtApp = useNuxtApp()
@@ -109,7 +109,7 @@ const traverseTimeline = async () => {
     unwatch = watchImmediate(currentEpoch, async (epoch) => {
       console.debug('traverse: ', epoch.id)
       if (epoch.id === '__TOP_EPOCH__') {
-        unwatch()
+        unwatch!()
         resolve(true)
         return
       }
@@ -126,7 +126,9 @@ const traverseTimeline = async () => {
   } catch (error) {
     console.error('Error traversing timeline:', error)
   } finally {
-    unwatch?.()
+    if (unwatch !== null) {
+      unwatch()
+    }
     await nextTick()
     // retore original epoch
     setCurrentEpoch(TOP_EPOCH.children[0])
