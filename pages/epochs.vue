@@ -1,6 +1,8 @@
 <script lang="ts" setup>
+import type { Epoch } from '../composables/useEpoch'
+
 definePageMeta({
-  layout: 'bare',
+  layout: 'dashboard',
 })
 
 useDataWriter().disable()
@@ -15,24 +17,31 @@ nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
   defaultHandler?.(err, instance, info)
 }
 
-type ParsedSegment = {
+type CapturedNode = {
+  id: string
   name: string
-  childIndex: number | null
+  parentId: string | null
+  slotFromParent: number | null
+}
+
+type CapturedLeaf = {
+  leafId: string
+  chain: CapturedNode[]
 }
 
 type EpochTreeNode = {
   id: string
-  token: string
+  name: string
   count: number
   parentId: string | null
-  childrenBySlot: Record<string, EpochTreeNode>
-  childSlots: number[]
-  nextImplicitSlot: number
+  children: EpochTreeNode[]
+  childOrder: Record<string, number>
+  nextOrder: number
 }
 
 type GanttBar = {
   id: string
-  token: string
+  name: string
   depth: number
   leftPct: number
   widthPct: number
@@ -41,24 +50,6 @@ type GanttBar = {
   hiddenChildCount: number
 }
 
-const makeNode = (id: string, token: string, parentId: string | null): EpochTreeNode => ({
-  id,
-  token,
-  count: 0,
-  parentId,
-  childrenBySlot: {},
-  childSlots: [],
-  nextImplicitSlot: 0,
-})
-
-const treeRoot = ref<EpochTreeNode>(makeNode('__ROOT__', '(all)', null))
-const isBuilding = ref(false)
-const error = ref<string | null>(null)
-const hasBuilt = ref(false)
-const leafCount = ref(0)
-const rawLeaves = ref<string[]>([])
-const displayRootId = ref<string>('')
-
 const BAR_HEIGHT = 28
 const BAR_GAP = 6
 const MIN_CHILD_WIDTH_PX = 50
@@ -66,96 +57,126 @@ const MIN_CHILD_WIDTH_PX = 50
 const chartViewportEl = ref<HTMLElement | null>(null)
 const chartWidthPx = ref(1000)
 
-const parseSegment = (segment: string): ParsedSegment | null => {
-  const match = segment.match(/^([^[]+?)(?:\[(\d+)\])?$/)
-  if (!match) return null
-  return {
-    name: match[1]!,
-    childIndex: match[2] == null ? null : Number.parseInt(match[2]!, 10),
-  }
+const makeNode = (id: string, name: string, parentId: string | null): EpochTreeNode => ({
+  id,
+  name,
+  count: 0,
+  parentId,
+  children: [],
+  childOrder: {},
+  nextOrder: 0,
+})
+
+const getSlotFromParent = (parent: Epoch): number | null => {
+  const stepValue = (parent as unknown as { step?: { value?: unknown } }).step?.value
+  return typeof stepValue === 'number' ? stepValue : null
 }
 
-const parseLeafPath = (leafPath: string): ParsedSegment[] | null => {
-  const rawParts = leafPath.split('-').filter(Boolean)
-  const parts: ParsedSegment[] = []
+const captureChain = (leafEpoch: Epoch): CapturedNode[] => {
+  const reversed: Epoch[] = []
+  let cursor: Epoch | null = leafEpoch
 
-  for (const raw of rawParts) {
-    const parsed = parseSegment(raw)
-    if (!parsed) return null
-    parts.push(parsed)
+  while (cursor && cursor._name !== '__TOP_EPOCH__') {
+    reversed.push(cursor)
+    cursor = cursor._parent
   }
 
-  return parts
+  const chain = reversed.reverse()
+
+  return chain.map((epoch, idx) => {
+    const parent = idx === 0 ? null : chain[idx - 1]!
+    return {
+      id: epoch.id,
+      name: epoch._name,
+      parentId: parent?.id ?? null,
+      slotFromParent: parent ? getSlotFromParent(parent) : null,
+    }
+  })
 }
 
-const ensureChildAtSlot = (parent: EpochTreeNode, slot: number, token: string): EpochTreeNode => {
-  const slotKey = String(slot)
-  const existing = parent.childrenBySlot[slotKey]
-  if (existing) {
-    return existing
-  }
-
-  const id = parent.id === '__ROOT__'
-    ? token
-    : `${parent.id}>${slot}:${token}`
-  const child = makeNode(id, token, parent.id)
-
-  parent.childrenBySlot[slotKey] = child
-  parent.childSlots.push(slot)
-  parent.childSlots.sort((a, b) => a - b)
-
-  return child
-}
-
-const getLeaves = () => new Promise<string[]>((resolve) => {
+const getLeaves = () => new Promise<CapturedLeaf[]>((resolve) => {
   const currentEpoch = useCurrentEpoch()
-  const leaves: string[] = []
+  const leaves: CapturedLeaf[] = []
+
   const unwatch = watchImmediate(currentEpoch, async (epoch) => {
     if (epoch.id === '__TOP_EPOCH__') {
       unwatch()
       resolve(leaves)
-    } else if (epoch.isLeaf || !('step' in epoch)) {
-      leaves.push(epoch.id)
+      return
+    }
+
+    if (epoch.isLeaf || !('step' in epoch)) {
+      leaves.push({
+        leafId: epoch.id,
+        chain: captureChain(epoch),
+      })
       await nextTick()
       epoch.done()
     }
   })
 })
 
-const buildTreeFromLeaves = (leaves: string[]): EpochTreeNode => {
+const ensureNode = (
+  nodeMap: Map<string, EpochTreeNode>,
+  id: string,
+  name: string,
+  parentId: string | null,
+) => {
+  const existing = nodeMap.get(id)
+  if (existing) return existing
+
+  const node = makeNode(id, name, parentId)
+  nodeMap.set(id, node)
+  return node
+}
+
+const attachChild = (parent: EpochTreeNode, child: EpochTreeNode, slotFromParent: number | null) => {
+  if (child.id in parent.childOrder) return
+
+  const order = slotFromParent ?? parent.nextOrder
+  parent.childOrder[child.id] = order
+  parent.nextOrder = max(parent.nextOrder, order + 1)
+
+  const insertAt = parent.children.findIndex((candidate) => parent.childOrder[candidate.id]! > order)
+  if (insertAt === -1) {
+    parent.children.push(child)
+  } else {
+    parent.children.splice(insertAt, 0, child)
+  }
+}
+
+const buildTreeFromLeaves = (leaves: CapturedLeaf[]) => {
   const root = makeNode('__ROOT__', '(all)', null)
+  const nodeMap = new Map<string, EpochTreeNode>([['__ROOT__', root]])
 
   for (const leaf of leaves) {
-    const parts = parseLeafPath(leaf)
-    if (!parts || parts.length === 0) continue
-
-    let node = root
-
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i]!
-      const slot = i === 0
-        ? 0
-        : (parts[i - 1]!.childIndex ?? node.nextImplicitSlot++)
-
-      node = ensureChildAtSlot(node, slot, part.name)
+    for (const entry of leaf.chain) {
+      const node = ensureNode(nodeMap, entry.id, entry.name, entry.parentId)
       node.count += 1
+
+      const parent = entry.parentId ? nodeMap.get(entry.parentId) : root
+      if (!parent) continue
+
+      attachChild(parent, node, entry.slotFromParent)
     }
   }
 
   return root
 }
 
-const sortedChildren = (node: EpochTreeNode) =>
-  node.childSlots.map((slot) => node.childrenBySlot[String(slot)]!).filter(Boolean)
+const treeRoot = ref<EpochTreeNode>(makeNode('__ROOT__', '(all)', null))
+const displayRootId = ref('')
+const isBuilding = ref(false)
+const error = ref<string | null>(null)
+const hasBuilt = ref(false)
+const leafCount = ref(0)
 
 const nodeById = computed(() => {
   const map = new Map<string, EpochTreeNode>()
 
   const walk = (node: EpochTreeNode) => {
     map.set(node.id, node)
-    for (const child of sortedChildren(node)) {
-      walk(child)
-    }
+    node.children.forEach(walk)
   }
 
   walk(treeRoot.value)
@@ -181,7 +202,7 @@ const zoomOut = () => {
 }
 
 const breadcrumbs = computed(() => {
-  const out: { id: string, token: string }[] = [{ id: '', token: '(all)' }]
+  const out: { id: string, name: string }[] = [{ id: '', name: '(all)' }]
 
   if (!displayRootId.value) {
     return out
@@ -197,7 +218,7 @@ const breadcrumbs = computed(() => {
   }
 
   stack.reverse().forEach((node) => {
-    out.push({ id: node.id, token: node.token })
+    out.push({ id: node.id, name: node.name })
   })
 
   return out
@@ -211,7 +232,7 @@ const ganttBars = computed<GanttBar[]>(() => {
 
   const startNodes = displayRootId.value
     ? [displayRootNode.value]
-    : sortedChildren(treeRoot.value)
+    : treeRoot.value.children
 
   const walk = (
     node: EpochTreeNode,
@@ -220,11 +241,11 @@ const ganttBars = computed<GanttBar[]>(() => {
     widthPct: number,
     currentWidthPx: number,
   ) => {
-    const children = sortedChildren(node)
+    const children = node.children
 
     const bar: GanttBar = {
       id: node.id,
-      token: node.token,
+      name: node.name,
       depth,
       leftPct,
       widthPct,
@@ -270,7 +291,7 @@ const ganttBars = computed<GanttBar[]>(() => {
 
 const maxDepth = computed(() => {
   if (ganttBars.value.length === 0) return 0
-  return max(...ganttBars.value.map((b) => b.depth))
+  return max(...ganttBars.value.map((bar) => bar.depth))
 })
 
 const canvasHeight = computed(() => {
@@ -292,7 +313,7 @@ const barClass = (bar: GanttBar) => {
 
 const barLabel = (bar: GanttBar) => {
   const hidden = bar.hiddenChildCount > 0 ? ` (hidden ${bar.hiddenChildCount})` : ''
-  return `${bar.token}${hidden} · leaves ${bar.count}`
+  return `${bar.name}${hidden} · leaves ${bar.count}`
 }
 
 const updateChartWidth = () => {
@@ -311,7 +332,6 @@ const runBuild = async () => {
 
   try {
     const leaves = await getLeaves()
-    rawLeaves.value = leaves
     leafCount.value = leaves.length
     treeRoot.value = buildTreeFromLeaves(leaves)
     displayRootId.value = ''
@@ -341,10 +361,10 @@ onUnmounted(() => {
   <div p-4>
     <div mb-4 rounded border="~ blue-200" bg-blue-50 px-3 py-2 text-sm text-blue-900>
       <div font-semibold mb-1>How to Use This View</div>
-      <div>Bars represent epochs only. Child slot indices from the leaf list are used only to place sibling order left-to-right.</div>
+      <div>Bars represent epochs only. Sibling order comes from parent step index captured directly from the live epoch chain.</div>
       <div>Click any bar to zoom into that node. Use <b>Up One Level</b> or the breadcrumbs to zoom back out.</div>
       <div>Children are auto-hidden when available width drops below {{ MIN_CHILD_WIDTH_PX }}px per child.</div>
-      <div>Use <b>Build Tree</b>/<b>Rebuild Tree</b> to regenerate from the current leaf list.</div>
+      <div>Use <b>Build Tree</b>/<b>Rebuild Tree</b> to regenerate from the current run.</div>
     </div>
 
     <div mb-4 flex="~ items-center gap-3 wrap">
@@ -383,7 +403,7 @@ onUnmounted(() => {
         :class="crumb.id === displayRootId ? 'text-blue-700 border-blue-400' : 'text-gray-700'"
         @click="zoomTo(crumb.id)"
       >
-        {{ crumb.token }}
+        {{ crumb.name }}
       </button>
     </div>
 
@@ -403,17 +423,13 @@ onUnmounted(() => {
           @click="zoomTo(bar.id)"
         >
           <span v-if="showLabel(bar)">
-            {{ bar.token }}
+            {{ bar.name }}
             <template v-if="bar.hiddenChildCount > 0"> (hidden {{ bar.hiddenChildCount }})</template>
             · {{ bar.count }}
           </span>
           <span v-else>·</span>
         </button>
       </div>
-    </div>
-
-    <div mt-3 text-xs text-gray-500>
-      {{ rawLeaves.length }} leaf paths captured.
     </div>
 
     <div
