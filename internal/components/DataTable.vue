@@ -360,8 +360,17 @@ const slots = useSlots()
       </div>
     </div>
     <div v-else>
-      <div class="overflow-x-auto subtle-scrollbar">
-        <div class="border-b border-gray-300">
+      <div
+        class="overflow-auto subtle-scrollbar relative"
+        v-bind="containerProps"
+        :style="{
+          height: `${TABLE_HEIGHT}px`,
+          // don't start scrolling until full table is visible
+          overflowY: containerIsVisible ? 'auto' : 'hidden',
+          overflowX: 'auto',
+        }"
+      >
+        <div class="sticky top-0 z-20 border-b border-gray-300">
           <table
             class="datatable-table text-sm"
             :style="{ tableLayout: 'fixed', width: `${tableWidth}px`, borderCollapse: 'separate', borderSpacing: '0' }"
@@ -388,95 +397,84 @@ const slots = useSlots()
           </table>
         </div>
 
-        <div
-          class="overflow-y-auto subtle-scrollbar"
-          v-bind="containerProps"
-          :style="{
-            width: '100%',
-            height: `${TABLE_HEIGHT}px`,
-            // don't start scrolling until full table is visible
-            overflowY: containerIsVisible ? 'auto' : 'hidden',
-          }"
-        >
-          <div v-bind="wrapperProps" >
-            <table
-              class="datatable-table text-sm"
-              border-white
-              :style="{ tableLayout: 'fixed', width: `${tableWidth}px`, borderCollapse: 'separate', borderSpacing: '0' }"
-            >
-              <colgroup>
-                <col
-                  v-for="col in columns"
+        <div v-bind="wrapperProps" >
+          <table
+            class="datatable-table text-sm"
+            border-white
+            :style="{ tableLayout: 'fixed', width: `${tableWidth}px`, borderCollapse: 'separate', borderSpacing: '0' }"
+          >
+            <colgroup>
+              <col
+                v-for="col in columns"
+                :key="col"
+                :style="columnStyle(col)"
+              >
+            </colgroup>
+            <tbody>
+              <tr 
+                v-for="{ data: row, index: idx } in virtualList" 
+                :key="idx" 
+                class="hover:bg-gray-100 transition-colors"
+                :class="{
+                  'animate-[fadeIn_0.5s_ease-out]': newRowIndices.has(idx)
+                }"
+                :style="{ height: `${TABLE_ROW_HEIGHT}px` }"
+              >
+                <td 
+                  v-for="col in columns" 
                   :key="col"
+                  px-2 py-2 whitespace-nowrap
                   :style="columnStyle(col)"
                 >
-              </colgroup>
-              <tbody>
-                <tr 
-                  v-for="{ data: row, index: idx } in virtualList" 
-                  :key="idx" 
-                  class="hover:bg-gray-100 transition-colors"
-                  :class="{
-                    'animate-[fadeIn_0.5s_ease-out]': newRowIndices.has(idx)
-                  }"
-                  :style="{ height: `${TABLE_ROW_HEIGHT}px` }"
-                >
-                  <td 
-                    v-for="col in columns" 
-                    :key="col"
-                    px-2 py-2 whitespace-nowrap
-                    :style="columnStyle(col)"
-                  >
-                    <div class="flex items-center gap-1 min-w-0">
-                    <template v-if="getCellLinkRoute(col, row.original)">
-                      <a
-                        v-if="'href' in (getCellLinkRoute(col, row.original) || {})"
-                        :href="(getCellLinkRoute(col, row.original) as { href: string }).href"
-                        :class="[
-                          'datatable-cell-text',
-                          shouldShowOverflowViewer(col, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
-                          'cursor-pointer',
-                        ]"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {{ getCellDisplayText(col, row) }}
-                      </a>
-                      <NuxtLink
-                        v-else
-                        :to="getCellLinkRoute(col, row.original)"
-                        :class="[
-                          'datatable-cell-text',
-                          shouldShowOverflowViewer(col, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
-                          'cursor-pointer',
-                        ]"
-                      >
-                        {{ getCellDisplayText(col, row) }}
-                      </NuxtLink>
-                    </template>
-                    <span
-                      v-else
+                  <div class="flex items-center gap-1 min-w-0">
+                  <template v-if="getCellLinkRoute(col, row.original)">
+                    <a
+                      v-if="'href' in (getCellLinkRoute(col, row.original) || {})"
+                      :href="(getCellLinkRoute(col, row.original) as { href: string }).href"
                       :class="[
                         'datatable-cell-text',
                         shouldShowOverflowViewer(col, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
+                        'cursor-pointer',
+                      ]"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {{ getCellDisplayText(col, row) }}
+                    </a>
+                    <NuxtLink
+                      v-else
+                      :to="getCellLinkRoute(col, row.original)"
+                      :class="[
+                        'datatable-cell-text',
+                        shouldShowOverflowViewer(col, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
+                        'cursor-pointer',
                       ]"
                     >
                       {{ getCellDisplayText(col, row) }}
-                    </span>
+                    </NuxtLink>
+                  </template>
+                  <span
+                    v-else
+                    :class="[
+                      'datatable-cell-text',
+                      shouldShowOverflowViewer(col, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
+                    ]"
+                  >
+                    {{ getCellDisplayText(col, row) }}
+                  </span>
 
-                    <details
-                      v-if="shouldShowOverflowViewer(col, row)"
-                      class="overflow-viewer"
-                    >
-                      <summary class="overflow-toggle" title="Show full value">...</summary>
-                      <div class="overflow-popover">{{ getCellDisplayText(col, row) }}</div>
-                    </details>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                  <details
+                    v-if="shouldShowOverflowViewer(col, row)"
+                    class="overflow-viewer"
+                  >
+                    <summary class="overflow-toggle" title="Show full value">...</summary>
+                    <div class="overflow-popover">{{ getCellDisplayText(col, row) }}</div>
+                  </details>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
