@@ -29,6 +29,7 @@ const normalizeOptions = (options: DisplayPhasesOption): { inDuration: number, o
   }
 }
 
+
 export const useDisplayPhases = <const T extends readonly string[]>(
   phases: T,
   options: DisplayPhasesOption = {}
@@ -40,6 +41,8 @@ export const useDisplayPhases = <const T extends readonly string[]>(
   const previousPhase = shallowRef<Phase | null>(null)
   const targetPhase = shallowRef<Phase | null>(null)
   const transitionStage = shallowRef<'out' | 'in' | null>(null)
+
+  const { sleep } = useLocalAsync()
 
   // useInspect({phase, previousPhase, targetPhase, transitionStage}, 'usePhases')
 
@@ -55,12 +58,12 @@ export const useDisplayPhases = <const T extends readonly string[]>(
     await withParticipantInputBlocked(async () => {
       if (outDuration > 0) {
         transitionStage.value = 'out'
-        await timeoutPromise(outDuration)
+        await sleep(outDuration)
       }
       phase.value = newPhase
       if (inDuration > 0) {
         transitionStage.value = 'in'
-        await timeoutPromise(inDuration)
+        await sleep(inDuration)
       }
       transitionStage.value = null
       previousPhase.value = null
