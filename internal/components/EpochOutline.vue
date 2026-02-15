@@ -78,6 +78,13 @@ const visibleNodes = computed<VisibleNode[]>(() => {
   walk(root.value, 0)
   return output
 })
+
+const indentStep = 14
+const indentBase = 8
+
+const guideLeft = (level: number) => {
+  return `${indentBase + (level - 1) * indentStep + 6}px`
+}
 </script>
 
 <template>
@@ -93,12 +100,13 @@ const visibleNodes = computed<VisibleNode[]>(() => {
           v-for="{ node, depth } in visibleNodes"
           :key="node.id"
           class="outline-row"
+          relative
           rounded
           px-2
           py-1
           mb-0.5
           flex="~ items-center gap-1"
-          :style="{ paddingLeft: `${depth * 14 + 8}px` }"
+          :style="{ paddingLeft: `${depth * indentStep + indentBase}px` }"
           :class="[
             isCurrent(node) ? 'font-bold text-blue-500' : '',
             !isCurrent(node) && isAncestor(node) ? 'font-semibold text-gray-600' : '',
@@ -106,6 +114,18 @@ const visibleNodes = computed<VisibleNode[]>(() => {
           ]"
           @click="toggleCollapse(node)"
         >
+          <div
+            v-if="depth > 0"
+            class="pointer-events-none absolute inset-y-0 left-0"
+          >
+            <span
+              v-for="level in depth"
+              :key="`${node.id}-guide-${level}`"
+              class="absolute inset-y-0 w-px bg-gray-200"
+              :style="{ left: guideLeft(level) }"
+            />
+          </div>
+
           <button
             v-if="hasChildren(node)"
             @click.stop="toggleCollapse(node)"
