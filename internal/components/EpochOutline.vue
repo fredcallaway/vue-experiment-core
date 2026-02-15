@@ -85,6 +85,10 @@ const indentBase = 8
 const guideLeft = (level: number) => {
   return `${indentBase + (level - 1) * indentStep + 6}px`
 }
+
+const handleClickNode = (node: EpochNode) => {
+  jumpToEpoch(node.id)
+}
 </script>
 
 <template>
@@ -110,7 +114,6 @@ const guideLeft = (level: number) => {
             !isCurrent(node) && isAncestor(node) ? 'font-semibold text-gray-600' : '',
             !isCurrent(node) && !isAncestor(node) ? 'text-gray-400' : '',
           ]"
-          @click="toggleCollapse(node)"
         >
           <div
             v-if="depth > 0"
@@ -138,7 +141,9 @@ const guideLeft = (level: number) => {
           </button>
           <div v-else w-4 h-4 flex-center i-mdi-circle-outline scale-60 ></div>
 
-          <span truncate>{{ node._name }}</span>
+          <span truncate @click="handleClickNode(node)" cursor-pointer >{{ node._name }}</span>
+          
+
         </div>
       </div>
     </div>
