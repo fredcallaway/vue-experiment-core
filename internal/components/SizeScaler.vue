@@ -21,7 +21,7 @@ const opacity = computed(() => {
 <template>
   <div 
     v-if="enabled" 
-    style="position: fixed; top: 2px; right: 2px; z-index: 50; transform-origin: top right;"
+    style="position: fixed; top: 2px; right: 8px; z-index: 50; transform-origin: top right;"
     :style="{ transform: `scale(${inverseScale})`, opacity: opacity }"
     class="transition-opacity"
     @mouseenter="isHovered = true"
@@ -37,7 +37,7 @@ const opacity = computed(() => {
       min="50"
       max="200"
       step="10"
-      style="width: 26px; font-size: 14px; padding: 2px 4px; border-radius: 4px; appearance: textfield; -moz-appearance: textfield;"
+      style="width: 35px; font-size: 14px; padding: 2px 4px; border-radius: 4px; appearance: textfield; -moz-appearance: textfield;"
       class="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
       title="Zoom (scroll to adjust)"
       @wheel="scrollHandler"
