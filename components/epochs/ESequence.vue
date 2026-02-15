@@ -68,19 +68,22 @@ export default defineComponent({
       }
     }
 
-    // Get state from HMR store or use initial values
-    E.step.value = hmrState.get(E.id) ?? props.step
-    // Update HMR state whenever it changes
-    watchEffect(() => {
-      hmrState.set(E.id, E.step.value)
-    })
-    // clear state on unmount or done (usually these occur together)
-    onUnmounted(() => {
-      hmrState.delete(E.id)
-    })
-    E.onDone(() => {
-      hmrState.delete(E.id)
-    })
+    // Get state from HMR store or use initial values (dev only)
+    E.step.value = import.meta.dev && hmrState ? (hmrState.get(E.id) ?? props.step) : props.step
+    // Update HMR state whenever it changes (dev only)
+    if (import.meta.dev && hmrState) {
+      watchEffect(() => {
+        hmrState.set(E.id, E.step.value)
+      })
+      // clear on unmount or epoch end (usually synonymous)
+      onUnmounted(() => {
+        hmrState.delete(E.id)
+      })
+      // clear when the epoch ends
+      E.onDone(() => {
+        hmrState.delete(E.id)
+      })
+    }
 
     // Expose epoch to parent components
     context.expose({
