@@ -38,8 +38,8 @@ export const useDisplayPhases = <const T extends readonly string[]>(
   const { inDuration, outDuration } = normalizeOptions(options)
 
   const phase = ref<Phase>(phases[0])
-  const previousPhase = shallowRef<Phase | null>(null)
-  const targetPhase = shallowRef<Phase | null>(null)
+  const fromPhase = shallowRef<Phase | null>(null)
+  const toPhase = shallowRef<Phase | null>(null)
   const transitionStage = shallowRef<'out' | 'in' | null>(null)
 
   const { sleep } = useLocalAsync()
@@ -51,23 +51,29 @@ export const useDisplayPhases = <const T extends readonly string[]>(
   const goToPhase = async (newPhase: Phase) => {
     assertOneOf(newPhase, phases, `goToPhase: ${newPhase} is not a valid phase (${phases.join(', ')})`)
     if (phase.value === newPhase) return
-    previousPhase.value = phase.value
-    targetPhase.value = newPhase
+    fromPhase.value = phase.value
+    toPhase.value = newPhase
+
 
     // animate the transition
     await withParticipantInputBlocked(async () => {
-      if (outDuration > 0) {
-        transitionStage.value = 'out'
-        await sleep(outDuration)
+      if (isJumping.value) {  // skip animation if we're jumping (see jumpToEpoch)
+        phase.value = newPhase
+      } else {
+        if (outDuration > 0) {
+          transitionStage.value = 'out'
+          await sleep(outDuration)
+        }
+        phase.value = newPhase
+        if (inDuration > 0) {
+          transitionStage.value = 'in'
+          await sleep(inDuration)
+        }
       }
-      phase.value = newPhase
-      if (inDuration > 0) {
-        transitionStage.value = 'in'
-        await sleep(inDuration)
-      }
+
       transitionStage.value = null
-      previousPhase.value = null
-      targetPhase.value = null
+      fromPhase.value = null
+      toPhase.value = null
     })
   }
 
@@ -95,15 +101,14 @@ export const useDisplayPhases = <const T extends readonly string[]>(
         return which
       })
       const matchesCurrent = computed(() => matchedPhases.value.includes(phase.value))
-      const matchedPrevious = computed(() =>
-        previousPhase.value !== null && matchedPhases.value.includes(previousPhase.value)
+      const matchesFrom = computed(() =>
+        fromPhase.value !== null && matchedPhases.value.includes(fromPhase.value)
       )
-      const matchesTarget = computed(() =>
-        targetPhase.value !== null && matchedPhases.value.includes(targetPhase.value)
+      const matchesTo = computed(() =>
+        toPhase.value !== null && matchedPhases.value.includes(toPhase.value)
       )
 
       const isPersisting = computed(() => {
-        if (props.constant) return true
         if (!props.persist) return false
         // is the current phase in between the earliest and latest matched phase?
         const currentIndex = phases.indexOf(phase.value)
@@ -116,14 +121,20 @@ export const useDisplayPhases = <const T extends readonly string[]>(
       // During 'out': show previous-matching phases (fading out if not also target)
       // During 'in': show current-matching phases (fading in if not also previous)
       const isVisible = computed(() => {
-        if (transitionStage.value === 'out') return matchedPrevious.value
+        // commented out because current stage is same as from when fading out
+        // if (transitionStage.value === 'out') return matchesFrom.value
         return matchesCurrent.value
       })
-      const isFadingOut = computed(() => transitionStage.value === 'out' && matchedPrevious.value && !matchesTarget.value)
-      const isFadingIn = computed(() => transitionStage.value === 'in' && matchesCurrent.value && !matchedPrevious.value)
+
+      const isMounted = computed(() => {
+        return props.constant || isPersisting.value || matchesCurrent.value || matchesTo.value
+      })
+
+      const isFadingOut = computed(() => transitionStage.value === 'out' && matchesFrom.value && !matchesTo.value)
+      const isFadingIn = computed(() => transitionStage.value === 'in' && matchesCurrent.value && !matchesFrom.value)
 
       return () => {
-        if (!isVisible.value && !isPersisting.value) return null
+        if (!isMounted.value) return null
         
         const style: Record<string, string> = {}
         if (props.static) {
@@ -133,7 +144,7 @@ export const useDisplayPhases = <const T extends readonly string[]>(
           style.animation = `fade-out ${outDuration}ms ease-out forwards`
         } else if (isFadingIn.value) {
           style.animation = `fade-in ${inDuration}ms ease-in forwards`
-        } else if (isPersisting.value && !isVisible.value) {
+        } else if (!isVisible.value) {
           style.opacity = '0'
           if (!props.static) {
             style.position = 'absolute'
