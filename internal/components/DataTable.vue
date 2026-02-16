@@ -240,7 +240,6 @@ watch(formattedTableData, (newRows, oldRows) => {
 const containerIsVisible = useElementVisibility(containerProps.ref, {
   threshold: 1.0, // 100% visible
 })
-const { width: containerWidth } = useElementSize(containerProps.ref)
 
 const estimateTextWidth = (text: string, scale:number = 1): number => {
   return text.length * 8 * scale
@@ -276,12 +275,29 @@ const getCellDisplayText = (
   return String(row.formatted[column] ?? '')
 }
 
+const isEpochColumn = (column: string) => {
+  return column.toLowerCase().includes('epoch')
+}
+
+const getCellPreviewText = (
+  column: string,
+  row: { formatted: Record<string, string>, original: Record<string, any> }
+) => {
+  const fullText = getCellDisplayText(column, row)
+  if (!isEpochColumn(column)) {
+    return fullText
+  }
+  const parts = fullText.split('-').map(part => part.trim()).filter(Boolean)
+  if (!parts.length) {
+    return fullText
+  }
+  return parts[parts.length - 1] ?? fullText
+}
+
 const columnWidths = computed(() => {
   if (!formattedTableData.value.length || !columns.value.length) return {}
   
   const widths: Record<string, number> = {}
-  const desiredWidths: Record<string, number> = {}
-  let widthTotal = 0
 
   columns.value.forEach(col => {
     // Measure header width
@@ -289,7 +305,7 @@ const columnWidths = computed(() => {
     
     // Measure all cell values for this column
     formattedTableData.value.forEach(row => {
-      const text = getCellDisplayText(col, row)
+      const text = getCellPreviewText(col, row)
       const width = estimateTextWidth(text)
       if (width > measuredWidth) {
         measuredWidth = width
@@ -300,45 +316,8 @@ const columnWidths = computed(() => {
       MIN_COL_WIDTH,
       measuredWidth + CELL_HORIZONTAL_PADDING
     )
-    const baseWidth = Math.min(BASE_MAX_COL_WIDTH, desiredWidth)
-
-    desiredWidths[col] = desiredWidth
-    widths[col] = baseWidth
-    widthTotal += baseWidth
+    widths[col] = Math.min(BASE_MAX_COL_WIDTH, desiredWidth)
   })
-
-  const minTableWidth = Math.max(
-    containerWidth.value || 0,
-    columns.value.length * MIN_COL_WIDTH
-  )
-
-  if (widthTotal >= minTableWidth) {
-    return widths
-  }
-
-  let remainingWidth = minTableWidth - widthTotal
-  let totalGrowthPotential = 0
-
-  columns.value.forEach(col => {
-    totalGrowthPotential += Math.max(0, desiredWidths[col] - widths[col])
-  })
-
-  if (totalGrowthPotential > 0) {
-    const growthBudget = Math.min(remainingWidth, totalGrowthPotential)
-    columns.value.forEach(col => {
-      const growthPotential = Math.max(0, desiredWidths[col] - widths[col])
-      if (growthPotential <= 0) return
-      widths[col] += growthBudget * (growthPotential / totalGrowthPotential)
-    })
-    remainingWidth -= growthBudget
-  }
-
-  if (remainingWidth > 0) {
-    const evenGrowth = remainingWidth / columns.value.length
-    columns.value.forEach(col => {
-      widths[col] += evenGrowth
-    })
-  }
 
   return widths
 })
@@ -358,17 +337,31 @@ const columnStyle = (column: string) => {
   }
 }
 
+const hasHiddenExpandedValue = (
+  column: string,
+  row: { formatted: Record<string, string>, original: Record<string, any> }
+) => {
+  const fullText = getCellDisplayText(column, row)
+  const previewText = getCellPreviewText(column, row)
+  return fullText !== previewText
+}
+
+const isPreviewTextTruncated = (
+  column: string,
+  row: { formatted: Record<string, string>, original: Record<string, any> }
+) => {
+  const viewerReserve = hasHiddenExpandedValue(column, row) ? 16 : 0
+  const availableWidth = (columnWidths.value[column] ?? MIN_COL_WIDTH) - CELL_HORIZONTAL_PADDING - viewerReserve
+  const previewText = getCellPreviewText(column, row)
+  const estimatedTextWidth = estimateTextWidth(previewText)
+  return estimatedTextWidth > availableWidth
+}
+
 const shouldShowOverflowViewer = (
   column: string,
   row: { formatted: Record<string, string>, original: Record<string, any> }
 ) => {
-  const availableWidth = (columnWidths.value[column] ?? MIN_COL_WIDTH) - CELL_HORIZONTAL_PADDING
-  const estimatedTextWidth = estimateTextWidth(getCellDisplayText(column, row))
-  return estimatedTextWidth > availableWidth
-}
-
-const shouldTruncateFromStart = (column: string) => {
-  return column.toLowerCase() === 'epoch'
+  return hasHiddenExpandedValue(column, row) || isPreviewTextTruncated(column, row)
 }
 
 const getCellTextClasses = (
@@ -376,10 +369,10 @@ const getCellTextClasses = (
   row: { formatted: Record<string, string>, original: Record<string, any> },
   clickable = false
 ) => {
+  const isEstimatedTruncated = isPreviewTextTruncated(column, row)
   return [
     'datatable-cell-text',
-    shouldShowOverflowViewer(column, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
-    shouldTruncateFromStart(column) ? 'datatable-cell-text--truncate-start' : '',
+    isEstimatedTruncated ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
     clickable ? 'cursor-pointer' : '',
   ]
 }
@@ -516,21 +509,21 @@ const slots = useSlots()
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      {{ getCellDisplayText(col, row) }}
+                      {{ getCellPreviewText(col, row) }}
                     </a>
                     <NuxtLink
                       v-else
                       :to="getCellLinkRoute(col, row.original)"
                       :class="getCellTextClasses(col, row, true)"
                     >
-                      {{ getCellDisplayText(col, row) }}
+                      {{ getCellPreviewText(col, row) }}
                     </NuxtLink>
                   </template>
                   <span
                     v-else
                     :class="getCellTextClasses(col, row)"
                   >
-                    {{ getCellDisplayText(col, row) }}
+                    {{ getCellPreviewText(col, row) }}
                   </span>
 
                   <details
@@ -579,12 +572,6 @@ const slots = useSlots()
 
 .datatable-cell-text--clip {
   text-overflow: clip;
-}
-
-.datatable-cell-text--truncate-start {
-  direction: rtl;
-  text-align: left;
-  unicode-bidi: plaintext;
 }
 
 .overflow-viewer {
