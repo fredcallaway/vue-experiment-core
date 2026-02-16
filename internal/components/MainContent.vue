@@ -28,16 +28,8 @@ whenever(content, (el) => {
 // error handling
 const error = ref(false)
 
-const nuxtApp = useNuxtApp()
-const defaultHandler = nuxtApp.vueApp.config.errorHandler
-nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
-
-  // this error is expected behavior; see useLocalAsync.ts
-  if (err === 'useLocalAsync:unmounted') {
-    // console.debug('caught useLocalAsync:unmounted')
-    return
-  }
-
+const { pushHandler } = useErrorHandler()
+const popHandler = pushHandler((err, instance, info, next) => {
   if (props.captureErrors) {
     const componentName = instance?.$options?.__name
     const componentPath = instance?.$options?.__file
@@ -46,21 +38,10 @@ nuxtApp.vueApp.config.errorHandler = (err, instance, info) => {
     error.value = true
     return
   }
-  
-  if (defaultHandler) {
-    console.log('calling default handler')
-    console.error(err)
-    // TODO don't use default handler so that the developer interface is maintained
-    // could add devtools navigation here
-    // const devtoolsClient = useNuxtDevTools()
-    // devtoolsClient.value?.devtools.navigate('/modules/error')
-    defaultHandler(err, instance, info)
-  } else {
-    // I don't think this case is possible, but just in case
-    console.error('No default error handler found')
-    throw new Error('No default error handler found')
-  }
-}
+  next()
+})
+
+onUnmounted(popHandler)
 
 </script>
 

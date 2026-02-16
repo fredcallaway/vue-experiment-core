@@ -11,12 +11,12 @@ type HandlerEntry = {
   sequence: number
 }
 
+
 export const useErrorHandler = createGlobalState(() => {
   const nuxtApp = useNuxtApp()
   const originalHandler = nuxtApp.vueApp.config.errorHandler
   
   const handlers = ref<HandlerEntry[]>([])
-  const globalIgnoreErrors = ref<Set<string>>(new Set(['useLocalAsync:unmounted']))
   let sequenceCounter = 0
 
   const getSortedHandlers = () => {
@@ -27,12 +27,6 @@ export const useErrorHandler = createGlobalState(() => {
   }
 
   const vueErrorHandler = (err: unknown, instance: any, info: string) => {
-    const errorString = String(err)
-    
-    if (globalIgnoreErrors.value.has(errorString)) {
-      return
-    }
-
     const sortedHandlers = getSortedHandlers()
     let currentIndex = 0
     
@@ -73,6 +67,5 @@ export const useErrorHandler = createGlobalState(() => {
   return {
     pushHandler,
     popHandler,
-    globalIgnoreErrors,
   }
 })

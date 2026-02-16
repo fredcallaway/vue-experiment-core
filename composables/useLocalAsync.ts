@@ -10,7 +10,20 @@ const makePromise = <T = any>() => {
   return { resolve: resolve!, reject: reject!, promise }
 }
 
+const ensureErrorHandler = R.once(() => {
+  const { pushHandler } = useErrorHandler()
+  pushHandler((err, instance, info, next) => {
+    if (String(err) === 'useLocalAsync:unmounted') {
+      console.log('useLocalAsync: unmounted error; ignoring')
+      return
+    }
+    next()
+  }, 1000)
+})
+
 export const useLocalAsync = () => {
+  ensureErrorHandler()
+  
   const instance = getCurrentInstance()
   if (!instance) {
     throw new Error('useLocalAsync must be used in a component')
