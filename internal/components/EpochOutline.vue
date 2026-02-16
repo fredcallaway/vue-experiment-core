@@ -114,6 +114,8 @@ const runAutoCollapse = () => {
   if (!root.value) return
   if (isTraversing.value) return
 
+  console.log('👉 runAutoCollapse', allowCollapseAbove.value)
+
   const { depthById, branchIds } = indexTree(root.value)
   const activeIds = activePathIds.value
   const branchSet = new Set(branchIds)
@@ -170,8 +172,6 @@ const runAutoCollapse = () => {
 
   collapsed.value = nextCollapsed
 }
-
-watch([() => currentEpoch.value.id, root], runAutoCollapse)
 
 const visibleNodes = computed<VisibleNode[]>(() => {
   const output: VisibleNode[] = []
@@ -310,7 +310,15 @@ onMounted(async () => {
   }
 })
 
-watch(() => currentEpoch.value.id, scrollCurrentIntoView, { immediate: true })
+// don't change
+watch(currentEpoch, (epoch) => {
+  if (epoch.children.length == 0) {  // only run on leaf epochs
+    if (isTraversing.value) return
+    console.log('🟢 runAutoCollapse on leaf epoch', epoch.id)
+    runAutoCollapse()
+    scrollCurrentIntoView()
+  }
+})
 
 </script>
 
