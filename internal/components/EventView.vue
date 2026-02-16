@@ -163,6 +163,30 @@ const eventViewHeight = computed(() => {
 })
 
 const isHorizontal = computed(() => props.horizontal ?? false)
+const { width: mainContentWidth } = useElementSize(mainContentRef)
+const horizontalWidth = computed(() => {
+  const measured = Math.floor(mainContentWidth.value || 0)
+  return Math.max(800, measured)
+})
+const horizontalScrollEl = ref<HTMLElement | null>(null)
+
+const normalizeWheelDelta = (delta: number, mode: number, viewportWidth: number) => {
+  if (mode === 1) return delta * 16
+  if (mode === 2) return delta * viewportWidth
+  return delta
+}
+
+const onHorizontalWheel = (event: WheelEvent) => {
+  const el = horizontalScrollEl.value
+  if (!el || el.scrollWidth <= el.clientWidth) return
+
+  const deltaY = normalizeWheelDelta(event.deltaY, event.deltaMode, el.clientWidth)
+  const deltaX = normalizeWheelDelta(event.deltaX, event.deltaMode, el.clientWidth)
+  if (deltaY === 0 && deltaX === 0) return
+
+  event.preventDefault()
+  el.scrollLeft += deltaY + deltaX
+}
 
 </script>
 
@@ -174,8 +198,9 @@ const isHorizontal = computed(() => props.horizontal ?? false)
     text-sm
     rounded-lg
     min-w="800px"
+    :style="{ width: `${horizontalWidth}px` }"
     min-h="200px"
-    max-h="400px"
+    max-h="300px"
     flex="~ col"
     relative
   >
@@ -189,7 +214,16 @@ const isHorizontal = computed(() => props.horizontal ?? false)
       </div>
       <button ml-auto btn-gray btn-xs @click="events.length = 0">clear</button>
     </div>
-    <div class="subtle-scrollbar flex-1 min-h-0 min-w-0" flex="~ row gap-2" items-start overflow-x-auto overflow-y-hidden pb-1>
+    <div
+      ref="horizontalScrollEl"
+      class="subtle-scrollbar flex-1 min-h-0 min-w-0"
+      flex="~ row gap-2"
+      items-start
+      overflow-x-auto
+      overflow-y-hidden
+      pb-1
+      @wheel="onHorizontalWheel"
+    >
       <template v-for="event in filteredEvents" :key="event.timestamp">
         <div :class="event.cardClass ?? 'card-gray'" p-2 rounded-md relative w="260px" min-w="260px" h-full overflow-y-auto>
           <span font-bold>{{ event.eventType }}</span>
@@ -218,7 +252,7 @@ const isHorizontal = computed(() => props.horizontal ?? false)
     :style="{ height: `${eventViewHeight}px` }"
     ref="top-div"
   >
-    <div flex="~ row items-center gap-3 wrap" mb-2>
+    <div flex="~ col gap-1" mb-2>
       <h2 shrink-0>Events</h2>
       <div flex="~ row items-center gap-3" text-xs>
         <label v-for="(ref, name) in showFilters" :key="name">
@@ -226,7 +260,7 @@ const isHorizontal = computed(() => props.horizontal ?? false)
         </label>
       </div>
       <TextFilter v-model="whitelistFilter" placeholder="e.g. !epoch *.trial" w-52 />
-      <button ml-auto btn-gray btn-xs @click="events.length = 0">clear</button>
+      <button r1 t1 ml-auto btn-gray btn-xs @click="events.length = 0">clear</button>
     </div>
     <div class="subtle-scrollbar flex-1 min-h-0" flex="~ col gap-2" overflow-y-auto>
       <template v-for="event in filteredEvents" :key="event.timestamp">

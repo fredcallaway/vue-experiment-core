@@ -2,6 +2,7 @@
 const props = withDefaults(defineProps<{
   modelValue: string
   placeholder?: string
+  compact?: boolean
 }>(), {
   placeholder: 'e.g. foo* bar, baz !qux'
 })
@@ -35,7 +36,7 @@ const searchQuery = computed({
 <template>
   <div flex="~ col gap-2" min-w-97 max-w-150>
     <div>
-      <div text-sm text-gray-600 mb--1>
+      <div v-if="!compact" text-sm text-gray-600 mb--1>
         Filter (<kbd>/</kbd>): space is AND, comma is OR, ! negates, * is wildcard
       </div>
       <input
@@ -44,7 +45,7 @@ const searchQuery = computed({
         type="text"
         input
         w-full
-        mt-2
+        :class="{ 'mt-2': !compact }"
         :placeholder="placeholder"
       />
     </div>
