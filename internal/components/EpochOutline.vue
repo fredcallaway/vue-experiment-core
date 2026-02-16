@@ -141,8 +141,11 @@ const traverseTimeline = async () => {
 //   currentPath: () => currentPath.value.map(node => node.id),
 // })
 
-onMounted(() => {
-  nextTick(traverseTimeline)
+onMounted(async () => {
+  await nextTick()
+  if (currentEpoch.value.id !== '__TOP_EPOCH__') {
+    await traverseTimeline()
+  }
 })
 
 </script>
