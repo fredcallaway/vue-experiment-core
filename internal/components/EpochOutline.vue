@@ -6,10 +6,22 @@ type EpochNode = {
   children: EpochNode[]
 }
 
-type VisibleNode = {
+type OutlineNodeRow = {
+  kind: 'node'
   node: EpochNode
   depth: number
 }
+
+type OutlineAggregateRow = {
+  kind: 'aggregate'
+  representative: EpochNode
+  nodes: EpochNode[]
+  count: number
+  depth: number
+  expanded: boolean
+}
+
+type OutlineRow = OutlineNodeRow | OutlineAggregateRow
 
 const currentEpoch = useCurrentEpoch()
 const collapsed = ref<Record<string, boolean>>({})
@@ -113,8 +125,6 @@ const getAboveSiblingBranchIds = () => {
 const runAutoCollapse = () => {
   if (!root.value) return
 
-  console.log('👉 runAutoCollapse', allowCollapseAbove.value, collapsed.value)
-
   const { depthById, branchIds } = indexTree(root.value)
   const activeIds = activePathIds.value
   const branchSet = new Set(branchIds)
@@ -123,7 +133,6 @@ const runAutoCollapse = () => {
   // Drop stale state entries for branches that no longer exist.
   for (const id of Object.keys(nextCollapsed)) {
     if (!branchSet.has(id)) {
-      console.log('XXX delete stale state', id)
       delete nextCollapsed[id]
     }
   }
@@ -169,20 +178,80 @@ const runAutoCollapse = () => {
   collapsed.value = nextCollapsed
 }
 
-const visibleNodes = computed<VisibleNode[]>(() => {
-  const output: VisibleNode[] = []
-  if (!root.value) return output
+const AGGREGATE_MIN_RUN = 3
 
-  const walk = (node: EpochNode, depth: number) => {
-    output.push({ node, depth })
+const getStructureSignature = (node: EpochNode, cache: Map<string, string>): string => {
+  const existing = cache.get(node.id)
+  if (existing !== undefined) return existing
+
+  const childSignatures = node.children.map(child => getStructureSignature(child, cache))
+  const signature = `${node._name}(${childSignatures.join('|')})`
+  cache.set(node.id, signature)
+  return signature
+}
+
+const visibleRows = computed<OutlineRow[]>(() => {
+  const rows: OutlineRow[] = []
+  if (!root.value) return rows
+
+  const activeIds = activePathIds.value
+  const signatureCache = new Map<string, string>()
+
+  const walkNode = (node: EpochNode, depth: number) => {
+    rows.push({ kind: 'node', node, depth })
     if (!isExpanded(node)) return
-    for (const child of node.children) {
-      walk(child, depth + 1)
+    walkChildren(node.children, depth + 1)
+  }
+
+  const walkChildren = (children: EpochNode[], depth: number) => {
+    let i = 0
+    while (i < children.length) {
+      const first = children[i]
+
+      // Active path nodes are never aggregated and split runs.
+      if (activeIds.has(first.id)) {
+        walkNode(first, depth)
+        i += 1
+        continue
+      }
+
+      const firstKey = `${getStructureSignature(first, signatureCache)}::${isExpanded(first) ? 1 : 0}`
+      let j = i + 1
+      while (j < children.length) {
+        const candidate = children[j]
+        if (activeIds.has(candidate.id)) break
+        const candidateKey = `${getStructureSignature(candidate, signatureCache)}::${isExpanded(candidate) ? 1 : 0}`
+        if (candidateKey !== firstKey) break
+        j += 1
+      }
+
+      const run = children.slice(i, j)
+      if (run.length >= AGGREGATE_MIN_RUN) {
+        const representative = run[0]
+        const expanded = isExpanded(representative)
+        rows.push({
+          kind: 'aggregate',
+          representative,
+          nodes: run,
+          count: run.length,
+          depth,
+          expanded,
+        })
+        if (expanded) {
+          walkChildren(representative.children, depth + 1)
+        }
+      } else {
+        for (const node of run) {
+          walkNode(node, depth)
+        }
+      }
+
+      i = j
     }
   }
 
-  walk(root.value, 0)
-  return output
+  walkNode(root.value, 0)
+  return rows
 })
 
 const indentStep = 14
@@ -194,6 +263,14 @@ const guideLeft = (level: number) => {
 
 const handleClickNode = (node: EpochNode) => {
   jumpToEpoch(node.id)
+}
+
+const toggleAggregate = (row: OutlineAggregateRow) => {
+  const shouldCollapse = isExpanded(row.representative)
+  for (const node of row.nodes) {
+    if (!hasChildren(node) || isPinned(node)) continue
+    collapsed.value[node.id] = shouldCollapse
+  }
 }
 
 const scrollCurrentIntoView = async () => {
@@ -219,7 +296,6 @@ const scrollCurrentIntoView = async () => {
 
   // If the current row is near/beyond the bottom, move it toward the top.
   if (rowBottom > safeBottom) {
-    console.log('scroll', rowBottom, safeBottom)
     allowCollapseAbove.value = true
     runAutoCollapse()
     allowCollapseAbove.value = false
@@ -317,7 +393,6 @@ onMounted(async () => {
 watch(currentEpoch, (epoch) => {
   const hasKids = epoch.children.length > 0
   if (hasKids || isTraversing.value || isJumping.value || !traversed.value) return
-  console.log('🟢 runAutoCollapse on leaf epoch', epoch.id)
   runAutoCollapse()
   scrollCurrentIntoView()
 })
@@ -350,48 +425,66 @@ watch(() => isTraversing.value || isJumping.value, (value) => {
 
     <div ref="listEl" v-else overflow-y-auto pr-1 subtle-scrollbar flex-1 min-h-0>
       <div
-        v-for="{ node, depth } in visibleNodes"
-        :key="node.id"
-        :data-epoch-id="node.id"
+        v-for="row in visibleRows"
+        :key="row.kind === 'node' ? row.node.id : `aggregate-${row.representative.id}-${row.count}`"
+        :data-epoch-id="row.kind === 'node' ? row.node.id : undefined"
         class="outline-row"
         relative
         flex="~ items-center gap-1"
         text-sm
-        :style="{ paddingLeft: `${depth * indentStep + indentBase}px` }"
-        :class="[
-          isCurrent(node) ? 'font-bold text-blue-500' : '',
-          !isCurrent(node) && isAncestor(node) ? 'font-semibold text-gray-600' : '',
-          !isCurrent(node) && !isAncestor(node) ? 'text-gray-400' : '',
-        ]"
+        :style="{ paddingLeft: `${row.depth * indentStep + indentBase}px` }"
+        :class="row.kind === 'node'
+          ? [
+              isCurrent(row.node) ? 'font-bold text-blue-500' : '',
+              !isCurrent(row.node) && isAncestor(row.node) ? 'font-semibold text-gray-600' : '',
+              !isCurrent(row.node) && !isAncestor(row.node) ? 'text-gray-400' : '',
+            ]
+          : 'text-gray-400'"
       >
         <div
-          v-if="depth > 0"
+          v-if="row.depth > 0"
           class="pointer-events-none absolute inset-y-0 left-0"
         >
           <span
-            v-for="level in depth"
-            :key="`${node.id}-guide-${level}`"
+            v-for="level in row.depth"
+            :key="`${row.kind === 'node' ? row.node.id : `aggregate-${row.representative.id}`}-guide-${level}`"
             class="absolute inset-y-0 w-px bg-gray-200"
             :style="{ left: guideLeft(level) }"
           />
         </div>
-        <!-- {{ node.children.length }} -->
-        <button
-          v-if="hasChildren(node)"
-          @click.stop="toggleCollapse(node)"
-          w-4 h-4
-          flex-center
-          rounded
-          hover:bg-gray-200
-          :title="isPinned(node) ? 'Pinned ancestor' : (isExpanded(node) ? 'Collapse' : 'Expand')"
-        >
-          <span :class="isExpanded(node) ? 'i-mdi-chevron-down' : 'i-mdi-chevron-right'" />
-        </button>
-        <div v-else w-4 h-4 flex-center i-mdi-circle-outline scale-60 ></div>
 
-        <span truncate @click="handleClickNode(node)" cursor-pointer >{{ node._name }}</span>
-          
+        <template v-if="row.kind === 'node'">
+          <button
+            v-if="hasChildren(row.node)"
+            @click.stop="toggleCollapse(row.node)"
+            w-4 h-4
+            flex-center
+            rounded
+            hover:bg-gray-200
+            :title="isPinned(row.node) ? 'Pinned ancestor' : (isExpanded(row.node) ? 'Collapse' : 'Expand')"
+          >
+            <span :class="isExpanded(row.node) ? 'i-mdi-chevron-down' : 'i-mdi-chevron-right'" />
+          </button>
+          <div v-else w-4 h-4 flex-center i-mdi-circle-outline scale-60 ></div>
+          <span truncate @click="handleClickNode(row.node)" cursor-pointer>{{ row.node._name }}</span>
+        </template>
 
+        <template v-else>
+          <button
+            v-if="hasChildren(row.representative)"
+            @click.stop="toggleAggregate(row)"
+            w-4 h-4
+            flex-center
+            rounded
+            hover:bg-gray-200
+            :title="row.expanded ? 'Collapse group' : 'Expand group'"
+          >
+            <span :class="row.expanded ? 'i-mdi-chevron-down' : 'i-mdi-chevron-right'" />
+          </button>
+          <div v-else w-4 h-4 flex-center i-mdi-circle-outline scale-60 ></div>
+          <span truncate>{{ row.representative._name }}</span>
+          <span ml-1 px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-600 text-10px>{{ row.count }}</span>
+        </template>
       </div>
     </div>
   </div>
