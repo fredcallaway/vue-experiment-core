@@ -11,11 +11,12 @@ const devTools = ref(!getUrlFlag('noDev'))
     <NavBar mb-2/>
     <SizeScaler />
     <div flex="~ row gap-4">
-      <div flex="~ col">
+      <div flex="~ col gap-4">
         <MainContent show-outline fixed-width fixed-height>
           <slot />
         </MainContent>
-        <EpochView v-if="!violated" mt-3/>
+        <!-- <EpochView v-if="!violated" mt-3/> -->
+        <EventView horizontal />
       </div>
 
       <div w="600px" relative  v-if="!violated">

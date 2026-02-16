@@ -13,6 +13,7 @@ type FormattedEvent = {
 
 const props = defineProps<{
   initialFilter?: string
+  horizontal?: boolean
 }>()
 
 const events = reactive<FormattedEvent[]>([])
@@ -20,9 +21,9 @@ const whitelistFilter = useLocalStorage('eventView.filter', props.initialFilter 
 const startTime = ref(START_TIME)
 
 const normalizeNewlines = (s: string) => s.replaceAll('\\n', '\n')
-const formatForPre = (value: unknown) => {
+const formatForPre = (value: unknown, maxLength = 80) => {
   if (typeof value === 'string') return normalizeNewlines(value)
-  return stringify(value, { indent: 2 })
+  return stringify(value, { indent: 2, maxLength })
 }
 
 const formatErrorEvent = (data: Record<string, any>) => {
@@ -161,22 +162,73 @@ const eventViewHeight = computed(() => {
   return (winHeight.value - usedSpace) / scale.value
 })
 
+const isHorizontal = computed(() => props.horizontal ?? false)
+
 </script>
 
 <template>
-  <div bg-gray-100 p-2 text-sm rounded-lg min-w="300px" flex="~ col" relative 
-    :style="{ height: `${eventViewHeight}px` }" 
+  <div
+    v-if="isHorizontal"
+    bg-gray-100
+    p-2
+    text-sm
+    rounded-lg
+    min-w="800px"
+    min-h="200px"
+    max-h="400px"
+    flex="~ col"
+    relative
+  >
+    <div flex="~ row items-center gap-3 wrap" mb-2>
+      <h2 shrink-0>Events</h2>
+      <TextFilter v-model="whitelistFilter" placeholder="Filter: e.g. !epoch *.trial" w-64 compact />
+      <div flex="~ row items-center gap-3" text-xs>
+        <label v-for="(ref, name) in showFilters" :key="name">
+          <input type="checkbox" v-model="ref.value"> {{ name }}
+        </label>
+      </div>
+      <button ml-auto btn-gray btn-xs @click="events.length = 0">clear</button>
+    </div>
+    <div class="subtle-scrollbar flex-1 min-h-0 min-w-0" flex="~ row gap-2" items-start overflow-x-auto overflow-y-hidden pb-1>
+      <template v-for="event in filteredEvents" :key="event.timestamp">
+        <div :class="event.cardClass ?? 'card-gray'" p-2 rounded-md relative w="260px" min-w="260px" h-full overflow-y-auto>
+          <span font-bold>{{ event.eventType }}</span>
+          <div text-right absolute top-2 right-2>
+            <span text-xs opacity-50>{{ fmtTimestamp(event.timestamp) }}</span>
+          </div>
+          <div v-if="event.caption" text-xs opacity-50>{{ event.caption }}</div>
+          <template v-if="event.isError">
+            <pre v-if="event.errorMinimal !== undefined" text-xs>{{ event.errorMinimal }}</pre>
+          </template>
+          <pre v-else-if="event.data !== undefined" text-xs>{{ formatForPre(event.data, 54) }}</pre>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <div
+    v-else
+    bg-gray-100
+    p-2
+    text-sm
+    rounded-lg
+    min-w="300px"
+    flex="~ col"
+    relative
+    :style="{ height: `${eventViewHeight}px` }"
     ref="top-div"
   >
-    <h2>Events</h2>
-    <button absolute right-2 top-2 btn-gray btn-xs @click="events.length = 0">clear</button>
-    <div flex gap-4 mb-1>
-      <label v-for="(ref, name) in showFilters" :key="name">
-        <input type="checkbox" v-model="ref.value"> {{ name }}
-      </label>
+    <div flex="~ row items-center gap-3 wrap" mb-2>
+      <h2 shrink-0>Events</h2>
+      <div flex="~ row items-center gap-3" text-xs>
+        <label v-for="(ref, name) in showFilters" :key="name">
+          <input type="checkbox" v-model="ref.value"> {{ name }}
+        </label>
+      </div>
+      <TextFilter v-model="whitelistFilter" placeholder="e.g. !epoch *.trial" w-52 />
+      <button ml-auto btn-gray btn-xs @click="events.length = 0">clear</button>
     </div>
-    <TextFilter v-model="whitelistFilter" placeholder="e.g. !epoch" mb-2 />
-    <div flex="~ col gap-2" overflow-y-auto class="subtle-scrollbar">
+    <div class="subtle-scrollbar flex-1 min-h-0" flex="~ col gap-2" overflow-y-auto>
       <template v-for="event in filteredEvents" :key="event.timestamp">
         <div :class="event.cardClass ?? 'card-gray'" p-2 mr-1 rounded-md relative>
           <span font-bold>{{ event.eventType }}</span>
@@ -187,10 +239,9 @@ const eventViewHeight = computed(() => {
           <template v-if="event.isError">
             <pre v-if="event.errorMinimal !== undefined" text-xs>{{ event.errorMinimal }}</pre>
           </template>
-          <pre v-else-if="event.data !== undefined" text-xs>{{ stringify(event.data, { indent: 2 }) }}</pre>
+          <pre v-else-if="event.data !== undefined" text-xs>{{ formatForPre(event.data, 72) }}</pre>
         </div>
       </template>
     </div>
   </div>
 </template>
-
