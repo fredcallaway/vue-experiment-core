@@ -130,6 +130,7 @@ const runAutoCollapse = ({ collapseAbove = false } = {}) => {
   const activeIds = activePathIds.value
   const nextCollapsed: Record<string, boolean> = { ...collapsed.value }
 
+  // (kept for reference)
   // Initialize unseen branches
   // const { depthById, branchIds } = indexTree(root.value)
   // for (const id of branchIds) {
@@ -138,21 +139,25 @@ const runAutoCollapse = ({ collapseAbove = false } = {}) => {
   //   }
   // }
 
-  // Collapse siblings above active
-  if (collapseAbove) {
-    const aboveBranchIds = getAboveSiblingBranchIds()
-    for (const id of aboveBranchIds) {
-      nextCollapsed[id] = true
-    }
-  }
-
   // Active path is always expanded.
   for (const id of activeIds) {
     nextCollapsed[id] = false
   }
 
-  // Use the remaining space to expand upcoming nodes
-  // TODO implement?
+  // Collapse nodes until vertical scroll is eliminated
+  // Only collapse previous/above nodes if we're told to
+  // Collapse deeper first, then by distance from active
+
+  if (collapseAbove) {
+    // TODO: we should only collapse until we're within height limit
+    // collapse deeper first; within depth collapse earlier first
+    const aboveBranchIds = getAboveSiblingBranchIds()
+    for (const id of aboveBranchIds) {
+      nextCollapsed[id] = true
+    }
+  }
+  // Collapse later/below if necessary
+  // TODO
 
   collapsed.value = nextCollapsed
 }
