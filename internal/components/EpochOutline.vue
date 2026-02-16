@@ -31,7 +31,6 @@ const currentEpoch = useCurrentEpoch()
 const collapsed = ref<Record<string, boolean>>({})
 const unaggregatedRuns = ref<Record<string, boolean>>({})
 const listEl = ref<HTMLElement | null>(null)
-const allowCollapseAbove = ref(false)
 
 // calculating height (same approach as EventView)
 const { height: winHeight } = useWindowSize()
@@ -125,20 +124,13 @@ const getAboveSiblingBranchIds = () => {
   return ids
 }
 
-const runAutoCollapse = () => {
+const autoCollapseInitialized = ref(false)
+const runAutoCollapse = ({ collapseAbove = false } = {}) => {
   if (!root.value) return
 
   const { depthById, branchIds } = indexTree(root.value)
   const activeIds = activePathIds.value
-  const branchSet = new Set(branchIds)
   const nextCollapsed: Record<string, boolean> = { ...collapsed.value }
-
-  // Drop stale state entries for branches that no longer exist.
-  for (const id of Object.keys(nextCollapsed)) {
-    if (!branchSet.has(id)) {
-      delete nextCollapsed[id]
-    }
-  }
 
   // Initialize unseen branches
   for (const id of branchIds) {
@@ -146,39 +138,23 @@ const runAutoCollapse = () => {
       nextCollapsed[id] = (depthById[id] ?? 999) >= AUTO_BASE_DEPTH
     }
   }
+  console.log('nextCollapsed', nextCollapsed)
 
-  const expandBranch = (id: string) => {
-    if (nextCollapsed[id] !== undefined) {
-      nextCollapsed[id] = false
-    }
-  }
-  const collapseBranch = (id: string) => {
-    if (nextCollapsed[id] !== undefined) {
+  // Collapse siblings above active
+  if (collapseAbove) {
+    const aboveBranchIds = getAboveSiblingBranchIds()
+    for (const id of aboveBranchIds) {
       nextCollapsed[id] = true
     }
   }
 
-  // Priority 1: active path is always expanded.
+  // Active path is always expanded.
   for (const id of activeIds) {
-    expandBranch(id)
-  }
-
-  // Priority 2: keep top levels expanded for orientation stability.
-  // for (const id of branchIds) {
-  //   if ((depthById[id] ?? 999) < AUTO_BASE_DEPTH) {
-  //     expandBranch(id)
-  //   }
-  // }
-
-  // Above siblings should only auto-collapse in lower-trigger mode.
-  if (allowCollapseAbove.value) {
-    const aboveBranchIds = getAboveSiblingBranchIds()
-    for (const id of aboveBranchIds) {
-      collapseBranch(id)
-    }
+    nextCollapsed[id] = false
   }
 
   collapsed.value = nextCollapsed
+  autoCollapseInitialized.value = true
 }
 
 const getStructureSignature = (node: EpochNode, cache: Map<string, string>): string => {
@@ -319,9 +295,7 @@ const scrollCurrentIntoView = async () => {
 
   // If the current row is near/beyond the bottom, move it toward the top.
   if (rowBottom > safeBottom) {
-    allowCollapseAbove.value = true
-    runAutoCollapse()
-    allowCollapseAbove.value = false
+    runAutoCollapse({ collapseAbove: true })
     await nextTick()
 
     const adjustedRow = container.querySelector<HTMLElement>(selector)
