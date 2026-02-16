@@ -27,7 +27,6 @@ const lastSubroutesBySection = useSessionStorage<Record<string, string>>(
 
 const topNavLinks = [
   { label: 'Experiment', path: '/dev' },
-  { label: 'Tree', path: '/epochs' },
   { label: 'Prolific', path: '/prolific' },
   { label: 'Data', path: '/data' },
   { label: 'Test', path: '/test' },
