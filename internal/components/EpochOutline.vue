@@ -14,6 +14,7 @@ type OutlineNodeRow = {
 
 type OutlineAggregateRow = {
   kind: 'aggregate'
+  key: string
   representative: EpochNode
   nodes: EpochNode[]
   count: number
@@ -28,6 +29,7 @@ const MIN_AGGREGATE = 5
 
 const currentEpoch = useCurrentEpoch()
 const collapsed = ref<Record<string, boolean>>({})
+const unaggregatedRuns = ref<Record<string, boolean>>({})
 const listEl = ref<HTMLElement | null>(null)
 const allowCollapseAbove = ref(false)
 
@@ -210,10 +212,11 @@ const visibleRows = computed<OutlineRow[]>(() => {
   const walkNode = (node: EpochNode, depth: number) => {
     rows.push({ kind: 'node', node, depth })
     if (!isExpanded(node)) return
-    walkChildren(node.children, depth + 1)
+    walkChildren(node, depth + 1)
   }
 
-  const walkChildren = (children: EpochNode[], depth: number) => {
+  const walkChildren = (parent: EpochNode, depth: number) => {
+    const children = parent.children
     if (!canAggregateChildren(children, signatureCache)) {
       for (const child of children) {
         walkNode(child, depth)
@@ -223,10 +226,18 @@ const visibleRows = computed<OutlineRow[]>(() => {
 
     const flushAggregateRun = (run: EpochNode[]) => {
       if (run.length === 0) return
+      const key = `${parent.id}::${run.map(node => node.id).join('|')}`
+      if (unaggregatedRuns.value[key]) {
+        for (const node of run) {
+          walkNode(node, depth)
+        }
+        return
+      }
       const representative = run[0]
       const expanded = run.some(node => isExpanded(node))
       rows.push({
         kind: 'aggregate',
+        key,
         representative,
         nodes: run,
         count: run.length,
@@ -234,7 +245,7 @@ const visibleRows = computed<OutlineRow[]>(() => {
         expanded,
       })
       if (expanded) {
-        walkChildren(representative.children, depth + 1)
+        walkChildren(representative, depth + 1)
       }
     }
 
@@ -279,6 +290,10 @@ const toggleAggregate = (row: OutlineAggregateRow) => {
     if (!hasChildren(node) || isPinned(node)) continue
     collapsed.value[node.id] = shouldCollapse
   }
+}
+
+const unaggregateRun = (row: OutlineAggregateRow) => {
+  unaggregatedRuns.value[row.key] = true
 }
 
 const scrollCurrentIntoView = async () => {
@@ -434,7 +449,7 @@ watch(() => isTraversing.value || isJumping.value, (value) => {
     <div ref="listEl" v-else overflow-y-auto pr-1 subtle-scrollbar flex-1 min-h-0>
       <div
         v-for="row in visibleRows"
-        :key="row.kind === 'node' ? row.node.id : `aggregate-${row.representative.id}-${row.count}`"
+        :key="row.kind === 'node' ? row.node.id : row.key"
         :data-epoch-id="row.kind === 'node' ? row.node.id : undefined"
         class="outline-row"
         relative
@@ -491,7 +506,21 @@ watch(() => isTraversing.value || isJumping.value, (value) => {
           </button>
           <div v-else w-4 h-4 flex-center i-mdi-circle-outline scale-60 ></div>
           <span truncate>{{ row.representative._name }}</span>
-          <span ml-1 px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-600 text-10px>{{ row.count }}</span>
+          <button
+            ml-1
+            px-1.5
+            py-0.5
+            rounded-full
+            bg-gray-200
+            text-gray-600
+            text-10px
+            cursor-pointer
+            hover:bg-gray-300
+            @click.stop="unaggregateRun(row)"
+            title="Un-aggregate this run"
+          >
+            {{ row.count }}
+          </button>
         </template>
       </div>
     </div>
