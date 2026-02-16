@@ -223,6 +223,7 @@ const scrollCurrentIntoView = async () => {
 
   // If the current row is near/beyond the bottom, move it toward the top.
   if (rowBottom > safeBottom) {
+    console.log('scroll', rowBottom, safeBottom)
     allowCollapseAbove.value = true
     runAutoCollapse()
     allowCollapseAbove.value = false
@@ -317,11 +318,17 @@ onMounted(async () => {
 // don't change
 watch(currentEpoch, (epoch) => {
   if (epoch.children.length == 0) {  // only run on leaf epochs
-    if (isTraversing.value) return
+    if (isTraversing.value || isJumping.value) return
     console.log('🟢 runAutoCollapse on leaf epoch', epoch.id)
     runAutoCollapse()
     scrollCurrentIntoView()
   }
+})
+
+// run auto collapse after traverse or jump
+watch(() => isTraversing.value || isJumping.value, (value) => {
+  if (value) return
+  runAutoCollapse()
 })
 
 </script>
