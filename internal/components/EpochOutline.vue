@@ -84,12 +84,14 @@ const toggleCollapse = (node: EpochNode) => {
 const indexTree = (start: EpochNode) => {
   const depthById: Record<string, number> = {}
   const orderById: Record<string, number> = {}
+  const childCountById: Record<string, number> = {}
   const branchIds: string[] = []
   let order = 0
 
   const walk = (node: EpochNode, depth: number) => {
     depthById[node.id] = depth
     orderById[node.id] = order++
+    childCountById[node.id] = node.children.length
     if (hasChildren(node)) {
       branchIds.push(node.id)
     }
@@ -99,7 +101,7 @@ const indexTree = (start: EpochNode) => {
   }
 
   walk(start, 0)
-  return { depthById, orderById, branchIds }
+  return { depthById, orderById, childCountById, branchIds }
 }
 
 const collectBranchIds = (node: EpochNode, into: Set<string>) => {
@@ -328,14 +330,27 @@ const collapseCandidatesUntilFit = async (
 ) => {
   if (!root.value) return
   console.log('collapsing candidates', candidateIds, withinDepth)
-  const { depthById, orderById } = indexTree(root.value)
+  const { depthById, orderById, childCountById } = indexTree(root.value)
+  const activeOrder = orderById[currentEpoch.value.id] ?? 0
   const candidates = [...candidateIds]
     .filter(id => !activePathIds.value.has(id))
     .filter(id => collapsed.value[id] !== true)
-    .sort((a, b) => (depthById[b] ?? 0) - (depthById[a] ?? 0)
-      || (withinDepth === 'earlier'
+    .sort((a, b) => {
+      const depthCmp = (depthById[b] ?? 0) - (depthById[a] ?? 0)
+      if (depthCmp !== 0) return depthCmp
+
+      const childCmp = (childCountById[b] ?? 0) - (childCountById[a] ?? 0)
+      if (childCmp !== 0) return childCmp
+
+      const distanceA = Math.abs((orderById[a] ?? activeOrder) - activeOrder)
+      const distanceB = Math.abs((orderById[b] ?? activeOrder) - activeOrder)
+      const distanceCmp = distanceB - distanceA
+      if (distanceCmp !== 0) return distanceCmp
+
+      return withinDepth === 'earlier'
         ? (orderById[a] ?? 0) - (orderById[b] ?? 0)
-        : (orderById[b] ?? 0) - (orderById[a] ?? 0)))
+        : (orderById[b] ?? 0) - (orderById[a] ?? 0)
+    })
 
   const hasVerticalOverflow = () => {
     const container = listEl.value
@@ -347,6 +362,7 @@ const collapseCandidatesUntilFit = async (
     if (!hasVerticalOverflow()) {
       break
     }
+    console.log('collapsing', id)
     collapsed.value[id] = true
     await nextTick()
   }
