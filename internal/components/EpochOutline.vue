@@ -14,6 +14,7 @@ type VisibleNode = {
 const currentEpoch = useCurrentEpoch()
 const collapsed = ref<Record<string, boolean>>({})
 const listEl = ref<HTMLElement | null>(null)
+const allowCollapseAbove = ref(false)
 
 // calculating height (same approach as EventView)
 const { height: winHeight } = useWindowSize()
@@ -168,6 +169,34 @@ const runAutoCollapse = () => {
     applyCandidate(id)
   }
 
+  // Keep already-open branches above the active node stable unless we hit
+  // the lower scroll trigger and explicitly allow collapsing above.
+  if (!allowCollapseAbove.value) {
+    const aboveBranchIds = new Set<string>()
+    let reachedActive = false
+    const collectAbove = (node: EpochNode) => {
+      if (reachedActive) return
+      if (node.id === currentEpoch.value.id) {
+        reachedActive = true
+        return
+      }
+      if (hasChildren(node)) {
+        aboveBranchIds.add(node.id)
+      }
+      for (const child of node.children) {
+        collectAbove(child)
+        if (reachedActive) return
+      }
+    }
+    collectAbove(root.value)
+
+    for (const id of aboveBranchIds) {
+      if (collapsed.value[id] === false) {
+        nextCollapsed[id] = false
+      }
+    }
+  }
+
   collapsed.value = nextCollapsed
 }
 
@@ -219,9 +248,18 @@ const scrollCurrentIntoView = async () => {
 
   // If the current row is near/beyond the bottom, move it toward the top.
   if (rowRect.bottom > safeBottom) {
+    allowCollapseAbove.value = true
+    runAutoCollapse()
+    allowCollapseAbove.value = false
+    await nextTick()
+
+    const adjustedRow = container.querySelector<HTMLElement>(selector)
+    if (!adjustedRow) return
+    const adjustedRect = adjustedRow.getBoundingClientRect()
+
     const targetOffsetFromTop = 28
     const targetTop = containerRect.top + targetOffsetFromTop
-    const delta = rowRect.top - targetTop
+    const delta = adjustedRect.top - targetTop
     container.scrollTo({
       top: container.scrollTop + delta,
       behavior: 'smooth',
