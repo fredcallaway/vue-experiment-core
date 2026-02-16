@@ -124,21 +124,19 @@ const getAboveSiblingBranchIds = () => {
   return ids
 }
 
-const autoCollapseInitialized = ref(false)
 const runAutoCollapse = ({ collapseAbove = false } = {}) => {
   if (!root.value) return
 
-  const { depthById, branchIds } = indexTree(root.value)
   const activeIds = activePathIds.value
   const nextCollapsed: Record<string, boolean> = { ...collapsed.value }
 
   // Initialize unseen branches
-  for (const id of branchIds) {
-    if (nextCollapsed[id] === undefined) {
-      nextCollapsed[id] = (depthById[id] ?? 999) >= AUTO_BASE_DEPTH
-    }
-  }
-  console.log('nextCollapsed', nextCollapsed)
+  // const { depthById, branchIds } = indexTree(root.value)
+  // for (const id of branchIds) {
+  //   if (nextCollapsed[id] === undefined) {
+  //     nextCollapsed[id] = (depthById[id] ?? 999) >= AUTO_BASE_DEPTH
+  //   }
+  // }
 
   // Collapse siblings above active
   if (collapseAbove) {
@@ -153,8 +151,10 @@ const runAutoCollapse = ({ collapseAbove = false } = {}) => {
     nextCollapsed[id] = false
   }
 
+  // Use the remaining space to expand upcoming nodes
+  // TODO implement?
+
   collapsed.value = nextCollapsed
-  autoCollapseInitialized.value = true
 }
 
 const getStructureSignature = (node: EpochNode, cache: Map<string, string>): string => {
