@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import stringify from "json-stringify-pretty-compact";
 
 const props = defineProps<{
   data: Record<string, any>[]
@@ -366,6 +367,45 @@ const shouldShowOverflowViewer = (
   return estimatedTextWidth > availableWidth
 }
 
+const shouldTruncateFromStart = (column: string) => {
+  return column.toLowerCase() === 'epoch'
+}
+
+const getCellTextClasses = (
+  column: string,
+  row: { formatted: Record<string, string>, original: Record<string, any> },
+  clickable = false
+) => {
+  return [
+    'datatable-cell-text',
+    shouldShowOverflowViewer(column, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
+    shouldTruncateFromStart(column) ? 'datatable-cell-text--truncate-start' : '',
+    clickable ? 'cursor-pointer' : '',
+  ]
+}
+
+const isObjectCellValue = (
+  column: string,
+  row: { formatted: Record<string, string>, original: Record<string, any> }
+) => {
+  const value = row.original[column]
+  return value !== null && typeof value === 'object'
+}
+
+const getExpandedCellText = (
+  column: string,
+  row: { formatted: Record<string, string>, original: Record<string, any> }
+) => {
+  if (isObjectCellValue(column, row)) {
+    try {
+      return stringify(row.original[column], { indent: 2, maxLength: 100 })
+    } catch {
+      return getCellDisplayText(column, row)
+    }
+  }
+  return getCellDisplayText(column, row)
+}
+
 const slots = useSlots()
 
 </script>
@@ -472,11 +512,7 @@ const slots = useSlots()
                     <a
                       v-if="'href' in (getCellLinkRoute(col, row.original) || {})"
                       :href="(getCellLinkRoute(col, row.original) as { href: string }).href"
-                      :class="[
-                        'datatable-cell-text',
-                        shouldShowOverflowViewer(col, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
-                        'cursor-pointer',
-                      ]"
+                      :class="getCellTextClasses(col, row, true)"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -485,21 +521,14 @@ const slots = useSlots()
                     <NuxtLink
                       v-else
                       :to="getCellLinkRoute(col, row.original)"
-                      :class="[
-                        'datatable-cell-text',
-                        shouldShowOverflowViewer(col, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
-                        'cursor-pointer',
-                      ]"
+                      :class="getCellTextClasses(col, row, true)"
                     >
                       {{ getCellDisplayText(col, row) }}
                     </NuxtLink>
                   </template>
                   <span
                     v-else
-                    :class="[
-                      'datatable-cell-text',
-                      shouldShowOverflowViewer(col, row) ? 'datatable-cell-text--clip' : 'datatable-cell-text--ellipsis',
-                    ]"
+                    :class="getCellTextClasses(col, row)"
                   >
                     {{ getCellDisplayText(col, row) }}
                   </span>
@@ -509,7 +538,15 @@ const slots = useSlots()
                     class="overflow-viewer"
                   >
                     <summary class="overflow-toggle" title="Show full value">...</summary>
-                    <div class="overflow-popover">{{ getCellDisplayText(col, row) }}</div>
+                    <div
+                      :class="[
+                        'overflow-popover',
+                        isObjectCellValue(col, row) ? 'overflow-popover--object' : '',
+                      ]"
+                    >
+                      <pre v-if="isObjectCellValue(col, row)" class="overflow-popover-pre">{{ getExpandedCellText(col, row) }}</pre>
+                      <span v-else>{{ getExpandedCellText(col, row) }}</span>
+                    </div>
                   </details>
                   </div>
                 </td>
@@ -542,6 +579,12 @@ const slots = useSlots()
 
 .datatable-cell-text--clip {
   text-overflow: clip;
+}
+
+.datatable-cell-text--truncate-start {
+  direction: rtl;
+  text-align: left;
+  unicode-bidi: plaintext;
 }
 
 .overflow-viewer {
@@ -578,6 +621,21 @@ const slots = useSlots()
   padding: 8px;
   white-space: normal;
   word-break: break-word;
+}
+
+.overflow-popover--object {
+  width: max-content;
+  min-width: min(280px, 80vw);
+  max-width: min(85vw, 1100px);
+}
+
+.overflow-popover-pre {
+  margin: 0;
+  white-space: pre;
+  word-break: normal;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 @keyframes fadeIn {
