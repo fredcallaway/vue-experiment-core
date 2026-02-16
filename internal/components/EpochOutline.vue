@@ -67,11 +67,6 @@ const toggleCollapse = (node: EpochNode) => {
 }
 
 const AUTO_BASE_DEPTH = 2
-const SIBLING_WINDOW = 0
-const RECENT_PATH_LIMIT = 0
-const CONTEXT_EXPAND_BUDGET = 10
-
-const recentPathHistory = ref<string[][]>([])
 
 const indexTree = (start: EpochNode) => {
   const depthById: Record<string, number> = {}
@@ -91,15 +86,34 @@ const indexTree = (start: EpochNode) => {
   return { depthById, branchIds }
 }
 
-watch(() => currentPath.value.map(node => node.id), (ids) => {
-  if (ids.length === 0) return
-  const key = ids.join('>')
-  const deduped = recentPathHistory.value.filter(path => path.join('>') !== key)
-  recentPathHistory.value = [ids, ...deduped].slice(0, RECENT_PATH_LIMIT)
-}, { immediate: true })
+const collectBranchIds = (node: EpochNode, into: Set<string>) => {
+  if (hasChildren(node)) {
+    into.add(node.id)
+  }
+  for (const child of node.children) {
+    collectBranchIds(child, into)
+  }
+}
+
+const getAboveSiblingBranchIds = () => {
+  const ids = new Set<string>()
+  const path = currentPath.value
+  for (let i = 0; i < path.length - 1; i += 1) {
+    const parent = path[i]
+    const activeChild = path[i + 1]
+    const activeIndex = parent.children.findIndex(child => child.id === activeChild.id)
+    if (activeIndex <= 0) continue
+    for (let j = 0; j < activeIndex; j += 1) {
+      collectBranchIds(parent.children[j], ids)
+    }
+  }
+  return ids
+}
 
 const runAutoCollapse = () => {
   if (!root.value) return
+  if (isTraversing.value) return
+  console.log('👉 runAutoCollapse')
 
   const { depthById, branchIds } = indexTree(root.value)
   const activeIds = activePathIds.value
@@ -128,71 +142,14 @@ const runAutoCollapse = () => {
     }
   }
 
-  // Priority 3: expand sibling window around active child at each path level.
-  const contextCandidates: string[] = []
-  const path = currentPath.value
-  for (let i = 0; i < path.length - 1; i += 1) {
-    const parent = path[i]
-    const activeChild = path[i + 1]
-    const activeIndex = parent.children.findIndex(child => child.id === activeChild.id)
-    if (activeIndex < 0) continue
-
-    const start = Math.max(0, activeIndex - SIBLING_WINDOW)
-    const end = Math.min(parent.children.length - 1, activeIndex + SIBLING_WINDOW)
-    for (let j = start; j <= end; j += 1) {
-      contextCandidates.push(parent.children[j].id)
-    }
-  }
-
-  // Priority 4: keep a tiny memory of recently active branches open.
-  const recentCandidates: string[] = []
-  for (const historyPath of recentPathHistory.value) {
-    for (const id of historyPath) {
-      recentCandidates.push(id)
-    }
-  }
-
-  let expansionsUsed = 0
-  const applyCandidate = (id: string) => {
-    if (activeIds.has(id)) return
-    if (nextCollapsed[id] === undefined) return
-    if (nextCollapsed[id] === false) return
-    if (expansionsUsed >= CONTEXT_EXPAND_BUDGET) return
-    nextCollapsed[id] = false
-    expansionsUsed += 1
-  }
-
-  for (const id of contextCandidates) {
-    applyCandidate(id)
-  }
-  for (const id of recentCandidates) {
-    applyCandidate(id)
-  }
-
-  // Keep already-open branches above the active node stable unless we hit
-  // the lower scroll trigger and explicitly allow collapsing above.
+  // Keep branches above the active path stable unless we hit the lower
+  // scroll trigger and explicitly allow collapsing above.
   if (!allowCollapseAbove.value) {
-    const aboveBranchIds = new Set<string>()
-    let reachedActive = false
-    const collectAbove = (node: EpochNode) => {
-      if (reachedActive) return
-      if (node.id === currentEpoch.value.id) {
-        reachedActive = true
-        return
-      }
-      if (hasChildren(node)) {
-        aboveBranchIds.add(node.id)
-      }
-      for (const child of node.children) {
-        collectAbove(child)
-        if (reachedActive) return
-      }
-    }
-    collectAbove(root.value)
-
+    const aboveBranchIds = getAboveSiblingBranchIds()
     for (const id of aboveBranchIds) {
-      if (collapsed.value[id] === false) {
-        nextCollapsed[id] = false
+      const previous = collapsed.value[id]
+      if (previous !== undefined) {
+        nextCollapsed[id] = previous
       }
     }
   }
@@ -200,7 +157,7 @@ const runAutoCollapse = () => {
   collapsed.value = nextCollapsed
 }
 
-watch([() => currentEpoch.value.id, root, recentPathHistory], runAutoCollapse, { immediate: true })
+watch([currentEpoch, root], runAutoCollapse)
 
 const visibleNodes = computed<VisibleNode[]>(() => {
   const output: VisibleNode[] = []
@@ -279,7 +236,10 @@ const scrollCurrentIntoView = async () => {
   }
 }
 
+const isTraversing = ref(false)
 const traverseTimeline = async () => {
+  if (isTraversing.value) return
+  isTraversing.value = true
   const previous = currentEpoch.value
   let unwatch = null as (() => void) | null
 
@@ -315,6 +275,7 @@ const traverseTimeline = async () => {
     popHandler()
     unwatch?.()
     isJumping.value = false
+    isTraversing.value = false
     await nextTick()
     // retore original epoch
     setCurrentEpoch(TOP_EPOCH.children[0])
