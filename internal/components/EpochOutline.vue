@@ -112,9 +112,8 @@ const getAboveSiblingBranchIds = () => {
 
 const runAutoCollapse = () => {
   if (!root.value) return
-  if (isTraversing.value) return
 
-  console.log('👉 runAutoCollapse', allowCollapseAbove.value)
+  console.log('👉 runAutoCollapse', allowCollapseAbove.value, collapsed.value)
 
   const { depthById, branchIds } = indexTree(root.value)
   const activeIds = activePathIds.value
@@ -124,14 +123,15 @@ const runAutoCollapse = () => {
   // Drop stale state entries for branches that no longer exist.
   for (const id of Object.keys(nextCollapsed)) {
     if (!branchSet.has(id)) {
+      console.log('XXX delete stale state', id)
       delete nextCollapsed[id]
     }
   }
 
-  // Initialize unseen branches as collapsed.
+  // Initialize unseen branches
   for (const id of branchIds) {
     if (nextCollapsed[id] === undefined) {
-      nextCollapsed[id] = true
+      nextCollapsed[id] = (depthById[id] ?? 999) >= AUTO_BASE_DEPTH
     }
   }
 
@@ -152,21 +152,17 @@ const runAutoCollapse = () => {
   }
 
   // Priority 2: keep top levels expanded for orientation stability.
-  for (const id of branchIds) {
-    if ((depthById[id] ?? 999) < AUTO_BASE_DEPTH) {
-      expandBranch(id)
-    }
-  }
+  // for (const id of branchIds) {
+  //   if ((depthById[id] ?? 999) < AUTO_BASE_DEPTH) {
+  //     expandBranch(id)
+  //   }
+  // }
 
-  const aboveBranchIds = getAboveSiblingBranchIds()
   // Above siblings should only auto-collapse in lower-trigger mode.
   if (allowCollapseAbove.value) {
+    const aboveBranchIds = getAboveSiblingBranchIds()
     for (const id of aboveBranchIds) {
       collapseBranch(id)
-    }
-  } else {
-    for (const id of aboveBranchIds) {
-      expandBranch(id)
     }
   }
 
@@ -308,27 +304,29 @@ const traverseTimeline = async () => {
 //   currentPath: () => currentPath.value.map(node => node.id),
 // })
 
+const traversed = ref(false)
 onMounted(async () => {
   await nextTick()
   if (currentEpoch.value.id !== '__TOP_EPOCH__') {
     await traverseTimeline()
+    traversed.value = true
   }
 })
 
-// don't change
+// adjust layout when epoch changes
 watch(currentEpoch, (epoch) => {
-  if (epoch.children.length == 0) {  // only run on leaf epochs
-    if (isTraversing.value || isJumping.value) return
-    console.log('🟢 runAutoCollapse on leaf epoch', epoch.id)
-    runAutoCollapse()
-    scrollCurrentIntoView()
-  }
+  const hasKids = epoch.children.length > 0
+  if (hasKids || isTraversing.value || isJumping.value || !traversed.value) return
+  console.log('🟢 runAutoCollapse on leaf epoch', epoch.id)
+  runAutoCollapse()
+  scrollCurrentIntoView()
 })
 
-// run auto collapse after traverse or jump
+// adjust layout whenever jump/traverse ends
 watch(() => isTraversing.value || isJumping.value, (value) => {
-  if (value) return
+  if (value || !traversed.value) return
   runAutoCollapse()
+  scrollCurrentIntoView()
 })
 
 </script>
