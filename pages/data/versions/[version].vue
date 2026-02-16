@@ -301,9 +301,6 @@ const completedByCondition = computed(() => {
               <span v-if="index < studyIdsForVersion.length - 1">, </span>
             </span>
           </div>
-          <div><b>Earliest Start:</b> {{ formatDateTime(versionMeta.earliestStartTime) }}</div>
-          <div><b>Latest Start:</b> {{ formatDateTime(versionMeta.latestStartTime) }}</div>
-          <div><b>Latest Update:</b> {{ formatDateTime(versionMeta.latestUpdateTime) }}</div>
           <!-- <div><b>Total Bonus:</b> ${{ versionMeta.totalBonus.toFixed(2) }}</div> -->
           <!-- <div><b>Average Bonus:</b> ${{ versionMeta.averageBonus.toFixed(2) }}</div> -->
         </div>
@@ -343,21 +340,27 @@ const completedByCondition = computed(() => {
           <div v-if="mySessions.length === 0" class="text-gray-500">
             No sessions available
           </div>
-          <div v-else class="grid grid-cols-1 gap-6">
-            <div>
-              <h3 class="mb-2">Status counts</h3>
+          <div v-else class="flex flex-wrap gap-4">
+            <div class="rounded border border-gray-200 bg-white p-4 min-w-72 flex-1">
+              <h3 class="mb-3">When</h3>
+              <div><b>Earliest Start:</b> {{ formatDateTime(versionMeta.earliestStartTime) }}</div>
+              <div><b>Latest Start:</b> {{ formatDateTime(versionMeta.latestStartTime) }}</div>
+              <div><b>Last Update:</b> {{ formatDateTime(versionMeta.latestUpdateTime) }}</div>
+            </div>
+
+            <div class="rounded border border-gray-200 bg-white p-4 min-w-72 flex-1">
+              <h3 class="mb-3">Status Counts</h3>
               <div v-if="overallStatusCounts">
                 completed {{ overallStatusCounts.completed }},
                 active {{ overallStatusCounts.active }},
                 idle {{ overallStatusCounts.idle }},
                 quit {{ overallStatusCounts.quit }},
                 error {{ overallStatusCounts.error }}
-                ({{ overallStatusCounts.total }})
               </div>
             </div>
 
-            <div>
-              <h3 class="mb-2">Completed by condition</h3>
+            <div class="rounded border border-gray-200 bg-white p-4 min-w-72 flex-1">
+              <h3 class="mb-3">Condition Counts (completed)</h3>
               <div v-if="completedByCondition.length === 0" class="text-gray-500">
                 No conditions found
               </div>
@@ -373,36 +376,33 @@ const completedByCondition = computed(() => {
               </div>
             </div>
 
-            <div>
-              <h3 class="mb-2">Bonus</h3>
+            <div class="rounded border border-gray-200 bg-white p-4 min-w-72 flex-1">
+              <h3 class="mb-3">Bonus</h3>
               <div v-if="bonusStats">
                 <div><b>Total:</b> {{ formatDollars(bonusStats.total) }}</div>
                 <div><b>Average:</b> {{ formatDollars(bonusStats.avg) }}</div>
                 <div><b>Median:</b> {{ formatDollars(bonusStats.median) }}</div>
-                <div><b>Count:</b> {{ bonusStats.count }}</div>
               </div>
               <div v-else class="text-gray-500">
                 No bonus data available
               </div>
             </div>
 
-            <div>
-              <h3 class="mb-2">Time taken (completed)</h3>
+            <div class="rounded border border-gray-200 bg-white p-4 min-w-72 flex-1">
+              <h3 class="mb-3">Time Taken (completed)</h3>
               <div v-if="timeStats">
                 <div><b>Total Average:</b> {{ formatTime(timeStats.avg) }}</div>
                 <div><b>Total Median:</b> {{ formatTime(timeStats.median) }}</div>
                 <div><b>Active Average:</b> {{ activeTimeStats ? formatTime(activeTimeStats.avg) : 'N/A' }}</div>
                 <div><b>Active Median:</b> {{ activeTimeStats ? formatTime(activeTimeStats.median) : 'N/A' }}</div>
-                <div><b>Count:</b> {{ timeStats.count }}</div>
-                <div><b>Active Count:</b> {{ activeTimeStats ? activeTimeStats.count : 0 }}</div>
               </div>
               <div v-else class="text-gray-500">
                 No completed sessions
               </div>
             </div>
 
-            <div>
-              <h3 class="mb-2">Errors</h3>
+            <div class="rounded border border-gray-200 bg-white p-4 min-w-72 flex-1">
+              <h3 class="mb-3">Errors</h3>
               <div><b>Sessions with errors:</b> {{ errorStats.sessionErrors }}</div>
               <div><b>Error events:</b> {{ errorStats.eventErrors }}</div>
             </div>
