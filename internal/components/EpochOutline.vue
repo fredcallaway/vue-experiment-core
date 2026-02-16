@@ -14,8 +14,6 @@ type VisibleNode = {
 const currentEpoch = useCurrentEpoch()
 const collapsed = ref<Record<string, boolean>>({})
 const listEl = ref<HTMLElement | null>(null)
-const pinnedEl = ref<HTMLElement | null>(null)
-const pinnedHeight = ref(0)
 
 const root = ref<EpochNode | null>()
 watchOnce(currentEpoch, () => {
@@ -44,14 +42,11 @@ const ancestorPath = computed(() => {
 const ancestorIds = computed(() => {
   return new Set(ancestorPath.value.map(node => node.id))
 })
-const pinnedIds = computed(() => {
-  return new Set(currentPath.value.map(node => node.id))
-})
 
 const hasChildren = (node: EpochNode) => node.children.length > 0
 const isCurrent = (node: EpochNode) => node.id === currentEpoch.value.id
 const isAncestor = (node: EpochNode) => ancestorIds.value.has(node.id)
-const isPinned = (node: EpochNode) => pinnedIds.value.has(node.id)
+const isPinned = (node: EpochNode) => isAncestor(node)
 
 const isExpanded = (node: EpochNode) => {
   return hasChildren(node) && (isPinned(node) || !collapsed.value[node.id])
@@ -84,23 +79,11 @@ const visibleNodes = computed<VisibleNode[]>(() => {
   return output
 })
 
-const pinnedNodes = computed<VisibleNode[]>(() => {
-  return visibleNodes.value.filter(({ node }) => pinnedIds.value.has(node.id))
-})
-
-const scrollNodes = computed<VisibleNode[]>(() => {
-  return visibleNodes.value.filter(({ node }) => !pinnedIds.value.has(node.id))
-})
-
 const indentStep = 14
 const indentBase = 8
 
 const guideLeft = (level: number) => {
   return `${indentBase + (level - 1) * indentStep + 6}px`
-}
-
-const updatePinnedHeight = () => {
-  pinnedHeight.value = pinnedEl.value?.offsetHeight ?? 0
 }
 
 const handleClickNode = (node: EpochNode) => {
@@ -202,14 +185,9 @@ onMounted(async () => {
   if (currentEpoch.value.id !== '__TOP_EPOCH__') {
     await traverseTimeline()
   }
-  updatePinnedHeight()
 })
 
-watch(() => currentEpoch.value.id, scrollCurrentIntoView, { immediate: true })
-watch(pinnedNodes, async () => {
-  await nextTick()
-  updatePinnedHeight()
-}, { immediate: true })
+watch([() => currentEpoch.value.id, visibleNodes], scrollCurrentIntoView, { immediate: true })
 
 </script>
 
@@ -220,60 +198,9 @@ watch(pinnedNodes, async () => {
       Waiting for first epoch...
     </div>
 
-    <div v-else relative max-h-130 overflow-hidden>
+    <div ref="listEl" v-else max-h-130 overflow-y-auto pr-1 subtle-scrollbar >
       <div
-        ref="pinnedEl"
-        class="absolute top-0 left-0 right-0 z-2 bg-white border-b border-gray-200"
-      >
-        <div
-          v-for="{ node, depth } in pinnedNodes"
-          :key="`pinned-${node.id}`"
-          class="outline-row"
-          relative
-          flex="~ items-center gap-1"
-          :style="{ paddingLeft: `${depth * indentStep + indentBase}px` }"
-          :class="[
-            isCurrent(node) ? 'font-bold text-blue-500' : '',
-            !isCurrent(node) && isAncestor(node) ? 'font-semibold text-gray-600' : '',
-          ]"
-        >
-          <div
-            v-if="depth > 0"
-            class="pointer-events-none absolute inset-y-0 left-0"
-          >
-            <span
-              v-for="level in depth"
-              :key="`pinned-${node.id}-guide-${level}`"
-              class="absolute inset-y-0 w-px bg-gray-200"
-              :style="{ left: guideLeft(level) }"
-            />
-          </div>
-          <button
-            v-if="hasChildren(node)"
-            @click.stop="toggleCollapse(node)"
-            w-4 h-4
-            flex-center
-            rounded
-            hover:bg-gray-200
-            :title="isPinned(node) ? 'Pinned ancestor' : (isExpanded(node) ? 'Collapse' : 'Expand')"
-          >
-            <span :class="isExpanded(node) ? 'i-mdi-chevron-down' : 'i-mdi-chevron-right'" />
-          </button>
-          <div v-else w-4 h-4 flex-center i-mdi-circle-outline scale-60 ></div>
-          <span truncate @click="handleClickNode(node)" cursor-pointer>{{ node._name }}</span>
-        </div>
-      </div>
-
-      <div
-        ref="listEl"
-        max-h-130
-        overflow-y-auto
-        pr-1
-        subtle-scrollbar
-        :style="{ paddingTop: `${pinnedHeight}px` }"
-      >
-      <div
-        v-for="{ node, depth } in scrollNodes"
+        v-for="{ node, depth } in visibleNodes"
         :key="node.id"
         :data-epoch-id="node.id"
         class="outline-row"
@@ -312,8 +239,8 @@ watch(pinnedNodes, async () => {
         <div v-else w-4 h-4 flex-center i-mdi-circle-outline scale-60 ></div>
 
         <span truncate @click="handleClickNode(node)" cursor-pointer >{{ node._name }}</span>
-        
-      </div>
+          
+
       </div>
     </div>
   </div>
