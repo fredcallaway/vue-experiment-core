@@ -350,6 +350,51 @@ const getActiveRowMetrics = () => {
   }
 }
 
+const buildAggregateCollapseGroups = (start: EpochNode) => {
+  const groupKeyById = new Map<string, string>()
+  const groupIdsByKey = new Map<string, string[]>()
+  const activeIds = activePathIds.value
+  const signatureCache = new Map<string, string>()
+
+  const walk = (parent: EpochNode) => {
+    const children = parent.children
+
+    if (canAggregateChildren(children, signatureCache)) {
+      const flushRun = (run: EpochNode[]) => {
+        if (run.length === 0) return
+        const key = makeAggregateKey(parent.id, run)
+        if (unaggregatedRuns.value[key]) return
+
+        const branchIds = run.filter(hasChildren).map(node => node.id)
+        if (branchIds.length === 0) return
+
+        groupIdsByKey.set(key, branchIds)
+        for (const id of branchIds) {
+          groupKeyById.set(id, key)
+        }
+      }
+
+      let run: EpochNode[] = []
+      for (const child of children) {
+        if (activeIds.has(child.id)) {
+          flushRun(run)
+          run = []
+        } else {
+          run.push(child)
+        }
+      }
+      flushRun(run)
+    }
+
+    for (const child of children) {
+      walk(child)
+    }
+  }
+
+  walk(start)
+  return { groupKeyById, groupIdsByKey }
+}
+
 const collapseCandidatesUntilFit = async (
   candidateIds: Set<string>,
   withinDepth: 'earlier' | 'later'
@@ -357,26 +402,57 @@ const collapseCandidatesUntilFit = async (
   if (!root.value) return
   console.log('collapsing candidates', candidateIds, withinDepth)
   const { depthById, orderById, childCountById } = indexTree(root.value)
+  const { groupKeyById, groupIdsByKey } = buildAggregateCollapseGroups(root.value)
+  const activeIds = activePathIds.value
   const activeOrder = orderById[currentEpoch.value.id] ?? 0
-  const candidates = [...candidateIds]
-    .filter(id => !activePathIds.value.has(id))
-    .filter(id => collapsed.value[id] !== true)
-    .sort((a, b) => {
-      const depthCmp = (depthById[b] ?? 0) - (depthById[a] ?? 0)
-      if (depthCmp !== 0) return depthCmp
 
-      const childCmp = (childCountById[b] ?? 0) - (childCountById[a] ?? 0)
-      if (childCmp !== 0) return childCmp
+  type CollapseCandidate = {
+    key: string
+    ids: string[]
+    depth: number
+    childCount: number
+    distance: number
+    orderRef: number
+  }
 
-      const distanceA = Math.abs((orderById[a] ?? activeOrder) - activeOrder)
-      const distanceB = Math.abs((orderById[b] ?? activeOrder) - activeOrder)
-      const distanceCmp = distanceB - distanceA
-      if (distanceCmp !== 0) return distanceCmp
+  const candidateMap = new Map<string, CollapseCandidate>()
 
-      return withinDepth === 'earlier'
-        ? (orderById[a] ?? 0) - (orderById[b] ?? 0)
-        : (orderById[b] ?? 0) - (orderById[a] ?? 0)
+  for (const id of candidateIds) {
+    if (activeIds.has(id) || collapsed.value[id] === true) continue
+
+    const key = groupKeyById.get(id) ?? `node:${id}`
+    if (candidateMap.has(key)) continue
+
+    const groupedIds = groupIdsByKey.get(key) ?? [id]
+    const ids = groupedIds.filter(groupedId =>
+      !activeIds.has(groupedId)
+      && collapsed.value[groupedId] !== true
+      && depthById[groupedId] !== undefined
+    )
+    if (ids.length === 0) continue
+
+    const depth = Math.max(...ids.map(groupedId => depthById[groupedId] ?? 0))
+    const childCount = Math.max(...ids.map(groupedId => childCountById[groupedId] ?? 0))
+    const orders = ids.map(groupedId => orderById[groupedId] ?? activeOrder)
+    const orderRef = withinDepth === 'earlier' ? Math.min(...orders) : Math.max(...orders)
+    const distance = Math.abs(orderRef - activeOrder)
+
+    candidateMap.set(key, {
+      key,
+      ids,
+      depth,
+      childCount,
+      distance,
+      orderRef,
     })
+  }
+
+  const candidates = [...candidateMap.values()].sort((a, b) =>
+    (b.depth - a.depth)
+    || (b.childCount - a.childCount)
+    || (b.distance - a.distance)
+    || (withinDepth === 'earlier' ? (a.orderRef - b.orderRef) : (b.orderRef - a.orderRef))
+  )
 
   const hasVerticalOverflow = () => {
     const container = listEl.value
@@ -384,12 +460,14 @@ const collapseCandidatesUntilFit = async (
     return container.scrollHeight > container.clientHeight + 1
   }
 
-  for (const id of candidates) {
+  for (const candidate of candidates) {
     if (!hasVerticalOverflow()) {
       break
     }
-    console.log('collapsing', id)
-    collapsed.value[id] = true
+    console.log('collapsing', candidate.ids)
+    for (const id of candidate.ids) {
+      collapsed.value[id] = true
+    }
     await nextTick()
   }
 }
