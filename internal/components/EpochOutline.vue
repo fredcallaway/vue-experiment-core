@@ -51,11 +51,14 @@ const ancestorPath = computed(() => {
 const ancestorIds = computed(() => {
   return new Set(ancestorPath.value.map(node => node.id))
 })
+const activePathIds = computed(() => {
+  return new Set(currentPath.value.map(node => node.id))
+})
 
 const hasChildren = (node: EpochNode) => node.children.length > 0
 const isCurrent = (node: EpochNode) => node.id === currentEpoch.value.id
 const isAncestor = (node: EpochNode) => ancestorIds.value.has(node.id)
-const isPinned = (node: EpochNode) => isAncestor(node)
+const isPinned = (node: EpochNode) => activePathIds.value.has(node.id)
 
 const isExpanded = (node: EpochNode) => {
   return hasChildren(node) && (isPinned(node) || !collapsed.value[node.id])
@@ -67,8 +70,22 @@ const toggleCollapse = (node: EpochNode) => {
 }
 
 watch(currentPathIds, (ids) => {
-  for (const id of ids) {
-    collapsed.value[id] = false
+  if (!root.value) return
+
+  const nextCollapsed: Record<string, boolean> = {}
+  const walk = (node: EpochNode) => {
+    if (hasChildren(node)) {
+      // Keep active path expanded; collapse everything else by default.
+      nextCollapsed[node.id] = !ids.has(node.id)
+    }
+    for (const child of node.children) {
+      walk(child)
+    }
+  }
+  walk(root.value)
+
+  for (const [id, value] of Object.entries(nextCollapsed)) {
+    collapsed.value[id] = value
   }
 }, { immediate: true })
 
@@ -196,7 +213,7 @@ onMounted(async () => {
   }
 })
 
-watch([() => currentEpoch.value.id, visibleNodes], scrollCurrentIntoView, { immediate: true })
+watch(() => currentEpoch.value.id, scrollCurrentIntoView, { immediate: true })
 
 </script>
 
