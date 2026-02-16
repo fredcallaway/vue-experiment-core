@@ -109,7 +109,7 @@ const traverseTimeline = async () => {
     unwatch = watchImmediate(currentEpoch, async (epoch) => {
       console.debug('traverse: ', epoch.id)
       if (epoch.id === '__TOP_EPOCH__') {
-        unwatch!()
+        unwatch?.()
         resolve(true)
         return
       }
@@ -126,9 +126,7 @@ const traverseTimeline = async () => {
   } catch (error) {
     console.error('Error traversing timeline:', error)
   } finally {
-    if (unwatch !== null) {
-      unwatch()
-    }
+    unwatch?.()
     await nextTick()
     // retore original epoch
     setCurrentEpoch(TOP_EPOCH.children[0])
