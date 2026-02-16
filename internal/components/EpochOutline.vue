@@ -25,6 +25,9 @@ type OutlineAggregateRow = {
 type OutlineRow = OutlineNodeRow | OutlineAggregateRow
 
 const MIN_AGGREGATE = 5
+const makeAggregateKey = (parentId: string, nodes: EpochNode[]) => {
+  return `${parentId}::${nodes.map(node => node.id).join('|')}`
+}
 
 const currentEpoch = useCurrentEpoch()
 const collapsed = ref<Record<string, boolean>>({})
@@ -87,11 +90,34 @@ const indexTree = (start: EpochNode) => {
   const childCountById: Record<string, number> = {}
   const branchIds: string[] = []
   let order = 0
+  const signatureCache = new Map<string, string>()
+
+  const getSignature = (node: EpochNode): string => {
+    const existing = signatureCache.get(node.id)
+    if (existing !== undefined) return existing
+    const childSignatures = node.children.map(child => getSignature(child))
+    const signature = `${node._name}(${childSignatures.join('|')})`
+    signatureCache.set(node.id, signature)
+    return signature
+  }
+
+  const childrenAggregateForScoring = (node: EpochNode) => {
+    const children = node.children
+    if (children.length < MIN_AGGREGATE) return false
+    const first = getSignature(children[0])
+    for (let i = 1; i < children.length; i += 1) {
+      if (getSignature(children[i]) !== first) {
+        return false
+      }
+    }
+    const key = makeAggregateKey(node.id, children)
+    return !unaggregatedRuns.value[key]
+  }
 
   const walk = (node: EpochNode, depth: number) => {
     depthById[node.id] = depth
     orderById[node.id] = order++
-    childCountById[node.id] = node.children.length
+    childCountById[node.id] = childrenAggregateForScoring(node) ? 1 : node.children.length
     if (hasChildren(node)) {
       branchIds.push(node.id)
     }
@@ -227,7 +253,7 @@ const visibleRows = computed<OutlineRow[]>(() => {
 
     const flushAggregateRun = (run: EpochNode[]) => {
       if (run.length === 0) return
-      const key = `${parent.id}::${run.map(node => node.id).join('|')}`
+      const key = makeAggregateKey(parent.id, run)
       if (unaggregatedRuns.value[key]) {
         for (const node of run) {
           walkNode(node, depth)
