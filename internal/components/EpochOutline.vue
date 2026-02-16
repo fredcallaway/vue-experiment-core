@@ -23,6 +23,9 @@ type OutlineAggregateRow = {
 
 type OutlineRow = OutlineNodeRow | OutlineAggregateRow
 
+const AUTO_BASE_DEPTH = 2
+const MIN_AGGREGATE = 5
+
 const currentEpoch = useCurrentEpoch()
 const collapsed = ref<Record<string, boolean>>({})
 const listEl = ref<HTMLElement | null>(null)
@@ -77,8 +80,6 @@ const toggleCollapse = (node: EpochNode) => {
   if (!hasChildren(node) || isPinned(node)) return
   collapsed.value[node.id] = isExpanded(node)
 }
-
-const AUTO_BASE_DEPTH = 2
 
 const indexTree = (start: EpochNode) => {
   const depthById: Record<string, number> = {}
@@ -178,8 +179,6 @@ const runAutoCollapse = () => {
   collapsed.value = nextCollapsed
 }
 
-const AGGREGATE_MIN_RUN = 3
-
 const getStructureSignature = (node: EpochNode, cache: Map<string, string>): string => {
   const existing = cache.get(node.id)
   if (existing !== undefined) return existing
@@ -188,6 +187,17 @@ const getStructureSignature = (node: EpochNode, cache: Map<string, string>): str
   const signature = `${node._name}(${childSignatures.join('|')})`
   cache.set(node.id, signature)
   return signature
+}
+
+const canAggregateChildren = (children: EpochNode[], cache: Map<string, string>) => {
+  if (children.length < MIN_AGGREGATE) return false
+  const first = getStructureSignature(children[0], cache)
+  for (let i = 1; i < children.length; i += 1) {
+    if (getStructureSignature(children[i], cache) !== first) {
+      return false
+    }
+  }
+  return true
 }
 
 const visibleRows = computed<OutlineRow[]>(() => {
@@ -204,50 +214,48 @@ const visibleRows = computed<OutlineRow[]>(() => {
   }
 
   const walkChildren = (children: EpochNode[], depth: number) => {
+    if (!canAggregateChildren(children, signatureCache)) {
+      for (const child of children) {
+        walkNode(child, depth)
+      }
+      return
+    }
+
+    const flushAggregateRun = (run: EpochNode[]) => {
+      if (run.length === 0) return
+      const representative = run[0]
+      const expanded = run.some(node => isExpanded(node))
+      rows.push({
+        kind: 'aggregate',
+        representative,
+        nodes: run,
+        count: run.length,
+        depth,
+        expanded,
+      })
+      if (expanded) {
+        walkChildren(representative.children, depth + 1)
+      }
+    }
+
+    let run: EpochNode[] = []
     let i = 0
     while (i < children.length) {
-      const first = children[i]
+      const child = children[i]
 
       // Active path nodes are never aggregated and split runs.
-      if (activeIds.has(first.id)) {
-        walkNode(first, depth)
+      if (activeIds.has(child.id)) {
+        flushAggregateRun(run)
+        run = []
+        walkNode(child, depth)
         i += 1
         continue
       }
 
-      const firstKey = `${getStructureSignature(first, signatureCache)}::${isExpanded(first) ? 1 : 0}`
-      let j = i + 1
-      while (j < children.length) {
-        const candidate = children[j]
-        if (activeIds.has(candidate.id)) break
-        const candidateKey = `${getStructureSignature(candidate, signatureCache)}::${isExpanded(candidate) ? 1 : 0}`
-        if (candidateKey !== firstKey) break
-        j += 1
-      }
-
-      const run = children.slice(i, j)
-      if (run.length >= AGGREGATE_MIN_RUN) {
-        const representative = run[0]
-        const expanded = isExpanded(representative)
-        rows.push({
-          kind: 'aggregate',
-          representative,
-          nodes: run,
-          count: run.length,
-          depth,
-          expanded,
-        })
-        if (expanded) {
-          walkChildren(representative.children, depth + 1)
-        }
-      } else {
-        for (const node of run) {
-          walkNode(node, depth)
-        }
-      }
-
-      i = j
+      run.push(child)
+      i += 1
     }
+    flushAggregateRun(run)
   }
 
   walkNode(root.value, 0)
@@ -266,7 +274,7 @@ const handleClickNode = (node: EpochNode) => {
 }
 
 const toggleAggregate = (row: OutlineAggregateRow) => {
-  const shouldCollapse = isExpanded(row.representative)
+  const shouldCollapse = row.expanded
   for (const node of row.nodes) {
     if (!hasChildren(node) || isPinned(node)) continue
     collapsed.value[node.id] = shouldCollapse
