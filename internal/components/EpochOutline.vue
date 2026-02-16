@@ -15,6 +15,15 @@ const currentEpoch = useCurrentEpoch()
 const collapsed = ref<Record<string, boolean>>({})
 const listEl = ref<HTMLElement | null>(null)
 
+// calculating height (same approach as EventView)
+const { height: winHeight } = useWindowSize()
+const { top } = useElementBounding(useTemplateRef('top-div'))
+const { scale } = useSizeScale()
+const outlineHeight = computed(() => {
+  const usedSpace = (top.value + 10) * scale.value + 20
+  return (winHeight.value - usedSpace) / scale.value
+})
+
 const root = ref<EpochNode | null>()
 watchOnce(currentEpoch, () => {
   root.value = (TOP_EPOCH.children[0] as EpochNode | undefined) ?? null
@@ -192,13 +201,23 @@ watch([() => currentEpoch.value.id, visibleNodes], scrollCurrentIntoView, { imme
 </script>
 
 <template>
-  <div rounded-lg border="~ 2 gray-300" bg-white pr2 cursor-default >
+  <div
+    rounded-lg
+    border="~ 2 gray-300"
+    bg-white
+    pr2
+    cursor-default
+    flex="~ col"
+    relative
+    ref="top-div"
+    :style="{ height: `${outlineHeight}px` }"
+  >
 
     <div v-if="!root" text-sm text-gray-500>
       Waiting for first epoch...
     </div>
 
-    <div ref="listEl" v-else max-h-130 overflow-y-auto pr-1 subtle-scrollbar >
+    <div ref="listEl" v-else overflow-y-auto pr-1 subtle-scrollbar flex-1 min-h-0>
       <div
         v-for="{ node, depth } in visibleNodes"
         :key="node.id"
@@ -206,6 +225,7 @@ watch([() => currentEpoch.value.id, visibleNodes], scrollCurrentIntoView, { imme
         class="outline-row"
         relative
         flex="~ items-center gap-1"
+        text-sm
         :style="{ paddingLeft: `${depth * indentStep + indentBase}px` }"
         :class="[
           isCurrent(node) ? 'font-bold text-blue-500' : '',
