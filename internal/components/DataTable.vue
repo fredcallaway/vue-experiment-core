@@ -241,13 +241,13 @@ const containerIsVisible = useElementVisibility(containerProps.ref, {
 })
 
 const estimateTextWidth = (text: string, scale:number = 1): number => {
-  return text.length * 7.5 * scale
+  return text.length * 8 * scale
 }
 
 const TABLE_HEIGHT = 600
 const TABLE_ROW_HEIGHT = 35
 const MIN_COL_WIDTH = 80
-const MAX_COL_WIDTH = 200
+const MAX_COL_WIDTH = 250
 const CELL_HORIZONTAL_PADDING = 16
 
 const getCellDisplayText = (
@@ -370,7 +370,7 @@ const slots = useSlots()
           overflowX: 'auto',
         }"
       >
-        <div class="sticky top-0 z-20 border-b border-gray-300">
+        <div class="sticky top-0 z-20">
           <table
             class="datatable-table text-sm"
             :style="{ tableLayout: 'fixed', width: `${tableWidth}px`, borderCollapse: 'separate', borderSpacing: '0' }"
