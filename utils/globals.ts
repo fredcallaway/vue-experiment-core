@@ -14,4 +14,8 @@ Math.random = () => {
   return random.float()
 }
 
+// true when jumpToEpoch is running
+// as of 2026-02-15, only used to disable animation in useDisplayPhases
+export const isJumping = ref(false) 
+
 export { toast } from 'vue-sonner'

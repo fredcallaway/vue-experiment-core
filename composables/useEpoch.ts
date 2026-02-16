@@ -27,6 +27,7 @@ type EpochProps = {
 }
 
 const makeEpoch = (props: EpochProps): Epoch => {
+  // console.log('makeEpoch', props.name, props.parent)
   assert(props.name === '__TOP_EPOCH__' || R.isDefined(props.parent), 
     'epochs must have a parent (except TOP_EPOCH)'
   )
@@ -204,6 +205,7 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
     // NOTE: unlike done(), this does NOT call parent.next()
     epoch.isDisabled = true
     if (currentEpoch.value.id === epoch.id) {
+      console.debug('useEpoch.unMounted: returning control to parent', epoch.id, '->', parentEpoch.id)
       setCurrentEpoch(parentEpoch)
     }
   })
@@ -237,7 +239,6 @@ function makeLeafEpoch(parent: Epoch, name: string): Epoch {
 
   setCurrentEpoch(epoch)
   logEvent(`epoch.start`, {id: epoch.id})
-  console.log('LEAF EPOCH', epoch.id)
 
   return epoch
 }
@@ -280,10 +281,11 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
     const ensureChild = R.once(() => {
       // NOTE: this was (_currentEpoch.id === E.id || _activeLeaf) before, but I think was a mistake
       if (_currentEpoch.id === E.id || _currentEpoch.id === _activeLeaf?.id) {
-        logDebug('making leaf', { E: E.id })
-        _activeLeaf = makeLeafEpoch(E, 'leaf' + String(step.value))
+        // logDebug('making leaf', { E: E.id })
+        const name = 'leaf_' + (isPhaseEpoch(E) ? E.phases[step.value] : String(step.value))
+        _activeLeaf = makeLeafEpoch(E, name)
       } else {
-        logDebug('has child', { E: E.id, child: _currentEpoch.id })
+        // logDebug('has child', { E: E.id, child: _currentEpoch.id })
         _activeLeaf = null
       }
     })
@@ -346,8 +348,11 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
 
   let expectedPrefix = ''
   for (let i = 0; i < parts.length; i++) {
+    await nextTick()  // maybe unnecessary; should help ensure currentEpoch is up to date
     const part = parts[i]
-    console.log('jump', part)
+    if (part.startsWith('leaf_')) {
+      continue
+    }
 
     // Extend expected prefix
     if (i === 0) {
@@ -356,11 +361,16 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
       expectedPrefix += '-' + part
     }
 
+    if (_currentEpoch.id.startsWith(expectedPrefix)) {
+      // we already have this part
+      continue
+    }
+
     // Parse the part
     const bracketMatch = part.match(/^([^[]+)\[([\d\w]+)\]$/)
     if (!bracketMatch) {
       // Check that the epoch exists in the stack
-      assertDefined(findEpoch((e) => e._name === part), `jumpToEpoch: epoch '${part}' not found`)
+      assertDefined(findEpoch((e) => e._name === part), `jumpToEpoch: epoch '${part}' not found (no bracket)`)
       // Nothing to do; proceed to next part
       continue
     }
@@ -368,7 +378,7 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
     const partIndex = bracketMatch[2]
 
     // Find the epoch in the current hierarchy
-    const epoch = assertDefined(findEpoch((e) => e._name === partName), `jumpToEpoch: epoch '${partName}' not found`)
+    const epoch = assertDefined(findEpoch((e) => e._name === partName), `jumpToEpoch: epoch '${partName}' not found (bracket)`)
     assert(isIndexableEpoch(epoch), `jumpToEpoch: epoch '${partName}' is not indexable`)
 
     // Go to the specified index (non-numeric string for PhaseEpoch)
@@ -380,7 +390,9 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
       }
     })
 
-    await nextTick()
+    if (!_currentEpoch.id.startsWith(expectedPrefix)) {
+      throw new Error(`jumpToEpoch: ${_currentEpoch.id} does not have expected prefix ${expectedPrefix}`)
+    }
   }
   
   // Confirm that we ended up where we expected
@@ -394,13 +406,14 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
 export const jumpToEpoch = async (epochId: string, isFallback: boolean = false): Promise<null | string> => {
   logDebug(`jumpToEpoch: ${epochId}`)
   if (epochId === '') return null
-  
+  isJumping.value = true
   const parts = epochId.split('-')
   try {
     const result = await jumpToEpochImpl(parts)
     if (!isFallback) {
       logDebug('__JUMP_SUCCEEDED__', { epochId }) // sending a signal to EventView
     }
+    isJumping.value = false
     return result
   } catch (e) {
     logError('error jumping to epoch', e)
@@ -408,6 +421,7 @@ export const jumpToEpoch = async (epochId: string, isFallback: boolean = false):
     if (shortened != epochId) {
       return await jumpToEpoch(shortened, true)
     }
+    isJumping.value = false
     return null
   }
 }
