@@ -208,17 +208,21 @@ const scrollCurrentIntoView = async () => {
   const row = container.querySelector<HTMLElement>(selector)
   if (!row) return
 
+  const effectiveScale = scale.value || 1
   const containerRect = container.getBoundingClientRect()
   const rowRect = row.getBoundingClientRect()
+  const rowTop = (rowRect.top - containerRect.top) / effectiveScale
+  const rowBottom = (rowRect.bottom - containerRect.top) / effectiveScale
+  const rowHeight = rowBottom - rowTop
 
   // Keep a safe zone to reduce scroll frequency.
   const topBuffer = 48
   const bottomBuffer = 48
-  const safeTop = containerRect.top + topBuffer
-  const safeBottom = containerRect.bottom - bottomBuffer
+  const safeTop = topBuffer
+  const safeBottom = container.clientHeight - bottomBuffer
 
   // If the current row is near/beyond the bottom, move it toward the top.
-  if (rowRect.bottom > safeBottom) {
+  if (rowBottom > safeBottom) {
     allowCollapseAbove.value = true
     runAutoCollapse()
     allowCollapseAbove.value = false
@@ -227,10 +231,10 @@ const scrollCurrentIntoView = async () => {
     const adjustedRow = container.querySelector<HTMLElement>(selector)
     if (!adjustedRow) return
     const adjustedRect = adjustedRow.getBoundingClientRect()
+    const adjustedTop = (adjustedRect.top - containerRect.top) / effectiveScale
 
     const targetOffsetFromTop = 28
-    const targetTop = containerRect.top + targetOffsetFromTop
-    const delta = adjustedRect.top - targetTop
+    const delta = adjustedTop - targetOffsetFromTop
     container.scrollTo({
       top: container.scrollTop + delta,
       behavior: 'smooth',
@@ -239,10 +243,10 @@ const scrollCurrentIntoView = async () => {
   }
 
   // If it drifts above the top safe zone, bring it back into view.
-  if (rowRect.top < safeTop) {
+  if (rowTop < safeTop) {
     const targetOffsetFromBottom = 28
-    const targetTop = containerRect.bottom - rowRect.height - targetOffsetFromBottom
-    const delta = rowRect.top - targetTop
+    const targetTop = container.clientHeight - rowHeight - targetOffsetFromBottom
+    const delta = rowTop - targetTop
     container.scrollTo({
       top: container.scrollTop + delta,
       behavior: 'smooth',
