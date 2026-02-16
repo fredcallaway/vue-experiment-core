@@ -240,6 +240,7 @@ watch(formattedTableData, (newRows, oldRows) => {
 const containerIsVisible = useElementVisibility(containerProps.ref, {
   threshold: 1.0, // 100% visible
 })
+const { width: containerWidth } = useElementSize(containerProps.ref)
 
 const estimateTextWidth = (text: string, scale:number = 1): number => {
   return text.length * 8 * scale
@@ -298,6 +299,8 @@ const columnWidths = computed(() => {
   if (!formattedTableData.value.length || !columns.value.length) return {}
   
   const widths: Record<string, number> = {}
+  const desiredWidths: Record<string, number> = {}
+  let widthTotal = 0
 
   columns.value.forEach(col => {
     // Measure header width
@@ -316,8 +319,47 @@ const columnWidths = computed(() => {
       MIN_COL_WIDTH,
       measuredWidth + CELL_HORIZONTAL_PADDING
     )
-    widths[col] = Math.min(BASE_MAX_COL_WIDTH, desiredWidth)
+    const baseWidth = Math.min(BASE_MAX_COL_WIDTH, desiredWidth)
+
+    desiredWidths[col] = desiredWidth
+    widths[col] = baseWidth
+    widthTotal += baseWidth
   })
+
+  const minTableWidth = Math.max(
+    containerWidth.value || 0,
+    columns.value.length * MIN_COL_WIDTH
+  )
+
+  if (widthTotal >= minTableWidth) {
+    return widths
+  }
+
+  let remainingWidth = minTableWidth - widthTotal
+  let totalGrowthPotential = 0
+
+  columns.value.forEach(col => {
+    totalGrowthPotential += Math.max(0, desiredWidths[col] - widths[col])
+  })
+
+  if (totalGrowthPotential > 0) {
+    const growthBudget = Math.min(remainingWidth, totalGrowthPotential)
+    columns.value.forEach(col => {
+      const growthPotential = Math.max(0, desiredWidths[col] - widths[col])
+      if (growthPotential <= 0) return
+      widths[col] += growthBudget * (growthPotential / totalGrowthPotential)
+    })
+    remainingWidth -= growthBudget
+  }
+
+  if (remainingWidth > 0) {
+    const growableColumns = columns.value.filter(col => !isEpochColumn(col))
+    const targetColumns = growableColumns.length ? growableColumns : columns.value
+    const evenGrowth = remainingWidth / targetColumns.length
+    targetColumns.forEach(col => {
+      widths[col] += evenGrowth
+    })
+  }
 
   return widths
 })
