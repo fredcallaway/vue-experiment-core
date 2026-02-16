@@ -29,7 +29,7 @@ const posthogLink = computed(() => {
 const eventList = computed(() => {
   if (!data.value) return []
   
-  return makeEventList(data.value)
+  return makeEventList(data.value).map(R.omit(['sessionId']))
 })
 
 const dataViews = useDataViews()
