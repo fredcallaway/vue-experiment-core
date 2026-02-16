@@ -298,15 +298,15 @@ const unaggregateRun = (row: OutlineAggregateRow) => {
 const getActiveRowMetrics = () => {
   const container = listEl.value
   if (!container) return null
-  const row = container.querySelector<HTMLElement>(`[data-epoch-id="${currentEpoch.value.id}"]`)
-  if (!row) return null
+  const activeEl = container.querySelector<HTMLElement>(`[data-epoch-id="${currentEpoch.value.id}"]`)
+  if (!activeEl) return null
 
   const effectiveScale = scale.value || 1
   const containerRect = container.getBoundingClientRect()
-  const rowRect = row.getBoundingClientRect()
-  const rowTop = (rowRect.top - containerRect.top) / effectiveScale
-  const rowBottom = (rowRect.bottom - containerRect.top) / effectiveScale
-  const rowHeight = rowBottom - rowTop
+  const activeRect = activeEl.getBoundingClientRect()
+  const activeTop = (activeRect.top - containerRect.top) / effectiveScale
+  const activeBottom = (activeRect.bottom - containerRect.top) / effectiveScale
+  const activeHeight = activeBottom - activeTop
   const topBuffer = 48
   const bottomBuffer = 48
   const safeTop = topBuffer
@@ -314,9 +314,9 @@ const getActiveRowMetrics = () => {
 
   return {
     container,
-    rowTop,
-    rowBottom,
-    rowHeight,
+    activeTop,
+    activeBottom,
+    activeHeight,
     safeTop,
     safeBottom,
   }
@@ -358,9 +358,9 @@ const scrollCurrentIntoView = async () => {
   if (!metrics) return
 
   // If the current row is near/beyond the bottom, move it toward the top.
-  if (metrics.rowBottom > metrics.safeBottom) {
+  if (metrics.activeBottom > metrics.safeBottom) {
     const targetOffsetFromTop = 28
-    const delta = metrics.rowTop - targetOffsetFromTop
+    const delta = metrics.activeTop - targetOffsetFromTop
     metrics.container.scrollTo({
       top: metrics.container.scrollTop + delta,
       behavior: 'smooth',
@@ -369,10 +369,10 @@ const scrollCurrentIntoView = async () => {
   }
 
   // If it drifts above the top safe zone, bring it back into view.
-  if (metrics.rowTop < metrics.safeTop) {
+  if (metrics.activeTop < metrics.safeTop) {
     const targetOffsetFromBottom = 28
-    const targetTop = metrics.container.clientHeight - metrics.rowHeight - targetOffsetFromBottom
-    const delta = metrics.rowTop - targetTop
+    const targetTop = metrics.container.clientHeight - metrics.activeHeight - targetOffsetFromBottom
+    const delta = metrics.activeTop - targetTop
     metrics.container.scrollTo({
       top: metrics.container.scrollTop + delta,
       behavior: 'smooth',
