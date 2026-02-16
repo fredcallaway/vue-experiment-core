@@ -40,10 +40,6 @@ const currentPath = computed<EpochNode[]>(() => {
   return path.reverse()
 })
 
-const currentPathIds = computed(() => {
-  return new Set(currentPath.value.map(node => node.id))
-})
-
 const ancestorPath = computed(() => {
   return currentPath.value.slice(0, -1)
 })
@@ -69,25 +65,113 @@ const toggleCollapse = (node: EpochNode) => {
   collapsed.value[node.id] = isExpanded(node)
 }
 
-watch(currentPathIds, (ids) => {
-  if (!root.value) return
+const AUTO_BASE_DEPTH = 2
+const SIBLING_WINDOW = 0
+const RECENT_PATH_LIMIT = 0
+const CONTEXT_EXPAND_BUDGET = 10
 
-  const nextCollapsed: Record<string, boolean> = {}
-  const walk = (node: EpochNode) => {
+const recentPathHistory = ref<string[][]>([])
+
+const indexTree = (start: EpochNode) => {
+  const depthById: Record<string, number> = {}
+  const branchIds: string[] = []
+
+  const walk = (node: EpochNode, depth: number) => {
+    depthById[node.id] = depth
     if (hasChildren(node)) {
-      // Keep active path expanded; collapse everything else by default.
-      nextCollapsed[node.id] = !ids.has(node.id)
+      branchIds.push(node.id)
     }
     for (const child of node.children) {
-      walk(child)
+      walk(child, depth + 1)
     }
   }
-  walk(root.value)
 
-  for (const [id, value] of Object.entries(nextCollapsed)) {
-    collapsed.value[id] = value
-  }
+  walk(start, 0)
+  return { depthById, branchIds }
+}
+
+watch(() => currentPath.value.map(node => node.id), (ids) => {
+  if (ids.length === 0) return
+  const key = ids.join('>')
+  const deduped = recentPathHistory.value.filter(path => path.join('>') !== key)
+  recentPathHistory.value = [ids, ...deduped].slice(0, RECENT_PATH_LIMIT)
 }, { immediate: true })
+
+const runAutoCollapse = () => {
+  if (!root.value) return
+
+  const { depthById, branchIds } = indexTree(root.value)
+  const activeIds = activePathIds.value
+  const nextCollapsed: Record<string, boolean> = {}
+
+  // Start fully collapsed for all branches.
+  for (const id of branchIds) {
+    nextCollapsed[id] = true
+  }
+
+  const expandBranch = (id: string) => {
+    if (nextCollapsed[id] !== undefined) {
+      nextCollapsed[id] = false
+    }
+  }
+
+  // Priority 1: active path is always expanded.
+  for (const id of activeIds) {
+    expandBranch(id)
+  }
+
+  // Priority 2: keep top levels expanded for orientation stability.
+  for (const id of branchIds) {
+    if ((depthById[id] ?? 999) < AUTO_BASE_DEPTH) {
+      expandBranch(id)
+    }
+  }
+
+  // Priority 3: expand sibling window around active child at each path level.
+  const contextCandidates: string[] = []
+  const path = currentPath.value
+  for (let i = 0; i < path.length - 1; i += 1) {
+    const parent = path[i]
+    const activeChild = path[i + 1]
+    const activeIndex = parent.children.findIndex(child => child.id === activeChild.id)
+    if (activeIndex < 0) continue
+
+    const start = Math.max(0, activeIndex - SIBLING_WINDOW)
+    const end = Math.min(parent.children.length - 1, activeIndex + SIBLING_WINDOW)
+    for (let j = start; j <= end; j += 1) {
+      contextCandidates.push(parent.children[j].id)
+    }
+  }
+
+  // Priority 4: keep a tiny memory of recently active branches open.
+  const recentCandidates: string[] = []
+  for (const historyPath of recentPathHistory.value) {
+    for (const id of historyPath) {
+      recentCandidates.push(id)
+    }
+  }
+
+  let expansionsUsed = 0
+  const applyCandidate = (id: string) => {
+    if (activeIds.has(id)) return
+    if (nextCollapsed[id] === undefined) return
+    if (nextCollapsed[id] === false) return
+    if (expansionsUsed >= CONTEXT_EXPAND_BUDGET) return
+    nextCollapsed[id] = false
+    expansionsUsed += 1
+  }
+
+  for (const id of contextCandidates) {
+    applyCandidate(id)
+  }
+  for (const id of recentCandidates) {
+    applyCandidate(id)
+  }
+
+  collapsed.value = nextCollapsed
+}
+
+watch([() => currentEpoch.value.id, root, recentPathHistory], runAutoCollapse, { immediate: true })
 
 const visibleNodes = computed<VisibleNode[]>(() => {
   const output: VisibleNode[] = []
