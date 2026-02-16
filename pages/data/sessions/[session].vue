@@ -50,7 +50,7 @@ const processedData = computed(() => {
 const prolificMessages = useProlificMessages()
 const correspondence = computed(() => {
   if (!meta.value?.studyId || !meta.value?.participantId) return null
-  return prolificMessages.getCorrespondence(meta.value.studyId, meta.value.participantId)
+  return prolificMessages.getOrCreateCorrespondence(meta.value.studyId, meta.value.participantId)
 })
 
 watchEffect(() => {
