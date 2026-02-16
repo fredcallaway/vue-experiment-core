@@ -48,10 +48,27 @@ export const usePosthog = createGlobalState(() => {
 
   checkStatus()
 
+  // capture logEvent
   const bus = useLogEventBus()
   bus.on((event) => {
     posthog.capture(event.eventType, event)
   })
+
+  // capture errors (letting them pass through)
+  useErrorHandler().pushHandler((err, instance, info, next) => {
+    try {
+      posthog.captureException(err, {
+        vue_info: info, // string
+        component_name: instance?.$options?.__name,
+        component_path: instance?.$options?.__file,
+        current_epoch: useCurrentEpoch().value.id,
+      })
+    } finally {
+      next()
+    }
+  }, 10)
+  
+
 
   return {
     status,
