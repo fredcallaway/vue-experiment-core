@@ -239,6 +239,7 @@ watch(formattedTableData, (newRows, oldRows) => {
 const containerIsVisible = useElementVisibility(containerProps.ref, {
   threshold: 1.0, // 100% visible
 })
+const { width: containerWidth } = useElementSize(containerProps.ref)
 
 const estimateTextWidth = (text: string, scale:number = 1): number => {
   return text.length * 8 * scale
@@ -247,7 +248,7 @@ const estimateTextWidth = (text: string, scale:number = 1): number => {
 const TABLE_HEIGHT = 600
 const TABLE_ROW_HEIGHT = 35
 const MIN_COL_WIDTH = 80
-const MAX_COL_WIDTH = 250
+const BASE_MAX_COL_WIDTH = 250
 const CELL_HORIZONTAL_PADDING = 16
 
 const getCellDisplayText = (
@@ -278,10 +279,12 @@ const columnWidths = computed(() => {
   if (!formattedTableData.value.length || !columns.value.length) return {}
   
   const widths: Record<string, number> = {}
-  
+  const desiredWidths: Record<string, number> = {}
+  let widthTotal = 0
+
   columns.value.forEach(col => {
     // Measure header width
-    let measuredWidth = estimateTextWidth(col, 1.2)
+    let measuredWidth = estimateTextWidth(col, 1.1)
     
     // Measure all cell values for this column
     formattedTableData.value.forEach(row => {
@@ -291,13 +294,51 @@ const columnWidths = computed(() => {
         measuredWidth = width
       }
     })
-    
-    widths[col] = Math.max(
+
+    const desiredWidth = Math.max(
       MIN_COL_WIDTH,
-      Math.min(MAX_COL_WIDTH, measuredWidth + CELL_HORIZONTAL_PADDING)
+      measuredWidth + CELL_HORIZONTAL_PADDING
     )
+    const baseWidth = Math.min(BASE_MAX_COL_WIDTH, desiredWidth)
+
+    desiredWidths[col] = desiredWidth
+    widths[col] = baseWidth
+    widthTotal += baseWidth
   })
-  
+
+  const minTableWidth = Math.max(
+    containerWidth.value || 0,
+    columns.value.length * MIN_COL_WIDTH
+  )
+
+  if (widthTotal >= minTableWidth) {
+    return widths
+  }
+
+  let remainingWidth = minTableWidth - widthTotal
+  let totalGrowthPotential = 0
+
+  columns.value.forEach(col => {
+    totalGrowthPotential += Math.max(0, desiredWidths[col] - widths[col])
+  })
+
+  if (totalGrowthPotential > 0) {
+    const growthBudget = Math.min(remainingWidth, totalGrowthPotential)
+    columns.value.forEach(col => {
+      const growthPotential = Math.max(0, desiredWidths[col] - widths[col])
+      if (growthPotential <= 0) return
+      widths[col] += growthBudget * (growthPotential / totalGrowthPotential)
+    })
+    remainingWidth -= growthBudget
+  }
+
+  if (remainingWidth > 0) {
+    const evenGrowth = remainingWidth / columns.value.length
+    columns.value.forEach(col => {
+      widths[col] += evenGrowth
+    })
+  }
+
   return widths
 })
 
