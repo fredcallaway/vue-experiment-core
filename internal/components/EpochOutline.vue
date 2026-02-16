@@ -13,6 +13,7 @@ type VisibleNode = {
 
 const currentEpoch = useCurrentEpoch()
 const collapsed = ref<Record<string, boolean>>({})
+const listEl = ref<HTMLElement | null>(null)
 
 const root = ref<EpochNode | null>()
 watchOnce(currentEpoch, () => {
@@ -89,6 +90,47 @@ const handleClickNode = (node: EpochNode) => {
   jumpToEpoch(node.id)
 }
 
+const scrollCurrentIntoView = async () => {
+  await nextTick()
+  const container = listEl.value
+  if (!container) return
+  const selector = `[data-epoch-id="${currentEpoch.value.id}"]`
+  const row = container.querySelector<HTMLElement>(selector)
+  if (!row) return
+
+  const containerRect = container.getBoundingClientRect()
+  const rowRect = row.getBoundingClientRect()
+
+  // Keep a safe zone to reduce scroll frequency.
+  const topBuffer = 48
+  const bottomBuffer = 48
+  const safeTop = containerRect.top + topBuffer
+  const safeBottom = containerRect.bottom - bottomBuffer
+
+  // If the current row is near/beyond the bottom, move it toward the top.
+  if (rowRect.bottom > safeBottom) {
+    const targetOffsetFromTop = 28
+    const targetTop = containerRect.top + targetOffsetFromTop
+    const delta = rowRect.top - targetTop
+    container.scrollTo({
+      top: container.scrollTop + delta,
+      behavior: 'smooth',
+    })
+    return
+  }
+
+  // If it drifts above the top safe zone, bring it back into view.
+  if (rowRect.top < safeTop) {
+    const targetOffsetFromBottom = 28
+    const targetTop = containerRect.bottom - rowRect.height - targetOffsetFromBottom
+    const delta = rowRect.top - targetTop
+    container.scrollTo({
+      top: container.scrollTop + delta,
+      behavior: 'smooth',
+    })
+  }
+}
+
 const traverseTimeline = async () => {
   const previous = currentEpoch.value
   let unwatch = null as (() => void) | null
@@ -145,6 +187,8 @@ onMounted(async () => {
   }
 })
 
+watch([() => currentEpoch.value.id, visibleNodes], scrollCurrentIntoView, { immediate: true })
+
 </script>
 
 <template>
@@ -154,10 +198,11 @@ onMounted(async () => {
       Waiting for first epoch...
     </div>
 
-    <div v-else max-h-130 overflow-y-auto pr-1 subtle-scrollbar >
+    <div ref="listEl" v-else max-h-130 overflow-y-auto pr-1 subtle-scrollbar >
       <div
         v-for="{ node, depth } in visibleNodes"
         :key="node.id"
+        :data-epoch-id="node.id"
         class="outline-row"
         relative
         flex="~ items-center gap-1"
