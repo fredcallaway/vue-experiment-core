@@ -113,20 +113,34 @@ const getAboveSiblingBranchIds = () => {
 const runAutoCollapse = () => {
   if (!root.value) return
   if (isTraversing.value) return
-  console.log('👉 runAutoCollapse')
 
   const { depthById, branchIds } = indexTree(root.value)
   const activeIds = activePathIds.value
-  const nextCollapsed: Record<string, boolean> = {}
+  const branchSet = new Set(branchIds)
+  const nextCollapsed: Record<string, boolean> = { ...collapsed.value }
 
-  // Start fully collapsed for all branches.
+  // Drop stale state entries for branches that no longer exist.
+  for (const id of Object.keys(nextCollapsed)) {
+    if (!branchSet.has(id)) {
+      delete nextCollapsed[id]
+    }
+  }
+
+  // Initialize unseen branches as collapsed.
   for (const id of branchIds) {
-    nextCollapsed[id] = true
+    if (nextCollapsed[id] === undefined) {
+      nextCollapsed[id] = true
+    }
   }
 
   const expandBranch = (id: string) => {
     if (nextCollapsed[id] !== undefined) {
       nextCollapsed[id] = false
+    }
+  }
+  const collapseBranch = (id: string) => {
+    if (nextCollapsed[id] !== undefined) {
+      nextCollapsed[id] = true
     }
   }
 
@@ -142,22 +156,22 @@ const runAutoCollapse = () => {
     }
   }
 
-  // Keep branches above the active path stable unless we hit the lower
-  // scroll trigger and explicitly allow collapsing above.
-  if (!allowCollapseAbove.value) {
-    const aboveBranchIds = getAboveSiblingBranchIds()
+  const aboveBranchIds = getAboveSiblingBranchIds()
+  // Above siblings should only auto-collapse in lower-trigger mode.
+  if (allowCollapseAbove.value) {
     for (const id of aboveBranchIds) {
-      const previous = collapsed.value[id]
-      if (previous !== undefined) {
-        nextCollapsed[id] = previous
-      }
+      collapseBranch(id)
+    }
+  } else {
+    for (const id of aboveBranchIds) {
+      expandBranch(id)
     }
   }
 
   collapsed.value = nextCollapsed
 }
 
-watch([currentEpoch, root], runAutoCollapse)
+watch([() => currentEpoch.value.id, root], runAutoCollapse)
 
 const visibleNodes = computed<VisibleNode[]>(() => {
   const output: VisibleNode[] = []
