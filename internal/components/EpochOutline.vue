@@ -24,7 +24,6 @@ type OutlineAggregateRow = {
 
 type OutlineRow = OutlineNodeRow | OutlineAggregateRow
 
-const AUTO_BASE_DEPTH = 2
 const MIN_AGGREGATE = 5
 
 const currentEpoch = useCurrentEpoch()
@@ -84,10 +83,13 @@ const toggleCollapse = (node: EpochNode) => {
 
 const indexTree = (start: EpochNode) => {
   const depthById: Record<string, number> = {}
+  const orderById: Record<string, number> = {}
   const branchIds: string[] = []
+  let order = 0
 
   const walk = (node: EpochNode, depth: number) => {
     depthById[node.id] = depth
+    orderById[node.id] = order++
     if (hasChildren(node)) {
       branchIds.push(node.id)
     }
@@ -97,7 +99,7 @@ const indexTree = (start: EpochNode) => {
   }
 
   walk(start, 0)
-  return { depthById, branchIds }
+  return { depthById, orderById, branchIds }
 }
 
 const collectBranchIds = (node: EpochNode, into: Set<string>) => {
@@ -124,42 +126,58 @@ const getAboveSiblingBranchIds = () => {
   return ids
 }
 
-const runAutoCollapse = ({ collapseAbove = false } = {}) => {
+const getBelowSiblingBranchIds = () => {
+  const ids = new Set<string>()
+  const path = currentPath.value
+  for (let i = 0; i < path.length - 1; i += 1) {
+    const parent = path[i]
+    const activeChild = path[i + 1]
+    const activeIndex = parent.children.findIndex(child => child.id === activeChild.id)
+    if (activeIndex < 0 || activeIndex >= parent.children.length - 1) continue
+    for (let j = activeIndex + 1; j < parent.children.length; j += 1) {
+      collectBranchIds(parent.children[j], ids)
+    }
+  }
+  return ids
+}
+
+const runAutoCollapse = async () => {
   if (!root.value) return
+  console.log('running auto collapse')
 
   const activeIds = activePathIds.value
+  const { branchIds } = indexTree(root.value)
+  const branchSet = new Set(branchIds)
   const nextCollapsed: Record<string, boolean> = { ...collapsed.value }
 
-  // (kept for reference)
-  // Initialize unseen branches
-  // const { depthById, branchIds } = indexTree(root.value)
-  // for (const id of branchIds) {
-  //   if (nextCollapsed[id] === undefined) {
-  //     nextCollapsed[id] = (depthById[id] ?? 999) >= AUTO_BASE_DEPTH
-  //   }
-  // }
+  // Drop stale collapse state.
+  for (const id of Object.keys(nextCollapsed)) {
+    if (!branchSet.has(id)) {
+      delete nextCollapsed[id]
+    }
+  }
 
   // Active path is always expanded.
   for (const id of activeIds) {
     nextCollapsed[id] = false
   }
 
-  // Collapse nodes until vertical scroll is eliminated
-  // Only collapse previous/above nodes if we're told to
-  // Collapse deeper first, then by distance from active
-
-  if (collapseAbove) {
-    // TODO: we should only collapse until we're within height limit
-    // collapse deeper first; within depth collapse earlier first
-    const aboveBranchIds = getAboveSiblingBranchIds()
-    for (const id of aboveBranchIds) {
-      nextCollapsed[id] = true
-    }
-  }
-  // Collapse later/below if necessary
-  // TODO
-
   collapsed.value = nextCollapsed
+  await nextTick()
+
+  const metrics = getActiveRowMetrics()
+  if (!metrics) {
+    console.log("metrics not available")
+    return
+  }
+  
+  await collapseCandidatesUntilFit(getAboveSiblingBranchIds(), 'earlier')
+
+  const metricsAfterAbove = getActiveRowMetrics()
+  if (!metricsAfterAbove) return
+  if (metricsAfterAbove.container.scrollHeight <= metricsAfterAbove.container.clientHeight + 1) return
+
+  await collapseCandidatesUntilFit(getBelowSiblingBranchIds(), 'later')
 }
 
 const getStructureSignature = (node: EpochNode, cache: Map<string, string>): string => {
@@ -277,13 +295,11 @@ const unaggregateRun = (row: OutlineAggregateRow) => {
   unaggregatedRuns.value[row.key] = true
 }
 
-const scrollCurrentIntoView = async () => {
-  await nextTick()
+const getActiveRowMetrics = () => {
   const container = listEl.value
-  if (!container) return
-  const selector = `[data-epoch-id="${currentEpoch.value.id}"]`
-  const row = container.querySelector<HTMLElement>(selector)
-  if (!row) return
+  if (!container) return null
+  const row = container.querySelector<HTMLElement>(`[data-epoch-id="${currentEpoch.value.id}"]`)
+  if (!row) return null
 
   const effectiveScale = scale.value || 1
   const containerRect = container.getBoundingClientRect()
@@ -291,39 +307,74 @@ const scrollCurrentIntoView = async () => {
   const rowTop = (rowRect.top - containerRect.top) / effectiveScale
   const rowBottom = (rowRect.bottom - containerRect.top) / effectiveScale
   const rowHeight = rowBottom - rowTop
-
-  // Keep a safe zone to reduce scroll frequency.
   const topBuffer = 48
   const bottomBuffer = 48
   const safeTop = topBuffer
   const safeBottom = container.clientHeight - bottomBuffer
 
-  // If the current row is near/beyond the bottom, move it toward the top.
-  if (rowBottom > safeBottom) {
-    runAutoCollapse({ collapseAbove: true })
+  return {
+    container,
+    rowTop,
+    rowBottom,
+    rowHeight,
+    safeTop,
+    safeBottom,
+  }
+}
+
+const collapseCandidatesUntilFit = async (
+  candidateIds: Set<string>,
+  withinDepth: 'earlier' | 'later'
+) => {
+  if (!root.value) return
+  console.log('collapsing candidates', candidateIds, withinDepth)
+  const { depthById, orderById } = indexTree(root.value)
+  const candidates = [...candidateIds]
+    .filter(id => !activePathIds.value.has(id))
+    .filter(id => collapsed.value[id] !== true)
+    .sort((a, b) => (depthById[b] ?? 0) - (depthById[a] ?? 0)
+      || (withinDepth === 'earlier'
+        ? (orderById[a] ?? 0) - (orderById[b] ?? 0)
+        : (orderById[b] ?? 0) - (orderById[a] ?? 0)))
+
+  const hasVerticalOverflow = () => {
+    const container = listEl.value
+    if (!container) return false
+    return container.scrollHeight > container.clientHeight + 1
+  }
+
+  for (const id of candidates) {
+    if (!hasVerticalOverflow()) {
+      break
+    }
+    collapsed.value[id] = true
     await nextTick()
+  }
+}
 
-    const adjustedRow = container.querySelector<HTMLElement>(selector)
-    if (!adjustedRow) return
-    const adjustedRect = adjustedRow.getBoundingClientRect()
-    const adjustedTop = (adjustedRect.top - containerRect.top) / effectiveScale
+const scrollCurrentIntoView = async () => {
+  await nextTick()
+  const metrics = getActiveRowMetrics()
+  if (!metrics) return
 
+  // If the current row is near/beyond the bottom, move it toward the top.
+  if (metrics.rowBottom > metrics.safeBottom) {
     const targetOffsetFromTop = 28
-    const delta = adjustedTop - targetOffsetFromTop
-    container.scrollTo({
-      top: container.scrollTop + delta,
+    const delta = metrics.rowTop - targetOffsetFromTop
+    metrics.container.scrollTo({
+      top: metrics.container.scrollTop + delta,
       behavior: 'smooth',
     })
     return
   }
 
   // If it drifts above the top safe zone, bring it back into view.
-  if (rowTop < safeTop) {
+  if (metrics.rowTop < metrics.safeTop) {
     const targetOffsetFromBottom = 28
-    const targetTop = container.clientHeight - rowHeight - targetOffsetFromBottom
-    const delta = rowTop - targetTop
-    container.scrollTo({
-      top: container.scrollTop + delta,
+    const targetTop = metrics.container.clientHeight - metrics.rowHeight - targetOffsetFromBottom
+    const delta = metrics.rowTop - targetTop
+    metrics.container.scrollTo({
+      top: metrics.container.scrollTop + delta,
       behavior: 'smooth',
     })
   }
@@ -342,7 +393,7 @@ const traverseTimeline = async () => {
   }, 100)
 
   const doTraversal = () => new Promise((resolve) => {
-    console.log('👉 doTraversal')
+    // console.log('👉 doTraversal')
     isJumping.value = true
     
     unwatch = watchImmediate(currentEpoch, async (epoch) => {
@@ -395,15 +446,19 @@ onMounted(async () => {
 watch(currentEpoch, (epoch) => {
   const hasKids = epoch.children.length > 0
   if (hasKids || isTraversing.value || isJumping.value || !traversed.value) return
-  runAutoCollapse()
-  scrollCurrentIntoView()
+  ;(async () => {
+    await runAutoCollapse()
+    await scrollCurrentIntoView()
+  })()
 })
 
 // adjust layout whenever jump/traverse ends
 watch(() => isTraversing.value || isJumping.value, (value) => {
   if (value || !traversed.value) return
-  runAutoCollapse()
-  scrollCurrentIntoView()
+  ;(async () => {
+    await runAutoCollapse()
+    await scrollCurrentIntoView()
+  })()
 })
 
 </script>
