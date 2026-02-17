@@ -328,6 +328,15 @@ export function usePhaseEpoch<const T extends readonly string[]>(
 export const jumpToEpoch = async (epochId: string, isFallback: boolean = false): Promise<null | string> => {
   logDebug(`jumpToEpoch: ${epochId}`)
   if (epochId === '') return null
+  if (isJumping.value) {
+    console.warn(`jumpToEpoch(${epochId}): waiting for existing jump to complete`)
+    await until(isJumping).toBe(false)
+    console.log(`jumpToEpoch(${epochId}): existing jump completed; resuming`)
+  }
+  if (_currentEpoch.id === epochId) {
+    console.log(`jumpToEpoch(${epochId}): already at target epoch`)
+    return null
+  }
   isJumping.value = true
   const parts = epochId.split('-')
   try {
@@ -335,7 +344,6 @@ export const jumpToEpoch = async (epochId: string, isFallback: boolean = false):
     if (!isFallback) {
       logDebug('__JUMP_SUCCEEDED__', { epochId }) // sending a signal to EventView
     }
-    isJumping.value = false
     return result
   } catch (e) {
     logError('error jumping to epoch', e)
@@ -343,8 +351,9 @@ export const jumpToEpoch = async (epochId: string, isFallback: boolean = false):
     if (shortened != epochId) {
       return await jumpToEpoch(shortened, true)
     }
-    isJumping.value = false
     return null
+  } finally {
+    isJumping.value = false
   }
 }
 
@@ -399,10 +408,9 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
       throw new Error(`jumpToEpoch: ${_currentEpoch.id} does not have expected prefix ${expectedPrefix}`)
     }
   }
-  
   // Confirm that we ended up where we expected
   // const currentPrefix = indexableEpochPrefix(currentEpoch.value.id)
   // assert(currentPrefix.startsWith(expectedPrefix), `expected ${expectedPrefix} but got ${currentPrefix}`)
 
-  return expectedPrefix
+  return currentEpoch.value.id
 }
