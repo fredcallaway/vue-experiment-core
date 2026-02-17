@@ -451,7 +451,7 @@ const traverseTimeline = async () => {
         return
       }
 
-      if (epoch.isLeaf || !('step' in epoch)) {
+      if (epoch.isPseudoLeaf || !('step' in epoch)) {
         await nextTick()
         epoch.done()
       }

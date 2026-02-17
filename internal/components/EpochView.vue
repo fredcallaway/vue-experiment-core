@@ -11,7 +11,7 @@ const stack = computed(() => {
   const stack = []
   let epoch = currentEpoch.value
   while (epoch) {
-    const skip = epoch.isLeaf || epoch._name == '__TOP_EPOCH__'
+    const skip = epoch.isPseudoLeaf || epoch._name == '__TOP_EPOCH__'
     if (!skip) {
       stack.push(epoch)
     }

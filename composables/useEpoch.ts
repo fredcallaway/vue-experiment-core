@@ -10,7 +10,7 @@ export type Epoch = {
   _parent: Epoch,
   children: Epoch[]  // only includes children that have been mounted
   isNoEpoch?: boolean,
-  isLeaf?: boolean,
+  isPseudoLeaf?: boolean,
   isDisabled?: boolean
   id: string,
 }
@@ -51,7 +51,7 @@ type EpochProps = {
   id?: string,
   isDisabled?: boolean,
   isNoEpoch?: boolean,
-  isLeaf?: boolean,
+  isPseudoLeaf?: boolean,
   next?: () => void,
 }
 // Create a new epoch and adds it to the tree.
@@ -69,7 +69,7 @@ const makeEpoch = (props: EpochProps): Epoch => {
     _parent: props.parent,
     children: props.children ?? [],
     isNoEpoch: props.isNoEpoch ?? false,
-    isLeaf: props.isLeaf ?? false,
+    isPseudoLeaf: props.isPseudoLeaf ?? false,
     isDisabled: props.isDisabled,
     id: props.id ?? makeId(props.name, props.parent),
 
@@ -186,7 +186,7 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
   }
 
   const parentEpoch = inject<Epoch>('__EPOCH__', TOP_EPOCH)
-  if (parentEpoch.isLeaf) {
+  if (parentEpoch.isPseudoLeaf) {
     logWarn('useEpoch: parent epoch is a leaf', { parentEpoch: parentEpoch.id })
   }
 
@@ -248,11 +248,11 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
 
   // For sequential epochs that don't have explicit child epochs, we create them.
   // TODO: maybe we should do this at epoch intialization; would be more robust
-  const startNewLeafEpoch = (parent: Epoch, name: string) => {
+  const startNewPseudoLeaf = (parent: Epoch, name: string) => {
     const epoch = makeEpoch({
       name,
       parent,
-      isLeaf: true
+      isPseudoLeaf: true
     })
     setCurrentEpoch(epoch)
     logEvent(`epoch.start`, {id: epoch.id})
@@ -267,7 +267,7 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
       // become currentEpoch between steps (if calling E.goTo or E.next directly)
       if (_currentEpoch.id === E.id || _currentEpoch.id === activeLeaf?.id) {
         const name = 'leaf_' + (isPhaseEpoch(E) ? E.phases[step.value] : String(step.value))
-        activeLeaf = startNewLeafEpoch(E, name)
+        activeLeaf = startNewPseudoLeaf(E, name)
       } else {
         activeLeaf = null
       }
