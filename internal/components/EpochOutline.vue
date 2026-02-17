@@ -81,28 +81,19 @@ const currentPath = computed<EpochNode[]>(() => {
   return path.reverse()
 })
 
-const ancestorPath = computed(() => {
-  return currentPath.value.slice(0, -1)
-})
+type NodeOrId = EpochNode | string
+const toNodeId = (target: NodeOrId) => typeof target === 'string' ? target : target.id
 
-const ancestorIds = computed(() => {
-  return new Set(ancestorPath.value.map(node => node.id))
-})
-const activePathIds = computed(() => {
-  return new Set(currentPath.value.map(node => node.id))
-})
+const isCurrent = (target: NodeOrId) => toNodeId(target) === currentEpoch.value.id
+const isActive = (target: NodeOrId) => currentPath.value.some(n => toNodeId(n) === toNodeId(target))
+const isAncestor = (target: NodeOrId) => isActive(target) && !isCurrent(target)
 
 const hasChildren = (node: EpochNode) => node.children.length > 0
-const isCurrent = (node: EpochNode) => node.id === currentEpoch.value.id
-const isAncestor = (node: EpochNode) => ancestorIds.value.has(node.id)
-const isPinned = (node: EpochNode) => activePathIds.value.has(node.id)
-
-const isExpanded = (node: EpochNode) => {
-  return hasChildren(node) && (isPinned(node) || !collapsed.value[node.id])
-}
+const isExpanded = (node: EpochNode) => hasChildren(node) && (isActive(node) || !collapsed.value[toNodeId(node)])
+const canCollapse = (node: EpochNode) => hasChildren(node) && !isActive(node)
 
 const toggleCollapse = (node: EpochNode) => {
-  if (!hasChildren(node) || isPinned(node)) return
+  if (!canCollapse(node)) return
   collapsed.value[node.id] = isExpanded(node)
 }
 
@@ -168,7 +159,6 @@ const runAutoCollapse = async () => {
   if (!root.value) return
   // console.log('running auto collapse')
 
-  const activeIds = activePathIds.value
   const { branchIds } = indexTree(root.value)
   const branchSet = new Set(branchIds)
   const nextCollapsed: Record<string, boolean> = { ...collapsed.value }
@@ -181,8 +171,8 @@ const runAutoCollapse = async () => {
   }
 
   // Active path is always expanded.
-  for (const id of activeIds) {
-    nextCollapsed[id] = false
+  for (const node of currentPath.value) {
+    nextCollapsed[node.id] = false
   }
 
   collapsed.value = nextCollapsed
@@ -195,7 +185,6 @@ const visibleRows = computed<OutlineRow[]>(() => {
   const rows: OutlineRow[] = []
   if (!root.value) return rows
 
-  const activeIds = activePathIds.value
   const signatureCache = new Map<string, string>()
 
   const walkNode = (node: EpochNode, depth: number) => {
@@ -244,7 +233,7 @@ const visibleRows = computed<OutlineRow[]>(() => {
       const child = children[i]
 
       // Active path nodes are never aggregated and split runs.
-      if (activeIds.has(child.id)) {
+      if (isActive(child)) {
         flushAggregateRun(run)
         run = []
         walkNode(child, depth)
@@ -276,7 +265,7 @@ const handleClickNode = (node: EpochNode) => {
 const toggleAggregate = (row: OutlineAggregateRow) => {
   const shouldCollapse = row.expanded
   for (const node of row.nodes) {
-    if (!hasChildren(node) || isPinned(node)) continue
+    if (!hasChildren(node) || isActive(node)) continue
     collapsed.value[node.id] = shouldCollapse
   }
 }
@@ -315,7 +304,6 @@ const getActiveRowMetrics = () => {
 const buildAggregateCollapseGroups = (start: EpochNode) => {
   const groupKeyById = new Map<string, string>()
   const groupIdsByKey = new Map<string, string[]>()
-  const activeIds = activePathIds.value
   const signatureCache = new Map<string, string>()
 
   // Mirror render-time aggregation so collapse chooses whole runs
@@ -340,7 +328,7 @@ const buildAggregateCollapseGroups = (start: EpochNode) => {
 
       let run: EpochNode[] = []
       for (const child of children) {
-        if (activeIds.has(child.id)) {
+        if (isActive(child)) {
           flushRun(run)
           run = []
         } else {
@@ -376,7 +364,6 @@ const collapseCandidatesUntilFit = async (
   // console.log('collapsing candidates', candidateIds, prefDirection)
   const { depthById, orderById, childCountById } = indexTree(root.value)
   const { groupKeyById, groupIdsByKey } = buildAggregateCollapseGroups(root.value)
-  const activeIds = activePathIds.value
   const activeOrder = orderById[currentEpoch.value.id] ?? 0
 
   type CollapseCandidate = {
@@ -391,14 +378,14 @@ const collapseCandidatesUntilFit = async (
   const candidateMap = new Map<string, CollapseCandidate>()
 
   for (const id of candidateIds) {
-    if (activeIds.has(id) || collapsed.value[id] === true) continue
+    if (isActive(id) || collapsed.value[id] === true) continue
 
     const key = groupKeyById.get(id) ?? `node:${id}`
     if (candidateMap.has(key)) continue
 
     const groupedIds = groupIdsByKey.get(key) ?? [id]
     const ids = groupedIds.filter(groupedId =>
-      !activeIds.has(groupedId)
+      !isActive(groupedId)
       && collapsed.value[groupedId] !== true
       && depthById[groupedId] !== undefined
     )
@@ -490,7 +477,7 @@ const traverseTimeline = async () => {
   let unwatch = null as (() => void) | null
 
   const { pushHandler } = useErrorHandler()
-  const popHandler = pushHandler((err, instance, info, next) => {
+  const popHandler = pushHandler(err => {
     console.error('Error traversing timeline:', err)
   }, 100)
 
@@ -619,7 +606,7 @@ watch(() => isTraversing.value || isJumping.value, (value) => {
             flex-center
             rounded
             hover:bg-gray-200
-            :title="isPinned(row.node) ? 'Pinned ancestor' : (isExpanded(row.node) ? 'Collapse' : 'Expand')"
+            :title="isActive(row.node) ? 'Pinned ancestor' : (isExpanded(row.node) ? 'Collapse' : 'Expand')"
           >
             <span :class="isExpanded(row.node) ? 'i-mdi-chevron-down' : 'i-mdi-chevron-right'" />
           </button>
