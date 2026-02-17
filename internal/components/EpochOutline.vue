@@ -563,7 +563,7 @@ watchEffect(() => {
         :class="row.kind === 'node'
           ? [
               isCurrent(row.node) ? 'font-bold text-blue-500' : '',
-              !isCurrent(row.node) && isAncestor(row.node) ? 'font-semibold text-gray-600' : '',
+              !isCurrent(row.node) && isAncestor(row.node) ? 'font-bold text-gray-600' : '',
               !isCurrent(row.node) && !isAncestor(row.node) ? 'text-gray-400' : '',
             ]
           : 'text-gray-400'"
@@ -581,8 +581,17 @@ watchEffect(() => {
         </div>
 
         <template v-if="row.kind === 'node'">
+          <div
+            v-if="hasChildren(row.node) && isAncestor(row.node)"
+            w-4 h-4
+            flex-center
+            rounded
+            title="Cannot collapse ancestor"
+          >
+            <span i-mdi-arrow-right-bold />
+          </div>
           <button
-            v-if="hasChildren(row.node)"
+            v-else-if="hasChildren(row.node)"
             @click.stop="toggleCollapse(row.node)"
             w-4 h-4
             flex-center
@@ -609,7 +618,8 @@ watchEffect(() => {
               text-blue-500
             />
             <template v-else>
-              <div class="group-hover:hidden" i-mdi-circle-outline scale-60 text-gray-400 />
+              <div v-if="isCurrent(row.node)" class="group-hover:hidden" i-mdi-arrow-right-bold text-blue-500 />
+              <div v-else class="group-hover:hidden" i-mdi-circle-outline scale-60 text-gray-400 />
               <div class="hidden group-hover:block" i-mdi-pin-outline text-gray-300 />
             </template>
           </button>
