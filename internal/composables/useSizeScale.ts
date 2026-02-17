@@ -1,4 +1,4 @@
-export const useSizeScale = () => {
+export const useSizeScale = createGlobalState(() => {
   const enabled = ref(true)
   const scale = useLocalStorage('site-scale', 1, { mergeDefaults: true })
 
@@ -28,4 +28,4 @@ export const useSizeScale = () => {
       }
     })
   }
-}
+})
