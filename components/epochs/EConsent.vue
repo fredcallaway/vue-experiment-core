@@ -91,9 +91,9 @@ const slots = useSlots()
     </div>
   </div>
   <!-- main screen -->
-  <div v-else class="bg-white">
+  <div v-else>
     <div class="max-w-3xl mx-auto px-4">
-      <div class="bg-white">
+      <div >
         <h2>We need your consent to proceed</h2>
         <!-- <div class="text-red-500 mb-4">
           Warning: the experiment will timeout if you leave this page idle
