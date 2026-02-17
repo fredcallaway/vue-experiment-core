@@ -29,6 +29,28 @@ const makeAggregateKey = (parentId: string, nodes: EpochNode[]) => {
   return `${parentId}::${nodes.map(node => node.id).join('|')}`
 }
 
+const getStructureSignature = (node: EpochNode, cache: Map<string, string>): string => {
+  const existing = cache.get(node.id)
+  if (existing !== undefined) return existing
+
+  const childSignatures = node.children.map(child => getStructureSignature(child, cache))
+  const signature = `${node._name}(${childSignatures.join('|')})`
+  cache.set(node.id, signature)
+  return signature
+}
+
+// true if all the nodes have the same internal structure
+const canAggregate = (nodes: EpochNode[], cache: Map<string, string>) => {
+  if (nodes.length < MIN_AGGREGATE) return false
+  const first = getStructureSignature(nodes[0], cache)
+  for (let i = 1; i < nodes.length; i += 1) {
+    if (getStructureSignature(nodes[i], cache) !== first) {
+      return false
+    }
+  }
+  return true
+}
+
 const currentEpoch = useCurrentEpoch()
 const collapsed = ref<Record<string, boolean>>({})
 const unaggregatedRuns = ref<Record<string, boolean>>({})
@@ -92,24 +114,9 @@ const indexTree = (start: EpochNode) => {
   let order = 0
   const signatureCache = new Map<string, string>()
 
-  const getSignature = (node: EpochNode): string => {
-    const existing = signatureCache.get(node.id)
-    if (existing !== undefined) return existing
-    const childSignatures = node.children.map(child => getSignature(child))
-    const signature = `${node._name}(${childSignatures.join('|')})`
-    signatureCache.set(node.id, signature)
-    return signature
-  }
-
   const childrenAggregateForScoring = (node: EpochNode) => {
     const children = node.children
-    if (children.length < MIN_AGGREGATE) return false
-    const first = getSignature(children[0])
-    for (let i = 1; i < children.length; i += 1) {
-      if (getSignature(children[i]) !== first) {
-        return false
-      }
-    }
+    if (!canAggregate(children, signatureCache)) return false
     const key = makeAggregateKey(node.id, children)
     return !unaggregatedRuns.value[key]
   }
@@ -117,6 +124,8 @@ const indexTree = (start: EpochNode) => {
   const walk = (node: EpochNode, depth: number) => {
     depthById[node.id] = depth
     orderById[node.id] = order++
+    // Collapse priority uses effective visible height of a node:
+    // aggregated child sets behave like one child.
     childCountById[node.id] = childrenAggregateForScoring(node) ? 1 : node.children.length
     if (hasChildren(node)) {
       branchIds.push(node.id)
@@ -208,27 +217,6 @@ const runAutoCollapse = async () => {
   await collapseCandidatesUntilFit(getBelowSiblingBranchIds(), 'later')
 }
 
-const getStructureSignature = (node: EpochNode, cache: Map<string, string>): string => {
-  const existing = cache.get(node.id)
-  if (existing !== undefined) return existing
-
-  const childSignatures = node.children.map(child => getStructureSignature(child, cache))
-  const signature = `${node._name}(${childSignatures.join('|')})`
-  cache.set(node.id, signature)
-  return signature
-}
-
-const canAggregateChildren = (children: EpochNode[], cache: Map<string, string>) => {
-  if (children.length < MIN_AGGREGATE) return false
-  const first = getStructureSignature(children[0], cache)
-  for (let i = 1; i < children.length; i += 1) {
-    if (getStructureSignature(children[i], cache) !== first) {
-      return false
-    }
-  }
-  return true
-}
-
 const visibleRows = computed<OutlineRow[]>(() => {
   const rows: OutlineRow[] = []
   if (!root.value) return rows
@@ -244,7 +232,7 @@ const visibleRows = computed<OutlineRow[]>(() => {
 
   const walkChildren = (parent: EpochNode, depth: number) => {
     const children = parent.children
-    if (!canAggregateChildren(children, signatureCache)) {
+    if (!canAggregate(children, signatureCache)) {
       for (const child of children) {
         walkNode(child, depth)
       }
@@ -356,10 +344,12 @@ const buildAggregateCollapseGroups = (start: EpochNode) => {
   const activeIds = activePathIds.value
   const signatureCache = new Map<string, string>()
 
+  // Mirror render-time aggregation so collapse chooses whole runs
+  // (all-or-none) instead of toggling identical siblings independently.
   const walk = (parent: EpochNode) => {
     const children = parent.children
 
-    if (canAggregateChildren(children, signatureCache)) {
+    if (canAggregate(children, signatureCache)) {
       const flushRun = (run: EpochNode[]) => {
         if (run.length === 0) return
         const key = makeAggregateKey(parent.id, run)
@@ -448,6 +438,8 @@ const collapseCandidatesUntilFit = async (
   }
 
   const candidates = [...candidateMap.values()].sort((a, b) =>
+    // Collapse order: deeper first, then visually larger groups,
+    // then farther from active; direction only breaks final ties.
     (b.depth - a.depth)
     || (b.childCount - a.childCount)
     || (b.distance - a.distance)
@@ -562,23 +554,22 @@ onMounted(async () => {
   }
 })
 
+const refreshOutlineLayout = async () => {
+  await runAutoCollapse()
+  await scrollCurrentIntoView()
+}
+
 // adjust layout when epoch changes
 watch(currentEpoch, (epoch) => {
   const hasKids = epoch.children.length > 0
   if (hasKids || isTraversing.value || isJumping.value || !traversed.value) return
-  ;(async () => {
-    await runAutoCollapse()
-    await scrollCurrentIntoView()
-  })()
+  void refreshOutlineLayout()
 })
 
 // adjust layout whenever jump/traverse ends
 watch(() => isTraversing.value || isJumping.value, (value) => {
   if (value || !traversed.value) return
-  ;(async () => {
-    await runAutoCollapse()
-    await scrollCurrentIntoView()
-  })()
+  void refreshOutlineLayout()
 })
 
 </script>
