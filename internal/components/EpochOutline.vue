@@ -361,7 +361,7 @@ const buildAggregateCollapseGroups = (start: EpochNode) => {
 
 const collapseCandidatesUntilFit = async (
   candidateIds: Set<string>,
-  withinDepth: 'earlier' | 'later'
+  prefDirection: 'earlier' | 'later'
 ) => {
   if (!root.value) return
 
@@ -373,7 +373,7 @@ const collapseCandidatesUntilFit = async (
 
   if (!hasVerticalOverflow()) return
 
-  // console.log('collapsing candidates', candidateIds, withinDepth)
+  // console.log('collapsing candidates', candidateIds, prefDirection)
   const { depthById, orderById, childCountById } = indexTree(root.value)
   const { groupKeyById, groupIdsByKey } = buildAggregateCollapseGroups(root.value)
   const activeIds = activePathIds.value
@@ -408,8 +408,8 @@ const collapseCandidatesUntilFit = async (
     const childCount = Math.max(...ids.map(groupedId => childCountById[groupedId] ?? 0))
     const order = Math.max(...ids.map(groupedId => orderById[groupedId] ?? activeOrder))
     // const orders = ids.map(groupedId => orderById[groupedId] ?? activeOrder)
-    // const orderRef = withinDepth === 'earlier' ? Math.min(...orders) : Math.max(...orders)
-    const direction = Math.sign(order - activeOrder) * (withinDepth === 'earlier' ? 1 : -1)
+    // const orderRef = prefDirection === 'earlier' ? Math.min(...orders) : Math.max(...orders)
+    const direction = Math.sign(order - activeOrder) * (prefDirection === 'earlier' ? 1 : -1)
     const distance = Math.abs(order - activeOrder)
 
     candidateMap.set(key, {
@@ -429,15 +429,28 @@ const collapseCandidatesUntilFit = async (
     || (b.distance - a.distance)
   )
 
-  for (const candidate of candidates) {
-    if (!hasVerticalOverflow()) {
-      break
-    }
-    // console.log('collapsing', candidate.ids)
+  const setCollapsed = (candidate: CollapseCandidate, value: boolean) => {
     for (const id of candidate.ids) {
-      collapsed.value[id] = true
+      collapsed.value[id] = value
     }
+  }
+
+  // collapse until fit
+  const collapsedCandidates: CollapseCandidate[] = []
+  for (const candidate of candidates) {
+    if (!hasVerticalOverflow()) break
+    setCollapsed(candidate, true)
+    collapsedCandidates.push(candidate)
     await nextTick()
+  }
+  // try to uncollapse
+  for (const candidate of collapsedCandidates.reverse()) {
+    setCollapsed(candidate, false)
+    await nextTick()
+    if (hasVerticalOverflow()) {
+      setCollapsed(candidate, true)
+      // don't break: another candidate might fit
+    }
   }
 }
 
