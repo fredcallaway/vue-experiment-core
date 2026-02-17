@@ -85,8 +85,9 @@ watchImmediate(E.phase, async (currentPhase) => {
       clicks.value = 0
       isPopping.value = false
       timer.reset()
-      sleep(delayDist()).then(spawnCircle)
       timer.resume()
+      await sleep(delayDist())
+      spawnCircle()
     },
     feedback: async () => {
       timer.pause()
