@@ -5,10 +5,7 @@ const currentEpoch = useCurrentEpoch()
 // const currentEpochIndex = useCurrentEpochIndex()
 
 
-const currentEpochIndex = computed(() => {
-  const epochId = currentEpoch.value.id
-  return epochId.substring(0, epochId.lastIndexOf(']') + 1)
-})
+const { currentEpochIndex, pinStatus, setPinnedEpoch, cycleCurrentPin } = usePinnedEpoch()
 
 const stack = computed(() => {
   const stack = []
@@ -23,16 +20,6 @@ const stack = computed(() => {
   return stack.reverse()
 })
 
-const route = useRoute()
-const router = useRouter()
-
-const pinnedIndex = computed(() => route.query.jump as string | undefined)
-const pinStatus = computed(() => {
-  if (pinnedIndex.value === currentEpochIndex.value) return 'current'
-  if (pinnedIndex.value !== undefined) return 'other'
-  return 'none'
-})
-
 // useInspect({
 //   pinnedIndex, 
 //   currentEpochIndex,
@@ -40,13 +27,6 @@ const pinStatus = computed(() => {
 //   currentEpochId: () => currentEpoch.value.id,
 //   // stack: () => stack.value.map(e => e.id),
 // })
-
-const cyclePin = () => {
-  const newPin = pinStatus.value == 'current' ? undefined : currentEpochIndex.value
-  router.push({
-    query: { ...route.query, jump: newPin }
-  })
-}
 
 const handleEpochChange = async (epoch: Epoch, newValue: string | number) => {
   if (isPhaseEpoch(epoch)) {
@@ -59,7 +39,7 @@ const handleEpochChange = async (epoch: Epoch, newValue: string | number) => {
   if (pinStatus.value != 'none') {
     const jump = epoch.id + '[' + newValue + ']'
     await nextTick()
-    router.push({ query: { ...route.query, jump } })
+    await setPinnedEpoch(jump)
   }
 }
 
@@ -100,7 +80,7 @@ const toggleBookmark = () => {
 
 const jumpToBookmark = async (jump: string) => {
   try {
-    router.push({ query: { ...route.query, jump } })
+    await setPinnedEpoch(jump)
     await jumpToEpoch(jump)
   } catch (e) {
     console.error('jump not found:', jump)
@@ -181,7 +161,7 @@ const width = computed(() => {
             ]"
           />
         </button>
-        <button @click="cyclePin">
+        <button @click="cycleCurrentPin">
           <div text-2xl :class="[
             pinStatus == 'other' ? 'i-mdi-pin-outline' : 'i-mdi-pin',
             pinStatus != 'none' ? 'text-blue-500' : 'text-gray-300'
