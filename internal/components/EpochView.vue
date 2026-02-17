@@ -23,18 +23,6 @@ const stack = computed(() => {
   return stack.reverse()
 })
 
-const isMultistepEpoch = (epoch: Epoch): epoch is MultistepEpoch => {
-  return 'step' in epoch && 'nSteps' in epoch
-}
-
-const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
-  return 'step' in epoch && 'nSteps' in epoch && 'prev' in epoch && 'goTo' in epoch
-}
-
-const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
-  return 'phase' in epoch
-}
-
 const route = useRoute()
 const router = useRouter()
 

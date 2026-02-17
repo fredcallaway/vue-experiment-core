@@ -15,6 +15,35 @@ export type Epoch = {
   id: string,
 }
 
+
+export type MultistepEpoch = Epoch & {
+  step: Readonly<Ref<number>>,
+  nSteps: number,
+}
+export const isMultistepEpoch = (epoch: Epoch): epoch is MultistepEpoch => {
+  return 'step' in epoch && 'nSteps' in epoch
+}
+
+export type IndexableEpoch = Epoch & {
+  step: Ref<number>,
+  nSteps: number,
+  prev: () => void,
+  goTo: (step: number) => void,
+}
+export const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
+  return 'goTo' in epoch
+}
+
+export type PhaseEpoch<T extends string = string> = IndexableEpoch & {
+  phase: ComputedRef<T>,
+  phases: readonly T[],
+  goTo: (phase: T) => void,
+}
+export const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch<any> => {
+  return 'phase' in epoch && 'phases' in epoch
+}
+
+
 type EpochProps = {
   name: string,
   parent: Epoch,
@@ -25,7 +54,7 @@ type EpochProps = {
   isLeaf?: boolean,
   next?: () => void,
 }
-
+// Create a new epoch and adds it to the tree.
 const makeEpoch = (props: EpochProps): Epoch => {
   // console.log('makeEpoch', props.name, props.parent)
   assert(props.name === '__TOP_EPOCH__' || R.isDefined(props.parent), 
@@ -82,37 +111,12 @@ const makeEpoch = (props: EpochProps): Epoch => {
   // register with parent unless we have already (e.g. backward navigation in instructions)
   if (!epoch.isNoEpoch && !epoch.isDisabled && props.parent) {
     if (!props.parent.children.some(e => e.id === epoch.id)) {
+      // TODO: children is currently orderd by visitation, not their number
       props.parent.children.push(epoch)
     }
   }
 
   return epoch
-}
-
-export type MultistepEpoch = Epoch & {
-  step: Readonly<Ref<number>>,
-  nSteps: number,
-}
-
-export type IndexableEpoch = Epoch & {
-  step: Ref<number>,
-  nSteps: number,
-  prev: () => void,
-  goTo: (step: number) => void,
-}
-
-export type PhaseEpoch<T extends string = string> = IndexableEpoch & {
-  phase: ComputedRef<T>,
-  phases: readonly T[],
-  goTo: (phase: T) => void,
-}
-
-const isIndexableEpoch = (epoch: Epoch): epoch is IndexableEpoch => {
-  return 'step' in epoch && 'goTo' in epoch
-}
-
-export const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch => {
-  return 'phase' in epoch
 }
 
 // a dummy root node
@@ -123,7 +127,7 @@ export const TOP_EPOCH = makeEpoch({
   next: () => console.warn('TOP_EPOCH.next() called'),
 })
 
-// WARNING: currentEpoch.step is not a ref
+// WARNING: currentEpoch.step is not a ref (EDIT: or is it? maybe not in templates?)
 const currentEpoch = ref<Epoch>(TOP_EPOCH)
 export const useCurrentEpoch = () => currentEpoch
 
@@ -168,6 +172,7 @@ type NoHyphen<S extends string> =
     ? "epoch name cannot contain hyphens (-)"
     : S
 
+// main composable; this should be documented at some point
 export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
   if (name.includes('-')) {
     throw new Error(`useEpoch: name "${name}" contain hyphens (-)`)
@@ -184,14 +189,6 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
   if (parentEpoch.isLeaf) {
     logWarn('useEpoch: parent epoch is a leaf', { parentEpoch: parentEpoch.id })
   }
-  // TODO: figure out why this happens frequently without breaking anything
-  // if (parentEpoch.id !== _currentEpoch.id) {
-  //   logWarn('useEpoch: parent epoch is not the current epoch', { 
-  //     parentEpoch: parentEpoch.id, 
-  //     currentEpoch: _currentEpoch.id,
-  //     name,
-  //   })
-  // }
 
   const epoch = makeEpoch({
     name,
@@ -203,9 +200,11 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
   onUnmounted(() => {
     // return control to parent on unmount
     // NOTE: unlike done(), this does NOT call parent.next()
+    // TODO: is this the right thing to do here? This might only happen from jumps,
+    // in which case it's not necessary because jumpToEpoch will set the epoch upon completion.
     epoch.isDisabled = true
     if (currentEpoch.value.id === epoch.id) {
-      console.debug('useEpoch.unMounted: returning control to parent', epoch.id, '->', parentEpoch.id)
+      console.debug(`👉 useEpoch: unmounted ${epoch.id}. Returning control to parent (${parentEpoch.id})`)
       setCurrentEpoch(parentEpoch)
     }
   })
@@ -215,30 +214,6 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
     setCurrentEpoch(epoch)
     logEvent(`epoch.start`, {id: epoch.id})
   }
-
-  return epoch
-}
-
-function makeLeafEpoch(parent: Epoch, name: string): Epoch {
-  const epoch = makeEpoch({
-    name,
-    parent,
-    isLeaf: true
-  })
-
-  // epoch.id = epoch.id.replace('-leaf', '')
-
-  // TODO: do we really need to override this?
-  // epoch.done = R.once((_result?: any) => {
-  //   console.log('LEAF DONE')
-  //   if (_currentEpoch.id == epoch.id) {
-  //     setCurrentEpoch(parent)
-  //     parent.next()
-  //   }
-  // })
-
-  setCurrentEpoch(epoch)
-  logEvent(`epoch.start`, {id: epoch.id})
 
   return epoch
 }
@@ -271,28 +246,39 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
   E.nSteps = nSteps
   E.step = step
 
-  let _activeLeaf: Epoch | null = null
+  // For sequential epochs that don't have explicit child epochs, we create them.
+  // TODO: maybe we should do this at epoch intialization; would be more robust
+  const startNewLeafEpoch = (parent: Epoch, name: string) => {
+    const epoch = makeEpoch({
+      name,
+      parent,
+      isLeaf: true
+    })
+    setCurrentEpoch(epoch)
+    logEvent(`epoch.start`, {id: epoch.id})
+    return epoch
+  }
+  let activeLeaf: Epoch | null = null
 
   watchImmediate(step, () => {
-    if (E.isNoEpoch) {
-      return
-    }
-    // Create a leaf epoch if necessary
+    if (E.isNoEpoch) return
     const ensureChild = R.once(() => {
-      // NOTE: this was (_currentEpoch.id === E.id || _activeLeaf) before, but I think was a mistake
-      if (_currentEpoch.id === E.id || _currentEpoch.id === _activeLeaf?.id) {
-        // logDebug('making leaf', { E: E.id })
+      // NOTE: we need the latter condition because sequential epochs don't necessarily
+      // become currentEpoch between steps (if calling E.goTo or E.next directly)
+      if (_currentEpoch.id === E.id || _currentEpoch.id === activeLeaf?.id) {
         const name = 'leaf_' + (isPhaseEpoch(E) ? E.phases[step.value] : String(step.value))
-        _activeLeaf = makeLeafEpoch(E, name)
+        activeLeaf = startNewLeafEpoch(E, name)
       } else {
-        // logDebug('has child', { E: E.id, child: _currentEpoch.id })
-        _activeLeaf = null
+        activeLeaf = null
       }
     })
+    
     if (getCurrentInstance()) {
       onMounted(ensureChild)
     } else {
-      nextTick(ensureChild)
+      console.debug('useIndexableEpoch: not in a component, using nextTick to ensure child')
+      // TODO: figure out how this happens. It could result in creating a leaf unnecesarily.
+      void nextTick(ensureChild)
     }
   })
   
@@ -307,17 +293,12 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
   E.prev = () => step.value -= 1
   
   E.goTo = (newStep: number) => {
-    assert(isBetween(newStep, 0, E.nSteps-1),  `IndexableEpoch "${name}": goTo(${newStep}) is out of bounds [0, ${E.nSteps-1}]`)
+    assert(isBetween(newStep, 0, E.nSteps-1), `IndexableEpoch "${name}": goTo(${newStep}) is out of bounds [0, ${E.nSteps-1}]`)
     step.value = newStep
   }
 
   return E
 }
-
-// watchEffect(() => {
-//   logDebug('currentEpoch', { currentEpoch: currentEpoch.value.id })
-// })
-
 
 export function usePhaseEpoch<const T extends readonly string[]>(
   name: string,
@@ -343,6 +324,30 @@ export function usePhaseEpoch<const T extends readonly string[]>(
 
   return E
 }
+
+export const jumpToEpoch = async (epochId: string, isFallback: boolean = false): Promise<null | string> => {
+  logDebug(`jumpToEpoch: ${epochId}`)
+  if (epochId === '') return null
+  isJumping.value = true
+  const parts = epochId.split('-')
+  try {
+    const result = await jumpToEpochImpl(parts)
+    if (!isFallback) {
+      logDebug('__JUMP_SUCCEEDED__', { epochId }) // sending a signal to EventView
+    }
+    isJumping.value = false
+    return result
+  } catch (e) {
+    logError('error jumping to epoch', e)
+    const shortened = epochId.substring(0, epochId.lastIndexOf('-'))
+    if (shortened != epochId) {
+      return await jumpToEpoch(shortened, true)
+    }
+    isJumping.value = false
+    return null
+  }
+}
+
 
 const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
 
@@ -400,28 +405,4 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
   // assert(currentPrefix.startsWith(expectedPrefix), `expected ${expectedPrefix} but got ${currentPrefix}`)
 
   return expectedPrefix
-}
-
-
-export const jumpToEpoch = async (epochId: string, isFallback: boolean = false): Promise<null | string> => {
-  logDebug(`jumpToEpoch: ${epochId}`)
-  if (epochId === '') return null
-  isJumping.value = true
-  const parts = epochId.split('-')
-  try {
-    const result = await jumpToEpochImpl(parts)
-    if (!isFallback) {
-      logDebug('__JUMP_SUCCEEDED__', { epochId }) // sending a signal to EventView
-    }
-    isJumping.value = false
-    return result
-  } catch (e) {
-    logError('error jumping to epoch', e)
-    const shortened = epochId.substring(0, epochId.lastIndexOf('-'))
-    if (shortened != epochId) {
-      return await jumpToEpoch(shortened, true)
-    }
-    isJumping.value = false
-    return null
-  }
 }
