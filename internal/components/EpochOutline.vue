@@ -259,10 +259,10 @@ const buildAggregateCollapseGroups = (start: EpochNode) => {
   return { groupKeyById, groupIdsByKey }
 }
 
+
 const listElRef = useTemplateRef('listEl')
 
 const runAutoCollapse = async () => {
-
   const listEl = assertDefined(listElRef.value)
   const index = indexTree(assertDefined(root.value))
 
@@ -281,15 +281,11 @@ const runAutoCollapse = async () => {
 
   await nextTick()
 
-  // Collapse until there's no scroll (or we can't collapse any more)
+  // Now we collapse nodes to make the outline fit in the available height (if possible)
   const hasVerticalOverflow = () => listEl.scrollHeight > listEl.clientHeight + 1
   if (!hasVerticalOverflow()) return
 
-  // console.log('collapsing candidates', candidateIds, prefDirection)
-  const { depthById, orderById, childCountById, branchIds } = index
-  const { groupKeyById, groupIdsByKey } = buildAggregateCollapseGroups(assertDefined(root.value))
-  const activeOrder = orderById[currentEpoch.value.id] ?? 0
-
+  // Build a list of candidates to collapse; aggregated nodes are treated as one candidate
   type CollapseCandidate = {
     key: string
     ids: string[]
@@ -298,9 +294,11 @@ const runAutoCollapse = async () => {
     distance: number
     direction: number
   }
+  const { depthById, orderById, childCountById, branchIds } = index
+  const { groupKeyById, groupIdsByKey } = buildAggregateCollapseGroups(assertDefined(root.value))
+  const activeOrder = orderById[currentEpoch.value.id] ?? 0
 
   const candidateMap = new Map<string, CollapseCandidate>()
-
   for (const id of branchIds) {
     if (isActive(id) || collapsed.value[id] === true) continue
 
@@ -331,6 +329,7 @@ const runAutoCollapse = async () => {
     })
   }
 
+  // Sort candidates by priority: this could be tuned to change collapsing behavior
   const candidates = [...candidateMap.values()].sort((a, b) =>
     (b.direction - a.direction)
     || (b.depth - a.depth)
@@ -362,7 +361,6 @@ const runAutoCollapse = async () => {
     }
   }
 }
-
 
 const scrollCurrentIntoView = async () => {
   await nextTick()
@@ -423,7 +421,7 @@ const traverseTimeline = async () => {
     isJumping.value = true
     
     unwatch = watchImmediate(currentEpoch, async (epoch) => {
-      console.debug('traverse: ', epoch.id)
+      console.debug('traversing ', epoch.id)
       if (epoch.id === '__TOP_EPOCH__') {
         unwatch?.()
         resolve(true)
@@ -453,12 +451,8 @@ const traverseTimeline = async () => {
   }
 }
 
-// inspect({
-//   currentEpoch: () => currentEpoch.value.id,
-//   currentEpochName: () => currentEpoch.value._name,
-//   currentPath: () => currentPath.value.map(node => node.id),
-// })
-
+// We step through the full experiment to discover epochs (nodes)
+// NOTE: this will miss epochs that are not always created (e.g. because condition or randomness)
 const traversed = ref(false)
 onMounted(async () => {
   await nextTick()
@@ -469,7 +463,7 @@ onMounted(async () => {
 })
 
 const refreshOutlineLayout = async () => {
-  console.log('refreshing outline layout')
+  console.debug('refreshing outline layout')
   await nextTick()
   await runAutoCollapse()
   await scrollCurrentIntoView()
