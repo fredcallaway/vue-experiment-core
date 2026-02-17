@@ -188,6 +188,143 @@ const onHorizontalWheel = (event: WheelEvent) => {
   el.scrollLeft += deltaY + deltaX
 }
 
+const openDataPopoverKey = ref<string | null>(null)
+const dataPopoverStyle = ref<Record<string, string>>({})
+const previewBoxEls = new Map<string, HTMLElement>()
+const previewOverflowByKey = ref<Record<string, boolean>>({})
+let measureRaf = 0
+
+const getPopoverKey = (event: FormattedEvent, index: number) => `${event.timestamp}-${index}`
+
+const toggleDataPopover = (key: string) => {
+  if (openDataPopoverKey.value === key) {
+    closeDataPopover()
+    return
+  }
+  openDataPopoverKey.value = key
+  nextTick(() => {
+    updateDataPopoverPosition()
+  })
+}
+
+const closeDataPopover = () => {
+  openDataPopoverKey.value = null
+  dataPopoverStyle.value = {}
+}
+
+const setPreviewBoxEl = (key: string, el: unknown | null) => {
+  if (el instanceof HTMLElement) {
+    previewBoxEls.set(key, el)
+  }
+  else {
+    previewBoxEls.delete(key)
+  }
+  queueMeasurePreviewOverflow()
+}
+
+const hasPreviewOverflow = (key: string) => previewOverflowByKey.value[key] === true
+const shouldShowPreviewBox = (key: string) => previewOverflowByKey.value[key] !== false
+
+const measurePreviewOverflow = () => {
+  const validKeys = new Set(filteredEvents.value.map((event, index) => getPopoverKey(event, index)))
+
+  for (const key of Object.keys(previewOverflowByKey.value)) {
+    if (!validKeys.has(key)) {
+      delete previewOverflowByKey.value[key]
+    }
+  }
+  for (const key of [...previewBoxEls.keys()]) {
+    if (!validKeys.has(key)) {
+      previewBoxEls.delete(key)
+    }
+  }
+
+  for (const [key, el] of previewBoxEls) {
+    const hasOverflow = el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1
+    if (previewOverflowByKey.value[key] !== hasOverflow) {
+      previewOverflowByKey.value[key] = hasOverflow
+      if (!hasOverflow && openDataPopoverKey.value === key) {
+        closeDataPopover()
+      }
+    }
+  }
+}
+
+const queueMeasurePreviewOverflow = () => {
+  if (measureRaf !== 0) return
+  measureRaf = requestAnimationFrame(() => {
+    measureRaf = 0
+    measurePreviewOverflow()
+    updateDataPopoverPosition()
+  })
+}
+
+const updateDataPopoverPosition = () => {
+  const key = openDataPopoverKey.value
+  if (!key) return
+
+  const anchor = previewBoxEls.get(key)
+  if (!anchor) {
+    closeDataPopover()
+    return
+  }
+
+  const rect = anchor.getBoundingClientRect()
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+  const maxWidth = Math.min(1000, viewportWidth - 16)
+  const left = Math.max(8, Math.min(rect.right - maxWidth, viewportWidth - maxWidth - 8))
+  const bottom = Math.max(8, Math.min(viewportHeight - rect.top + 8, viewportHeight - 8))
+
+  dataPopoverStyle.value = {
+    position: 'fixed',
+    left: `${left}px`,
+    bottom: `${bottom}px`,
+    maxWidth: `${maxWidth}px`,
+    maxHeight: '70vh',
+  }
+}
+
+onMounted(() => {
+  const onPointerDown = (event: PointerEvent) => {
+    const key = openDataPopoverKey.value
+    if (!key) return
+    const target = event.target as HTMLElement | null
+    if (!target) {
+      closeDataPopover()
+      return
+    }
+    if (target.closest(`[data-data-popover="${key}"]`)) return
+    closeDataPopover()
+  }
+  const onViewportChange = () => {
+    queueMeasurePreviewOverflow()
+  }
+
+  window.addEventListener('pointerdown', onPointerDown)
+  window.addEventListener('resize', onViewportChange)
+  window.addEventListener('scroll', onViewportChange, true)
+  queueMeasurePreviewOverflow()
+  onUnmounted(() => {
+    window.removeEventListener('pointerdown', onPointerDown)
+    window.removeEventListener('resize', onViewportChange)
+    window.removeEventListener('scroll', onViewportChange, true)
+    if (measureRaf !== 0) {
+      cancelAnimationFrame(measureRaf)
+      measureRaf = 0
+    }
+  })
+})
+
+watch([horizontalWidth, eventViewHeight], () => {
+  previewOverflowByKey.value = {}
+  queueMeasurePreviewOverflow()
+})
+
+onUpdated(() => {
+  queueMeasurePreviewOverflow()
+})
+
 </script>
 
 <template>
@@ -224,8 +361,26 @@ const onHorizontalWheel = (event: WheelEvent) => {
       pb-1
       @wheel="onHorizontalWheel"
     >
-      <template v-for="event in filteredEvents" :key="event.timestamp">
-        <div :class="event.cardClass ?? 'card-gray'" p-2 rounded-md relative w="260px" min-w="260px" h-full overflow-y-auto>
+      <template v-for="(event, index) in filteredEvents" :key="`${event.timestamp}-${index}`">
+        <template v-if="event.data !== undefined">
+          <Teleport to="body">
+            <div
+              v-if="openDataPopoverKey === getPopoverKey(event, index) && hasPreviewOverflow(getPopoverKey(event, index))"
+              :data-data-popover="getPopoverKey(event, index)"
+              z-60
+              rounded-md
+              border="~ gray-300"
+              bg-white
+              p-2
+              shadow-lg
+              overflow-auto
+              :style="dataPopoverStyle"
+            >
+              <pre text-xs class="whitespace-pre-wrap break-words">{{ formatForPre(event.data, 160) }}</pre>
+            </div>
+          </Teleport>
+        </template>
+        <div :class="event.cardClass ?? 'card-gray'" p-2 rounded-md relative w="260px" min-w="260px" h-full>
           <span font-bold>{{ event.eventType }}</span>
           <div text-right absolute top-2 right-2>
             <span text-xs opacity-50>{{ fmtTimestamp(event.timestamp) }}</span>
@@ -234,7 +389,40 @@ const onHorizontalWheel = (event: WheelEvent) => {
           <template v-if="event.isError">
             <pre v-if="event.errorMinimal !== undefined" text-xs>{{ event.errorMinimal }}</pre>
           </template>
-          <pre v-else-if="event.data !== undefined" text-xs>{{ formatForPre(event.data, 54) }}</pre>
+          <template v-else-if="event.data !== undefined">
+            <div :data-data-popover="getPopoverKey(event, index)" relative mt-1>
+              <template v-if="shouldShowPreviewBox(getPopoverKey(event, index))">
+                <div
+                  :ref="(el) => setPreviewBoxEl(getPopoverKey(event, index), el)"
+                  rounded-md
+                  border="~ gray-300"
+                  class="bg-white/70"
+                  h="110px"
+                  overflow-hidden
+                  pr-7
+                >
+                  <pre p-2 text-xs class="whitespace-pre-wrap break-words overflow-hidden">{{ formatForPre(event.data, 54) }}</pre>
+                </div>
+                <button
+                  v-if="hasPreviewOverflow(getPopoverKey(event, index))"
+                  absolute
+                  top-1
+                  right-1
+                  w-5
+                  h-5
+                  rounded
+                  bg-gray-200
+                  hover:bg-gray-300
+                  flex-center
+                  @click.stop="toggleDataPopover(getPopoverKey(event, index))"
+                  title="Show full data"
+                >
+                  <span i-mdi-open-in-new text-xs />
+                </button>
+              </template>
+              <pre v-else text-xs class="whitespace-pre-wrap break-words">{{ formatForPre(event.data, 54) }}</pre>
+            </div>
+          </template>
         </div>
       </template>
     </div>
@@ -263,7 +451,25 @@ const onHorizontalWheel = (event: WheelEvent) => {
       <button r1 t1 ml-auto btn-gray btn-xs @click="events.length = 0">clear</button>
     </div>
     <div class="subtle-scrollbar flex-1 min-h-0" flex="~ col gap-2" overflow-y-auto>
-      <template v-for="event in filteredEvents" :key="event.timestamp">
+      <template v-for="(event, index) in filteredEvents" :key="`${event.timestamp}-${index}`">
+        <template v-if="event.data !== undefined">
+          <Teleport to="body">
+            <div
+              v-if="openDataPopoverKey === getPopoverKey(event, index) && hasPreviewOverflow(getPopoverKey(event, index))"
+              :data-data-popover="getPopoverKey(event, index)"
+              z-60
+              rounded-md
+              border="~ gray-300"
+              bg-white
+              p-2
+              shadow-lg
+              overflow-auto
+              :style="dataPopoverStyle"
+            >
+              <pre text-xs class="whitespace-pre-wrap break-words">{{ formatForPre(event.data, 160) }}</pre>
+            </div>
+          </Teleport>
+        </template>
         <div :class="event.cardClass ?? 'card-gray'" p-2 mr-1 rounded-md relative>
           <span font-bold>{{ event.eventType }}</span>
           <div text-right absolute top-2 right-2>
@@ -273,7 +479,40 @@ const onHorizontalWheel = (event: WheelEvent) => {
           <template v-if="event.isError">
             <pre v-if="event.errorMinimal !== undefined" text-xs>{{ event.errorMinimal }}</pre>
           </template>
-          <pre v-else-if="event.data !== undefined" text-xs>{{ formatForPre(event.data, 72) }}</pre>
+          <template v-else-if="event.data !== undefined">
+            <div :data-data-popover="getPopoverKey(event, index)" relative mt-1>
+              <template v-if="shouldShowPreviewBox(getPopoverKey(event, index))">
+                <div
+                  :ref="(el) => setPreviewBoxEl(getPopoverKey(event, index), el)"
+                  rounded-md
+                  border="~ gray-300"
+                  class="bg-white/70"
+                  h="110px"
+                  overflow-hidden
+                  pr-7
+                >
+                  <pre p-2 text-xs class="whitespace-pre-wrap break-words overflow-hidden">{{ formatForPre(event.data, 72) }}</pre>
+                </div>
+                <button
+                  v-if="hasPreviewOverflow(getPopoverKey(event, index))"
+                  absolute
+                  top-1
+                  right-1
+                  w-5
+                  h-5
+                  rounded
+                  bg-gray-200
+                  hover:bg-gray-300
+                  flex-center
+                  @click.stop="toggleDataPopover(getPopoverKey(event, index))"
+                  title="Show full data"
+                >
+                  <span i-mdi-open-in-new text-xs />
+                </button>
+              </template>
+              <pre v-else text-xs class="whitespace-pre-wrap break-words">{{ formatForPre(event.data, 72) }}</pre>
+            </div>
+          </template>
         </div>
       </template>
     </div>
