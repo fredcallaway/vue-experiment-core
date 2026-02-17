@@ -90,7 +90,7 @@ const indexTree = (start: EpochNode) => {
   const depthById: Record<string, number> = {}
   const orderById: Record<string, number> = {}
   const childCountById: Record<string, number> = {}
-  const branchIds: string[] = []
+  const branchIds = new Set<string>()
   let order = 0
   const signatureCache = new Map<string, string>()
 
@@ -108,7 +108,7 @@ const indexTree = (start: EpochNode) => {
     // aggregated child sets behave like one child.
     childCountById[node.id] = childrenAggregateForScoring(node) ? 1 : node.children.length
     if (hasChildren(node)) {
-      branchIds.push(node.id)
+      branchIds.add(node.id)
     }
     for (const child of node.children) {
       walk(child, depth + 1)
@@ -118,43 +118,18 @@ const indexTree = (start: EpochNode) => {
   walk(start, 0)
   return { depthById, orderById, childCountById, branchIds }
 }
-
-const collectBranchIds = (node: EpochNode, into: Set<string>) => {
-  if (hasChildren(node)) {
-    into.add(node.id)
-  }
-  for (const child of node.children) {
-    collectBranchIds(child, into)
-  }
-}
-
-const getSiblingBranchIds = () => {
-  const ids = new Set<string>()
-  const path = currentPath.value
-  for (let i = 0; i < path.length - 1; i += 1) {
-    const parent = path[i]
-    const activeChild = path[i + 1]
-    const activeIndex = parent.children.findIndex(child => child.id === activeChild.id)
-    if (activeIndex < 0) continue
-    for (let j = 0; j < parent.children.length; j += 1) {
-      if (j === activeIndex) continue
-      collectBranchIds(parent.children[j], ids)
-    }
-  }
-  return ids
-}
+type TreeIndex = ReturnType<typeof indexTree>
 
 const runAutoCollapse = async () => {
   if (!root.value) return
   // console.log('running auto collapse')
 
-  const { branchIds } = indexTree(root.value)
-  const branchSet = new Set(branchIds)
+  const index = indexTree(root.value)
   const nextCollapsed: Record<string, boolean> = { ...collapsed.value }
 
   // Drop stale collapse state.
   for (const id of Object.keys(nextCollapsed)) {
-    if (!branchSet.has(id)) {
+    if (!index.branchIds.has(id)) {
       delete nextCollapsed[id]
     }
   }
@@ -167,7 +142,7 @@ const runAutoCollapse = async () => {
   collapsed.value = nextCollapsed
   await nextTick()
   
-  await collapseCandidatesUntilFit(new Set(branchIds), 'earlier')
+  await collapseCandidatesUntilFit(index, 'earlier')
 }
 
 const visibleRows = computed<OutlineRow[]>(() => {
@@ -338,7 +313,7 @@ const buildAggregateCollapseGroups = (start: EpochNode) => {
 }
 
 const collapseCandidatesUntilFit = async (
-  candidateIds: Set<string>,
+  index: TreeIndex,
   prefDirection: 'earlier' | 'later'
 ) => {
   if (!root.value) return
@@ -352,7 +327,7 @@ const collapseCandidatesUntilFit = async (
   if (!hasVerticalOverflow()) return
 
   // console.log('collapsing candidates', candidateIds, prefDirection)
-  const { depthById, orderById, childCountById } = indexTree(root.value)
+  const { depthById, orderById, childCountById, branchIds } = index
   const { groupKeyById, groupIdsByKey } = buildAggregateCollapseGroups(root.value)
   const activeOrder = orderById[currentEpoch.value.id] ?? 0
 
@@ -367,7 +342,7 @@ const collapseCandidatesUntilFit = async (
 
   const candidateMap = new Map<string, CollapseCandidate>()
 
-  for (const id of candidateIds) {
+  for (const id of branchIds) {
     if (isActive(id) || collapsed.value[id] === true) continue
 
     const key = groupKeyById.get(id) ?? `node:${id}`
