@@ -52,6 +52,7 @@ const canAggregate = (nodes: EpochNode[], cache: Map<string, string>) => {
 }
 
 const currentEpoch = useCurrentEpoch()
+const { pinnedIndex, setPinnedEpoch, pinAndJumpToEpoch } = usePinnedEpoch()
 const collapsed = ref<Record<string, boolean>>({})
 const unaggregatedRuns = ref<Record<string, boolean>>({})
 
@@ -198,7 +199,17 @@ const guideLeft = (level: number) => {
 }
 
 const handleClickNode = (node: EpochNode) => {
-  jumpToEpoch(node.id)
+  void jumpToEpoch(node.id)
+}
+
+const isPinnedNode = (node: EpochNode) => pinnedIndex.value === node.id
+
+const handlePinNode = async (node: EpochNode) => {
+  if (isPinnedNode(node)) {
+    await setPinnedEpoch(undefined)
+    return
+  }
+  await pinAndJumpToEpoch(node.id)
 }
 
 const toggleAggregate = (row: OutlineAggregateRow) => {
@@ -405,23 +416,35 @@ const scrollCurrentIntoView = async () => {
 }
 
 const isTraversing = ref(false)
+const hasTraversed = ref(false)
+
+inspect({ isTraversing, isJumping, hasTraversed })
+
 const traverseTimeline = async () => {
   if (isTraversing.value) return
+  console.groupCollapsed('traverseTimeline')
+  console.time('traverseTimeline')
+
+  if (isJumping.value) {
+    console.log('waiting for existing jump to complete')
+    await until(isJumping).toBe(false)
+    console.log('existing jump completed; resuming')
+  }
+
   isTraversing.value = true
-  const previous = currentEpoch.value
-  let unwatch = null as (() => void) | null
+  const previous = currentEpoch.value // restored at end
+  isJumping.value = true
 
   const { pushHandler } = useErrorHandler()
   const popHandler = pushHandler(err => {
     console.error('Error traversing timeline:', err)
   }, 100)
 
+  let unwatch = null as (() => void) | null
   const doTraversal = () => new Promise((resolve) => {
     // console.log('👉 doTraversal')
-    isJumping.value = true
-    
     unwatch = watchImmediate(currentEpoch, async (epoch) => {
-      console.debug('traversing ', epoch.id)
+      console.log(`[${performance.now().toFixed(2)}] traversing`, epoch.id)
       if (epoch.id === '__TOP_EPOCH__') {
         unwatch?.()
         resolve(true)
@@ -436,7 +459,20 @@ const traverseTimeline = async () => {
   })
 
   try {
+    // await jumpToEpoch(TOP_EPOCH.children[0].id)
+
+    console.log('👉 currentEpoch', currentEpoch.value.id)
+    // if the target parts are incomplete, we assume the first epoch for each
+    while (isIndexableEpoch(currentEpoch.value)) {
+      currentEpoch.value.goTo(0)
+      await nextTick()
+    }
+  
+    // setCurrentEpoch(TOP_EPOCH.children[0])
+    // await nextTick()
     await doTraversal()
+    hasTraversed.value = true
+    console.log('traversal succeeded')
   } catch (error) {
     console.error('Error traversing timeline:', error)
   } finally {
@@ -447,18 +483,20 @@ const traverseTimeline = async () => {
     await nextTick()
     // retore original epoch
     setCurrentEpoch(TOP_EPOCH.children[0])
-    jumpToEpoch(previous.id)
+    await jumpToEpoch(previous.id)
+    console.groupEnd()
+    console.timeEnd('traverseTimeline')
+
   }
 }
 
 // We step through the full experiment to discover epochs (nodes)
 // NOTE: this will miss epochs that are not always created (e.g. because condition or randomness)
-const traversed = ref(false)
 onMounted(async () => {
-  await nextTick()
+  console.log('MOUNTED EpochOutline')
   if (currentEpoch.value.id !== '__TOP_EPOCH__') {
     await traverseTimeline()
-    traversed.value = true
+    hasTraversed.value = true
   }
 })
 
@@ -471,13 +509,13 @@ const refreshOutlineLayout = async () => {
 
 // adjust layout when epoch changes
 watch(currentEpoch, (epoch) => {
-  if (hasChildren(epoch) || isTraversing.value || isJumping.value || !traversed.value) return
+  if (hasChildren(epoch) || isTraversing.value || isJumping.value || !hasTraversed.value) return
   void refreshOutlineLayout()
 })
 
 // adjust layout whenever jump/traverse ends
 watch(() => isTraversing.value || isJumping.value, (value) => {
-  if (value || !traversed.value) return
+  if (value || !hasTraversed.value) return
   void refreshOutlineLayout()
 })
 
@@ -503,14 +541,16 @@ watchEffect(() => {
     rounded-lg
     border="~ 2 gray-300"
     bg-white
-    pr2
     cursor-default
     flex="~ col"
+    pr2
     relative
     ref="top-div"
     :style="{ height: `${outlineHeight}px`, minWidth: `${maxSeenWidth}px` }"
   >
-
+    <h2 ml2 shrink-0>Outline</h2>
+    <button @click="traverseTimeline" :disabled="isTraversing" btn-xs absolute right-1 top-1 >reindex</button>
+    
     <div v-if="!root" text-sm text-gray-500>
       Waiting for first epoch...
     </div>
@@ -558,7 +598,25 @@ watchEffect(() => {
             <span :class="isExpanded(row.node) ? 'i-mdi-chevron-down' : 'i-mdi-chevron-right'" />
           </button>
           <div v-else w-4 h-4 flex-center i-mdi-circle-outline scale-60 ></div>
-          <span truncate @click="handleClickNode(row.node)" cursor-pointer>{{ row.node._name }}</span>
+          <span truncate @click="handleClickNode(row.node)" cursor-pointer min-w-0>{{ row.node._name }}</span>
+          <button
+            @click.stop="handlePinNode(row.node)"
+            ml-auto
+            h-5
+            w-5
+            flex-center
+            rounded
+            class="group"
+            hover:bg-gray-100
+            :title="isPinnedNode(row.node) ? 'Unpin' : 'Pin and jump'"
+          >
+            <div
+              text-base
+              :class="[
+                isPinnedNode(row.node) ? 'i-mdi-pin text-blue-500' : 'i-mdi-pin-outline text-gray-300 opacity-0 group-hover:opacity-100'
+              ]"
+            />
+          </button>
         </template>
 
         <template v-else>
