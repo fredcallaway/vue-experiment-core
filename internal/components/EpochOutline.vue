@@ -120,29 +120,6 @@ const indexTree = (start: EpochNode) => {
 }
 type TreeIndex = ReturnType<typeof indexTree>
 
-const runAutoCollapse = async () => {
-
-  const nextCollapsed: Record<string, boolean> = { ...collapsed.value }
-  const index = indexTree(assertDefined(root.value))
-
-  // Drop stale collapse state.
-  for (const id of Object.keys(nextCollapsed)) {
-    if (!index.branchIds.has(id)) {
-      delete nextCollapsed[id]
-    }
-  }
-
-  // Active path is always expanded.
-  for (const node of currentPath.value) {
-    nextCollapsed[node.id] = false
-  }
-
-  collapsed.value = nextCollapsed
-  await nextTick()
-  
-  await collapseCandidatesUntilFit(index, 'earlier')
-}
-
 const visibleRows = computed<OutlineRow[]>(() => {
   const rows: OutlineRow[] = []
   if (!root.value) return rows
@@ -284,22 +261,33 @@ const buildAggregateCollapseGroups = (start: EpochNode) => {
 
 const listElRef = useTemplateRef('listEl')
 
-const collapseCandidatesUntilFit = async (
-  index: TreeIndex,
-  prefDirection: 'earlier' | 'later'
-) => {
-  if (!root.value) return
+const runAutoCollapse = async () => {
 
-  const listEl = listElRef.value
-  if (!listEl) return
+  const listEl = assertDefined(listElRef.value)
+  const index = indexTree(assertDefined(root.value))
 
+  // Drop stale collapse state.
+  for (const id of Object.keys(collapsed.value)) {
+    if (!index.branchIds.has(id)) {
+      delete collapsed.value[id]
+    }
+  }
+
+  // Expand active path.
+  // We set this explicitly so that it stays expanded when it's no longer active
+  for (const node of currentPath.value) {
+    collapsed.value[node.id] = false
+  }
+
+  await nextTick()
+
+  // Collapse until there's no scroll (or we can't collapse any more)
   const hasVerticalOverflow = () => listEl.scrollHeight > listEl.clientHeight + 1
-
   if (!hasVerticalOverflow()) return
 
   // console.log('collapsing candidates', candidateIds, prefDirection)
   const { depthById, orderById, childCountById, branchIds } = index
-  const { groupKeyById, groupIdsByKey } = buildAggregateCollapseGroups(root.value)
+  const { groupKeyById, groupIdsByKey } = buildAggregateCollapseGroups(assertDefined(root.value))
   const activeOrder = orderById[currentEpoch.value.id] ?? 0
 
   type CollapseCandidate = {
@@ -330,9 +318,7 @@ const collapseCandidatesUntilFit = async (
     const depth = Math.max(...ids.map(groupedId => depthById[groupedId] ?? 0))
     const childCount = Math.max(...ids.map(groupedId => childCountById[groupedId] ?? 0))
     const order = Math.max(...ids.map(groupedId => orderById[groupedId] ?? activeOrder))
-    // const orders = ids.map(groupedId => orderById[groupedId] ?? activeOrder)
-    // const orderRef = prefDirection === 'earlier' ? Math.min(...orders) : Math.max(...orders)
-    const direction = Math.sign(order - activeOrder) * (prefDirection === 'earlier' ? 1 : -1)
+    const direction = Math.sign(order - activeOrder) // * (prefDirection === 'later' ? -1 : 1)
     const distance = Math.abs(order - activeOrder)
 
     candidateMap.set(key, {
