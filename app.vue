@@ -19,9 +19,14 @@ useHead({
 onMounted(async () => {
   const route = useRoute()
   if (route.query.jump && typeof route.query.jump === 'string') {
-      await jumpToEpoch(route.query.jump)
+    console.log('Jumping to epoch from URL param:', route.query.jump)
+    await timeoutPromise(0)
+    await jumpToEpoch(route.query.jump)
   }
 })
+
+
+useErrorHandler() // initialize
 
 </script>
 
