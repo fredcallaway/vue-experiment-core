@@ -14,7 +14,6 @@ const ensureErrorHandler = R.once(() => {
   const { pushHandler } = useErrorHandler()
   pushHandler((err, instance, info, next) => {
     if (String(err) === 'useLocalAsync:unmounted') {
-      console.log('useLocalAsync: unmounted error; ignoring')
       return
     }
     next()
