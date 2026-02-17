@@ -205,6 +205,7 @@ const handleClickNode = (node: EpochNode) => {
 const isPinnedNode = (node: EpochNode) => pinnedIndex.value === node.id
 
 const handlePinNode = async (node: EpochNode) => {
+  if (hasChildren(node)) return
   if (isPinnedNode(node)) {
     await setPinnedEpoch(undefined)
     return
@@ -459,18 +460,13 @@ const traverseTimeline = async () => {
   })
 
   try {
+    // TODO: handle the case where we're not at the start of the experiment
+    // this doesn't work for some reason...
     // await jumpToEpoch(TOP_EPOCH.children[0].id)
-
-    console.log('👉 currentEpoch', currentEpoch.value.id)
-    // if the target parts are incomplete, we assume the first epoch for each
-    while (isIndexableEpoch(currentEpoch.value)) {
-      currentEpoch.value.goTo(0)
-      await nextTick()
-    }
-  
     // setCurrentEpoch(TOP_EPOCH.children[0])
     // await nextTick()
-    await doTraversal()
+    await useDataWriter().withDisabled(doTraversal)
+    
     hasTraversed.value = true
     console.log('traversal succeeded')
   } catch (error) {
@@ -486,7 +482,6 @@ const traverseTimeline = async () => {
     await jumpToEpoch(previous.id)
     console.groupEnd()
     console.timeEnd('traverseTimeline')
-
   }
 }
 
@@ -597,13 +592,11 @@ watchEffect(() => {
           >
             <span :class="isExpanded(row.node) ? 'i-mdi-chevron-down' : 'i-mdi-chevron-right'" />
           </button>
-          <div v-else w-4 h-4 flex-center i-mdi-circle-outline scale-60 ></div>
-          <span truncate @click="handleClickNode(row.node)" cursor-pointer min-w-0>{{ row.node._name }}</span>
           <button
+            v-else
             @click.stop="handlePinNode(row.node)"
-            ml-auto
-            h-5
-            w-5
+            w-4
+            h-4
             flex-center
             rounded
             class="group"
@@ -611,12 +604,16 @@ watchEffect(() => {
             :title="isPinnedNode(row.node) ? 'Unpin' : 'Pin and jump'"
           >
             <div
-              text-base
-              :class="[
-                isPinnedNode(row.node) ? 'i-mdi-pin text-blue-500' : 'i-mdi-pin-outline text-gray-300 opacity-0 group-hover:opacity-100'
-              ]"
+              v-if="isPinnedNode(row.node)"
+              i-mdi-pin
+              text-blue-500
             />
+            <template v-else>
+              <div class="group-hover:hidden" i-mdi-circle-outline scale-60 text-gray-400 />
+              <div class="hidden group-hover:block" i-mdi-pin-outline text-gray-300 />
+            </template>
           </button>
+          <span truncate @click="handleClickNode(row.node)" cursor-pointer min-w-0>{{ row.node._name }}</span>
         </template>
 
         <template v-else>
