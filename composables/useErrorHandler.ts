@@ -35,6 +35,7 @@ export const useErrorHandler = createGlobalState(() => {
       if (currentIndex < sortedHandlers.length) {
         sortedHandlers[currentIndex](err, instance, info, next)
       } else {
+        console.error('Unhandled error:', err)
         if (originalHandler) {
           originalHandler(err, instance, info)
         } else {

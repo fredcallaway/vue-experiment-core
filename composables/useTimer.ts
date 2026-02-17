@@ -55,7 +55,7 @@ export const useTimer = (timeMs: number, { immediate = true }: TimerOptions = {}
 
   const resume = () => {
     if (status.value === 'running') {
-      console.warn('Trying to resume timer that is already running')
+      console.debug('Trying to resume timer that is already running')
       return
     } else if (status.value !== 'paused') {
       throw new Error('Cannot resume timer with status ' + status.value)
@@ -68,7 +68,7 @@ export const useTimer = (timeMs: number, { immediate = true }: TimerOptions = {}
   
   const pause = () => {
     if (status.value !== 'running') {
-      console.warn('Trying to pause timer with status ' + status.value)
+      console.debug('Trying to pause timer with status ' + status.value)
       return
     }
     
@@ -80,7 +80,7 @@ export const useTimer = (timeMs: number, { immediate = true }: TimerOptions = {}
   
   const cancel = () => {
     if (status.value == 'done' || status.value == 'canceled') {
-      console.warn('Trying to cancel timer with status ' + status.value)
+      console.debug('Trying to cancel timer with status ' + status.value)
       return
     }
 

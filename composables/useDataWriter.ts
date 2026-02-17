@@ -282,7 +282,7 @@ export class DataWriter {
 
   private queueUpdate(fullPath: string, value: SafeData) {
     if (this.disabled) return
-    console.debug('queueUpdate', fullPath, value)
+    console.debug('queueUpdate', {fullPath, value})
     this.updates.value[fullPath] = value
     this.debounceFlush()
   }
