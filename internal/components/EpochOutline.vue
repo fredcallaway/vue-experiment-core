@@ -121,11 +121,9 @@ const indexTree = (start: EpochNode) => {
 type TreeIndex = ReturnType<typeof indexTree>
 
 const runAutoCollapse = async () => {
-  if (!root.value) return
-  // console.log('running auto collapse')
 
-  const index = indexTree(root.value)
   const nextCollapsed: Record<string, boolean> = { ...collapsed.value }
+  const index = indexTree(assertDefined(root.value))
 
   // Drop stale collapse state.
   for (const id of Object.keys(nextCollapsed)) {
@@ -238,34 +236,6 @@ const unaggregateRun = (row: OutlineAggregateRow) => {
   unaggregatedRuns.value[row.key] = true
 }
 
-const listEl = ref<HTMLElement | null>(null)
-const getActiveRowMetrics = () => {
-  const container = listEl.value
-  if (!container) return null
-  const activeEl = container.querySelector<HTMLElement>(`[data-epoch-id="${currentEpoch.value.id}"]`)
-  if (!activeEl) return null
-
-  const effectiveScale = useSizeScale().effectiveScale.value
-  const containerRect = container.getBoundingClientRect()
-  const activeRect = activeEl.getBoundingClientRect()
-  const activeTop = (activeRect.top - containerRect.top) / effectiveScale
-  const activeBottom = (activeRect.bottom - containerRect.top) / effectiveScale
-  const activeHeight = activeBottom - activeTop
-  const topBuffer = 48
-  const bottomBuffer = 48
-  const safeTop = topBuffer
-  const safeBottom = container.clientHeight - bottomBuffer
-
-  return {
-    container,
-    activeTop,
-    activeBottom,
-    activeHeight,
-    safeTop,
-    safeBottom,
-  }
-}
-
 const buildAggregateCollapseGroups = (start: EpochNode) => {
   const groupKeyById = new Map<string, string>()
   const groupIdsByKey = new Map<string, string[]>()
@@ -312,17 +282,18 @@ const buildAggregateCollapseGroups = (start: EpochNode) => {
   return { groupKeyById, groupIdsByKey }
 }
 
+const listElRef = useTemplateRef('listEl')
+
 const collapseCandidatesUntilFit = async (
   index: TreeIndex,
   prefDirection: 'earlier' | 'later'
 ) => {
   if (!root.value) return
 
-  const hasVerticalOverflow = () => {
-    const container = listEl.value
-    if (!container) return false
-    return container.scrollHeight > container.clientHeight + 1
-  }
+  const listEl = listElRef.value
+  if (!listEl) return
+
+  const hasVerticalOverflow = () => listEl.scrollHeight > listEl.clientHeight + 1
 
   if (!hasVerticalOverflow()) return
 
@@ -406,29 +377,44 @@ const collapseCandidatesUntilFit = async (
   }
 }
 
+
 const scrollCurrentIntoView = async () => {
   await nextTick()
-  const metrics = getActiveRowMetrics()
-  if (!metrics) return
+
+  const listEl = listElRef.value
+  if (!listEl) return null
+  const activeEl = listEl.querySelector<HTMLElement>(`[data-epoch-id="${currentEpoch.value.id}"]`)
+  if (!activeEl) return null
+
+  const effectiveScale = useSizeScale().effectiveScale.value
+  const containerRect = listEl.getBoundingClientRect()
+  const activeRect = activeEl.getBoundingClientRect()
+  const activeTop = (activeRect.top - containerRect.top) / effectiveScale
+  const activeBottom = (activeRect.bottom - containerRect.top) / effectiveScale
+  const activeHeight = activeBottom - activeTop
+  const topBuffer = 48
+  const bottomBuffer = 48
+  const safeTop = topBuffer
+  const safeBottom = listEl.clientHeight - bottomBuffer
 
   // If the current row is near/beyond the bottom, move it toward the top.
-  if (metrics.activeBottom > metrics.safeBottom) {
+  if (activeBottom > safeBottom) {
     const targetOffsetFromTop = 28
-    const delta = metrics.activeTop - targetOffsetFromTop
-    metrics.container.scrollTo({
-      top: metrics.container.scrollTop + delta,
+    const delta = activeTop - targetOffsetFromTop
+    listEl.scrollTo({
+      top: listEl.scrollTop + delta,
       behavior: 'smooth',
     })
     return
   }
 
   // If it drifts above the top safe zone, bring it back into view.
-  if (metrics.activeTop < metrics.safeTop) {
+  if (activeTop < safeTop) {
     const targetOffsetFromBottom = 28
-    const targetTop = metrics.container.clientHeight - metrics.activeHeight - targetOffsetFromBottom
-    const delta = metrics.activeTop - targetTop
-    metrics.container.scrollTo({
-      top: metrics.container.scrollTop + delta,
+    const targetTop = listEl.clientHeight - activeHeight - targetOffsetFromBottom
+    const delta = activeTop - targetTop
+    listEl.scrollTo({
+      top: listEl.scrollTop + delta,
       behavior: 'smooth',
     })
   }
@@ -497,14 +483,15 @@ onMounted(async () => {
 })
 
 const refreshOutlineLayout = async () => {
+  console.log('refreshing outline layout')
+  await nextTick()
   await runAutoCollapse()
   await scrollCurrentIntoView()
 }
 
 // adjust layout when epoch changes
 watch(currentEpoch, (epoch) => {
-  const hasKids = epoch.children.length > 0
-  if (hasKids || isTraversing.value || isJumping.value || !traversed.value) return
+  if (hasChildren(epoch) || isTraversing.value || isJumping.value || !traversed.value) return
   void refreshOutlineLayout()
 })
 
