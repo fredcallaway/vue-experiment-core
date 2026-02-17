@@ -30,7 +30,7 @@ const devTools = ref(!getUrlFlag('noDev'))
     <div fixed inset-0 bg-gray-600 >
       <NavBar mb-2/>
       <div flex-center min-h-80vh>
-        <MainContent bg-white border-4>
+        <MainContent bg-white border-4 fixed-width fixed-height>
           <Experiment />
         </MainContent>
       </div>
