@@ -180,7 +180,7 @@ const getBelowSiblingBranchIds = () => {
 
 const runAutoCollapse = async () => {
   if (!root.value) return
-  console.log('running auto collapse')
+  // console.log('running auto collapse')
 
   const activeIds = activePathIds.value
   const { branchIds } = indexTree(root.value)
@@ -201,19 +201,8 @@ const runAutoCollapse = async () => {
 
   collapsed.value = nextCollapsed
   await nextTick()
-
-  const metrics = getActiveRowMetrics()
-  if (!metrics) {
-    console.log("metrics not available")
-    return
-  }
   
   await collapseCandidatesUntilFit(getAboveSiblingBranchIds(), 'earlier')
-
-  const metricsAfterAbove = getActiveRowMetrics()
-  if (!metricsAfterAbove) return
-  if (metricsAfterAbove.container.scrollHeight <= metricsAfterAbove.container.clientHeight + 1) return
-
   await collapseCandidatesUntilFit(getBelowSiblingBranchIds(), 'later')
 }
 
@@ -390,7 +379,16 @@ const collapseCandidatesUntilFit = async (
   withinDepth: 'earlier' | 'later'
 ) => {
   if (!root.value) return
-  console.log('collapsing candidates', candidateIds, withinDepth)
+
+  const hasVerticalOverflow = () => {
+    const container = listEl.value
+    if (!container) return false
+    return container.scrollHeight > container.clientHeight + 1
+  }
+
+  if (!hasVerticalOverflow()) return
+
+  // console.log('collapsing candidates', candidateIds, withinDepth)
   const { depthById, orderById, childCountById } = indexTree(root.value)
   const { groupKeyById, groupIdsByKey } = buildAggregateCollapseGroups(root.value)
   const activeIds = activePathIds.value
@@ -446,17 +444,11 @@ const collapseCandidatesUntilFit = async (
     || (withinDepth === 'earlier' ? (a.orderRef - b.orderRef) : (b.orderRef - a.orderRef))
   )
 
-  const hasVerticalOverflow = () => {
-    const container = listEl.value
-    if (!container) return false
-    return container.scrollHeight > container.clientHeight + 1
-  }
-
   for (const candidate of candidates) {
     if (!hasVerticalOverflow()) {
       break
     }
-    console.log('collapsing', candidate.ids)
+    // console.log('collapsing', candidate.ids)
     for (const id of candidate.ids) {
       collapsed.value[id] = true
     }
