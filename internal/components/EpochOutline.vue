@@ -148,30 +148,16 @@ const collectBranchIds = (node: EpochNode, into: Set<string>) => {
   }
 }
 
-const getAboveSiblingBranchIds = () => {
+const getSiblingBranchIds = () => {
   const ids = new Set<string>()
   const path = currentPath.value
   for (let i = 0; i < path.length - 1; i += 1) {
     const parent = path[i]
     const activeChild = path[i + 1]
     const activeIndex = parent.children.findIndex(child => child.id === activeChild.id)
-    if (activeIndex <= 0) continue
-    for (let j = 0; j < activeIndex; j += 1) {
-      collectBranchIds(parent.children[j], ids)
-    }
-  }
-  return ids
-}
-
-const getBelowSiblingBranchIds = () => {
-  const ids = new Set<string>()
-  const path = currentPath.value
-  for (let i = 0; i < path.length - 1; i += 1) {
-    const parent = path[i]
-    const activeChild = path[i + 1]
-    const activeIndex = parent.children.findIndex(child => child.id === activeChild.id)
-    if (activeIndex < 0 || activeIndex >= parent.children.length - 1) continue
-    for (let j = activeIndex + 1; j < parent.children.length; j += 1) {
+    if (activeIndex < 0) continue
+    for (let j = 0; j < parent.children.length; j += 1) {
+      if (j === activeIndex) continue
       collectBranchIds(parent.children[j], ids)
     }
   }
@@ -202,8 +188,7 @@ const runAutoCollapse = async () => {
   collapsed.value = nextCollapsed
   await nextTick()
   
-  await collapseCandidatesUntilFit(getAboveSiblingBranchIds(), 'earlier')
-  await collapseCandidatesUntilFit(getBelowSiblingBranchIds(), 'later')
+  await collapseCandidatesUntilFit(getSiblingBranchIds(), 'earlier')
 }
 
 const visibleRows = computed<OutlineRow[]>(() => {
@@ -400,7 +385,7 @@ const collapseCandidatesUntilFit = async (
     depth: number
     childCount: number
     distance: number
-    orderRef: number
+    direction: number
   }
 
   const candidateMap = new Map<string, CollapseCandidate>()
@@ -421,9 +406,11 @@ const collapseCandidatesUntilFit = async (
 
     const depth = Math.max(...ids.map(groupedId => depthById[groupedId] ?? 0))
     const childCount = Math.max(...ids.map(groupedId => childCountById[groupedId] ?? 0))
-    const orders = ids.map(groupedId => orderById[groupedId] ?? activeOrder)
-    const orderRef = withinDepth === 'earlier' ? Math.min(...orders) : Math.max(...orders)
-    const distance = Math.abs(orderRef - activeOrder)
+    const order = Math.max(...ids.map(groupedId => orderById[groupedId] ?? activeOrder))
+    // const orders = ids.map(groupedId => orderById[groupedId] ?? activeOrder)
+    // const orderRef = withinDepth === 'earlier' ? Math.min(...orders) : Math.max(...orders)
+    const direction = Math.sign(order - activeOrder) * (withinDepth === 'earlier' ? 1 : -1)
+    const distance = Math.abs(order - activeOrder)
 
     candidateMap.set(key, {
       key,
@@ -431,17 +418,15 @@ const collapseCandidatesUntilFit = async (
       depth,
       childCount,
       distance,
-      orderRef,
+      direction,
     })
   }
 
   const candidates = [...candidateMap.values()].sort((a, b) =>
-    // Collapse order: deeper first, then visually larger groups,
-    // then farther from active; direction only breaks final ties.
-    (b.depth - a.depth)
+    (b.direction - a.direction)
+    || (b.depth - a.depth)
     || (b.childCount - a.childCount)
     || (b.distance - a.distance)
-    || (withinDepth === 'earlier' ? (a.orderRef - b.orderRef) : (b.orderRef - a.orderRef))
   )
 
   for (const candidate of candidates) {
