@@ -69,9 +69,11 @@ export default defineComponent({
     watchEffect(() => {
       hmrState.set(E.id, E.step.value)
     })
-    // TODO: maybe clear when the epoch ends? E.onDone
-    // clear state on unmount
+    // clear state on unmount or done (usually these occur together)
     onUnmounted(() => {
+      hmrState.delete(E.id)
+    })
+    E.onDone(() => {
       hmrState.delete(E.id)
     })
 
