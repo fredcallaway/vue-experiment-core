@@ -483,11 +483,17 @@ watch(() => isTraversing.value || isJumping.value, (value) => {
 
 // calculating height (same approach as EventView)
 const { height: winHeight } = useWindowSize()
-const { top } = useElementBounding(useTemplateRef('top-div'))
+const { top, width } = useElementBounding(useTemplateRef('top-div'))
 const { effectiveScale } = useSizeScale()
 const outlineHeight = computed(() => {
   const usedSpace = (top.value + 10) * effectiveScale.value + 20
   return (winHeight.value - usedSpace) / effectiveScale.value
+})
+
+// don't allow width to decrease (only increase)
+const maxSeenWidth = ref(100)
+watchEffect(() => {
+  maxSeenWidth.value = Math.max(maxSeenWidth.value, width.value)
 })
 
 </script>
@@ -502,7 +508,7 @@ const outlineHeight = computed(() => {
     flex="~ col"
     relative
     ref="top-div"
-    :style="{ height: `${outlineHeight}px` }"
+    :style="{ height: `${outlineHeight}px`, minWidth: `${maxSeenWidth}px` }"
   >
 
     <div v-if="!root" text-sm text-gray-500>

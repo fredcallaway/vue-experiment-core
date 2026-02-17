@@ -15,14 +15,14 @@ const devTools = ref(!getUrlFlag('noDev'))
         <MainContent show-outline fixed-width fixed-height>
           <slot />
         </MainContent>
-        <!-- <EpochView v-if="!violated" mt-3/> -->
-        <EventView horizontal />
+        <EpochView v-if="!violated" mt-3/>
+        <!-- <EventView horizontal /> -->
       </div>
 
+      <EpochOutline shrink-0 />
       <div w="600px" relative  v-if="!violated">
         <Inspector mb-2/>
-        <EpochOutline />
-        <!-- <EventView flex-1 ref="eventViewRef"/> -->
+        <EventView flex-1 ref="eventViewRef"/>
       </div>
     </div>
   </div>
