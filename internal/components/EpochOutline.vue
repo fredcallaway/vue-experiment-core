@@ -54,16 +54,6 @@ const canAggregate = (nodes: EpochNode[], cache: Map<string, string>) => {
 const currentEpoch = useCurrentEpoch()
 const collapsed = ref<Record<string, boolean>>({})
 const unaggregatedRuns = ref<Record<string, boolean>>({})
-const listEl = ref<HTMLElement | null>(null)
-
-// calculating height (same approach as EventView)
-const { height: winHeight } = useWindowSize()
-const { top } = useElementBounding(useTemplateRef('top-div'))
-const { scale } = useSizeScale()
-const outlineHeight = computed(() => {
-  const usedSpace = (top.value + 10) * scale.value + 20
-  return (winHeight.value - usedSpace) / scale.value
-})
 
 const root = ref<EpochNode | null>()
 watchOnce(currentEpoch, () => {
@@ -83,7 +73,6 @@ const currentPath = computed<EpochNode[]>(() => {
 
 type NodeOrId = EpochNode | string
 const toNodeId = (target: NodeOrId) => typeof target === 'string' ? target : target.id
-
 const isCurrent = (target: NodeOrId) => toNodeId(target) === currentEpoch.value.id
 const isActive = (target: NodeOrId) => currentPath.value.some(n => toNodeId(n) === toNodeId(target))
 const isAncestor = (target: NodeOrId) => isActive(target) && !isCurrent(target)
@@ -178,7 +167,7 @@ const runAutoCollapse = async () => {
   collapsed.value = nextCollapsed
   await nextTick()
   
-  await collapseCandidatesUntilFit(getSiblingBranchIds(), 'earlier')
+  await collapseCandidatesUntilFit(new Set(branchIds), 'earlier')
 }
 
 const visibleRows = computed<OutlineRow[]>(() => {
@@ -274,13 +263,14 @@ const unaggregateRun = (row: OutlineAggregateRow) => {
   unaggregatedRuns.value[row.key] = true
 }
 
+const listEl = ref<HTMLElement | null>(null)
 const getActiveRowMetrics = () => {
   const container = listEl.value
   if (!container) return null
   const activeEl = container.querySelector<HTMLElement>(`[data-epoch-id="${currentEpoch.value.id}"]`)
   if (!activeEl) return null
 
-  const effectiveScale = scale.value || 1
+  const effectiveScale = useSizeScale().effectiveScale.value
   const containerRect = container.getBoundingClientRect()
   const activeRect = activeEl.getBoundingClientRect()
   const activeTop = (activeRect.top - containerRect.top) / effectiveScale
@@ -547,6 +537,15 @@ watch(currentEpoch, (epoch) => {
 watch(() => isTraversing.value || isJumping.value, (value) => {
   if (value || !traversed.value) return
   void refreshOutlineLayout()
+})
+
+// calculating height (same approach as EventView)
+const { height: winHeight } = useWindowSize()
+const { top } = useElementBounding(useTemplateRef('top-div'))
+const { effectiveScale } = useSizeScale()
+const outlineHeight = computed(() => {
+  const usedSpace = (top.value + 10) * effectiveScale.value + 20
+  return (winHeight.value - usedSpace) / effectiveScale.value
 })
 
 </script>
