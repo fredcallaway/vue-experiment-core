@@ -189,10 +189,17 @@ const onHorizontalWheel = (event: WheelEvent) => {
 }
 
 const openDataPopoverKey = ref<string | null>(null)
-const dataPopoverStyle = ref<Record<string, string>>({})
 const previewBoxEls = new Map<string, HTMLElement>()
 const previewOverflowByKey = ref<Record<string, boolean>>({})
 let measureRaf = 0
+const centeredDataPopoverStyle = {
+  position: 'fixed',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  maxWidth: 'min(96vw, 1200px)',
+  maxHeight: '80vh',
+} as const
 
 const getPopoverKey = (event: FormattedEvent, index: number) => `${event.timestamp}-${index}`
 
@@ -202,14 +209,10 @@ const toggleDataPopover = (key: string) => {
     return
   }
   openDataPopoverKey.value = key
-  nextTick(() => {
-    updateDataPopoverPosition()
-  })
 }
 
 const closeDataPopover = () => {
   openDataPopoverKey.value = null
-  dataPopoverStyle.value = {}
 }
 
 const setPreviewBoxEl = (key: string, el: unknown | null) => {
@@ -224,6 +227,7 @@ const setPreviewBoxEl = (key: string, el: unknown | null) => {
 
 const hasPreviewOverflow = (key: string) => previewOverflowByKey.value[key] === true
 const shouldShowPreviewBox = (key: string) => previewOverflowByKey.value[key] !== false
+const formatOverflowPreview = (value: unknown) => formatForPre(value, Number.MAX_SAFE_INTEGER)
 
 const measurePreviewOverflow = () => {
   const validKeys = new Set(filteredEvents.value.map((event, index) => getPopoverKey(event, index)))
@@ -255,34 +259,7 @@ const queueMeasurePreviewOverflow = () => {
   measureRaf = requestAnimationFrame(() => {
     measureRaf = 0
     measurePreviewOverflow()
-    updateDataPopoverPosition()
   })
-}
-
-const updateDataPopoverPosition = () => {
-  const key = openDataPopoverKey.value
-  if (!key) return
-
-  const anchor = previewBoxEls.get(key)
-  if (!anchor) {
-    closeDataPopover()
-    return
-  }
-
-  const rect = anchor.getBoundingClientRect()
-  const viewportWidth = window.innerWidth
-  const viewportHeight = window.innerHeight
-  const maxWidth = Math.min(1000, viewportWidth - 16)
-  const left = Math.max(8, Math.min(rect.right - maxWidth, viewportWidth - maxWidth - 8))
-  const bottom = Math.max(8, Math.min(viewportHeight - rect.top + 8, viewportHeight - 8))
-
-  dataPopoverStyle.value = {
-    position: 'fixed',
-    left: `${left}px`,
-    bottom: `${bottom}px`,
-    maxWidth: `${maxWidth}px`,
-    maxHeight: '70vh',
-  }
 }
 
 onMounted(() => {
@@ -297,18 +274,11 @@ onMounted(() => {
     if (target.closest(`[data-data-popover="${key}"]`)) return
     closeDataPopover()
   }
-  const onViewportChange = () => {
-    queueMeasurePreviewOverflow()
-  }
 
   window.addEventListener('pointerdown', onPointerDown)
-  window.addEventListener('resize', onViewportChange)
-  window.addEventListener('scroll', onViewportChange, true)
   queueMeasurePreviewOverflow()
   onUnmounted(() => {
     window.removeEventListener('pointerdown', onPointerDown)
-    window.removeEventListener('resize', onViewportChange)
-    window.removeEventListener('scroll', onViewportChange, true)
     if (measureRaf !== 0) {
       cancelAnimationFrame(measureRaf)
       measureRaf = 0
@@ -374,9 +344,9 @@ onUpdated(() => {
               p-2
               shadow-lg
               overflow-auto
-              :style="dataPopoverStyle"
+              :style="centeredDataPopoverStyle"
             >
-              <pre text-xs class="whitespace-pre-wrap break-words">{{ formatForPre(event.data, 160) }}</pre>
+              <pre text-xs class="whitespace-pre-wrap break-words">{{ formatForPre(event.data, 140) }}</pre>
             </div>
           </Teleport>
         </template>
@@ -401,7 +371,7 @@ onUpdated(() => {
                   overflow-hidden
                   pr-7
                 >
-                  <pre p-2 text-xs class="whitespace-pre-wrap break-words overflow-hidden">{{ formatForPre(event.data, 54) }}</pre>
+                  <pre p-2 text-8px class="whitespace-pre-wrap break-words overflow-hidden line-height-snug ">{{ formatOverflowPreview(event.data) }}</pre>
                 </div>
                 <button
                   v-if="hasPreviewOverflow(getPopoverKey(event, index))"
@@ -464,9 +434,9 @@ onUpdated(() => {
               p-2
               shadow-lg
               overflow-auto
-              :style="dataPopoverStyle"
+              :style="centeredDataPopoverStyle"
             >
-              <pre text-xs class="whitespace-pre-wrap break-words">{{ formatForPre(event.data, 160) }}</pre>
+              <pre text-xs class="whitespace-pre-wrap break-words">{{ formatForPre(event.data, 100) }}</pre>
             </div>
           </Teleport>
         </template>
@@ -491,7 +461,7 @@ onUpdated(() => {
                   overflow-hidden
                   pr-7
                 >
-                  <pre p-2 text-xs class="whitespace-pre-wrap break-words overflow-hidden">{{ formatForPre(event.data, 72) }}</pre>
+                  <pre p-2 text-8px class="whitespace-pre-wrap break-words overflow-hidden line-height-snug ">{{ formatOverflowPreview(event.data) }}</pre>
                 </div>
                 <button
                   v-if="hasPreviewOverflow(getPopoverKey(event, index))"
