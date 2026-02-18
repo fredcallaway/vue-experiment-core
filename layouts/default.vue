@@ -19,23 +19,23 @@ const devTools = ref(!getUrlFlag('noDev'))
         <!-- <EventView horizontal /> -->
       </div>
 
-      <EpochOutline shrink-0 />
+      <div flex="~ col gap-2" shrink-0>
+        <EpochControls />
+        <EpochOutline />
+      </div>
       <div w="600px" relative  v-if="!violated">
         <Inspector mb-2/>
         <EventView flex-1 ref="eventViewRef"/>
       </div>
     </div>
   </div>
-  <template v-else >
-    <div fixed inset-0 bg-gray-600 >
-      <NavBar mb-2/>
-      <div flex-center min-h-80vh>
-        <MainContent bg-white border-4 fixed-width fixed-height>
-          <Experiment />
-        </MainContent>
-      </div>
+  <div v-else fixed inset-0 bg-gray-600 >
+    <NavBar mb-2/>
+    <div flex-center min-h-80vh>
+      <MainContent bg-white border-4 fixed-width fixed-height>
+        <Experiment />
+      </MainContent>
     </div>
-  </template>
+  </div>
 </template>
-
 
