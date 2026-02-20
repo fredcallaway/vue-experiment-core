@@ -6,11 +6,11 @@ const props = defineProps<{
   disableNavigation?: boolean
 }>()
 
-const epoch = useIndexableEpoch(props.name ?? 'instructions', 0)
+const { E, Sequence } = useESequence(props.name ?? 'instructions')
 
-const withEpoch = <T>(f: (E: IndexableEpoch) => T | null) => {
-  return (): T | null => {
-    return f(epoch)
+const withEpoch = <T>(f: (E: IndexableEpoch) => T ) => {
+  return () => {
+    return f(E)
   }
 }
 
@@ -24,13 +24,18 @@ const enableNext = withEpoch((E) => {
   maxCompletedStep.value = Math.max(maxCompletedStep.value, E.step.value)
 })
 
-watch(() => epoch.step.value, (newVal) => {
+watch(() => E.step.value, (newVal) => {
   maxCompletedStep.value = Math.max(maxCompletedStep.value, (newVal ?? 0) - 1)
 })
 
 const goNext = withEpoch((E) => E.next())
 const goPrev = withEpoch((E) => E.prev())
 
+// nSteps isn't reactive, so we need to compute it after mount
+const nSteps = ref(0)
+onMounted(() => {
+  nSteps.value = E.nSteps
+})
 </script>
 
 <template>
@@ -45,11 +50,11 @@ const goPrev = withEpoch((E) => E.prev())
       </PButton>
       
       <div text-3xl font-bold >
-        <template v-if="epoch.step.value == 0">
+        <template v-if="E.step.value == 0 && !skipWelcome">
           Welcome!
         </template>
         <template v-else>
-          Instructions {{ epoch.step.value }} of {{ epoch.nSteps - Number(skipWelcome) }}
+          Instructions {{ step + 1 }} of {{ nSteps }}
         </template>
       </div>
 
@@ -62,7 +67,7 @@ const goPrev = withEpoch((E) => E.prev())
     </div>
 
     <div flex-center>
-      <ESequence :epoch="epoch">
+      <Sequence>
         <EPage v-if="!skipWelcome" @mounted="enableNext" name="welcome">
           <div class="prompt" max-w-130 >
             Thanks for participating in our experiment! We'll start with some instructions.
@@ -70,7 +75,7 @@ const goPrev = withEpoch((E) => E.prev())
           </div>
         </EPage>
         <slot :enableNext="enableNext" :goNext="goNext" />
-      </ESequence>
+      </Sequence>
     </div>
   </div>
 </template>
