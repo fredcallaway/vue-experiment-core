@@ -13,6 +13,19 @@ const mode = (route.query.mode as 'live' | 'debug') || 'live'
 
 const { data, downloadTime, meta, status } = useSessionData(mode, sessionId)
 
+const posthogId = computed(() => {
+  const other = data.value?.other as any
+  return other?.posthog?.sessionId ?? null
+})
+
+const envId = useRuntimeConfig()?.public?.posthogEnvId
+
+const posthogLink = computed(() => {
+  const id = posthogId.value
+  if (!envId || !id) return null
+  return `https://us.posthog.com/project/${envId}/replay/home?sessionRecordingId=${id}`
+})
+
 const eventList = computed(() => {
   if (!data.value) return []
   
@@ -90,6 +103,8 @@ const timeInfo = computed(() => {
             <div><b>Total Time:</b> {{ timeInfo.totalMs === null ? 'N/A' : formatTime(timeInfo.totalMs) }}</div>
             <div><b>Active Time:</b> {{ timeInfo.activeMs === null ? 'N/A' : formatTime(timeInfo.activeMs) }}</div>
             <div><b>Bonus:</b> ${{ (meta.bonus || 0).toFixed(2) }}</div>
+            
+            <NuxtLink v-if="posthogLink" :to="posthogLink" target="_blank">view replay on posthog</NuxtLink>
           </div>
         </div>
         <div v-if="correspondence" flex-shrink-0 >
