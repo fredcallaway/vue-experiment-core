@@ -24,9 +24,11 @@ export default defineEventHandler(async (event) => {
     }
 
     // Run deploy command
+    console.log('👉 deploying...')
     execSync('bun run generate', { stdio: 'inherit' })
     execSync('firebase deploy', { stdio: 'inherit' })
     
+    console.log('👉 successfully deployed!')
     return {
       success: true,
       sha,
