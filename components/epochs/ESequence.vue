@@ -69,10 +69,10 @@ export default defineComponent({
     watchEffect(() => {
       hmrState.set(E.id, E.step.value)
     })
-    // // clear when the epoch ends
-    // onUnmounted(() => {
-    //   hmrState.delete(E.id)
-    // })
+    // clear when the epoch ends
+    onUnmounted(() => {
+      hmrState.delete(E.id)
+    })
 
     // Expose epoch to parent components
     context.expose({
