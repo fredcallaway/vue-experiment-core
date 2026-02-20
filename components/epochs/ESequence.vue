@@ -1,14 +1,18 @@
 <script lang="ts">
 import { defineComponent, type VNode, Comment, Fragment, cloneVNode, computed } from 'vue'
 
-// Store HMR state
+// Store HMR state (dev only)
 // NOTE: we can remove this when we switch to using normal reactive state (not in useEpoch)
 // Persist across HMR using Vite's hot data bag
-const __hot = import.meta.hot
-const hmrState: Map<string, number> = (__hot?.data?.ESequenceHmrState as any) ?? new Map()
+const __hot = import.meta.dev ? import.meta.hot : null
+const hmrState: Map<string, number> | null = import.meta.dev 
+  ? ((__hot?.data?.ESequenceHmrState as any) ?? new Map())
+  : null
 if (__hot) {
   __hot.data.ESequenceHmrState = hmrState
 }
+
+console.log('hmrState', hmrState)
 
 // there's an edge case where the template contains "<!--v-if-->" --- we don't handle that
 const isIfFalseNode = (node: VNode) => node.type === Comment && node.children == "v-if"
@@ -63,16 +67,18 @@ export default defineComponent({
       }
     }
 
-    // Get state from HMR store or use initial values
-    E.step.value = hmrState.get(E.id) ?? props.step
-    // Update HMR state whenever it changes
-    watchEffect(() => {
-      hmrState.set(E.id, E.step.value)
-    })
-    // clear when the epoch ends
-    onUnmounted(() => {
-      hmrState.delete(E.id)
-    })
+    // Get state from HMR store or use initial values (dev only)
+    E.step.value = import.meta.dev && hmrState ? (hmrState.get(E.id) ?? props.step) : props.step
+    // Update HMR state whenever it changes (dev only)
+    if (import.meta.dev && hmrState) {
+      watchEffect(() => {
+        hmrState.set(E.id, E.step.value)
+      })
+      // clear when the epoch ends
+      onUnmounted(() => {
+        hmrState.delete(E.id)
+      })
+    }
 
     // Expose epoch to parent components
     context.expose({
