@@ -95,7 +95,11 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
 }
 
 const onDeploy = async () => {
-  await deploy()
+  const success = await deploy()
+  if (!success) {
+    throw new Error(deploymentError.value)
+  }
+  
 }
 
 </script>
