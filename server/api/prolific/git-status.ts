@@ -6,8 +6,11 @@ export default defineEventHandler(async (event) => {
     const fullGitStatusOutput = execSync('git status --porcelain', { encoding: 'utf-8' }).trim()
     const gitStatusOutput = fullGitStatusOutput
       .split('\n')
+      .filter(line => !line.includes('core/pages/data'))
       .filter(line => !line.includes('core/pages/prolific'))
-      .filter(line => !line.includes('core/server/api/prolific'))
+      .filter(line => !line.includes('core/pages/test'))
+      .filter(line => !line.includes('core/server'))
+      .filter(line => !line.includes('data/processed'))
       .join('\n')
       .trim()
     const sha = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim().substring(0, 8)
