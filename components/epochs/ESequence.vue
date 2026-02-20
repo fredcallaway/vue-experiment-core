@@ -14,9 +14,7 @@ if (__hot) {
 
 console.log('hmrState', hmrState)
 
-// there's an edge case where the template contains "<!--v-if-->" --- we don't handle that
-const isIfFalseNode = (node: VNode) => node.type === Comment && node.children == "v-if"
-const isCommentNode = (node: VNode) => node.type === Comment && node.children != "v-if"
+const isCommentNode = (node: VNode) => node.type === Comment
 const isFragmentNode = (node: VNode) => node.type === Fragment
 
 const extractChildren = (children: VNode[]): VNode[] => {
@@ -57,6 +55,9 @@ export default defineComponent({
     if (nSteps == 0) {
       throw new Error(`ESequence ${props.name} has no children`)
     }
+
+    console.log('Children for', props.name, extractChildren(context.slots.default!()))
+    
     
     // use prop epoch if provided; otherwise make a new one
     const E = props.epoch ?? useIndexableEpoch(props.name, nSteps)
@@ -98,15 +99,11 @@ export default defineComponent({
 
 
       childrenRef.value = children
+      console.log('childrenRef', childrenRef.value)
       
       const currentChild = children[E.step.value]
 
-      if (isIfFalseNode(currentChild)) {
-        // console.log('👉 skipping child', currentChild)
-        // child has v-if=false -> skip it
-        E.next()
-        return null
-      }
+      assert(!isCommentNode(currentChild), 'ESequence: currentChild is a comment node')
       
       return currentChild ?? null
     }
