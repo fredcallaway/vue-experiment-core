@@ -1,14 +1,18 @@
 <script lang="ts">
 import { defineComponent, type VNode, Comment, Fragment, cloneVNode, computed } from 'vue'
 
-// Store HMR state
+// Store HMR state (dev only)
 // NOTE: we can remove this when we switch to using normal reactive state (not in useEpoch)
 // Persist across HMR using Vite's hot data bag
-const __hot = import.meta.hot
-const hmrState: Map<string, number> = (__hot?.data?.ESequenceHmrState as any) ?? new Map()
+const __hot = import.meta.dev ? import.meta.hot : null
+const hmrState: Map<string, number> | null = import.meta.dev 
+  ? ((__hot?.data?.ESequenceHmrState as any) ?? new Map())
+  : null
 if (__hot) {
   __hot.data.ESequenceHmrState = hmrState
 }
+
+console.log('hmrState', hmrState)
 
 // there's an edge case where the template contains "<!--v-if-->" --- we don't handle that
 const isIfFalseNode = (node: VNode) => node.type === Comment && node.children == "v-if"
