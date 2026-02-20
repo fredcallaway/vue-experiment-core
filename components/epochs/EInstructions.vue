@@ -8,29 +8,19 @@ const props = defineProps<{
 
 const { E, Sequence } = useESequence(props.name ?? 'instructions')
 
-const withEpoch = <T>(f: (E: IndexableEpoch) => T ) => {
-  return () => {
-    return f(E)
-  }
-}
-
 const maxCompletedStep = ref(-1)
 
-const step = computed(withEpoch((E) => E.step.value))
-const allowNext = computed(withEpoch((E) => !props.disableNavigation && maxCompletedStep.value >= E.step.value))
-const allowPrev = computed(withEpoch((E) => !props.disableNavigation && E.step.value > 1)) // no back to welcome
+const allowNext = computed(() => !props.disableNavigation && maxCompletedStep.value >= E.step.value)
+const allowPrev = computed(() => !props.disableNavigation && E.step.value > 0)
 
-const enableNext = withEpoch((E) => {
+const enableNext = () => {
   console.log('enableNext', E.step.value)
   maxCompletedStep.value = Math.max(maxCompletedStep.value, E.step.value)
-})
+}
 
 watch(() => E.step.value, (newVal) => {
   maxCompletedStep.value = Math.max(maxCompletedStep.value, (newVal ?? 0) - 1)
 })
-
-const goNext = withEpoch((E) => E.next())
-const goPrev = withEpoch((E) => E.prev())
 
 // nSteps isn't reactive, so we need to compute it after mount
 const nSteps = ref(0)
@@ -43,11 +33,11 @@ onMounted(() => {
   <div class="instructions" relative>
     <!-- HEADER -->
     <div flex="~ row gap-4 justify-between items-center" mx-10 w-120 mx-auto>
-      <PButton btn-gray-sm text-2xl :disabled="!allowPrev" @click="goPrev" value="prev" 
+      <PButton btn-gray-sm text-2xl :disabled="!allowPrev" @click="E.prev" value="prev" 
         transition-all transition-duration-300 
       >
         <span class="i-mdi-arrow-left-bold" />
-        <PKey v-if="allowPrev" keys="LEFT" @press="goPrev" />
+        <PKey v-if="allowPrev" keys="LEFT" @press="E.prev" />
       </PButton>
       
       <div text-3xl font-bold >
@@ -55,15 +45,15 @@ onMounted(() => {
           Welcome!
         </template>
         <template v-else>
-          Instructions {{ step + 1 }} of {{ nSteps }}
+          Instructions {{ E.step.value + 1 }} of {{ nSteps }}
         </template>
       </div>
 
-      <PButton :class="allowNext ? 'btn-primary-sm' : 'btn-gray-sm'" text-2xl :disabled="!allowNext" @click="goNext" value="next"
+      <PButton :class="allowNext ? 'btn-primary-sm' : 'btn-gray-sm'" text-2xl :disabled="!allowNext" @click="E.next" value="next"
         transition-all transition-duration-300 
       >
         <div class="i-mdi-arrow-right-bold" />
-        <PKey v-if="allowNext" keys="RIGHT" @press="goNext" />
+        <PKey v-if="allowNext" keys="RIGHT" @press="E.next" />
       </PButton>
     </div>
 
@@ -78,7 +68,7 @@ onMounted(() => {
             </div>
           </div>
         </EPage>
-        <slot :enableNext="enableNext" :goNext="goNext" />
+        <slot :enableNext="enableNext" :goNext="E.next" />
       </Sequence>
     </div>
   </div>
