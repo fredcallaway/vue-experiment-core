@@ -12,6 +12,7 @@ export type Epoch = {
   isNoEpoch?: boolean,
   isPseudoLeaf?: boolean,
   isDisabled?: boolean
+  hasIdenticalChildren?: boolean,
   id: string,
 }
 
