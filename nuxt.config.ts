@@ -8,8 +8,13 @@ export default defineNuxtConfig({
       crawlLinks: false,
       routes: [],
     },
+    rollupConfig: {
+      output: {
+        sourcemapExcludeSources: false,
+      },
+    },
   },
-
+  
   components: [
     {
       path: './components',
