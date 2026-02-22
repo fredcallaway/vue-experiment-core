@@ -18,12 +18,12 @@ const posthogId = computed(() => {
   return other?.posthog?.sessionId ?? null
 })
 
-const envId = useRuntimeConfig()?.public?.posthogEnvId
+const posthogProjectId = useRuntimeConfig()?.public?.posthogProjectId
 
 const posthogLink = computed(() => {
   const id = posthogId.value
-  if (!envId || !id) return null
-  return `https://us.posthog.com/project/${envId}/replay/home?sessionRecordingId=${id}`
+  if (!posthogProjectId || !id) return null
+  return `https://us.posthog.com/project/${posthogProjectId}/replay/home?sessionRecordingId=${id}`
 })
 
 const eventList = computed(() => {
