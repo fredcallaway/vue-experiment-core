@@ -33,12 +33,15 @@ export const usePosthog = createGlobalState(() => {
       if (await tryFetch()) {
         logEvent('posthog.ready')
         status.value = 'ready'
+        useDataWriter().updateOther('posthog/blocked', false)
         return false
       } else {
         await new Promise(resolve => setTimeout(resolve, 1000))
       }
     }
     logEvent('posthog.blocked')
+    useDataWriter().updateOther('posthog/blocked', true)
+
     status.value = 'blocked'
     return true
   }
