@@ -27,6 +27,7 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@unocss/nuxt',
     '@vueuse/nuxt',
+    '@posthog/nuxt',
   ],
 
   imports: {
