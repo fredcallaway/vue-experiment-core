@@ -55,9 +55,6 @@ export default defineComponent({
     if (nSteps == 0) {
       throw new Error(`ESequence ${props.name} has no children`)
     }
-
-    console.log('Children for', props.name, extractChildren(context.slots.default!()))
-    
     
     // use prop epoch if provided; otherwise make a new one
     const E = props.epoch ?? useIndexableEpoch(props.name, nSteps)
@@ -93,16 +90,12 @@ export default defineComponent({
     return () => {
       // Get fresh children on each render to make it reactive
       const rawChildren = extractChildren(context.slots.default?.(E) || [])
-      const children = rawChildren
-      .map((child: VNode, index: number) => {
+      const children = rawChildren.map((child: VNode, index: number) => {
         return cloneVNode(child, {
           key: `${props.name}-${index}`
         })
       })
-
-
       childrenRef.value = children
-      console.log('childrenRef', childrenRef.value)
       
       const currentChild = children[E.step.value]
 
