@@ -1,7 +1,16 @@
+// src/main.ts
+
+import posthog from "posthog-js";
+
+
 export const usePosthogStatus = (debug: boolean = false) => {
   
-  const { $posthog } = useNuxtApp()
-  const posthog = $posthog()
+  // TODO: use epoch.config.ts
+  posthog.init(import.meta.env.VITE_POSTHOG_KEY || 'phc_gWAN0CJUpZb8p03QSY8TP09FJGuM9Kd4P54h7C1yySt', {
+    api_host: import.meta.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com',
+    defaults: '2026-01-30',
+  });
+
   posthog.onSessionId((sessionId) => {
     console.log('posthog.sessionId', sessionId)
     logEvent('posthog.sessionId', { sessionId })
@@ -10,8 +19,6 @@ export const usePosthogStatus = (debug: boolean = false) => {
   posthog.debug(debug)
 
   const status = ref<'loading' | 'blocked' | 'ready'>('loading')
-
-
 
   // Check if PostHog is blocked by ad blocker via direct network request
 
