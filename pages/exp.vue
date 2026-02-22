@@ -79,7 +79,7 @@ initialized.then(async (result) => {
   }
 })
 
-const { status: phStatus, checkStatus: checkPhStatus } = usePosthogStatus()
+const { status: phStatus, checkStatus: checkPhStatus } = usePosthog()
 
 const checked = ref(false)
 const handleCheckAgain = () => {

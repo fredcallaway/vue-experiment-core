@@ -1,4 +1,4 @@
-export const usePosthogStatus = (debug: boolean = false) => {
+export const usePosthog = createGlobalState(() => {
   
   const { $posthog } = useNuxtApp()
   const posthog = $posthog()
@@ -7,11 +7,9 @@ export const usePosthogStatus = (debug: boolean = false) => {
     logEvent('posthog.sessionId', { sessionId })
     useDataWriter().updateOther('posthog/sessionId', sessionId)
   })
-  posthog.debug(debug)
+  // posthog.debug(debug)
 
   const status = ref<'loading' | 'blocked' | 'ready'>('loading')
-
-
 
   // Check if PostHog is blocked by ad blocker via direct network request
 
@@ -56,4 +54,4 @@ export const usePosthogStatus = (debug: boolean = false) => {
     status,
     checkStatus
   }
-}
+})
