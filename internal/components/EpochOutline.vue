@@ -4,6 +4,8 @@ type EpochNode = {
   _name: string
   _parent: EpochNode | null
   children: EpochNode[]
+  nSteps?: number
+  hasIdenticalChildren?: boolean
 }
 
 type OutlineNodeRow = {
@@ -29,22 +31,130 @@ const makeAggregateKey = (parentId: string, nodes: EpochNode[]) => {
   return `${parentId}::${nodes.map(node => node.id).join('|')}`
 }
 
-const getStructureSignature = (node: EpochNode, cache: Map<string, string>): string => {
+const getStepIndex = (parentId: string, childId: string) => {
+  const escapedParentId = parentId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = childId.match(new RegExp(`^${escapedParentId}\\[(\\d+)\\]`))
+  if (!match) return null
+  const step = Number(match[1])
+  return Number.isInteger(step) ? step : null
+}
+
+const cloneSubtreeForStep = (
+  source: EpochNode,
+  parent: EpochNode,
+  sourcePrefix: string,
+  targetPrefix: string,
+  sourceStep: number,
+  targetStep: number,
+  isDirectChild: boolean,
+): EpochNode => {
+  let id = source.id.startsWith(sourcePrefix)
+    ? `${targetPrefix}${source.id.slice(sourcePrefix.length)}`
+    : `${targetPrefix}-${source._name}`
+  let name = source._name
+
+  // Pseudo leaves in IndexableEpochs include the step in their name.
+  // Keep those names in sync with the cloned step.
+  if (isDirectChild && source._name === `leaf_${sourceStep}`) {
+    name = `leaf_${targetStep}`
+    id = `${targetPrefix}-${name}`
+  }
+
+  const clone: EpochNode = {
+    id,
+    _name: name,
+    _parent: parent,
+    children: [],
+    nSteps: source.nSteps,
+    hasIdenticalChildren: source.hasIdenticalChildren,
+  }
+  clone.children = source.children.map(child =>
+    cloneSubtreeForStep(child, clone, sourcePrefix, targetPrefix, sourceStep, targetStep, false)
+  )
+  return clone
+}
+
+const makeOutlineChildrenResolver = () => {
+  const cache = new Map<string, EpochNode[]>()
+
+  const getChildren = (node: EpochNode): EpochNode[] => {
+    const cached = cache.get(node.id)
+    if (cached) return cached
+
+    let children = node.children
+    const shouldCloneIdenticalChildren = node.hasIdenticalChildren === true
+      && Number.isInteger(node.nSteps)
+      && (node.nSteps ?? 0) > 0
+      && node.children.length > 0
+      && node.children.length < (node.nSteps ?? 0)
+
+    if (shouldCloneIdenticalChildren) {
+      const byStep = new Map<number, EpochNode>()
+
+      let sourceChild = node.children[0]
+      let sourceStep = getStepIndex(node.id, sourceChild.id) ?? 0
+
+      for (const child of node.children) {
+        const step = getStepIndex(node.id, child.id)
+        if (step === null) continue
+        byStep.set(step, child)
+        if (step < sourceStep) {
+          sourceChild = child
+          sourceStep = step
+        }
+      }
+      if (!byStep.has(sourceStep)) {
+        byStep.set(sourceStep, sourceChild)
+      }
+
+      const sourcePrefix = `${node.id}[${sourceStep}]`
+      const completeChildren: EpochNode[] = []
+      for (let step = 0; step < (node.nSteps ?? 0); step += 1) {
+        const existing = byStep.get(step)
+        if (existing) {
+          completeChildren.push(existing)
+          continue
+        }
+
+        const targetPrefix = `${node.id}[${step}]`
+        completeChildren.push(
+          cloneSubtreeForStep(sourceChild, node, sourcePrefix, targetPrefix, sourceStep, step, true)
+        )
+      }
+      children = completeChildren
+    }
+
+    cache.set(node.id, children)
+    return children
+  }
+
+  return getChildren
+}
+
+const getStructureSignature = (
+  node: EpochNode,
+  cache: Map<string, string>,
+  getChildren: (node: EpochNode) => EpochNode[],
+): string => {
   const existing = cache.get(node.id)
   if (existing !== undefined) return existing
 
-  const childSignatures = node.children.map(child => getStructureSignature(child, cache))
+  const childSignatures = getChildren(node).map(child => getStructureSignature(child, cache, getChildren))
   const signature = `${node._name}(${childSignatures.join('|')})`
   cache.set(node.id, signature)
   return signature
 }
 
 // true if all the nodes have the same internal structure
-const canAggregate = (nodes: EpochNode[], cache: Map<string, string>) => {
+const canAggregate = (
+  nodes: EpochNode[],
+  cache: Map<string, string>,
+  getChildren: (node: EpochNode) => EpochNode[],
+) => {
   if (nodes.length < MIN_AGGREGATE) return false
-  const first = getStructureSignature(nodes[0], cache)
+  const first = getStructureSignature(nodes[0], cache, getChildren)
   for (let i = 1; i < nodes.length; i += 1) {
-    if (getStructureSignature(nodes[i], cache) !== first) {
+    if (getStructureSignature(nodes[i], cache, getChildren) !== first) {
       return false
     }
   }
@@ -78,7 +188,10 @@ const isCurrent = (target: NodeOrId) => toNodeId(target) === currentEpoch.value.
 const isActive = (target: NodeOrId) => currentPath.value.some(n => toNodeId(n) === toNodeId(target))
 const isAncestor = (target: NodeOrId) => isActive(target) && !isCurrent(target)
 
-const hasChildren = (node: EpochNode) => node.children.length > 0
+const hasChildren = (
+  node: EpochNode,
+  getChildren: ((node: EpochNode) => EpochNode[]) | null = null,
+) => (getChildren ?? (n => n.children))(node).length > 0
 const isExpanded = (node: EpochNode) => hasChildren(node) && (isActive(node) || !collapsed.value[toNodeId(node)])
 const canCollapse = (node: EpochNode) => hasChildren(node) && !isActive(node)
 
@@ -88,16 +201,18 @@ const toggleCollapse = (node: EpochNode) => {
 }
 
 const indexTree = (start: EpochNode) => {
+  console.log('indexTree', start.id)
   const depthById: Record<string, number> = {}
   const orderById: Record<string, number> = {}
   const childCountById: Record<string, number> = {}
   const branchIds = new Set<string>()
   let order = 0
   const signatureCache = new Map<string, string>()
+  const getChildren = makeOutlineChildrenResolver()
 
   const childrenAggregateForScoring = (node: EpochNode) => {
-    const children = node.children
-    if (!canAggregate(children, signatureCache)) return false
+    const children = getChildren(node)
+    if (!canAggregate(children, signatureCache, getChildren)) return false
     const key = makeAggregateKey(node.id, children)
     return !unaggregatedRuns.value[key]
   }
@@ -107,11 +222,12 @@ const indexTree = (start: EpochNode) => {
     orderById[node.id] = order++
     // Collapse priority uses effective visible height of a node:
     // aggregated child sets behave like one child.
-    childCountById[node.id] = childrenAggregateForScoring(node) ? 1 : node.children.length
-    if (hasChildren(node)) {
+    const children = getChildren(node)
+    childCountById[node.id] = childrenAggregateForScoring(node) ? 1 : children.length
+    if (hasChildren(node, getChildren)) {
       branchIds.add(node.id)
     }
-    for (const child of node.children) {
+    for (const child of children) {
       walk(child, depth + 1)
     }
   }
@@ -126,6 +242,7 @@ const visibleRows = computed<OutlineRow[]>(() => {
   if (!root.value) return rows
 
   const signatureCache = new Map<string, string>()
+  const getChildren = makeOutlineChildrenResolver()
 
   const walkNode = (node: EpochNode, depth: number) => {
     rows.push({ kind: 'node', node, depth })
@@ -134,8 +251,8 @@ const visibleRows = computed<OutlineRow[]>(() => {
   }
 
   const walkChildren = (parent: EpochNode, depth: number) => {
-    const children = parent.children
-    if (!canAggregate(children, signatureCache)) {
+    const children = getChildren(parent)
+    if (!canAggregate(children, signatureCache, getChildren)) {
       for (const child of children) {
         walkNode(child, depth)
       }
@@ -229,19 +346,20 @@ const buildAggregateCollapseGroups = (start: EpochNode) => {
   const groupKeyById = new Map<string, string>()
   const groupIdsByKey = new Map<string, string[]>()
   const signatureCache = new Map<string, string>()
+  const getChildren = makeOutlineChildrenResolver()
 
   // Mirror render-time aggregation so collapse chooses whole runs
   // (all-or-none) instead of toggling identical siblings independently.
   const walk = (parent: EpochNode) => {
-    const children = parent.children
+    const children = getChildren(parent)
 
-    if (canAggregate(children, signatureCache)) {
+    if (canAggregate(children, signatureCache, getChildren)) {
       const flushRun = (run: EpochNode[]) => {
         if (run.length === 0) return
         const key = makeAggregateKey(parent.id, run)
         if (unaggregatedRuns.value[key]) return
 
-        const branchIds = run.filter(hasChildren).map(node => node.id)
+        const branchIds = run.filter(node => hasChildren(node, getChildren)).map(node => node.id)
         if (branchIds.length === 0) return
 
         groupIdsByKey.set(key, branchIds)
@@ -424,6 +542,7 @@ inspect({ isTraversing, isJumping, hasTraversed })
 const traverseTimeline = async () => {
   if (isTraversing.value) return
   console.groupCollapsed('traverseTimeline')
+  // console.group('traverseTimeline')
   console.time('traverseTimeline')
 
   if (isJumping.value) {
@@ -452,6 +571,11 @@ const traverseTimeline = async () => {
         return
       }
 
+      if (isMultistepEpoch(epoch) && epoch.hasIdenticalChildren && epoch.step.value > 0) {
+        console.log('  hasIdenticalChildren -> skipping remaining')
+        epoch.done()
+        return
+      }
       if (epoch.isPseudoLeaf || !('step' in epoch)) {
         await nextTick()
         epoch.done()
