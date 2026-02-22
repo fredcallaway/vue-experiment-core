@@ -127,8 +127,8 @@ export const TOP_EPOCH = makeEpoch({
   next: () => console.warn('TOP_EPOCH.next() called'),
 })
 
-// WARNING: currentEpoch.step is not a ref (EDIT: or is it? maybe not in templates?)
-const currentEpoch = ref<Epoch>(TOP_EPOCH)
+// shallowRef ensures that currentEpoch.value.step is always a ref
+const currentEpoch = shallowRef<Epoch>(TOP_EPOCH)
 export const useCurrentEpoch = () => currentEpoch
 
 // I think this variable is necessary because a weird reactivity thing

@@ -134,7 +134,7 @@ const width = computed(() => {
           </template>
           <template v-else-if="isMultistepEpoch(epoch)">
             <select v-if="isIndexableEpoch(epoch)"
-              :value="epoch.step"
+              :value="epoch.step.value"
               @change="handleEpochChange(epoch, parseInt(($event.target as HTMLSelectElement).value))"
               bg-white border="~ 2 gray-300" px-1 py-0.5 text-xs
             >
