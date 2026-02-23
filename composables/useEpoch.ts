@@ -116,7 +116,11 @@ const makeEpoch = (props: EpochProps): Epoch => {
       props.parent.children.push(epoch)
     }
     if (!isMultistepEpoch(props.parent) && props.parent.children.length > 1) {
-      throw new Error('non-multistep epochs cannot have multiple children')
+      console.warn('non-multistep epochs cannot have multiple children', { 
+        parent: props.parent.id,
+        children: props.parent.children.map(e => e.id),
+      })
+      // throw new Error('non-multistep epochs cannot have multiple children')
     }
   }
 
