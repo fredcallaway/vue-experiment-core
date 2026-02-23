@@ -417,15 +417,15 @@ const indentBase = 8
         :style="{ paddingLeft: `${row.depth * indentStep + indentBase}px` }"
         :class="getNodeTextClass(row.node)"
       >
-        <div
+        <div 
           v-if="row.depth > 0"
           class="pointer-events-none absolute inset-y-0 left-0"
         >
           <span
             v-for="level in row.depth"
             :key="`${row.node.id}-guide-${level}`"
-            class="absolute inset-y-0 w-px bg-gray-200"
-            :style="{ left: `${indentBase + (level - 1) * indentStep + 6}px}` }"
+            class="absolute inset-y-0 w-px bg-gray-100"
+            :style="{ left: `${indentBase + (level - 1) * indentStep + 6}px` }"
           />
         </div>
 
@@ -487,7 +487,8 @@ const indentBase = 8
           @wheel="handleScroll(row, $event)"
           ml-1
           px-1.5
-          py-0.5
+          py-0
+          translate-y-0.5
           rounded-full
           text-10px
           cursor-pointer

@@ -47,7 +47,7 @@ const handleReindex = () => {
 </script>
 
 <template>
-  <div bg-gray-100 p-2 rounded-lg flex="~ items-center gap-2" >
+  <div border="~ 2 gray-300" p-1 rounded-lg flex="~ items-center gap-2" >
     <IconButton
       icon="i-mdi-arrow-left-bold-box"
       title="Previous Epoch"

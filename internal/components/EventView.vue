@@ -319,7 +319,7 @@ onUpdated(() => {
           <input type="checkbox" v-model="ref.value"> {{ name }}
         </label>
       </div>
-      <button ml-auto btn-gray btn-xs @click="events.length = 0">clear</button>
+      <IconButton icon="i-mdi-broom" title="Clear" @click="events.length = 0" />
     </div>
     <div
       ref="horizontalScrollEl"
@@ -400,7 +400,7 @@ onUpdated(() => {
 
   <div
     v-else
-    bg-gray-100
+    border="~ 2 gray-300"
     p-2
     text-sm
     rounded-lg
@@ -418,7 +418,8 @@ onUpdated(() => {
         </label>
       </div>
       <TextFilter v-model="whitelistFilter" placeholder="e.g. !epoch *.trial" w-52 />
-      <button r1 t1 ml-auto btn-gray btn-xs @click="events.length = 0">clear</button>
+      <!-- <button r1 t1 ml-auto btn-gray btn-xs @click="events.length = 0">clear</button> -->
+      <IconButton r1 t1 icon="i-mdi-broom" title="Clear" @click="events.length = 0" />
     </div>
     <div class="subtle-scrollbar flex-1 min-h-0" flex="~ col gap-2" overflow-y-auto>
       <template v-for="(event, index) in filteredEvents" :key="`${event.timestamp}-${index}`">

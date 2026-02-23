@@ -19,7 +19,7 @@ defineEmits<{ click: [] }>()
         props.icon,
         props.disabled
           ? 'text-gray-300'
-          : 'text-gray-400 hover:text-gray-700 active:translate-y-0.1 active:scale-94',
+          : 'text-gray-400 hover:text-gray-500 active:translate-y-0.1 active:scale-94',
       ]"
       text-2xl
       transition-transform

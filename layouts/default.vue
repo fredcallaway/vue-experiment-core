@@ -18,8 +18,8 @@ const devTools = ref(!getUrlFlag('noDev'))
   <div p2 flex="~ col" overflow-hidden v-if="devTools">
     <NavBar mb-2/>
     <SizeScaler />
-    <div flex="~ row gap-4">
-      <div flex="~ col gap-4">
+    <div flex="~ row gap-2">
+      <div flex="~ col gap-2">
         <MainContent show-outline fixed-width fixed-height>
           <slot />
         </MainContent>
