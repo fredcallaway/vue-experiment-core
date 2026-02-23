@@ -115,6 +115,9 @@ const makeEpoch = (props: EpochProps): Epoch => {
       // TODO: children is currently orderd by visitation, not their number
       props.parent.children.push(epoch)
     }
+    if (!isMultistepEpoch(props.parent) && props.parent.children.length > 1) {
+      throw new Error('non-multistep epochs cannot have multiple children')
+    }
   }
 
   return epoch
