@@ -315,6 +315,39 @@ watch(() => isTraversing.value || isJumping.value, (value) => {
 
 // HANDLERS
 
+const findPreviousLeafId = (start: EpochNode, targetId: string): string | null => {
+  let previousLeafId: string | null = null
+
+  const walk = (node: EpochNode): 'found' | 'missing' => {
+    if (node.id === targetId) return 'found'
+    if (!hasChildren(node)) {
+      previousLeafId = node.id
+    }
+    for (const child of node.children) {
+      const result = walk(child)
+      if (result === 'found') return 'found'
+    }
+    return 'missing'
+  }
+
+  return walk(start) === 'found' ? previousLeafId : null
+}
+
+const backTargetId = computed(() => {
+  if (!root.value) return null
+  return findPreviousLeafId(root.value, currentEpoch.value.id)
+})
+
+const handleBack = async () => {
+  const targetId = backTargetId.value
+  if (!targetId) return
+  await jumpToEpoch(targetId)
+}
+
+const handleNext = () => {
+  currentEpoch.value.done()
+}
+
 const handleClickNode = (node: EpochNode) => {
   void jumpToEpoch(node.id)
 }
@@ -399,7 +432,23 @@ const indentBase = 8
     :style="{ height: `${outlineHeight}px`, minWidth: `${maxSeenWidth}px` }"
   >
     <h2 ml2 shrink-0>Outline</h2>
-    <button @click="traverseTimeline" :disabled="isTraversing" btn-xs absolute right-1 top-1 >reindex</button>
+    <div absolute right-1 top-1 flex="~ items-center gap-1">
+      <button
+        @click="handleBack"
+        :disabled="!backTargetId || isTraversing || isJumping"
+        btn-xs
+      >
+        <div i-mdi-arrow-left-bold />
+      </button>
+      <button
+        @click="handleNext"
+        :disabled="isTraversing || isJumping"
+        btn-xs
+      >
+        <div i-mdi-arrow-right-bold />
+      </button>
+      <button @click="traverseTimeline" :disabled="isTraversing" btn-xs>reindex</button>
+    </div>
     
     <div v-if="!root" text-sm text-gray-500>
       Waiting for first epoch...
