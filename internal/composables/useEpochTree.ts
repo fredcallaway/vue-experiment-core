@@ -7,6 +7,7 @@ export type EpochNode = {
   children: EpochNode[]
   nSteps?: number
   hasIdenticalChildren?: boolean
+  error?: string
 }
 
 const getStepIndex = (parentId: string, childId: string) => {
@@ -98,7 +99,21 @@ const materializeIdenticalChildren = (node: EpochNode) => {
   node.children = completeChildren
 }
 
-const cloneEpochTree = (source: Epoch, parent: EpochNode | null): EpochNode => {
+const formatEpochError = (err: unknown) => {
+  if (err instanceof Error) return err.message || err.name
+  if (typeof err === 'string') return err
+  try {
+    return JSON.stringify(err)
+  } catch {
+    return String(err)
+  }
+}
+
+const cloneEpochTree = (
+  source: Epoch,
+  parent: EpochNode | null,
+  errorsById: Record<string, string>,
+): EpochNode => {
   const rawStepCount = (source as { nSteps?: unknown }).nSteps
   const clone: EpochNode = {
     id: source.id,
@@ -107,8 +122,9 @@ const cloneEpochTree = (source: Epoch, parent: EpochNode | null): EpochNode => {
     children: [],
     nSteps: typeof rawStepCount === 'number' ? rawStepCount : undefined,
     hasIdenticalChildren: source.hasIdenticalChildren,
+    error: errorsById[source.id],
   }
-  clone.children = source.children.map(child => cloneEpochTree(child, clone))
+  clone.children = source.children.map(child => cloneEpochTree(child, clone, errorsById))
   materializeIdenticalChildren(clone)
   return clone
 }
@@ -122,7 +138,11 @@ const findTreeNode = (node: EpochNode, id: string): EpochNode | null => {
   return null
 }
 
-const upsertCurrentPath = (root: EpochNode, current: Epoch) => {
+const upsertCurrentPath = (
+  root: EpochNode,
+  current: Epoch,
+  errorsById: Record<string, string>,
+) => {
   if (findTreeNode(root, current.id)) return
 
   const livePath: Epoch[] = []
@@ -143,7 +163,7 @@ const upsertCurrentPath = (root: EpochNode, current: Epoch) => {
       continue
     }
 
-    child = cloneEpochTree(live, parent)
+    child = cloneEpochTree(live, parent, errorsById)
     if (parent.hasIdenticalChildren) {
       const step = getStepIndex(parent.id, live.id)
       if (step !== null) {
@@ -171,12 +191,13 @@ export const useEpochTree = () => {
   const root = ref<EpochNode | null>(null)
   const isTraversing = ref(false)
   const hasTraversed = ref(false)
+  const errorsById = ref<Record<string, string>>({})
 
   const refreshTree = () => {
     const source = TOP_EPOCH.children[0]
-    root.value = source ? cloneEpochTree(source, null) : null
+    root.value = source ? cloneEpochTree(source, null, errorsById.value) : null
     if (root.value) {
-      upsertCurrentPath(root.value, currentEpoch.value)
+      upsertCurrentPath(root.value, currentEpoch.value, errorsById.value)
     }
   }
 
@@ -197,6 +218,13 @@ export const useEpochTree = () => {
 
     const { pushHandler } = useErrorHandler()
     const popHandler = pushHandler(err => {
+      const epochId = currentEpoch.value.id
+      if (epochId !== '__TOP_EPOCH__') {
+        errorsById.value = {
+          ...errorsById.value,
+          [epochId]: formatEpochError(err),
+        }
+      }
       console.error('Error traversing timeline:', err)
     }, 100)
 

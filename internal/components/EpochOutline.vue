@@ -29,6 +29,15 @@ const toNodeId = (target: NodeOrId) => typeof target === 'string' ? target : tar
 const isCurrent = (target: NodeOrId) => toNodeId(target) === currentEpoch.value.id
 const isActive = (target: NodeOrId) => currentPath.value.includes(toNodeId(target))
 const isAncestor = (target: NodeOrId) => isActive(target) && !isCurrent(target)
+const hasError = (node: EpochNode) => Boolean(node.error)
+const getNodeTextClass = (node: EpochNode) => {
+  if (hasError(node)) {
+    return isCurrent(node) || isAncestor(node) ? 'font-bold text-red-600' : 'text-red-500'
+  }
+  if (isCurrent(node)) return 'font-bold text-blue-500'
+  if (isAncestor(node)) return 'font-bold text-gray-600'
+  return 'text-gray-400'
+}
 const hasChildren = (node: EpochNode) => node.children.length > 0
 const isExpanded = (node: EpochNode) => hasChildren(node) && (isActive(node) || !collapsed.value[toNodeId(node)])
 const canCollapse = (node: EpochNode) => hasChildren(node) && !isActive(node)
@@ -406,11 +415,7 @@ const indentBase = 8
         flex="~ items-center gap-1"
         text-sm
         :style="{ paddingLeft: `${row.depth * indentStep + indentBase}px` }"
-        :class="[
-          isCurrent(row.node) ? 'font-bold text-blue-500' : '',
-          !isCurrent(row.node) && isAncestor(row.node) ? 'font-bold text-gray-600' : '',
-          !isCurrent(row.node) && !isAncestor(row.node) ? 'text-gray-400' : '',
-        ]"
+        :class="getNodeTextClass(row.node)"
       >
         <div
           v-if="row.depth > 0"
@@ -466,7 +471,15 @@ const indentBase = 8
             <div class="hidden group-hover:block" i-mdi-pin-outline text-gray-300 />
           </template>
         </button>
-        <span truncate @click="handleClickNode(row.node)" cursor-pointer min-w-0>{{ row.node.name }}</span>
+        <span
+          truncate
+          @click="handleClickNode(row.node)"
+          cursor-pointer
+          min-w-0
+          :title="row.node.error || undefined"
+        >
+          {{ row.node.name }}
+        </span>
         <button
           v-if="row.identical"
           @click.stop="cycleIdenticalStep(row.node.id, 1)"
