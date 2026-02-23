@@ -1,9 +1,12 @@
 <script lang="ts" setup>
-useEpoch('Completion') // we never call done from here
 
 const props = defineProps<{
   error?: boolean
 }>()
+
+if (!props.error) {
+  useEpoch('Completion') // we never call done from here
+}
 
 const config = useConfig()
 const dataWriter = useDataWriter()
@@ -53,6 +56,10 @@ const saveDebugData = async () => {
   dataWriter.flush()
 }
 
+const initialized = computed(() => {
+  return dataWriter.initialized
+})
+
 </script>
 
 <template>
@@ -68,7 +75,7 @@ const saveDebugData = async () => {
         <p>You have completed the study. Your final bonus is ${{ useBonus().dollars.toFixed(2) }}.</p>
       </template>
   
-      <div v-if="!dataWriter.initialized" card-gray mt10>
+      <div v-if="!initialized" card-gray mt10>
         <p>
           The study is running in development mode. If you want to save the data to the debug database, click the button below.
         </p>

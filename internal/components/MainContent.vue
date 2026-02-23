@@ -26,7 +26,7 @@ whenever(content, (el) => {
 })
 
 // error handling
-const error = ref(false)
+const error = ref<any>(null)
 
 const { pushHandler } = useErrorHandler()
 const popHandler = pushHandler((err, instance, info, next) => {
@@ -35,7 +35,7 @@ const popHandler = pushHandler((err, instance, info, next) => {
     const componentPath = instance?.$options?.__file
     logError(err as Error, {info, componentName, componentPath})
     useCurrentSession().error = String(err)
-    error.value = true
+    error.value = err
     return
   }
   next()
@@ -43,54 +43,67 @@ const popHandler = pushHandler((err, instance, info, next) => {
 
 onUnmounted(popHandler)
 
+watch(() => isJumping.value, (value) => {
+  if (error.value) {
+    error.value = null
+  }
+})
+
+const devTools = inject<Ref<boolean>>('devTools')
+
 </script>
 
 <template>
   <!-- wrapper div to allow outer v-show -->
-  <div relative>
-    <template v-if="error">
-      <div wfull hfull flex-center >
+  <div relative class="main-content"
+    :class="{
+      'main-outline': props.showOutline,
+      'overflowing': hasOverflow,
+    }"
+    :style="{
+      minWidth: `${minWidth - padding}px`,
+      minHeight: `${minHeight - padding}px`,
+      width: props.fixedWidth ? `${minWidth - padding}px` : 'auto',
+      height: props.fixedHeight ? `${minHeight - padding}px` : 'auto',
+  }">
+    <!-- error page -->
+    <div v-if="error" wfull hfull flex-center >
+      <div w-full h-fit flex-center gap-2 v-if="devTools">
+        <pre text-xs overflow-auto card-red mx-5 subtle-scrollbar >{{ error.stack ?? String(error) }}</pre>
+        <!-- <Error :error="error" /> -->
+        <button btn-red  @click="error = false">Clear Error</button>
+      </div>
+      <template v-else>
         <ECompletion error h-500px  />
+      </template>
+    </div>
+    <!-- main content -->
+    <div v-show="!violated" ref="content" >
+      <slot />
+      <div id="main-content-overlay" absolute inset-0 wfull hfull pointer-events-none />
+    </div>
+    <!-- screen size violated -->
+    <div v-if="violated"
+      inset-0 top-0 left-0 w-screen h-screen flex-center
+    bg-black text-center text-white text-xl
+    >
+      <div p-5>
+        You're browser window isn't large enough.<br>
+        It needs to be
+          <span :class="width < minWidth ? 'text-red-500' : ''">{{ minWidth }}px wide</span> and
+          <span :class="height < minHeight ? 'text-red-500' : ''">{{ minHeight }}px tall</span>.<br>
+        It's currently
+          <span :class="width < minWidth ? 'text-red-500' : ''">{{ width }}px wide</span> and
+          <span :class="height < minHeight ? 'text-red-500' : ''">{{ height }}px tall</span>.
+          <p mt-3 text-base w-80 mx-auto>
+            If you can't make it bigger, you can't participate in this experiment. Sorry!
+          </p>
+          <p mt-30 font-italic text-base w-100 mx-auto opacity-30 text-xs>
+            Tip: you can try zooming out in your browser
+            (usually cmd/ctrl and +/-). Make sure you can still read the text though!
+          </p>
       </div>
-    </template>
-    <template v-else>
-      <div v-show="!violated" ref="content" class="main-content"
-        :class="{
-          'main-outline': props.showOutline,
-          'overflowing': hasOverflow,
-        }"
-        :style="{
-          minWidth: `${minWidth - padding}px`,
-          minHeight: `${minHeight - padding}px`,
-          width: props.fixedWidth ? `${minWidth - padding}px` : 'auto',
-          height: props.fixedHeight ? `${minHeight - padding}px` : 'auto',
-        }"
-      >
-        <slot />
-        <div id="main-content-overlay" absolute inset-0 wfull hfull pointer-events-none />
-      </div>
-      <div v-if="violated"
-        inset-0 top-0 left-0 w-screen h-screen flex-center
-      bg-black text-center text-white text-xl
-      >
-        <div p-5>
-          You're browser window isn't large enough.<br>
-          It needs to be
-            <span :class="width < minWidth ? 'text-red-500' : ''">{{ minWidth }}px wide</span> and
-            <span :class="height < minHeight ? 'text-red-500' : ''">{{ minHeight }}px tall</span>.<br>
-          It's currently
-            <span :class="width < minWidth ? 'text-red-500' : ''">{{ width }}px wide</span> and
-            <span :class="height < minHeight ? 'text-red-500' : ''">{{ height }}px tall</span>.
-            <p mt-3 text-base w-80 mx-auto>
-              If you can't make it bigger, you can't participate in this experiment. Sorry!
-            </p>
-            <p mt-30 font-italic text-base w-100 mx-auto opacity-30 text-xs>
-              Tip: you can try zooming out in your browser
-              (usually cmd/ctrl and +/-). Make sure you can still read the text though!
-            </p>
-        </div>
-      </div>
-    </template>
+    </div>
   </div>
 </template>
 

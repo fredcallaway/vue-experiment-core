@@ -5,6 +5,8 @@ const { violated } = useWindowEnforcer()
 
 const devTools = ref(!getUrlFlag('noDev'))
 
+provide('devTools', devTools)
+
 // onMounted(() => {
 //   // wait for loggers to load
 //   setTimeout(() => {
@@ -20,7 +22,7 @@ const devTools = ref(!getUrlFlag('noDev'))
     <SizeScaler />
     <div flex="~ row gap-2">
       <div flex="~ col gap-2">
-        <MainContent show-outline fixed-width fixed-height>
+        <MainContent show-outline fixed-width fixed-height capture-errors >
           <slot />
         </MainContent>
         <EpochView v-if="!violated" mt-3/>
