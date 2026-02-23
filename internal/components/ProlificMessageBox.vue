@@ -57,7 +57,8 @@ const bonusChangeStatus = computed(() => {
   return `add ${diff}¢`
 })
 
-const hasInput = computed(() => !!replyText.value.trim() || intendedBonus.value > currentBonus.value)
+const hasBonus = computed(() => intendedBonus.value > currentBonus.value)
+const hasInput = computed(() => !!replyText.value.trim() || hasBonus.value)
 
 const messagesContainer = ref<HTMLElement>()
 
@@ -102,20 +103,21 @@ const handleSend = async () => {
     if (success.message) {
       description += `Message sent\n`
     } else if (replyText.value.trim()) {
-      description += `Failed to send message\n`
+      description += `❌ Failed to send message\n`
     }
     if (success.bonus) {
       description += `Bonus increased to ${intendedBonus.value}¢ (added ${bonusDiff}¢)\n`
     } else if (bonusDiff > 0) {
-      description += `Failed to increase bonus\n`
+      description += `❌ Failed to increase bonus\n`
     }
     return description.trim()
   }
 }
 
 const handleSendAndResolve = async () => {
-  await handleSend()
+  const result = await handleSend()
   await handleResolve()
+  return result
 }
 
 const handleResolve = async () => {
@@ -185,10 +187,7 @@ const handleResolve = async () => {
       <div class="flex items-center gap-2">
         <div w-13>
           <div class="text-sm fw-600 text-gray-700">Bonus</div>
-          <div v-if="intendedBonus > currentBonus" class="text-xs text-green-600">
-            add {{ intendedBonus - currentBonus }}¢
-          </div>
-          <div v-else class="text-xs text-gray-500">
+          <div text-xs :class="[hasBonus ? 'text-green-600' : 'text-gray-500']">
             add {{ intendedBonus - currentBonus }}¢
           </div>
         </div>
@@ -198,30 +197,30 @@ const handleResolve = async () => {
           :min="currentBonus"
           :scroll-step="5"
           :max="2000"
-          class="w-11 text-sm input mr-5 px-2 py-1"
-          :class="{'border-green-600': intendedBonus > currentBonus}"
+          class="w-11 text-sm input mr-5 px-2 py-1 "
+          :class="[hasBonus && 'border-green-600']"
         />
         <ActionButton
           name="Send"
           :action="handleSend"
           success="result"
           :disabled="isLoading || !hasInput"
-          class="btn-blue-sm flex-1"
+          class="h9 btn-blue-sm flex-1"
         />
-        <ActionButton v-if="hasInput"
+        <ActionButton v-if="hasInput && !correspondence.resolved"
           name="Send & Resolve"
           :action="handleSendAndResolve"
           success="result"
           :disabled="isLoading || !hasInput"
-          class="btn-green-sm flex-1"
+          class="h9 btn-green-sm text-sm flex-1"
         />
-        <button v-else
-          @click="handleResolve"
+        <ActionButton v-else
+          :name="correspondence.resolved ? 'Unresolve' : 'Resolve'"
+          :action="handleResolve"
           :disabled="isLoading"
-          :class="[correspondence.resolved ? 'btn-yellow-sm' : 'btn-green-sm', 'flex-1']"
-        >
-          {{ correspondence.resolved ? 'Unresolve' : 'Resolve' }}
-        </button>
+          class="h9 flex-1"
+          :class="[correspondence.resolved ? 'btn-yellow-sm' : 'btn-green-sm']"
+        />
       </div>
     </div>
   </div>

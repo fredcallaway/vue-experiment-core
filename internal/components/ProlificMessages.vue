@@ -31,7 +31,7 @@ onMounted(() => {
     <div v-if="sortedCorrespondences.length === 0" class="text-gray-500">
     </div>
 
-    <div v-else class="flex gap-4 overflow-x-auto mt-2">
+    <div v-else class="flex gap-4 overflow-x-auto mt-2 subtle-scrollbar">
       <div
         mb-2
         v-for="correspondence in sortedCorrespondences"
