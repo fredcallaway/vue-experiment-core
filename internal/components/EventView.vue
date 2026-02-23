@@ -419,7 +419,7 @@ onUpdated(() => {
       </div>
       <TextFilter v-model="whitelistFilter" placeholder="e.g. !epoch *.trial" w-52 />
       <!-- <button r1 t1 ml-auto btn-gray btn-xs @click="events.length = 0">clear</button> -->
-      <IconButton r1 t1 icon="i-mdi-broom" title="Clear" @click="events.length = 0" />
+      <IconButton absolute right-1 top-1 icon="i-mdi-broom" title="Clear" @click="events.length = 0" />
     </div>
     <div class="subtle-scrollbar flex-1 min-h-0" flex="~ col gap-2" overflow-y-auto>
       <template v-for="(event, index) in filteredEvents" :key="`${event.timestamp}-${index}`">

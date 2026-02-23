@@ -7,7 +7,8 @@ export const usePinnedEpoch = () => {
 
   const currentEpochIndex = computed(() => {
     const epochId = currentEpoch.value.id
-    return epochId.substring(0, epochId.lastIndexOf(']') + 1)
+    // return epochId.substring(0, epochId.lastIndexOf(']') + 1)
+    return epochId
   })
 
   const pinnedIndex = computed(() => {

@@ -7,6 +7,7 @@ const {
   root,
   isTraversing,
   hasTraversed,
+  traverseTimeline,
 } = useEpochTree()
 
 const collapsed = ref<Record<string, boolean>>({})
@@ -375,7 +376,7 @@ const outlineHeight = computed(() => {
 })
 
 // don't allow width to decrease (only increase)
-const maxSeenWidth = ref(100)
+const maxSeenWidth = ref(150) // 150 minimum
 watchEffect(() => {
   maxSeenWidth.value = Math.max(maxSeenWidth.value, width.value)
 })
@@ -395,9 +396,19 @@ const indentBase = 8
     pr2
     relative
     ref="top-div"
+
     :style="{ height: `${outlineHeight}px`, minWidth: `${maxSeenWidth}px` }"
   >
     <h2 ml2 mb0 shrink-0>Epochs</h2>
+    <IconButton
+      absolute
+      right-1
+      top-1
+      icon="i-mdi-refresh"
+      title="Reindex Timeline"
+      :disabled="isTraversing || isJumping"
+      @click="traverseTimeline"
+    />
 
     <!-- <EpochControls w-fit class="py0! ml2"  /> -->
 

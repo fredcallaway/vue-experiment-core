@@ -4,6 +4,7 @@ import type { EpochNode } from '../composables/useEpochTree'
 const currentEpoch = useCurrentEpoch()
 const fast = useFastMode()
 const { root, isTraversing, traverseTimeline } = useEpochTree()
+const { pinStatus, cycleCurrentPin } = usePinnedEpoch()
 
 const hasChildren = (node: EpochNode) => node.children.length > 0
 
@@ -40,10 +41,6 @@ const handleNext = () => {
   currentEpoch.value.done()
 }
 
-const handleReindex = () => {
-  void traverseTimeline()
-}
-
 </script>
 
 <template>
@@ -60,12 +57,16 @@ const handleReindex = () => {
       :disabled="isTraversing || isJumping"
       @click="handleNext"
     />
-    <IconButton
-      icon="i-mdi-refresh"
-      title="Reindex Timeline"
-      :disabled="isTraversing || isJumping"
-      @click="handleReindex"
-    />
+    <button @click="cycleCurrentPin">
+      <div
+        :title="pinStatus == 'current' ? 'Unpin Current Epoch' : 'Pin Current Epoch'"
+        text-2xl
+        :class="[
+          pinStatus == 'other' ? 'i-mdi-pin-outline' : 'i-mdi-pin',
+          pinStatus != 'none' ? 'text-blue-500' : 'text-gray-300',
+        ]"
+      />
+    </button>
     <IconToggle v-model="fast" label="Fast Mode" icon="i-mdi-speedometer" />
   </div>
 </template>
