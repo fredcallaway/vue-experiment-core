@@ -185,7 +185,7 @@ const upsertCurrentPath = (
   }
 }
 
-export const useEpochTree = () => {
+export const useEpochTree = createGlobalState(() => {
   const currentEpoch = useCurrentEpoch()
 
   const root = ref<EpochNode | null>(null)
@@ -295,4 +295,4 @@ export const useEpochTree = () => {
     hasTraversed,
     traverseTimeline,
   }
-}
+})

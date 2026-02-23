@@ -1,18 +1,27 @@
 <script lang="ts" setup>
-defineProps<{ icon: string; title: string }>()
+const props = defineProps<{
+  icon: string
+  title: string
+  disabled?: boolean
+}>()
 defineEmits<{ click: [] }>()
 </script>
 
 <template>
-  <button @click="$emit('click')">
+  <button
+    @click="$emit('click')"
+    :disabled="props.disabled"
+    :class="props.disabled ? 'cursor-not-allowed' : ''"
+  >
     <div
-      :title="title"
-      :class="icon"
+      :title="props.title"
+      :class="[
+        props.icon,
+        props.disabled
+          ? 'text-gray-300'
+          : 'text-gray-400 hover:text-gray-700 active:translate-y-0.1 active:scale-94',
+      ]"
       text-2xl
-      text-gray-400
-      hover:text-gray-700
-      active:translate-y-0.1
-      active:scale-94
       transition-transform
       duration-75
     />
