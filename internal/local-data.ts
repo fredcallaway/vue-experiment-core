@@ -120,6 +120,7 @@ export type SessionTimeInfo = {
   activeMs: number | null
 }
 
+let nActiveTimeWarnings = 0
 export const getSessionTimeInfo = (meta: SessionMeta): SessionTimeInfo => {
   const endTime = meta.completionTime ?? meta.lastUpdateTime
   const totalMs = endTime - meta.startTime
@@ -130,7 +131,10 @@ export const getSessionTimeInfo = (meta: SessionMeta): SessionTimeInfo => {
 
   const activeMs = totalMs - meta.inactiveTime
   if (activeMs < 0) {
-    console.warn(`Active time is negative for session ${meta.sessionId}`)
+    nActiveTimeWarnings++
+    if (nActiveTimeWarnings < 10) {
+      console.warn(`Active time is negative for session ${meta.sessionId}`, { totalMs, activeMs, inactiveMs: meta.inactiveTime })
+    }
   }
   return { endTime, totalMs, inactiveMs: meta.inactiveTime, activeMs }
 }
@@ -224,6 +228,7 @@ export const makeEventList = (session: SessionData) => {
       currentEpoch = assertString(payload.id)
       return {
         time: event.timestamp,
+        timeRaw: event.timestamp,
         epoch: currentEpoch,
         eventType: event.eventType,
         data: {},
@@ -233,6 +238,7 @@ export const makeEventList = (session: SessionData) => {
     return {
       sessionId: session.meta.sessionId,
       time: event.timestamp,
+      timeRaw: event.timestamp,
       epoch: currentEpoch,
       eventType: event.eventType,
       data: payload,
