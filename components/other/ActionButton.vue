@@ -42,6 +42,7 @@ const defineHandlers = () => {
   }
   if (error === true || (error !== false && !error)) {
     error = (err: any) => {
+      console.error(err)
       return {message: `${props.name}: Failure`, description: String(err), duration: Infinity}
     }
   }
