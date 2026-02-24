@@ -48,10 +48,34 @@ export const usePosthog = createGlobalState(() => {
 
   checkStatus()
 
-  // capture logEvent
-  const bus = useLogEventBus()
-  bus.on((event) => {
-    posthog.capture(event.eventType, event)
+  // capture logged events
+  const whiteList = [
+    'epoch.start',
+    'bonus.update'
+  ]
+  const blackList = [
+    'participant.mousedown',
+    'participant.hover',
+  ]
+  const maxCount = 100
+  
+  const eventCounts = {} as Record<string, number>
+  const shouldCapture = (event: LogEvent) => {
+    if (whiteList.includes(event.eventType)) return true
+    if (blackList.includes(event.eventType)) return false
+    // non-specified events are kept up to maxCount occurrences
+    eventCounts[event.eventType] ??= 0
+    const count = ++eventCounts[event.eventType]
+    if (count < maxCount) return true
+    if (count == maxCount) {
+      posthog.capture('usePosthog.maxCountReached', { eventType: event.eventType })
+    }
+    return false
+  }
+  useLogEventBus().on((event) => {
+    if (shouldCapture(event)) {
+      posthog.capture(event.eventType, event)
+    }
   })
 
   // capture errors (letting them pass through)
