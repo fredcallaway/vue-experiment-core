@@ -320,7 +320,7 @@ export const useProlific = createGlobalState(() => {
     callback: (study: StudyFull) => boolean | void  // return true to stop watch
   }
   const watchStudy = (studyId: string, options: WatchStudyOptions) => {
-    console.log('👉 watchStudy', studyId)
+    console.log('watchStudy', studyId)
     const interval = ref(options.interval ?? 5_000)
     const studyCache = studiesCache.getItemCache(studyId)
 
@@ -620,6 +620,29 @@ export const useProlific = createGlobalState(() => {
     await studiesCache.getItemAsync(studyId)
   }
 
+  type ParticipantBonusRecord = {
+    assignedTime?: number,
+    assignedCents?: number,
+    confirmedCents?: number,
+    confirmedTime?: number,
+  }
+  type BonusStore = Record<string, ParticipantBonusRecord>
+  const useBonusStore = (studyId: string) => {
+    const store = useLocalStorage<BonusStore>(`useProlific.bonus.${studyId}`, {})  // reactive object
+    const studyCache = getStudyCache(studyId)
+    watchImmediate(studyCache.fullItem, (study) => {
+      if (study) {
+        store.value = R.mergeDeep(store.value, R.pullObject(study.submissions, R.prop("participant_id"), sub => ({
+          confirmedCents: sum(sub.bonus_payments),
+          confirmedTime: Date.now(),
+        })))
+        // TODO MAYBE: check for unconfirmed bonuses and warn (toast.warn)
+      }
+    })
+    return store
+  }
+
+
   // NOTE: bonusesInCents is the TOTAL bonus (including already paid), newBonusTotal is only the NEW amount to pay
   const assignBonuses = async ( studyId: string, bonusesInCents: Record<string, number>, newBonusTotal: number ) => {
     
@@ -628,8 +651,17 @@ export const useProlific = createGlobalState(() => {
       throw new ProlificError(`newBonusTotal is 0; cannot assign bonuses`)
     }
     
+    // Note: getItemAsync will reactively update the bonus store
     const study = await studiesCache.getItemAsync(studyId)
     const submissions = study.submissions
+
+    // calculate the new bonuses (provided totals minus existing)
+    const previousBonus = Object.fromEntries(
+      submissions.map(sub => [
+        sub.participant_id,
+        sum(sub.bonus_payments)
+      ])
+    )
 
     // convert session ids to participant ids
     const normalizedBonuses = R.mapKeys(bonusesInCents, (id: string) => {
@@ -641,12 +673,6 @@ export const useProlific = createGlobalState(() => {
     })
 
     // calculate the new bonuses (provided totals minus existing)
-    const previousBonus = Object.fromEntries(
-      submissions.map(sub => [
-        sub.participant_id,
-        sum(sub.bonus_payments)
-      ])
-    )
     const newBonus = R.mapValues(normalizedBonuses, (amount, pid) => {
       const existing = assertDefined(previousBonus[pid], `Missing existing bonus data for participant ${pid}`)
       return amount - existing
@@ -677,6 +703,16 @@ export const useProlific = createGlobalState(() => {
       .join('\n')
 
     assert(bonusString.length > 0, 'problem generating bonus CSV')
+    
+    // prevent double-bonusing the same participant due to API not updating quickly enough
+    const bonusStore = useBonusStore(studyId)
+    const recentlyBonused = Object.keys(newBonus).filter(pid => {
+      // the participant is going to get more money AND we tried to send them money recently
+      return newBonus[pid] > 0 && Date.now() - (bonusStore.value[pid]?.assignedTime ?? 0) < 10_000
+    })
+    if (recentlyBonused.length > 0) {
+      throw new ProlificError(`Recently assigned bonuses for participants: ${recentlyBonused.join(', ')}. Please wait 10 seconds before assigning again.`)
+    }
 
     // API has two steps: upload, then confirm
     const response = await request<{ total_amount: number; id: string }>(
@@ -692,24 +728,27 @@ export const useProlific = createGlobalState(() => {
       throw new ProlificError(`Bonus total mismatch: expected ${round(newBonusTotal * PROLIFIC_FEE)} with prolific fee, got ${response.total_amount}`)
     }
 
-    // prevent double-bonusing due to API not updating quickly enough
-    const lastBonusTimestamp = useLocalStorage<number>(`prolific_bonuses_timestamp_${studyId}`, 0)
-    if (Date.now() - lastBonusTimestamp.value < 10_000) {
-      throw new ProlificError(`Recently assigned bonuses for ${studyId}, please wait 10 seconds before assigning again.`)
-    }
-    lastBonusTimestamp.value = Date.now()    
-
     // confirm bonus payment
     await request('POST', `/bulk-bonus-payments/${response.id}/pay/`, {})
+
+    // record assigned bonuses in store
+    const assignTime = Date.now()
+    bonusStore.value = R.mergeDeep(bonusStore.value, R.mapValues(normalizedBonuses, (amount) => ({
+      assignedTime: assignTime,
+      assignedCents: amount,
+    })))
+   
     // refresh study until bonuses are updated
-    // TODO (maybe) we make a lot of unnecessary calls to fetch the study (only need submissions)
+    // TODO MAYBE we make a lot of unnecessary calls to fetch the study (only need submissions)
     watchStudy(studyId, {
       interval: 5000,
       maxCall: 30,
       callback: (study) => {
-        console.log('checking bonuses')
-        const allBonused = study.submissions.every(sub => sum(sub.bonus_payments) >= (newBonus[sub.participant_id] ?? 0))
+        console.log(`checking bonuses for ${studyId}`)
+        const currentBonuses = R.pullObject(study.submissions, R.prop("participant_id"), sub => sum(sub.bonus_payments))
+        const allBonused = Object.keys(normalizedBonuses).every(pid => currentBonuses[pid] >= normalizedBonuses[pid])
         if (allBonused) {
+          console.log(`all bonuses confirmed for ${studyId}`)
           return true // stop listening
         }
       }
@@ -742,5 +781,6 @@ export const useProlific = createGlobalState(() => {
     rejectSubmission,
     assignBonuses,
     getStudyLink,
+    useBonusStore,
   }
 })
