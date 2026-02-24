@@ -257,6 +257,7 @@ const getDataStatus = (sub: Submission) => {
 
 const getCodeType = (studyCode: string | null | undefined) => {
   if (!studyCode) return 'NOCODE'
+  if (studyCode == "Manual Completion") return 'MANUAL'
   if (!study.value) return studyCode
   return study.value.completion_codes.find(cc => cc.code === studyCode)?.code_type || studyCode
 }
@@ -602,8 +603,9 @@ const costString = computed(() => {
 
   // const bonus = R.pipe(sv.submissions, R.map(sub => sum(sub.bonus_payments)), R.sum())
   const bonus = sum(R.values(intendedBonuses.value))
-  const total = (base + bonus)
-  return `${PROLIFIC_FEE} × (${formatCents(base)} + ${formatCents(bonus)}) = ${formatCents(total)}`
+  const total = PROLIFIC_FEE * (base + bonus)
+  // return `${PROLIFIC_FEE} × (${formatCents(base)} + ${formatCents(bonus)}) = ${formatCents(total)}`
+  return `${formatCents(base)} (base) + ${formatCents(bonus)} (bonus) × 4/3 (prolific) = ${formatCents(total)}`
 })
 
 const averageBonus = computed(() => {
