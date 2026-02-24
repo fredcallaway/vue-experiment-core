@@ -77,41 +77,25 @@ onMounted(scrollToBottom)
 const handleSend = async () => {
   isLoading.value = true
   const { studyId, participantId } = props.correspondence
-  const success = {
-    message: false,
-    bonus: false,
-  }
+
+  const successMessages = []
   const bonusDiff = intendedBonus.value - currentBonus.value
-  try {
-    if (replyText.value.trim()) {
-      await messages.sendMessage(studyId, participantId, replyText.value.trim())
-      success.message = true
-    }
-    if (bonusDiff > 0) {
-      await prolific.assignBonuses(
-        studyId,
-        { [participantId]: intendedBonus.value },
-        bonusDiff
-      )
-      success.bonus = true
-    }
-    replyText.value = ''
-    emit('send', replyText.value, bonusDiff)
-  } finally {
-    isLoading.value = false
-    let description = ''
-    if (success.message) {
-      description += `Message sent\n`
-    } else if (replyText.value.trim()) {
-      description += `❌ Failed to send message\n`
-    }
-    if (success.bonus) {
-      description += `Bonus increased to ${intendedBonus.value}¢ (added ${bonusDiff}¢)\n`
-    } else if (bonusDiff > 0) {
-      description += `❌ Failed to increase bonus\n`
-    }
-    return description.trim()
+  if (bonusDiff > 0) {
+    await prolific.assignBonuses(
+      studyId,
+      { [participantId]: intendedBonus.value },
+      bonusDiff
+    )
+    successMessages.push(`Bonus increased to ${intendedBonus.value}¢ (added ${bonusDiff}¢)`)
   }
+
+  if (replyText.value.trim()) {
+    await messages.sendMessage(studyId, participantId, replyText.value.trim())
+    successMessages.push(`Message sent`)
+  }
+  replyText.value = ''
+  emit('send', replyText.value, bonusDiff)
+  return successMessages.join('\n')
 }
 
 const handleSendAndResolve = async () => {
