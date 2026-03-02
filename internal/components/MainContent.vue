@@ -27,13 +27,20 @@ whenever(content, (el) => {
 
 // error handling
 const error = ref<any>(null)
+const errorDetails = ref<any>(null)
 
 const { pushHandler } = useErrorHandler()
 const popHandler = pushHandler((err, instance, info, next) => {
   if (props.captureErrors) {
-    const componentName = instance?.$options?.__name
-    const componentPath = instance?.$options?.__file
-    logError(err as Error, {info, componentName, componentPath})
+    errorDetails.value = {
+
+    }
+    errorDetails.value = {
+      componentName: instance?.$options?.__name,
+      componentPath: instance?.$options?.__file,
+      info,
+    }
+    logError(err as Error, toRaw(errorDetails.value))
     useCurrentSession().error = String(err)
     error.value = err
     return
@@ -50,6 +57,7 @@ watch(() => isJumping.value, (value) => {
 })
 
 const devTools = inject<Ref<boolean>>('devTools')
+const currentEpoch = useCurrentEpoch()
 
 </script>
 
@@ -67,18 +75,36 @@ const devTools = inject<Ref<boolean>>('devTools')
       height: props.fixedHeight ? `${minHeight - padding}px` : 'auto',
   }">
     <!-- error page -->
-    <div v-if="error" wfull hfull flex-center >
-      <div w-full h-fit flex-center gap-2 v-if="devTools">
-        <pre text-xs overflow-auto card-red mx-5 subtle-scrollbar >{{ error.stack ?? String(error) }}</pre>
+    <div v-if="error" wfull hfull >
+      <div w-full h-fit p-3 gap-2 v-if="devTools">
+        <h1>Error</h1>
+        <div>
+          The experiment encountered an error in dev mode. This would have
+          led to a completion screen in live mode.
+        </div>
+        <div my-3>
+          <div><b>Error:</b> {{ error.message }}</div>
+          <div><b>Current Epoch:</b> {{ currentEpoch.id }}</div>
+          <div><b>Component:</b> {{ errorDetails.componentName }}</div>
+          <div><b>Component Path:</b> {{ errorDetails.componentPath }}</div>
+          <div><b>Vue Info:</b> {{ errorDetails.info }}</div>
+        </div>
+        <div text-lg font-bold>Stack trace</div>
+        <div font-italic mb-1>See the browser console for a better stack trace.</div>
+        <pre text-xs overflow-auto mx-5 subtle-scrollbar >{{ error.stack ?? String(error) }}</pre>
         <!-- <Error :error="error" /> -->
-        <button btn-red  @click="error = false">Clear Error</button>
+        
+        <div flex-center gap-3 mt-3>
+          <button btn-red  @click="error = false">Clear Error</button>
+          <button btn-blue  @click="error = false; currentEpoch.done()">Next Epoch</button>
+        </div>
       </div>
       <template v-else>
         <ECompletion error h-500px  />
       </template>
     </div>
     <!-- main content -->
-    <div v-show="!violated" ref="content" >
+    <div v-show="!violated && !error" ref="content" >
       <slot />
       <div id="main-content-overlay" absolute inset-0 wfull hfull pointer-events-none />
     </div>
