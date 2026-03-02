@@ -524,6 +524,7 @@ const getCodeColorClass = (studyCode: string | null | undefined) => {
     case 'ERROR': return 'text-red-600'
     case 'ABORTED': return 'text-orange-500'
     case 'TIMEOUT': return 'text-yellow-500'
+    case 'DISCONNECTED': return 'text-yellow-500'
     default: return 'text-purple'
   }
 }

@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 
+// NOTE: this page has only been tested with config.completion.mode == 'prolific'
+
 const props = defineProps<{
   error?: boolean
 }>()
@@ -11,9 +13,6 @@ if (!props.error) {
 const config = useConfig()
 const dataWriter = useDataWriter()
 
-const completedCode = config.completion.mode === 'prolific' ? useCompletionCode('COMPLETED') : null
-const errorCode = config.completion.mode === 'prolific' ? useCompletionCode('ERROR') : null
-
 const online = useOnline()
 const longWait = useTimeout(30_000)
 const dataSaved = ref(false)
@@ -21,9 +20,10 @@ const dataSaved = ref(false)
 // whenever(longWait, () => useUnload().disable())
 
 const code = computed(() => {
-  if (props.error) return useCompletionCode('ERROR')
-  if (longWait.value && !dataSaved.value) return useCompletionCode('ABORTED')
-  return useCompletionCode('COMPLETED')
+  if (config.completion.mode !== 'prolific') return null
+  if (props.error) return getCompletionCode('ERROR')
+  if (longWait.value && !dataSaved.value) return getCompletionCode('DISCONNECTED')
+  return getCompletionCode('COMPLETED')
 })
 
 const link = computed(() => {
@@ -66,6 +66,7 @@ const initialized = computed(() => {
   <div w-full>
     <div mx-auto w-150 text-center select-text >
 
+      <!-- heading -->
       <template v-if="error">
         <h1>The experiment encountered an error!</h1>
         <p>We have recorded the error and will message you if we need more information.</p>
@@ -74,7 +75,8 @@ const initialized = computed(() => {
         <h1>Thanks!</h1>
         <p>You have completed the study. Your final bonus is ${{ useBonus().dollars.toFixed(2) }}.</p>
       </template>
-  
+      
+      <!-- screen shown in dev/debug mode when data writing was never initialized -->
       <div v-if="!initialized" card-gray mt10>
         <p>
           The study is running in development mode. If you want to save the data to the debug database, click the button below.
@@ -90,29 +92,50 @@ const initialized = computed(() => {
         </button>
       </div>
 
+      <!-- data saving is in progress or failed  -->
       <div v-else-if="!minWait || !dataSaved">
-        <p>
-          Please wait for your data to be saved.
-        </p>
-        <p v-if="!online">
-          It looks like your internet connection is down. Please check your connection and try again.
-        </p>
-        <p v-else-if="longWait">
-          We're having trouble saving your data. Please submit with code: <b>{{ code }}</b>
-        </p>
-        <button v-if="longWait" btn-primary mt-10 @click="handleSubmit">
-          Submit to Prolific
-        </button>
+        <div v-if="!online">
+          It looks like your internet connection is down.
+          <b>Do NOT close or refresh the page!</b>
+          The submit button will appear when your connection is restored.
+        </div>
+        <div v-else-if="!longWait">
+          <div>Please wait for your data to be saved...</div>
+          <div mt-3 mx-auto class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300" />
+        </div>
+        <div v-else>
+          <template v-if="config.completion.mode === 'prolific'">
+            <div>We're having trouble saving your data. Please submit with code: <b>{{ code }}</b></div>
+            <button btn-primary mt-10 @click="handleSubmit">
+              Submit to Prolific
+            </button>
+          </template>
+          <template v-else>
+            <div>We're having trouble saving your data. Please contact {{ config.contactEmail }} to make sure you are credited.</div>
+            <button btn-primary mt-10 @click="handleSubmit">
+              Submit Study
+            </button>
+          </template>
+        </div>
       </div>
 
+      <!-- data saving is complete -->
       <div v-else>
-        <div v-if="completedCode">
-          <p p-2>Your completion code is: <b>{{ code }}</b></p> 
-          <p>Click the button below to be redirected to the Prolific completion page.</p> 
-        </div>
-        <button btn-primary mt-10 @click="handleSubmit">
-          Submit to Prolific
-        </button>
+        <template v-if="config.completion.mode === 'prolific'">
+          <div v-if="code">
+            <p p-2>Your completion code is: <b>{{ code }}</b></p>
+            <p>Click the button below to be redirected to the Prolific completion page.</p>
+          </div>
+          <button btn-primary mt-10 @click="handleSubmit">
+            Submit to Prolific
+          </button>
+        </template>
+        <template v-else>
+          <p>Your data has been saved. Thank you for participating!</p>
+          <button btn-primary mt-10 @click="handleSubmit">
+            Submit Study
+          </button>
+        </template>
       </div>
     </div>
   </div>

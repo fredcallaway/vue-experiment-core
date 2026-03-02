@@ -4,6 +4,10 @@ const { done } = useEpoch('consent')
 const saidNo = ref(false)
 const aborted = ref(false)
 
+// NOTE: there's commented out code for automatically timing out
+// I found that this caused more trouble than it was worth.
+// TODO before beta release, either remove or make configurable
+
 // TODO: should mark this somehow to prevent refresh and continue
 const abortExperiment = async (reason: 'TIMEOUT' | 'ABORTED') => {
   if (aborted.value) return
@@ -14,7 +18,7 @@ const abortExperiment = async (reason: 'TIMEOUT' | 'ABORTED') => {
     meta.error = reason
     await useDataWriter().flush()
     useUnload().disable()
-    const code = useCompletionCode(reason)
+    const code = getCompletionCode(reason)
     window.location.href = `https://app.prolific.co/submissions/complete?cc=${code}`
   }
 }

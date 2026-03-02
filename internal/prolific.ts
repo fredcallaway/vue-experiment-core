@@ -131,11 +131,58 @@ export type StudyPayload = {
   study_labels?: string[]
 }
 
-// Zod Schemas
+// COMPLETION CODES
+
+// all possible codes; you can add new options (but be careful about removing)
+export const COMPLETION_CODE_TYPES = ['COMPLETED', 'ERROR', 'ABORTED', 'TIMEOUT', 'DISCONNECTED'] as const
+export type CompletionCodeType = typeof COMPLETION_CODE_TYPES[number]
+
+// prolific action associated with each code; can be adjusted (TODO: configure in config?)
+const getCompletionActions = (codeType: CompletionCodeType) => {
+  switch (codeType) {
+    case 'ABORTED':
+      return [{ action: 'REQUEST_RETURN', return_reason: 'Experiment was not completed.' }]
+    case 'TIMEOUT':
+      return [{ action: 'REQUEST_RETURN', return_reason: 'Did not begin study promptly.' }]
+    default:
+      return [{ action: 'MANUALLY_REVIEW' }]
+  }
+}
+
+// completion code is a deterministic hash of config.version and codeType
+export const getCompletionCode = (codeType: CompletionCodeType): string => {
+  const config = useConfig()
+
+  const input = `${codeType}-${config.version}`
+  const hash = hashString(input)
+
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let code = codeType[0] + '0' // version-independent part for easy identification
+  let remaining = hash
+
+  for (let i = 0; i < 5; i++) {
+    code += chars[remaining % chars.length]
+    remaining = Math.floor(remaining / chars.length)
+  }
+
+  return code
+}
+
+export const createCompletionCodes = (): CompletionCodeSpec[] => {
+ return COMPLETION_CODE_TYPES.map(codeType => ({
+    code_type: codeType,
+    actions: getCompletionActions(codeType),
+    code: getCompletionCode(codeType),
+  }))
+}
+
+
+// ZOD SCHEMAS
 
 export const ProlificSubmissionSchema = z.object({
   id: z.string(),
   participant_id: z.string(),
+  // this status is set by prolific; the values shouldn't be changed
   status: z.enum(['ACTIVE', 'AWAITING REVIEW', 'APPROVED', 'PARTIALLY APPROVED', 'REJECTED', 'RETURNED', 'SCREENED OUT', 'TIMED-OUT', 'UNKNOWN']),
   started_at: z.string().nullable(),
   time_taken: z.number().nullable().optional(),
@@ -145,7 +192,7 @@ export const ProlificSubmissionSchema = z.object({
 
 export const CompletionCodeSpecSchema = z.object({
   code: z.string(),
-  code_type: z.enum(['COMPLETED', 'ERROR', 'ABORTED', 'TIMEOUT']),
+  code_type: z.enum(COMPLETION_CODE_TYPES),
   actions: z.array(z.object({
     action: z.string(),
     return_reason: z.string().optional(),
@@ -205,7 +252,6 @@ export type StudyDetails = z.infer<typeof ProlificStudyDetailsSchema>
 export type StudyFull = StudyDetails & { submissions: Submission[] }
 export type StudyStatus = StudyShort['status']
 export type SubmissionStatus = Submission['status']
-export type CompletionCode = CompletionCodeSpec['code_type']
 export type Study = StudyShort | StudyFull 
 
 export class ProlificError extends Error {

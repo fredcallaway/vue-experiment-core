@@ -359,32 +359,6 @@ export const useProlific = createGlobalState(() => {
     }))
   }
 
-  function createCompletionCodes(): CompletionCodeSpec[] {
-    const codeTypes = [
-      {
-        code_type: 'COMPLETED',
-        actions: [{ action: 'MANUALLY_REVIEW' }]
-      },
-      {
-        code_type: 'ERROR',
-        // actions: [{ action: 'REQUEST_RETURN', return_reason: 'Experiment was not completed due to an error.' }]
-        actions: [{ action: 'MANUALLY_REVIEW' }]
-      },
-      {
-        code_type: 'ABORTED',
-        actions: [{ action: 'REQUEST_RETURN', return_reason: 'Experiment was not completed.' }]
-      },
-      {
-        code_type: 'TIMEOUT',
-        actions: [{ action: 'REQUEST_RETURN', return_reason: 'Did not begin study promptly.' }]
-      }
-    ] as Omit<CompletionCodeSpec, 'code'>[]
-    return codeTypes.map(cc => ({
-      ...cc,
-      code: useCompletionCode(cc.code_type),
-    }))
-  }
-
   // Prolific operations
   const createStudy = async (cfg: ProlificConfig & { internal_name: string }): Promise<StudyFull> => {
     const studies = await studiesCache.getListAsync()

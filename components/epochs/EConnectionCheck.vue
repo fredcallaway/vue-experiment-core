@@ -11,13 +11,13 @@ const db = useDatabase()
 const config = useConfig()
 const contactEmail = config.contactEmail
 
-const errorCode = props.allowCompletion && config.completion.mode === 'prolific' 
-  ? useCompletionCode('ERROR') 
+const completionCode = props.allowCompletion && config.completion.mode === 'prolific' 
+  ? getCompletionCode('DISCONNECTED') 
   : null
 
 const link = computed(() => {
-  if (!errorCode) return null
-  return `https://app.prolific.co/submissions/complete?cc=${errorCode}`
+  if (!completionCode) return null
+  return `https://app.prolific.co/submissions/complete?cc=${completionCode}`
 })
 
 const handleSubmit = () => {
@@ -64,9 +64,9 @@ const showError = computed(() => {
     <p mt10>
       If the problem persists, please contact {{ contactEmail }}.
     </p>
-    <div v-if="allowCompletion && errorCode" mt-10>
+    <div v-if="allowCompletion && completionCode" mt-10>
       <p>
-        If you cannot resolve the connection issue, you can submit with code: <b>{{ errorCode }}</b>. 
+        If you cannot resolve the connection issue, you can submit with code: <b>{{ completionCode }}</b>. 
         Note that you may not receive full payment if you haven't completed the study.
       </p>
       <button btn-primary mt-4 @click="handleSubmit">
