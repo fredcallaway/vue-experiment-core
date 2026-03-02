@@ -118,3 +118,5 @@ export function findMatch<T extends string>(input: string, patterns: Record<T, R
   if (!match) throw new Error(`findMatch: no match for "${input}"`)
   return match[0]
 }
+
+export const throwError = (msg: string) => { throw new Error(msg) }
