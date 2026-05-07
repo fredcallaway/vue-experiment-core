@@ -104,7 +104,7 @@ const currentEpoch = useCurrentEpoch()
       </template>
     </div>
     <!-- main content -->
-    <div v-show="!violated && !error" ref="content" >
+    <div v-show="!violated && !error" ref="content" wfull hfull >
       <slot />
       <div id="main-content-overlay" absolute inset-0 wfull hfull pointer-events-none />
     </div>
