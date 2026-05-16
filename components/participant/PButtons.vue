@@ -4,14 +4,15 @@ const props = defineProps<{
   classes?: string | string[],
 }>()
 
-const values = 
-  Array.isArray(props.values) ? props.values : 
-  string2array(props.values)
+const values = computed(() =>
+  Array.isArray(props.values) ? props.values : string2array(props.values)
+)
 
-const classes = 
-  Array.isArray(props.classes) ? props.classes : 
-  props.classes ? string2array(props.classes) : 
+const classes = computed(() =>
+  Array.isArray(props.classes) ? props.classes :
+  props.classes ? string2array(props.classes) :
   []
+)
 
 const emit = defineEmits<{
   (e: 'click', value: string): void
