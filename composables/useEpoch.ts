@@ -355,9 +355,14 @@ export const jumpToEpoch = async (epochId: string, isFallback: boolean = false):
     return result
   } catch (e) {
     logError('error jumping to epoch', e)
-    const shortened = epochId.substring(0, epochId.lastIndexOf('-'))
-    if (shortened != epochId) {
-      return await jumpToEpoch(shortened, true)
+    let shortened = epochId.substring(0, epochId.lastIndexOf('-'))
+    while (shortened) {
+      try {
+        return await jumpToEpochImpl(shortened.split('-'))
+      } catch (fallbackError) {
+        logError('error jumping to fallback epoch', fallbackError)
+        shortened = shortened.substring(0, shortened.lastIndexOf('-'))
+      }
     }
     return null
   } finally {

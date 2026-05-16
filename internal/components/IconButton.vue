@@ -3,8 +3,14 @@ const props = defineProps<{
   icon: string
   title: string
   disabled?: boolean
+  tone?: 'default' | 'danger'
 }>()
 defineEmits<{ click: [] }>()
+
+const enabledClass = computed(() => {
+  if (props.tone === 'danger') return 'text-red-500 hover:text-red-600 active:translate-y-0.1 active:scale-94'
+  return 'text-gray-400 hover:text-gray-500 active:translate-y-0.1 active:scale-94'
+})
 </script>
 
 <template>
@@ -19,7 +25,7 @@ defineEmits<{ click: [] }>()
         props.icon,
         props.disabled
           ? 'text-gray-300'
-          : 'text-gray-400 hover:text-gray-500 active:translate-y-0.1 active:scale-94',
+          : enabledClass,
       ]"
       text-2xl
       transition-transform

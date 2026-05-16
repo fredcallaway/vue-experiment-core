@@ -7,7 +7,10 @@ const {
   root,
   isTraversing,
   hasTraversed,
-  traverseTimeline,
+  isOutlineStale,
+  outlineStaleReason,
+  markCachedOutlineStale,
+  reindexTimeline,
 } = useEpochTree()
 
 const collapsed = ref<Record<string, boolean>>({})
@@ -315,8 +318,16 @@ watch(() => isTraversing.value || isJumping.value, (value) => {
 
 // HANDLERS
 
-const handleClickNode = (node: EpochNode) => {
-  void jumpToEpoch(node.id)
+const handleClickNode = async (node: EpochNode) => {
+  if (isOutlineStale.value) {
+    console.warn(outlineStaleReason.value ?? 'Epoch outline is stale. Reindex Timeline before jumping.')
+  }
+  const result = await jumpToEpoch(node.id)
+  if (result === null && node.id !== currentEpoch.value.id) {
+    markCachedOutlineStale(
+      `Cached epoch outline may be stale: jump to "${node.id}" did not resolve. Reindex Timeline.`,
+    )
+  }
 }
 
 const isPinnedNode = (node: EpochNode) => pinnedIndex.value === node.id
@@ -405,9 +416,10 @@ const indentBase = 8
       right-1
       top-1
       icon="i-mdi-refresh"
-      title="Reindex Timeline"
+      :title="isOutlineStale ? (outlineStaleReason ?? 'Epoch outline is stale. Reindex Timeline.') : 'Reindex Timeline'"
+      :tone="isOutlineStale ? 'danger' : 'default'"
       :disabled="isTraversing || isJumping"
-      @click="traverseTimeline"
+      @click="reindexTimeline"
     />
 
     <!-- <EpochControls w-fit class="py0! ml2"  /> -->
