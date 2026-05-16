@@ -1,9 +1,7 @@
 <script lang="ts" setup>
 
-const { sleep } = useLocalAsync()
-
 const props = defineProps<{
-  keys?:  string | Key[]
+  keys?: string | Key[]
   once?: boolean
   maxTime?: number
 }>()
@@ -14,18 +12,18 @@ const emit = defineEmits<{
 }>()
 
 const live = ref(true)
-const spec = validateKeySpec(props.keys)
-const P = useParticipant('PKey')
 
-const unsub = P.onKeyPress(spec, (keyPress) => { 
+const unsub = onKeyPress(props.keys, (keyPress) => {
   if (props.once) {
     live.value = false
     unsub()
   }
   emit('press', keyPress)
 })
+onUnmounted(unsub)
 
-onMounted(async () =>{
+const { sleep } = useLocalAsync()
+onMounted(async () => {
   if (props.maxTime) {
     await sleep(props.maxTime)
     live.value = false

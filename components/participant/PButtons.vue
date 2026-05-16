@@ -2,6 +2,7 @@
 const props = defineProps<{
   values: string | string[],
   classes?: string | string[],
+  disabled?: boolean,
 }>()
 
 const values = computed(() =>
@@ -29,9 +30,10 @@ const emit = defineEmits<{
       :key="idx"
       :class="classes[idx]"
       :value="value"
+      :disabled="disabled"
       @click="emit('click', $event)"
       @hover="emit('hover', $event)"
       @mousedown="emit('mousedown', $event)"
     />
   </div>
-</template> 
+</template>

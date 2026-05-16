@@ -50,14 +50,6 @@ export const isEpochEvent = (event: LogEvent): event is EpochEvent => {
   return 'id' in event.data && event.eventType.startsWith('epoch.')
 }
 
-export type PEvent = BaseLogEvent<{
-  info: any
-  pid: string
-}>
-export const isParticipantEvent = (event: LogEvent): event is PEvent => {
-  return 'pid' in event.data && event.eventType.startsWith('participant.')
-}
-
 export type ErrorEvent = BaseLogEvent<{
   message: string
   info?: any

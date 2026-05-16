@@ -56,25 +56,23 @@ export const useDisplayPhases = <const T extends readonly string[]>(
 
 
     // animate the transition
-    await withParticipantInputBlocked(async () => {
-      if (isJumping.value) {  // skip animation if we're jumping (see jumpToEpoch)
-        phase.value = newPhase
-      } else {
-        if (outDuration > 0) {
-          transitionStage.value = 'out'
-          await sleep(outDuration)
-        }
-        phase.value = newPhase
-        if (inDuration > 0) {
-          transitionStage.value = 'in'
-          await sleep(inDuration)
-        }
+    if (isJumping.value) {  // skip animation if we're jumping (see jumpToEpoch)
+      phase.value = newPhase
+    } else {
+      if (outDuration > 0) {
+        transitionStage.value = 'out'
+        await sleep(outDuration)
       }
+      phase.value = newPhase
+      if (inDuration > 0) {
+        transitionStage.value = 'in'
+        await sleep(inDuration)
+      }
+    }
 
-      transitionStage.value = null
-      fromPhase.value = null
-      toPhase.value = null
-    })
+    transitionStage.value = null
+    fromPhase.value = null
+    toPhase.value = null
   }
 
   const nextPhase = () => {

@@ -53,10 +53,7 @@ export const usePosthog = createGlobalState(() => {
     'epoch.start',
     'bonus.update'
   ]
-  const blackList = [
-    'participant.mousedown',
-    'participant.hover',
-  ]
+  const blackList: string[] = []
   const maxCount = 100
   
   const eventCounts = {} as Record<string, number>

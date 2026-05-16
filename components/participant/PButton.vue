@@ -1,4 +1,11 @@
 <script lang="ts" setup>
+import { createEventController, type EventController } from '~/core/utils/eventController'
+
+type PButtonTypeMap = {
+  click: string
+  hover: string
+  mousedown: string
+}
 
 const props = defineProps<{
   value: string
@@ -8,11 +15,7 @@ const props = defineProps<{
   disabled?: boolean
   delay?: NumberLike
   once?: boolean
-  P?: Participant<{
-    click: string;
-    hover: string;
-    mousedown: string;
-  }>
+  controller?: EventController<PButtonTypeMap>
 }>()
 
 
@@ -28,18 +31,18 @@ const ready = useTimeout(replaceFast(ms, Math.max(200, ms / 5)))
 const disabled = computed(() => props.disabled || !ready.value)
 const clicked = ref(false)
 
-const P = props.P ?? useParticipant<{click: string, hover: string, mousedown: string}>('PButton')
+const controller = props.controller ?? createEventController<PButtonTypeMap>()
 
-P.on('click', (value: string) => {
+controller.on('click', (value: string) => {
   if (disabled.value) return
   clicked.value = true
   emit('click', value)
 })
-P.on('hover', (value: string) => {
+controller.on('hover', (value: string) => {
   if (disabled.value) return
   emit('hover', value)
 })
-P.on('mousedown', (value: string) => {
+controller.on('mousedown', (value: string) => {
   if (disabled.value) return
   emit('mousedown', value)
 })
@@ -55,8 +58,8 @@ const btnClass = computed(() => {
 })
 
 defineExpose({
-  on: P.on,
-  promise: P.promise,
+  on: controller.on,
+  promise: controller.promise,
 })
 
 </script>
@@ -65,12 +68,11 @@ defineExpose({
   <button v-if="!once || !clicked"
     :class="[
       btnClass, 
-      PARTICIPANT_INPUT_BLOCKED && 'pointer-events-none',
     ]" 
     :disabled="disabled"
-    @click="P.emit('click', value)"
-    @mouseenter="P.emit('hover', value)"
-    @mousedown="P.emit('mousedown', value)"
+    @click="controller.emit('click', value)"
+    @mouseenter="controller.emit('hover', value)"
+    @mousedown="controller.emit('mousedown', value)"
   >
     <slot v-if="$slots.default" />
     <template v-else>{{ label ?? value }}</template>

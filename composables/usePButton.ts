@@ -1,29 +1,28 @@
 import PButton from '../components/participant/PButton.vue'
 import type { SetupContext } from 'vue'
+import { createEventController } from '../utils/eventController'
+
 type PButtonTypeMap = { click: string; hover: string; mousedown: string }
 
 type PButtonProps = InstanceType<typeof PButton>['$props']
 
 export function usePButton(props: PButtonProps) {
-  const P = useParticipant<PButtonTypeMap>()
+  const controller = createEventController<PButtonTypeMap>()
   
   const Button = defineComponent({
-    // name: `usePButton(${name})`,
     setup(localProps, { slots }: SetupContext) {
       return () => {
         return h(PButton, {
-          // value: name,
           ...props,
           ...localProps,
-          P,
+          controller,
         }, slots.default)
       }
     },
   })
- 
-  return {
-    ...Button,
-    on: P.on,
-    promise: P.promise,
-  }
+
+  return Object.assign(Button, {
+    on: controller.on,
+    promise: controller.promise,
+  })
 }
