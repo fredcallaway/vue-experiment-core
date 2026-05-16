@@ -52,10 +52,6 @@ const getDefaultBookmarkName = (epochId: string) => {
     'EContinue',
     'EPage',
     'ERepeat',
-    'EDelay',
-    'EWait',
-    'EKey',
-    'EButtons',
   ]
   const parts = epochId.split('-')
   let name = R.last(parts)!.replace('[0]', '')

@@ -3,12 +3,20 @@
 const props = defineProps<{
   name?: string
   prompt?: boolean
+  duration?: NumberLike
 }>()
 
 const epoch = useEpoch(props.name ?? 'EPage')
+const { sleep } = useLocalAsync()
 
 const emit = defineEmits<{ (e: 'mounted', epoch: Epoch): void }>()
-onMounted(() => emit('mounted', epoch))
+onMounted(async () => {
+  emit('mounted', epoch)
+  if (R.isDefined(props.duration)) {
+    await sleep(ensureNumber(props.duration))
+    epoch.done()
+  }
+})
 
 </script>
 
