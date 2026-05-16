@@ -93,7 +93,7 @@ const handleClick = async () => {
 
 <template>
   <button btn
-    v-bind="attrs"0
+    v-bind="attrs"
     :class="[
       attrs.class,
       shouldShake && 'animate-head-shake',
