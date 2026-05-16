@@ -48,16 +48,6 @@ const [logStartPage, isStartPage] = declareEventLogger<{
   options: string[]
 }>('survey.startPage')
 
-const [logStartQuestion, isStartQuestion] = declareEventLogger<{
-  surveyName: string
-  pageId: string
-  questionId: string
-  question: string
-  flags: string[]
-  input: 'choice' | 'text'
-  options: string[]
-}>('survey.startQuestion')
-
 const [logResponse, isResponse] = declareEventLogger<{
   surveyName: string
   pageId: string
@@ -66,7 +56,7 @@ const [logResponse, isResponse] = declareEventLogger<{
   flags: string[]
   input: 'choice' | 'text'
   response: number | string | 'SKIP'
-  option: string | null
+  option?: string
   rt: number
   skipped: boolean
 }>('survey.response')
@@ -75,7 +65,7 @@ const [logResponse, isResponse] = declareEventLogger<{
 export function parseSurveySequence(sessionData: SessionData) {
   return R.pipe(
     sessionData.events,
-    R.filter(e => isStartPage(e) || isStartQuestion(e) || isResponse(e)),
+    R.filter(e => isStartPage(e) || isResponse(e)),
     chunkBy(isStartPage),
     R.flatMap((chunk) => {
       if (chunk.length === 0) return []
@@ -85,27 +75,29 @@ export function parseSurveySequence(sessionData: SessionData) {
 
       const responses = chunk.slice(1).filter(isResponse)
       return responses.map((r, idx) => {
-        const questionStart = chunk
-          .slice(1)
-          .filter(isStartQuestion)
-          .find(e => e.data.questionId === r.data.questionId)
-        const options = questionStart?.data.options ?? pageEvent.data.options
+        const options = pageEvent.data.options
         const responseOption = typeof r.data.response === 'number' ? options[r.data.response] : null
-        const rt = r.data.rt ?? r.timestamp - (questionStart?.timestamp ?? responses[idx - 1]?.timestamp ?? pageEvent.timestamp)
+        const rt = r.data.rt ?? r.timestamp - (responses[idx - 1]?.timestamp ?? pageEvent.timestamp)
+        const input = r.data.input ?? 'choice'
+        const skipped = r.data.skipped ?? r.data.response === 'SKIP'
+        const option = r.data.option ?? (!skipped && input === 'choice' ? responseOption : null)
 
-        return {
+        const parsedResponse = {
           surveyName: r.data.surveyName ?? pageEvent.data.surveyName,
           pageId: r.data.pageId ?? pageEvent.data.pageId,
           questionId: r.data.questionId ?? r.data.question,
           question: r.data.question,
           flags: r.data.flags ?? [],
-          input: r.data.input ?? 'choice',
-          option: r.data.option ?? responseOption,
+          input,
           response: r.data.response,
           rt,
-          maxResponse: options.length > 0 ? options.length - 1 : null,
-          skipped: r.data.skipped ?? r.data.response === 'SKIP',
+          maxResponse: input === 'choice' && options.length > 0 ? options.length - 1 : null,
+          skipped,
         }
+
+        return option != null
+          ? { ...parsedResponse, option }
+          : parsedResponse
       })
     })
   )
@@ -131,24 +123,6 @@ function parseQuestion(raw: string): ParsedQuestion {
   return { question, flags }
 }
 
-type NormalizedQuestion = {
-  id: string
-  prompt: string
-  input: 'choice' | 'text'
-  options: string[]
-  flags: string[]
-  required: boolean
-  placeholder: string
-}
-
-type NormalizedPage = {
-  pageId: string
-  sharedPrompt: string
-  intro: string
-  options: string[]
-  questions: NormalizedQuestion[]
-}
-
 const props = defineProps<{
   pages: SurveyPage[]
   name?: string
@@ -160,6 +134,9 @@ const props = defineProps<{
 const fadeMs = computed(() => ensureNumber(props.fadeMs ?? 500))
 const fadeDuration = computed(() => `${fadeMs.value}ms`)
 
+type SingleQuestionPage = SurveyChoicePage | SurveyTextPage
+type SurveyQuestion = SingleQuestionPage | SurveyMultiPrompt
+
 function questionIdFromPrompt(prompt: string, idx: number) {
   const id = prompt
     .toLowerCase()
@@ -168,101 +145,76 @@ function questionIdFromPrompt(prompt: string, idx: number) {
   return id || `q${idx + 1}`
 }
 
-function normalizeQuestion(
-  rawQuestion: SurveyMultiPrompt,
-  pageOptions: string[],
-  idx: number
-): NormalizedQuestion {
-  if (typeof rawQuestion === 'string') {
-    const parsed = parseQuestion(rawQuestion)
-    return {
-      id: questionIdFromPrompt(parsed.question, idx),
-      prompt: parsed.question,
-      input: 'choice',
-      options: pageOptions,
-      flags: parsed.flags,
-      required: false,
-      placeholder: '',
-    }
-  }
-
-  return {
-    id: rawQuestion.id,
-    prompt: rawQuestion.prompt,
-    input: 'choice',
-    options: rawQuestion.options ?? pageOptions,
-    flags: rawQuestion.flags ?? [],
-    required: rawQuestion.required ?? false,
-    placeholder: '',
-  }
+function pageIntro(page: SurveyPage) {
+  return page.intro ?? ''
 }
 
-function normalizePage(page: SurveyPage): NormalizedPage {
-  if (page.kind === 'multi') {
-    const options = page.options ?? []
-    return {
-      pageId: page.id,
-      sharedPrompt: page.sharedPrompt ?? '',
-      intro: page.intro ?? '',
-      options,
-      questions: page.prompts.map((prompt, idx) => normalizeQuestion(prompt, options, idx)),
-    }
-  }
-
-  if (page.kind === 'text') {
-    return {
-      pageId: page.id,
-      sharedPrompt: '',
-      intro: page.intro ?? '',
-      options: [],
-      questions: [{
-        id: page.id,
-        prompt: page.prompt,
-        input: 'text',
-        options: [],
-        flags: page.flags ?? [],
-        required: page.required ?? false,
-        placeholder: page.placeholder ?? '',
-      }],
-    }
-  }
-
-  return {
-    pageId: page.id,
-    sharedPrompt: '',
-    intro: page.intro ?? '',
-    options: page.options,
-    questions: [{
-      id: page.id,
-      prompt: page.prompt,
-      input: 'choice',
-      options: page.options,
-      flags: page.flags ?? [],
-      required: page.required ?? false,
-      placeholder: '',
-    }],
-  }
+function pageSharedPrompt(page: SurveyPage) {
+  return page.kind === 'multi' ? (page.sharedPrompt ?? '') : ''
 }
 
-function normalizePages() {
-  return props.pages.map(normalizePage)
+function pageOptions(page: SurveyPage) {
+  if (page.kind === 'text') return []
+  return page.options ?? []
+}
+
+function questionCount(page: SurveyPage) {
+  return page.kind === 'multi' ? page.prompts.length : 1
+}
+
+function questionAt(page: SurveyPage, index: number): SurveyQuestion {
+  return page.kind === 'multi' ? page.prompts[index] : page
+}
+
+function questionPrompt(question: SurveyQuestion) {
+  return typeof question === 'string' ? parseQuestion(question).question : question.prompt
+}
+
+function questionId(page: SurveyPage, question: SurveyQuestion, index: number) {
+  if (page.kind !== 'multi') return page.id
+  return typeof question === 'string' ? questionIdFromPrompt(questionPrompt(question), index) : question.id
+}
+
+function questionFlags(question: SurveyQuestion) {
+  return typeof question === 'string' ? parseQuestion(question).flags : (question.flags ?? [])
+}
+
+function questionRequired(question: SurveyQuestion) {
+  return typeof question === 'string' ? false : (question.required ?? false)
+}
+
+function questionInput(page: SurveyPage): 'choice' | 'text' {
+  return page.kind === 'text' ? 'text' : 'choice'
+}
+
+function questionOptions(page: SurveyPage, question: SurveyQuestion) {
+  if (page.kind === 'text') return []
+  if (page.kind !== 'multi') return page.options
+  if (typeof question === 'string') return page.options ?? []
+  return 'options' in question ? (question.options ?? page.options ?? []) : (page.options ?? [])
+}
+
+function questionPlaceholder(question: SurveyQuestion) {
+  return typeof question === 'string' || !('placeholder' in question) ? '' : (question.placeholder ?? '')
 }
 
 const rng = useRandom(props.name ?? 'Survey').reset()
 
-let shuffledPages = normalizePages()
-  .map(page => ({
+let pages = props.pages.map((page) => {
+  if (!props.shuffleQuestions || page.kind !== 'multi') return page
+  return {
     ...page,
-    questions: props.shuffleQuestions ? rng.shuffle(page.questions) : page.questions,
-  }))
+    prompts: rng.shuffle([...page.prompts]),
+  }
+})
 
 if (props.shufflePages) {
-  shuffledPages = rng.shuffle(shuffledPages)
+  pages = rng.shuffle([...pages])
 }
 
-const totalQuestions = shuffledPages.reduce((total, page) => total + page.questions.length, 0)
+const totalQuestions = pages.reduce((total, page) => total + questionCount(page), 0)
 
-const E = useIndexableEpoch(props.name ?? 'Survey', shuffledPages.length)
+const E = useIndexableEpoch(props.name ?? 'Survey', pages.length)
 const step = E.step
 assert(R.isNumber(step.value), `step.value is not a number: ${step.value}`)
 
@@ -270,117 +222,119 @@ const showIntro = ref(true)
 const currentQuestionIndex = ref(0)
 const textResponse = ref('')
 const questionStartedAt = ref(Date.now())
-const startedQuestionKey = ref('')
 const isComplete = ref(false)
 const isCompleting = ref(false)
 
-const currentPage = computed(() => shuffledPages[step.value])
+const currentPage = computed(() => pages[step.value])
 
-const currentQuestion = computed(() => currentPage.value.questions[currentQuestionIndex.value])
+const currentQuestion = computed(() => questionAt(currentPage.value, currentQuestionIndex.value))
 
-const currentQuestionKey = computed(() => `${currentPage.value.pageId}:${currentQuestion.value.id}`)
+const currentQuestionId = computed(() => (
+  questionId(currentPage.value, currentQuestion.value, currentQuestionIndex.value)
+))
+
+const currentQuestionPrompt = computed(() => questionPrompt(currentQuestion.value))
+
+const currentQuestionFlags = computed(() => questionFlags(currentQuestion.value))
+
+const currentQuestionInput = computed(() => questionInput(currentPage.value))
+
+const currentQuestionOptions = computed(() => questionOptions(currentPage.value, currentQuestion.value))
+
+const currentQuestionRequired = computed(() => questionRequired(currentQuestion.value))
+
+const currentQuestionPlaceholder = computed(() => questionPlaceholder(currentQuestion.value))
+
+const currentPageIntro = computed(() => pageIntro(currentPage.value))
+
+const currentPageSharedPrompt = computed(() => pageSharedPrompt(currentPage.value))
 
 const totalQuestionIndex = computed(() => {
-  const priorQuestions = shuffledPages
+  const priorQuestions = pages
     .slice(0, step.value)
-    .reduce((total, page) => total + page.questions.length, 0)
+    .reduce((total, page) => total + questionCount(page), 0)
   return priorQuestions + currentQuestionIndex.value + 1
 })
 
 const isLastQuestionInPage = computed(
-  () => currentQuestionIndex.value === currentPage.value.questions.length - 1
+  () => currentQuestionIndex.value === questionCount(currentPage.value) - 1
 )
 
-const isLastPage = computed(() => step.value === shuffledPages.length - 1)
+const isLastPage = computed(() => step.value === pages.length - 1)
 
 watchImmediate(step, () => {
-  showIntro.value = currentPage.value.intro.length > 0
+  showIntro.value = currentPageIntro.value.length > 0
   textResponse.value = ''
+  if (!showIntro.value) resetQuestionTimer()
   logStartPage({
     surveyName: props.name ?? 'Survey',
-    pageId: currentPage.value.pageId,
-    prompt: currentPage.value.sharedPrompt,
-    options: currentPage.value.options,
+    pageId: currentPage.value.id,
+    prompt: currentPageSharedPrompt.value,
+    options: pageOptions(currentPage.value),
   })
 })
 
-watchImmediate([step, currentQuestionIndex, showIntro], () => {
-  if (showIntro.value) return
-  const key = currentQuestionKey.value
-  if (startedQuestionKey.value === key) return
-  startedQuestionKey.value = key
+function resetQuestionTimer() {
   questionStartedAt.value = Date.now()
+}
 
-  logStartQuestion({
+function startIntroPage() {
+  showIntro.value = false
+  logEvent('survey.start')
+  resetQuestionTimer()
+}
+
+function responseBase() {
+  return {
     surveyName: props.name ?? 'Survey',
-    pageId: currentPage.value.pageId,
-    questionId: currentQuestion.value.id,
-    question: currentQuestion.value.prompt,
-    flags: currentQuestion.value.flags,
-    input: currentQuestion.value.input,
-    options: currentQuestion.value.options,
-  })
-})
+    pageId: currentPage.value.id,
+    questionId: currentQuestionId.value,
+    question: currentQuestionPrompt.value,
+    flags: currentQuestionFlags.value,
+    input: currentQuestionInput.value,
+    rt: Date.now() - questionStartedAt.value,
+  }
+}
+
+function logCurrentResponse(response: number | string | 'SKIP', skipped: boolean, option?: string) {
+  logResponse(option === undefined
+    ? {
+        ...responseBase(),
+        response,
+        skipped,
+      }
+    : {
+        ...responseBase(),
+        response,
+        option,
+        skipped,
+      })
+}
 
 function selectResponse(value: string) {
   if (isCompleting.value) return
-  const optionIndex = currentQuestion.value.options.indexOf(value)
-  
-  logResponse({
-    surveyName: props.name ?? 'Survey',
-    pageId: currentPage.value.pageId,
-    questionId: currentQuestion.value.id,
-    question: currentQuestion.value.prompt,
-    flags: currentQuestion.value.flags,
-    input: currentQuestion.value.input,
-    response: optionIndex,
-    option: value,
-    rt: Date.now() - questionStartedAt.value,
-    skipped: false,
-  })
+  const optionIndex = currentQuestionOptions.value.indexOf(value)
+  logCurrentResponse(optionIndex, false, value)
 
   advanceQuestion()
 }
 
 function submitTextResponse() {
   if (isCompleting.value) return
-  logResponse({
-    surveyName: props.name ?? 'Survey',
-    pageId: currentPage.value.pageId,
-    questionId: currentQuestion.value.id,
-    question: currentQuestion.value.prompt,
-    flags: currentQuestion.value.flags,
-    input: currentQuestion.value.input,
-    response: textResponse.value,
-    option: null,
-    rt: Date.now() - questionStartedAt.value,
-    skipped: false,
-  })
+  logCurrentResponse(textResponse.value, false)
 
   advanceQuestion()
 }
 
 function skipQuestion() {
   if (isCompleting.value) return
-  logResponse({
-    surveyName: props.name ?? 'Survey',
-    pageId: currentPage.value.pageId,
-    questionId: currentQuestion.value.id,
-    question: currentQuestion.value.prompt,
-    flags: currentQuestion.value.flags,
-    input: currentQuestion.value.input,
-    response: 'SKIP',
-    option: null,
-    rt: Date.now() - questionStartedAt.value,
-    skipped: true,
-  })
+  logCurrentResponse('SKIP', true)
 
   advanceQuestion()
 }
 
 function advanceQuestion() {
   textResponse.value = ''
-  startedQuestionKey.value = ''
   if (isLastQuestionInPage.value) {
     if (isLastPage.value) {
       finishSurvey()
@@ -391,6 +345,7 @@ function advanceQuestion() {
   } else {
     currentQuestionIndex.value++
   }
+  resetQuestionTimer()
 }
 
 function finishSurvey() {
@@ -408,19 +363,19 @@ function finishSurvey() {
 
         <template v-if="showIntro">
           <div w-140 mx-auto flex-center gap-4>
-            <p text-xl text-center leading-relaxed m-0 v-html="currentPage.intro" />
-            <PButton value="Start" @click="showIntro = false; logEvent('survey.start')" />
+            <p text-xl text-center leading-relaxed m-0 v-html="currentPageIntro" />
+            <PButton value="Start" @click="startIntroPage" />
           </div>
         </template>
         <template v-else>
-          <div v-if="currentPage.sharedPrompt" text-center italic v-html="currentPage.sharedPrompt" />
+          <div v-if="currentPageSharedPrompt" text-center italic v-html="currentPageSharedPrompt" />
           <div flex-1 flex items-center justify-center min-h-150px>
-            <p text-xl text-center leading-relaxed m-0>{{ currentQuestion.prompt }}</p>
+            <p text-xl text-center leading-relaxed m-0>{{ currentQuestionPrompt }}</p>
           </div>
 
           <PButtons
-            v-if="currentQuestion.input === 'choice'"
-            :values="currentQuestion.options"
+            v-if="currentQuestionInput === 'choice'"
+            :values="currentQuestionOptions"
             @click="selectResponse"
           />
 
@@ -431,16 +386,16 @@ function finishSurvey() {
               rows="4"
               w-full
               max-w-620px
-              :placeholder="currentQuestion.placeholder"
+              :placeholder="currentQuestionPlaceholder"
             />
             <PButton
               value="Submit"
-              :disabled="currentQuestion.required && textResponse.trim().length === 0"
+              :disabled="currentQuestionRequired && textResponse.trim().length === 0"
               @click="submitTextResponse"
             />
           </div>
 
-          <div v-if="!currentQuestion.required" flex justify-center mt-4>
+          <div v-if="!currentQuestionRequired" flex justify-center mt-4>
             <PButton value="Skip" btn-gray @click="skipQuestion" />
           </div>
 
