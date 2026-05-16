@@ -121,16 +121,6 @@ const getCellLink = (column: string, row: Record<string, any>) => {
     case 'studyId':
       if (value === 'UNKNOWN') return undefined
       return `/prolific/${value}`
-    case 'epoch':
-      return {
-        path: '/playback',
-        query: {
-          session_id: row._rowInfo.sessionId,
-          mode: row._rowInfo.mode,
-          epoch: value
-        },
-        external: true
-      }
     default:
       return undefined
   }
@@ -159,27 +149,6 @@ const getCellLinkRoute = (column: string, row: Record<string, any>) => {
     }
     
     return { path, query }
-  }
-  
-  if (link.external) {
-    const route = useRoute()
-    const query: Record<string, string> = {}
-    
-    Object.entries(route.query).forEach(([key, val]) => {
-      if (val !== null && val !== undefined) {
-        query[key] = Array.isArray(val) ? String(val[0]) : String(val)
-      }
-    })
-    
-    Object.entries(link.query || {}).forEach(([key, val]) => {
-      query[key] = String(val)
-    })
-    
-    const queryString = new URLSearchParams(query).toString()
-    return {
-      href: `${link.path}${queryString ? `?${queryString}` : ''}`,
-      external: true
-    }
   }
   
   return link
@@ -407,17 +376,7 @@ const slots = useSlots()
                   :style="columnWidths[col] ? { width: `${columnWidths[col]+2}px` } : {}"
                 >
                   <template v-if="getCellLinkRoute(col, row.original)">
-                    <a
-                      v-if="'href' in (getCellLinkRoute(col, row.original) || {})"
-                      :href="(getCellLinkRoute(col, row.original) as { href: string }).href"
-                      class="cursor-pointer"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {{ row.formatted[col] }}
-                    </a>
                     <NuxtLink
-                      v-else
                       :to="getCellLinkRoute(col, row.original)"
                       class="cursor-pointer"
                     >
