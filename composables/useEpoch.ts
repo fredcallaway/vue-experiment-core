@@ -109,7 +109,7 @@ const makeEpoch = (props: EpochProps): Epoch => {
     }
   }
 
-  // register with parent unless we have already (e.g. backward navigation in instructions)
+  // register with parent unless we have already (e.g. backward navigation in navigable sequences)
   if (!epoch.isNoEpoch && !epoch.isDisabled && props.parent) {
     if (!props.parent.children.some(e => e.id === epoch.id)) {
       // TODO: children is currently orderd by visitation, not their number

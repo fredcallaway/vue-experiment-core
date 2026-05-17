@@ -2,11 +2,11 @@
 
 const props = defineProps<{
   name?: string,
-  skipWelcome?: boolean,
   disableNavigation?: boolean
+  header?: string
 }>()
 
-const { E, Sequence } = useESequence(props.name ?? 'instructions')
+const { E, Sequence } = useESequence(props.name ?? 'ENavigableSequence')
 
 const maxCompletedStep = ref(-1)
 
@@ -14,7 +14,6 @@ const allowNext = computed(() => !props.disableNavigation && maxCompletedStep.va
 const allowPrev = computed(() => !props.disableNavigation && E.step.value > 0)
 
 const enableNext = () => {
-  console.log('enableNext', E.step.value)
   maxCompletedStep.value = Math.max(maxCompletedStep.value, E.step.value)
 }
 
@@ -30,7 +29,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="instructions" relative>
+  <div class="navigable-sequence" relative>
     <!-- HEADER -->
     <div flex="~ row gap-4 justify-between items-center" mx-10 w-120 mx-auto>
       <PButton btn-gray-sm text-2xl :disabled="!allowPrev" @click="E.prev" value="prev" 
@@ -41,12 +40,7 @@ onMounted(() => {
       </PButton>
       
       <div text-3xl font-bold >
-        <template v-if="E.step.value == 0 && !skipWelcome">
-          Welcome!
-        </template>
-        <template v-else>
-          Instructions {{ E.step.value + 1 }} of {{ nSteps }}
-        </template>
+        {{ header ?? 'Page' }} {{ E.step.value + 1 }} of {{ nSteps }}
       </div>
 
       <PButton :class="allowNext ? 'btn-primary-sm' : 'btn-gray-sm'" text-2xl :disabled="!allowNext" @click="E.next" value="next"
@@ -59,13 +53,7 @@ onMounted(() => {
 
     <div flex-center>
       <Sequence>
-        <EPage v-if="!skipWelcome" @mounted="enableNext" name="welcome">
-          <div class="prompt" max-w-130 >
-            Thanks for participating in our experiment! We'll start with some instructions.
-            Navigate with arrow keys or the buttons at the top.
-          </div>
-        </EPage>
-        <slot :enableNext="enableNext" :goNext="E.next" />
+        <slot :enableNext="enableNext" :goNext="E.next" :goPrev="E.prev" :epoch="E" />
       </Sequence>
     </div>
   </div>
@@ -73,8 +61,8 @@ onMounted(() => {
 
 <style>
 
-.instructions .prompt { 
-  @apply w-160 mx-auto text-lg line-height-snug mt-2 mb-2;
+.navigable-sequence .prompt { 
+  @apply max-w-160 mx-auto text-lg line-height-snug mt-2 mb-2;
 }
 
 </style>
