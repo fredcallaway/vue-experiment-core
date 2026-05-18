@@ -9,6 +9,8 @@ const props = defineProps<{
 const epoch = useEpoch(props.name ?? 'EPage')
 const { sleep } = useLocalAsync()
 
+const state = reactive({} as Record<string,any>)
+
 const emit = defineEmits<{ (e: 'mounted', epoch: Epoch): void }>()
 onMounted(async () => {
   emit('mounted', epoch)
@@ -22,6 +24,6 @@ onMounted(async () => {
 
 <template>
   <div :class="{ 'prompt': prompt }" >
-    <slot :epoch="epoch" :done="epoch.done" />
+    <slot :epoch="epoch" :done="epoch.done" :state="state" />
   </div>
 </template>
