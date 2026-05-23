@@ -25,11 +25,14 @@ const lastSubroutesBySection = useSessionStorage<Record<string, string>>(
   {},
 )
 
+const config = useConfig()
+
 const topNavLinks = [
   { label: 'Experiment', path: '/dev' },
   { label: 'Prolific', path: '/prolific' },
   { label: 'Data', path: '/data' },
   { label: 'Test', path: '/test' },
+  ...Object.entries(config.navPages ?? {}).map(([label, path]) => ({ label, path })),
 ]
 
 const isActiveLink = (linkPath: string) => {
