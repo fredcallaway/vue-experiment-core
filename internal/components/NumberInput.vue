@@ -62,14 +62,11 @@ const handleInput = (e: Event) => {
   if (raw != '' && isValid(val)) {
     model.value = val
   }
-  // console.log('👉 handleInput', val, currentRawValue.value)
 }
 
 
 const handleChange = () => {
   const val = Number(currentRawValue.value)
-  // console.log('👉 handleChange', val)
-
   if (isNaN(val)) {
     model.value = props.default
     currentRawValue.value = String(props.default)
@@ -81,7 +78,7 @@ const handleChange = () => {
 
 const scrollHandler = useScrollHandler((direction) => {
   const newValue = model.value + props.scrollStep * direction
-  model.value = clamp(newValue, props.min, props.max)
+  model.value = round(clamp(newValue, props.min, props.max), 9) // floating point imprecision
 })
 
 const reset = () => {
