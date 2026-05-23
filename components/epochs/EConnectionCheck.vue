@@ -17,7 +17,7 @@ const completionCode = props.allowCompletion && config.completion.mode === 'prol
 
 const link = computed(() => {
   if (!completionCode) return null
-  return `https://app.prolific.co/submissions/complete?cc=${completionCode}`
+  return `https://app.prolific.com/submissions/complete?cc=${completionCode}`
 })
 
 const handleSubmit = () => {

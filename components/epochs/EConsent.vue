@@ -19,7 +19,7 @@ const abortExperiment = async (reason: 'TIMEOUT' | 'ABORTED') => {
     await useDataWriter().flush()
     useUnload().disable()
     const code = getCompletionCode(reason)
-    window.location.href = `https://app.prolific.co/submissions/complete?cc=${code}`
+    window.location.href = `https://app.prolific.com/submissions/complete?cc=${code}`
   }
 }
 

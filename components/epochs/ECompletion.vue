@@ -31,7 +31,7 @@ const link = computed(() => {
     case 'link':
       return config.completion.link
     case 'prolific':
-      return `https://app.prolific.co/submissions/complete?cc=${code.value}`
+      return `https://app.prolific.com/submissions/complete?cc=${code.value}`
     default:
       throw new Error(`No completion link found`)
   }
