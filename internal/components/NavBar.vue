@@ -14,7 +14,7 @@ const route = useRoute()
 
 const getSectionSegment = (path: string) => {
   const [segment] = path.split('/').filter(Boolean)
-  if (!segment) throw new Error(`Expected top-level segment in path: ${path}`)
+  if (!segment) return 'dev' // we will ultimately reroute to dev
   return segment
 }
 
