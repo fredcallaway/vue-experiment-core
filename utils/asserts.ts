@@ -20,39 +20,38 @@ export function assertDefined<T>(value: T | undefined | null, message?: string):
   return value;
 }
 
-
-export function assertString(x: unknown): string {
+export function assertString(x: unknown, message?: string): string {
   if (typeof x !== 'string') {
-    throw new Error(`Expected string, got ${typeof x}`);
+    throw new Error(message ?? `Expected string, got ${typeof x}`);
   }
   return x
 }
 
-export function assertNumber(x: unknown): number {
+export function assertNumber(x: unknown, message?: string): number {
   const n = Number(x)
   if (isNaN(n)) {
-    throw new Error(`Invalid number: ${x}`);
+    throw new Error(message ?? `Invalid number: ${x}`);
   }
   return n
 }
 
-export function assertBoolean(x: unknown): boolean {
+export function assertBoolean(x: unknown, message?: string): boolean {
   if (typeof x !== 'boolean') {
-    throw new Error(`Expected boolean, got ${typeof x}`);
+    throw new Error(message ?? `Expected boolean, got ${typeof x}`);
   }
   return x
 }
 
-export function assertArray<T>(x: unknown): T[] {
+export function assertArray<T>(x: unknown, message?: string): T[] {
   if (!Array.isArray(x)) {
-    throw new Error(`Expected array, got ${typeof x}`);
+    throw new Error(message ?? `Expected array, got ${typeof x}`);
   }
   return x
 }
 
-export function assertObject(x: unknown): Record<string, unknown> {
+export function assertObject(x: unknown, message?: string): Record<string, unknown> {
   if (typeof x !== 'object' || x === null) {
-    throw new Error(`Expected object, got ${typeof x}`);
+    throw new Error(message ?? `Expected object, got ${typeof x}`);
   }
   return x as Record<string, unknown>
 }
