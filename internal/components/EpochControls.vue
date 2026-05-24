@@ -4,7 +4,17 @@ import type { EpochNode } from '../composables/useEpochTree'
 const currentEpoch = useCurrentEpoch()
 const fast = useFastMode()
 const { root, isTraversing, traverseTimeline } = useEpochTree()
-const { pinStatus, cycleCurrentPin } = usePinnedEpoch()
+
+const pinnedEpoch = useUrlParam('jump')
+const pinStatus = computed(() => {
+  if (pinnedEpoch.value === currentEpoch.value.id) return 'current'
+  if (pinnedEpoch.value !== undefined) return 'other'
+  return 'none'
+})
+const cycleCurrentPin = async () => {
+  const newPin = pinStatus.value === 'current' ? undefined : currentEpoch.value.id
+  pinnedEpoch.value = newPin
+}
 
 const hasChildren = (node: EpochNode) => node.children.length > 0
 

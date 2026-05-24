@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import stringify from "json-stringify-pretty-compact";
 
-const { conditions, options, selectedIndices, setConditionIndex } = useConditions()
+const { conditions, options, isPinned } = useConditions()
 
 const conditionKeys = computed(() => Object.keys(options))
 
@@ -25,24 +25,38 @@ const formatValue = (value: unknown) => {
     <div flex="~ col gap-1" mb-2>
       <h2 shrink-0>Conditions</h2>
     </div>
-    <div flex="~ col gap-2">
-      <label v-for="key in conditionKeys" :key="key" card-gray p-2 mr-1 rounded-md flex="~ col gap-1">
-        <span font-bold>{{ key }}</span>
+    <div flex="~ col gap-1">
+      <div v-for="key in conditionKeys" :key="key" flex="~ row items-center gap-2">
+        <button
+          @click.stop="isPinned[key] = !isPinned[key]"
+          w-4
+          h-4
+          flex-center
+          rounded
+          class="group"
+          hover:bg-gray-100
+          :title="isPinned[key] ? 'Unpin' : 'Pin condition'"
+        >
+          <div v-if="isPinned[key]" i-mdi-pin text-blue-500 />
+          <div v-else i-mdi-pin-outline text-gray-300 group-hover:text-gray-400 />
+        </button>
+        <span font-bold min-w="80px">{{ key }}:</span>
         <select
-          :value="selectedIndices[key]"
+          v-model="conditions[key]"
           bg-white
           border="~ gray-300"
           rounded
-          p-1
+          px-1
           text-xs
-          @change="setConditionIndex(key, Number(($event.target as HTMLSelectElement).value))"
+          min-w-0
+          flex-1
+          @change="isPinned[key] = true"
         >
-          <option v-for="(value, index) in options[key]" :key="index" :value="index">
+          <option v-for="(value, index) in options[key]" :key="index" :value="value">
             {{ formatValue(value) }}
           </option>
         </select>
-        <pre text-xs opacity-60 class="whitespace-pre-wrap break-words">{{ formatValue(conditions[key]) }}</pre>
-      </label>
+      </div>
     </div>
   </div>
 </template>

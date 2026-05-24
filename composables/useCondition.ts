@@ -1,42 +1,50 @@
 import { useCurrentSession } from './useCurrentSession'
 
-/*
- 
-Manages the assignment of conditions to participants.
-Every time `choice` is called, a value is chosen based on the 'condition' URL param.
-The value is returned and added to `conditions` for later reference.
-Values are "sampled" to tile the space as uniformly as possible.
- 
-*/
 export const useConditions = createGlobalState(() => {
   const meta = useCurrentSession()
   const conditions = reactive<Record<string, any>>({})
   const options = reactive<Record<string, readonly any[]>>({})
-  const selectedIndices = reactive<Record<string, number>>({})
+  const isPinned = reactive<Record<string, boolean>>({})
   meta.conditions = conditions
 
   let state = meta.assignment
 
-  const chooseOne = <T>(key: string, values: readonly T[]): T => {
-    const index = state % values.length
-    const result = values[index]
-    state = Math.floor(state / values.length)
-    options[key] = values
-    selectedIndices[key] = index
-    conditions[key] = result
-    return result
+  const getPinnedCondition = (key: string) => {
+    const format = (v: unknown) => typeof v === 'string' ? v : JSON.stringify(v)
+    return useUrlParam(`condition.${key}`, {
+      parse: (value) => {
+        return options[key]?.find(candidate => format(candidate) === value)
+      },
+      format,
+    })
   }
 
-  const setConditionIndex = (key: string, index: number) => {
-    const values = options[key]
-    if (values === undefined) {
-      throw new Error(`Condition "${key}" has no registered options`)
+  const chooseOne = <T>(key: string, values: readonly T[]): T => {
+    options[key] = values
+    
+    const pinned = getPinnedCondition(key)
+    if (pinned.value !== undefined) {
+      // use pinned value if it exists 
+      // we don't update index state so that assignment cycles over un-pinned conditions only
+      conditions[key] = pinned.value
+    } else {
+      // extract index from the state
+      const index = state % values.length
+      state = Math.floor(state / values.length)
+      conditions[key] = values[index]!
     }
-    if (!Number.isInteger(index) || index < 0 || index >= values.length) {
-      throw new Error(`Condition "${key}" option index ${index} is out of bounds`)
-    }
-    selectedIndices[key] = index
-    conditions[key] = values[index]
+
+    // keep pinned value in sync with conditions and isPinned
+    isPinned[key] = pinned.value !== undefined
+    watchEffect(() => {
+      if (isPinned[key]) {
+        pinned.value = conditions[key]
+      } else {
+        pinned.value = undefined
+      }
+    })
+
+    return conditions[key]
   }
 
   const choice = <T extends Record<string, readonly any[]>>(choicesObj: T): { [K in keyof T]: T[K][number] } => {
@@ -44,7 +52,7 @@ export const useConditions = createGlobalState(() => {
     for (const [key, choices] of Object.entries(choicesObj)) {
       result[key] = chooseOne(key, choices)
     }
-    return result as { [K in keyof T]: T[K] extends any[] ? T[K][number] : T[K] }
+    return conditions as { [K in keyof T]: T[K] extends any[] ? T[K][number] : T[K] }
   }
 
   const permute = <T>(key: string, values: T[]): T[] => {
@@ -56,5 +64,5 @@ export const useConditions = createGlobalState(() => {
     return chooseOne(key, permutedValues)
   }
 
-  return { conditions, options, selectedIndices, setConditionIndex, choice, permute }
+  return { conditions, options, isPinned, choice, permute }
 })

@@ -2,7 +2,7 @@
 import type { EpochNode } from '../composables/useEpochTree'
 
 const currentEpoch = useCurrentEpoch()
-const { pinnedIndex, setPinnedEpoch, pinAndJumpToEpoch } = usePinnedEpoch()
+const pinnedEpoch = useUrlParam('jump')
 const {
   root,
   isTraversing,
@@ -330,15 +330,16 @@ const handleClickNode = async (node: EpochNode) => {
   }
 }
 
-const isPinnedNode = (node: EpochNode) => pinnedIndex.value === node.id
+const isPinnedNode = (node: EpochNode) => pinnedEpoch.value === node.id
 
 const handlePinNode = async (node: EpochNode) => {
   if (hasChildren(node)) return
   if (isPinnedNode(node)) {
-    await setPinnedEpoch(undefined)
-    return
+    pinnedEpoch.value = undefined
+  } else {
+    await jumpToEpoch(node.id)
+    pinnedEpoch.value = node.id
   }
-  await pinAndJumpToEpoch(node.id)
 }
 
 const handleToggleCollapse = (node: EpochNode) => {
