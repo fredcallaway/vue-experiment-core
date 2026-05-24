@@ -11,15 +11,32 @@ Values are "sampled" to tile the space as uniformly as possible.
 export const useConditions = createGlobalState(() => {
   const meta = useCurrentSession()
   const conditions = reactive<Record<string, any>>({})
+  const options = reactive<Record<string, readonly any[]>>({})
+  const selectedIndices = reactive<Record<string, number>>({})
   meta.conditions = conditions
 
   let state = meta.assignment
 
   const chooseOne = <T>(key: string, values: readonly T[]): T => {
-    const result = values[state % values.length]
+    const index = state % values.length
+    const result = values[index]
     state = Math.floor(state / values.length)
+    options[key] = values
+    selectedIndices[key] = index
     conditions[key] = result
     return result
+  }
+
+  const setConditionIndex = (key: string, index: number) => {
+    const values = options[key]
+    if (values === undefined) {
+      throw new Error(`Condition "${key}" has no registered options`)
+    }
+    if (!Number.isInteger(index) || index < 0 || index >= values.length) {
+      throw new Error(`Condition "${key}" option index ${index} is out of bounds`)
+    }
+    selectedIndices[key] = index
+    conditions[key] = values[index]
   }
 
   const choice = <T extends Record<string, readonly any[]>>(choicesObj: T): { [K in keyof T]: T[K][number] } => {
@@ -35,8 +52,9 @@ export const useConditions = createGlobalState(() => {
     if (values.length > 4) {
       console.warn(`useConditions.permute(${key}, ...) yields ${allPerms.length} permutations`)
     }
-    return chooseOne(key, allPerms).map(i => values[i]!)
+    const permutedValues = allPerms.map(perm => perm.map(i => values[i]!))
+    return chooseOne(key, permutedValues)
   }
 
-  return { conditions, choice, permute }
+  return { conditions, options, selectedIndices, setConditionIndex, choice, permute }
 })
