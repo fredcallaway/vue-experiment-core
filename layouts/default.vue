@@ -25,7 +25,6 @@ provide('devTools', devTools)
         <MainContent show-outline fixed-width fixed-height capture-errors >
           <slot />
         </MainContent>
-        <EpochView v-if="!violated" mt-3/>
         <!-- <EventView horizontal /> -->
       </div>
 
