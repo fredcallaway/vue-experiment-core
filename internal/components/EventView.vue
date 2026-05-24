@@ -94,10 +94,9 @@ useLogEventBus().on((event) => {
 })
 
 useDebugBus().on(({message, info}) => {
-  if (message == '__JUMP_SUCCEEDED__') {
-    events.length = 1
-    events.push({
-      eventType: 'jumped to epoch',
+  if (message.startsWith('jump.')) {
+    events.unshift({
+      eventType: message,
       timestamp: Date.now(),
       caption: info.epochId,
       cardClass: 'card-purple',

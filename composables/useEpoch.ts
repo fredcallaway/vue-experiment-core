@@ -334,7 +334,7 @@ export function usePhaseEpoch<const T extends readonly string[]>(
 }
 
 export const jumpToEpoch = async (epochId: string, isFallback: boolean = false): Promise<null | string> => {
-  logDebug(`jumpToEpoch: ${epochId}`)
+  logDebug(`jump.start`, { epochId })
   if (epochId === '') return null
   if (isJumping.value) {
     console.warn(`jumpToEpoch(${epochId}): waiting for existing jump to complete`)
@@ -350,7 +350,7 @@ export const jumpToEpoch = async (epochId: string, isFallback: boolean = false):
   try {
     const result = await jumpToEpochImpl(parts)
     if (!isFallback) {
-      logDebug('__JUMP_SUCCEEDED__', { epochId }) // sending a signal to EventView
+      logDebug('jump.success', { epochId }) // sending a signal to EventView
     }
     return result
   } catch (e) {
