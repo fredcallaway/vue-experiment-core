@@ -43,6 +43,7 @@ const handleSubmit = () => {
 }
 
 const meta = useCurrentSession()
+meta.inactiveTime = useInactivityTracker().getTotalInactiveTime()
 meta.completionTime = Date.now()
 logEvent('experiment.complete', meta)
 

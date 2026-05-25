@@ -275,10 +275,11 @@ export class DataWriter {
 
   private syncIdleTime() {
     if (!this.meta) return
+    if (this.meta.completionTime) return  // because active time uses completionTime
     const inactiveTime = useInactivityTracker().getTotalInactiveTime()
     this.meta.inactiveTime = inactiveTime
     if (typeof inactiveTime !== 'number' || !Number.isFinite(inactiveTime)) return
-    this.updates.value[this.dbPath('meta', 'idleTime')] = inactiveTime
+    this.updates.value[this.dbPath('meta', 'inactiveTime')] = inactiveTime
   }
 
   private queueUpdate(fullPath: string, value: SafeData) {
