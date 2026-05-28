@@ -2,6 +2,7 @@
 
 useErrorLogging()
 const { violated } = useWindowEnforcer()
+const mounted = useMounted()
 
 const devTools = ref(!getUrlFlag('noDev'))
 
@@ -19,7 +20,7 @@ provide('devTools', devTools)
     <div flex="~ row gap-2">
       <div flex="~ col gap-2">
         <MainContent show-outline fixed-width fixed-height capture-errors >
-          <slot />
+          <slot  v-if="mounted" />
         </MainContent>
         <!-- <EventView horizontal /> -->
       </div>
