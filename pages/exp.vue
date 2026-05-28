@@ -79,6 +79,7 @@ initialized.then(async (result) => {
   }
 })
 
+// Note: usePosthog has important side effects (initializing posthog)
 const { status: phStatus, checkStatus: checkPhStatus } = usePosthog()
 
 const checked = ref(false)

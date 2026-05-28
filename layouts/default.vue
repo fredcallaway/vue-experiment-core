@@ -7,12 +7,8 @@ const devTools = ref(!getUrlFlag('noDev'))
 
 provide('devTools', devTools)
 
-// onMounted(() => {
-//   // wait for loggers to load
-//   setTimeout(() => {
-//   }, 1000)
-//     usePosthog()
-// })
+// uncomment if you want posthog diagnostics when running the experiment through /dev (not live)
+// usePosthog()
 
 </script>
 
