@@ -18,7 +18,7 @@ const [logClickTestHit, isClickTestHit] = declareEventLogger<{
   x: number
   y: number
 }>('clicktest.hit')
-const [logClickTestDone, isClickTestDone] = declareEventLogger<{ score: number }>('clicktest.done')
+const [logClickTestDone, isClickTestDone] = declareEventLogger<{ clicks: number }>('clicktest.done')
 
 declareDataView('clicktest', (sessionData: SessionData) => {
   const events = sessionData.events.filter(e => isClickTestParams(e) || isClickTestHit(e) || isClickTestDone(e))
@@ -27,7 +27,6 @@ declareDataView('clicktest', (sessionData: SessionData) => {
     const params = chunk.find(isClickTestParams)?.data
     const done = chunk.find(isClickTestDone)?.data
     return {
-      score: done?.score ?? 0,
       clicks: done?.clicks ?? 0,
       durationMs: params?.durationMs ?? 0,
     }
@@ -51,8 +50,8 @@ watch(E.phase, goToPhase)
 
 const StartButton = usePButton({ value: 'start' })
 
-const score = ref(0)
 const clicks = ref(0)
+const score = computed(() => clicks.value * params.pointsPerClick)
 const circleId = ref(0)
 const circle = reactive({ x: 0, y: 0 })
 const isPopping = ref(false)
@@ -81,7 +80,6 @@ watchImmediate(E.phase, async (currentPhase) => {
       E.goTo('play')
     },
     play: async () => {
-      score.value = 0
       clicks.value = 0
       isPopping.value = false
       timer.reset()
@@ -92,7 +90,7 @@ watchImmediate(E.phase, async (currentPhase) => {
     feedback: async () => {
       timer.pause()
       logClickTestDone({
-        score: score.value,
+        clicks: clicks.value,
       })
     },
     done: async () => {
@@ -109,7 +107,6 @@ const onCircleClick = () => {
   isPopping.value = true
 
   clicks.value++
-  score.value += params.pointsPerClick
   bonus.addPoints(params.pointsPerClick)
 
   logClickTestHit({
