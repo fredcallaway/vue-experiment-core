@@ -39,7 +39,16 @@ export const useLocalAsync = () => {
   const track = <T>(p: Promise<T>): Promise<T> => {
     const { resolve, reject, promise } = makePromise<T>()
     rejects.add(reject)
-    p.then(resolve, reject)
+    p.then(
+      value => {
+        rejects.delete(reject)
+        resolve(value)
+      },
+      reason => {
+        rejects.delete(reject)
+        reject(reason)
+      },
+    )
     return promise
   }
 
