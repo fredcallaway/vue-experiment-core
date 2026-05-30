@@ -7,7 +7,7 @@ const { Sequence } = useESequence(props.name)
 </script>
 
 <template>
-  <div max-w-800px mx-auto flex flex-col>
+  <div max-w-800px h-full mx-auto flex flex-center>
     <Sequence>
       <slot />
     </Sequence>
