@@ -1,13 +1,12 @@
 <script lang="ts" setup>
 const props = defineProps<{
   name: string
-  prompt: SurveyPrompt
+  prompt: string
   placeholder?: string
   required?: boolean
 }>()
 
 const epoch = useEpoch(props.name)
-const parsedPrompt = computed(() => normalizeSurveyPrompt(props.prompt))
 const response = ref('')
 const startedAt = ref(Date.now())
 const isComplete = ref(false)
@@ -19,11 +18,10 @@ onMounted(() => {
 })
 
 function logResponse(value: string) {
-  logSurveyResponse({
-    question: parsedPrompt.value.question,
+  logEvent('survey.response', {
+    question: props.prompt,
     response: value,
     rt: Date.now() - startedAt.value,
-    flags: parsedPrompt.value.flags,
   })
 }
 
@@ -41,7 +39,7 @@ function submitResponse() {
 </script>
 
 <template>
-  <ESurveyPage :question="parsedPrompt.question">
+  <ESurveyPage :question="prompt">
     <div flex flex-col gap-4 items-center>
       <textarea
         v-model="response"

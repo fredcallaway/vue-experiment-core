@@ -1,14 +1,12 @@
 <script lang="ts" setup>
 const props = defineProps<{
   name: string
-  prompt: SurveyPrompt
+  prompt: string
   options: string | string[]
   required?: boolean
 }>()
 
 const epoch = useEpoch(props.name)
-const parsedPrompt = computed(() => normalizeSurveyPrompt(props.prompt))
-const values = computed(() => normalizeSurveyOptions(props.options))
 const startedAt = ref(Date.now())
 const isComplete = ref(false)
 
@@ -17,11 +15,10 @@ onMounted(() => {
 })
 
 function logResponse(response: string) {
-  logSurveyResponse({
-    question: parsedPrompt.value.question,
+  logEvent('survey.response', {
+    question: props.prompt,
     response,
     rt: Date.now() - startedAt.value,
-    flags: parsedPrompt.value.flags,
   })
 }
 
@@ -41,8 +38,8 @@ function skipQuestion() {
 </script>
 
 <template>
-  <ESurveyPage :question="parsedPrompt.question">
-    <PButtons :values="values" @click="selectResponse" />
+  <ESurveyPage :question="prompt">
+    <PButtons :values="options" @click="selectResponse" />
     <div v-if="!required" flex justify-center mt-4>
       <PButton value="Skip" btn-gray @click="skipQuestion" />
     </div>

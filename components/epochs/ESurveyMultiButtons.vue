@@ -1,10 +1,15 @@
 <script lang="ts" setup>
+type SurveyMultiPrompt = string | {
+  prompt: string
+  flags?: string[]
+}
+
 const props = defineProps<{
   name: string
   intro?: string
   sharedPrompt?: string
   options: string | string[]
-  prompts: SurveyPrompt[]
+  prompts: SurveyMultiPrompt[]
 }>()
 
 if (props.prompts.length === 0) {
@@ -12,14 +17,14 @@ if (props.prompts.length === 0) {
 }
 
 const epoch = useEpoch(props.name)
-const values = computed(() => normalizeSurveyOptions(props.options))
+const values = computed(() => Array.isArray(props.options) ? props.options : string2array(props.options))
 const showIntro = ref(Boolean(props.intro?.trim()))
 const questionIndex = ref(0)
 const startedAt = ref(Date.now())
 const isComplete = ref(false)
 const questionCount = computed(() => props.prompts.length)
 
-const currentPrompt = computed(() => normalizeSurveyPrompt(props.prompts[questionIndex.value]))
+const currentPrompt = computed(() => parsePrompt(props.prompts[questionIndex.value]))
 
 onMounted(() => {
   if (!showIntro.value) resetTimer()
@@ -34,9 +39,21 @@ function startSurvey() {
   resetTimer()
 }
 
+function parsePrompt(prompt: SurveyMultiPrompt) {
+  if (typeof prompt !== 'string') return { question: prompt.prompt, flags: prompt.flags ?? [] }
+
+  const match = prompt.match(/^\[([\w\d_\s]+)\]\s*(.*)$/)
+  if (!match) return { question: prompt, flags: [] }
+
+  return {
+    question: match[2],
+    flags: match[1].split(/\s+/).filter(flag => flag.length > 0),
+  }
+}
+
 function finish(response: string, numericResponse?: number) {
   if (isComplete.value) return
-  logSurveyResponse({
+  logEvent('survey.response', {
     question: currentPrompt.value.question,
     response,
     rt: Date.now() - startedAt.value,
