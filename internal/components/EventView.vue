@@ -18,7 +18,6 @@ const props = defineProps<{
 
 const events = reactive<FormattedEvent[]>([])
 const whitelistFilter = useLocalStorage('eventView.filter', props.initialFilter ?? '')
-const startTime = ref(START_TIME)
 
 const normalizeNewlines = (s: string) => s.replaceAll('\\n', '\n')
 const formatForPre = (value: unknown, maxLength = 80) => {
@@ -60,12 +59,8 @@ const formatErrorEvent = (data: Record<string, any>) => {
 }
 
 useLogEventBus().on((event) => {
-  const { eventType, timestamp, data } = event
-  if (eventType == 'epoch.start.experiment') {
-    startTime.value = timestamp
-  }
   if (isEpochEvent(event)) {
-    const { id, ...rest } = data
+    const { id, ...rest } = event.data
     const caption = typeof id === 'string' ? id : undefined
     events.unshift({
       ...event,
@@ -88,7 +83,7 @@ useLogEventBus().on((event) => {
   else {
     events.unshift({
       ...event,
-      data: R.isEmpty(data) ? undefined : data,
+      data: R.isEmpty(event.data) ? undefined : event.data,
     })
   }
 })
@@ -131,7 +126,7 @@ const filteredEvents = computed(() => {
 })
 
 const fmtTimestamp = (timestamp: number) => {
-  timestamp -= startTime.value
+  timestamp -= START_TIME
   const totalMs = timestamp
   const totalSeconds = Math.floor(totalMs / 1000)
   const ms = totalMs % 1000
