@@ -7,43 +7,77 @@ const props = defineProps<{
   prompts: SurveyPrompt[]
 }>()
 
-const { Sequence } = useESequence(props.name)
-const hasIntro = computed(() => Boolean(props.intro?.trim()))
+if (props.prompts.length === 0) {
+  throw new Error(`ESurveyMultiButtons "${props.name}" requires at least one prompt`)
+}
+
+const epoch = useEpoch(props.name)
+const values = computed(() => normalizeSurveyOptions(props.options))
+const showIntro = ref(Boolean(props.intro?.trim()))
+const questionIndex = ref(0)
+const startedAt = ref(Date.now())
+const isComplete = ref(false)
 const questionCount = computed(() => props.prompts.length)
+
+const currentPrompt = computed(() => normalizeSurveyPrompt(props.prompts[questionIndex.value]))
+
+onMounted(() => {
+  if (!showIntro.value) resetTimer()
+})
+
+function resetTimer() {
+  startedAt.value = Date.now()
+}
+
+function startSurvey() {
+  showIntro.value = false
+  resetTimer()
+}
+
+function finish(response: string, numericResponse?: number) {
+  if (isComplete.value) return
+  logSurveyResponse({
+    question: currentPrompt.value.question,
+    response,
+    rt: Date.now() - startedAt.value,
+    flags: currentPrompt.value.flags,
+    numericResponse,
+    maxResponse: values.value.length - 1,
+  })
+  advanceQuestion()
+}
+
+function selectResponse(response: string) {
+  finish(response, values.value.indexOf(response))
+}
+
+function advanceQuestion() {
+  if (questionIndex.value === questionCount.value - 1) {
+    isComplete.value = true
+    epoch.done()
+    return
+  }
+
+  questionIndex.value++
+  resetTimer()
+}
 </script>
 
 <template>
-  <Transition name="survey-page" mode="out-in">
-    <Sequence>
-      <EPage v-if="hasIntro" v-slot="{ done }" name="intro">
-        <div w-140 mx-auto flex-center gap-4>
-          <p text-xl text-center leading-relaxed m-0 v-html="intro" />
-          <PButton value="Start" @click="done" />
-        </div>
-      </EPage>
+  <div v-if="showIntro" w-140 mx-auto flex-center gap-4>
+    <p text-xl text-center leading-relaxed m-0 v-html="intro" />
+    <PButton value="Start" @click="startSurvey" />
+  </div>
 
-      <ESurveyMultiButtonQuestion
-        v-for="(prompt, index) in prompts"
-        :key="index"
-        :name="`q${index + 1}`"
-        :prompt="prompt"
-        :shared-prompt="sharedPrompt"
-        :options="options"
-        :question-index="index"
-        :question-count="questionCount"
-      />
-    </Sequence>
-  </Transition>
+  <ESurveyPage v-else :prompt="sharedPrompt" :question="currentPrompt.question">
+    <PButtons :values="values" @click="selectResponse" />
+    <div flex justify-center mt-4>
+      <PButton value="Skip" btn-gray @click="finish('SKIP')" />
+    </div>
+    <template #footer>
+      <div text-center text-gray-600 text-sm pt-4>
+        Question {{ questionIndex + 1 }} of {{ questionCount }}
+      </div>
+    </template>
+  </ESurveyPage>
 </template>
-
-<style scoped>
-.survey-page-enter-active,
-.survey-page-leave-active {
-  transition: opacity 0.5s;
-}
-
-.survey-page-enter-from,
-.survey-page-leave-to {
-  opacity: 0;
-}
-</style>
