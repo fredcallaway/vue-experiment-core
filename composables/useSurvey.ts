@@ -42,8 +42,6 @@ export function parseSurveyResponses(sessionData: SessionData) {
     R.filter(isSurveyResponse),
     R.map((event) => {
       const row = {
-        timestamp: event.timestamp,
-        eventIndex: event.index,
         epochId: event.currentEpochId,
         question: event.data.question,
         response: event.data.response,
@@ -62,4 +60,4 @@ export function parseSurveyResponses(sessionData: SessionData) {
   )
 }
 
-declareDataView('survey-responses', parseSurveyResponses)
+declareDataView('survey', parseSurveyResponses)
