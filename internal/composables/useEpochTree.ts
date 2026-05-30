@@ -236,6 +236,8 @@ export const useEpochTree = createGlobalState(() => {
   const isOutlineStale = ref(false)
   const outlineStaleReason = ref<string | null>(null)
   const errorsById = ref<Record<string, string>>({})
+  const hasInitializedOutline = ref(false)
+  let isMounted = false
 
   const canUseLocalStorage = () => import.meta.client && typeof localStorage !== 'undefined'
 
@@ -422,19 +424,11 @@ export const useEpochTree = createGlobalState(() => {
     await traverseTimeline({ saveAndReload: true, force: true })
   }
 
-  watchOnce(currentEpoch, () => {
-    refreshTree()
-  })
-
-  watch(currentEpoch, () => {
-    if (isTraversing.value) return
-    refreshTree()
-  })
-
-  // We step through the full experiment to discover epochs (nodes)
-  // NOTE: this will miss epochs that are not always created (e.g. because condition or randomness)
-  onMounted(async () => {
+  const initializeOutline = async () => {
+    if (hasInitializedOutline.value) return
     if (currentEpoch.value.id === '__TOP_EPOCH__') return
+
+    hasInitializedOutline.value = true
 
     if (!canUseLocalStorage()) {
       console.warn('Epoch outline cache unavailable; falling back to direct traversal')
@@ -463,6 +457,23 @@ export const useEpochTree = createGlobalState(() => {
 
     localStorage.setItem(OUTLINE_SCAN_ATTEMPT_KEY, String(Date.now()))
     await traverseTimeline({ saveAndReload: true })
+  }
+
+  watch(currentEpoch, async () => {
+    if (!isMounted) return
+    if (isTraversing.value) return
+    if (!hasInitializedOutline.value) {
+      await initializeOutline()
+      return
+    }
+    refreshTree()
+  })
+
+  // We step through the full experiment to discover epochs (nodes)
+  // NOTE: this will miss epochs that are not always created (e.g. because condition or randomness)
+  onMounted(async () => {
+    isMounted = true
+    await initializeOutline()
   })
 
   return {
