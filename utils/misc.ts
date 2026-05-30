@@ -85,7 +85,7 @@ export function uniqueId(prefix: string = '') {
 export function string2array(str: string): string[] {
   const sepPriority = ['|', ',', ' ']
   const sep = sepPriority.find(s => str.includes(s))
-  return str.split(sep ?? ' ')
+  return str.split(sep ?? ' ').map(s => s.trim()).filter(s => s.length > 0)
 }
 
 export function stripUndefined<T extends Record<string, any>>(obj: T) {
