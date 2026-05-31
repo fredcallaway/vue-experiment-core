@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
       .split('\n')
       .filter(line => !line.includes('core/pages/data'))
       .filter(line => !line.includes('core/pages/prolific'))
-      .filter(line => !line.includes('core/pages/test'))
+      .filter(line => !line.includes('core/pages/demo'))
       .filter(line => !line.includes('core/server'))
       .filter(line => !line.includes('data/processed'))
       .join('\n')
