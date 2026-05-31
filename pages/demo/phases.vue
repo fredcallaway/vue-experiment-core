@@ -9,19 +9,14 @@ watch(epoch.phase, async (newPhase) => {
   await goToPhase(newPhase)
 })
 
-defineWindowSize({
-  width: 600,
-  height: 500,
-})
-
 </script>
 
 <template>
-  <div>
+  <div p10>
     <!-- constant means always mounted; just invisible when inactive -->
     <!-- see also: persist which keeps it mounted between first and last active phase -->
     <!-- static means it stays in the layout flow when not active (by default, it takes no space when inactive) -->
-    <Phase which="apple banana" constant static >
+    <Phase which="apple banana" constant static mb-20>
       the phase is either apple or banana
     </Phase>
 
