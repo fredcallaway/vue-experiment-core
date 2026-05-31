@@ -19,9 +19,12 @@ type CachedEpochOutline = {
   root: SerializedEpochNode
 }
 
-const OUTLINE_CACHE_KEY = 'epoch-outline'
+// The outline is cached per page, keyed by the page's root epoch id (e.g. "experiment",
+// "DemoPhases"). This lets each page keep its own outline and rebuild when switching pages.
+const OUTLINE_CACHE_PREFIX = 'epoch-outline'
 const OUTLINE_CACHE_MAX_AGE_MS = 60_000
-const OUTLINE_SCAN_ATTEMPT_KEY = `${OUTLINE_CACHE_KEY}:scan-attempted`
+const outlineCacheKey = (rootId: string) => `${OUTLINE_CACHE_PREFIX}:${rootId}`
+const outlineScanAttemptKey = (rootId: string) => `${outlineCacheKey(rootId)}:scan-attempted`
 
 const getStepIndex = (parentId: string, childId: string) => {
   const escapedParentId = parentId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -184,6 +187,14 @@ const getLivePath = (current: Epoch) => {
   return livePath.reverse()
 }
 
+// The id of the current page's root epoch (e.g. "experiment", "DemoPhases"), used to
+// scope the outline cache per page. Falls back to the mounted root when at TOP_EPOCH.
+const getLiveRootId = (current: Epoch): string | null => {
+  const livePath = getLivePath(current)
+  if (livePath.length > 0) return livePath[0].id
+  return TOP_EPOCH.children[0]?.id ?? null
+}
+
 const upsertCurrentPath = (
   root: EpochNode,
   current: Epoch,
@@ -237,22 +248,24 @@ export const useEpochTree = createGlobalState(() => {
   const outlineStaleReason = ref<string | null>(null)
   const errorsById = ref<Record<string, string>>({})
   const hasInitializedOutline = ref(false)
+  // The root epoch id the current outline belongs to. Used to detect page switches.
+  const loadedRootId = ref<string | null>(null)
   let isMounted = false
 
   const canUseLocalStorage = () => import.meta.client && typeof localStorage !== 'undefined'
 
-  const clearCachedOutline = () => {
-    if (!canUseLocalStorage()) return
-    localStorage.removeItem(OUTLINE_CACHE_KEY)
-    localStorage.removeItem(OUTLINE_SCAN_ATTEMPT_KEY)
+  const clearCachedOutline = (rootId = loadedRootId.value) => {
+    if (!canUseLocalStorage() || !rootId) return
+    localStorage.removeItem(outlineCacheKey(rootId))
+    localStorage.removeItem(outlineScanAttemptKey(rootId))
     cacheSavedAt.value = null
     isOutlineStale.value = false
     outlineStaleReason.value = null
   }
 
-  const loadCachedOutline = () => {
+  const loadCachedOutline = (rootId: string) => {
     if (!canUseLocalStorage()) return null
-    const raw = localStorage.getItem(OUTLINE_CACHE_KEY)
+    const raw = localStorage.getItem(outlineCacheKey(rootId))
     if (!raw) return null
 
     try {
@@ -263,7 +276,7 @@ export const useEpochTree = createGlobalState(() => {
       return cached
     } catch (error) {
       console.warn('Failed to parse cached epoch outline:', error)
-      localStorage.removeItem(OUTLINE_CACHE_KEY)
+      localStorage.removeItem(outlineCacheKey(rootId))
       return null
     }
   }
@@ -274,7 +287,7 @@ export const useEpochTree = createGlobalState(() => {
       savedAt: Date.now(),
       root: serializeEpochNode(node),
     }
-    localStorage.setItem(OUTLINE_CACHE_KEY, JSON.stringify(cached))
+    localStorage.setItem(outlineCacheKey(node.id), JSON.stringify(cached))
     cacheSavedAt.value = cached.savedAt
     isOutlineStale.value = false
     outlineStaleReason.value = null
@@ -328,6 +341,7 @@ export const useEpochTree = createGlobalState(() => {
     const source = TOP_EPOCH.children[0]
     root.value = source ? cloneEpochTree(source, null, errorsById.value) : null
     if (root.value) {
+      loadedRootId.value = root.value.id
       upsertCurrentPath(root.value, currentEpoch.value, errorsById.value)
     }
   }
@@ -407,7 +421,7 @@ export const useEpochTree = createGlobalState(() => {
       if (traversalSucceeded && options.saveAndReload && root.value) {
         saveCachedOutline(root.value)
         if (canUseLocalStorage()) {
-          localStorage.removeItem(OUTLINE_SCAN_ATTEMPT_KEY)
+          localStorage.removeItem(outlineScanAttemptKey(root.value.id))
         }
         if (import.meta.client) {
           window.location.reload()
@@ -426,9 +440,11 @@ export const useEpochTree = createGlobalState(() => {
 
   const initializeOutline = async () => {
     if (hasInitializedOutline.value) return
-    if (currentEpoch.value.id === '__TOP_EPOCH__') return
+    const rootId = getLiveRootId(currentEpoch.value)
+    if (!rootId || rootId === '__TOP_EPOCH__') return
 
     hasInitializedOutline.value = true
+    loadedRootId.value = rootId
 
     if (!canUseLocalStorage()) {
       console.warn('Epoch outline cache unavailable; falling back to direct traversal')
@@ -436,7 +452,7 @@ export const useEpochTree = createGlobalState(() => {
       return
     }
 
-    const cached = loadCachedOutline()
+    const cached = loadCachedOutline(rootId)
     if (cached) {
       root.value = hydrateEpochNode(cached.root)
       isLoadedFromCache.value = true
@@ -448,20 +464,38 @@ export const useEpochTree = createGlobalState(() => {
       return
     }
 
-    if (localStorage.getItem(OUTLINE_SCAN_ATTEMPT_KEY)) {
-      localStorage.removeItem(OUTLINE_SCAN_ATTEMPT_KEY)
+    if (localStorage.getItem(outlineScanAttemptKey(rootId))) {
+      localStorage.removeItem(outlineScanAttemptKey(rootId))
       console.warn('Epoch outline scan was already attempted without producing a fresh cache')
       refreshTree()
       return
     }
 
-    localStorage.setItem(OUTLINE_SCAN_ATTEMPT_KEY, String(Date.now()))
+    localStorage.setItem(outlineScanAttemptKey(rootId), String(Date.now()))
     await traverseTimeline({ saveAndReload: true })
+  }
+
+  // Reset outline state so the next epoch change rebuilds for the new page's root.
+  const resetForRoot = () => {
+    hasInitializedOutline.value = false
+    isLoadedFromCache.value = false
+    hasTraversed.value = false
+    root.value = null
+    cacheSavedAt.value = null
+    isOutlineStale.value = false
+    outlineStaleReason.value = null
+    loadedRootId.value = null
   }
 
   watch(currentEpoch, async () => {
     if (!isMounted) return
     if (isTraversing.value) return
+    // When navigating to a different page, its root epoch differs from the loaded one.
+    // Reset and rebuild the outline for the new page rather than showing the old (stale) tree.
+    const liveRootId = getLiveRootId(currentEpoch.value)
+    if (liveRootId && liveRootId !== '__TOP_EPOCH__' && loadedRootId.value && liveRootId !== loadedRootId.value) {
+      resetForRoot()
+    }
     if (!hasInitializedOutline.value) {
       await initializeOutline()
       return
