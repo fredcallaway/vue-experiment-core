@@ -52,7 +52,8 @@ const trials = [
           <p>
             An <b>epoch</b> is a period of time in the experiment with a start and an end.
             A single trial, a block of trials, the instructions, the entire experiment — each is an epoch.
-            Bigger epochs are built out of smaller ones, and be flexibly composed.
+            Bigger epochs are built out of smaller ones, and can be flexibly composed both within
+            and across experiments.
           </p>
           <p>
             If you're familiar with jsPsych, an epoch combines the idea of a "timeline" and a "plugin"
@@ -66,12 +67,6 @@ const trials = [
             other epochs based on their own internal control flow.
             <!-- TODO check that this is technically correct; adjust as needed. -->
           </p>
-
-          <p>
-            That's the key idea: every part of the experiment, from the smallest
-            screen to the whole study, is an epoch. Bigger epochs are built out of
-            smaller ones, so the same handful of components compose all the way up.
-          </p>
           <PContinue/>
         </EPage>
 
@@ -79,7 +74,7 @@ const trials = [
           <h2>The epoch tree</h2>
           <p>
             Because epochs nest, your experiment forms a <b>tree</b>. Epochs that have
-            children (e.g. `ESequence` and `ERepeat`, covered below) are <b>branches</b>.
+            children (e.g. `ESequence` and `ERepeat`) are <b>branches</b>.
             Epochs without children are <b>leaves</b>.
             At any moment, exactly one leaf is active — this is the <b>current epoch</b>.
             In most cases, it will define the main content that the participant is interacting
@@ -91,9 +86,13 @@ const trials = [
              In practice they almost (?) always are unique because ESequence and ERepeat
              add indices. Perhaps a sophisticated user could break this somehow. Should
              we add a check for this in useEpoch? If so flag it as a possible followup. -->
+            <!-- TODO decide whether it is important for users to know about ids at this point.
+             I think it might only become relevant when we start talking about data logging.
+             But perhaps it's good foundation.
+             -->
             Every epoch has a unique <b>id</b> that identifies its place in the tree.
             An epoch's id is formed by attaching its name to its parent's id
-            (with indices inserted in brackets for sequential epochs; discussed later).
+            (with indices inserted in brackets for multistep epochs; discussed later).
             The id of the current epoch is <code>{{ currentEpoch.id }}</code>.
           </p>
           <p>
@@ -103,10 +102,22 @@ const trials = [
           <PContinue/>
         </EPage>
 
+        <!-- TODO page introducing components and template style. Give a tiny bit
+         of background for users that aren't (yet) familiar with Vue along with a
+         pointer to a good beginner Vue tutorial.
+         
+         This page should include a rendered code example showing a super minimal
+         example template. 
+         
+         It could come after the next page or be integrated with that page.
+         The requirement is to not use "epoch components" before saying that epochs
+         have associated components (and what components are).
+        -->
+
         <EPage name="building">
           <h2>The building blocks</h2>
           <p>You'll meet three epoch components again and again:</p>
-          <ul mt-3 flex-col gap-2>
+          <ul my-3 flex-col gap-2>
             <li><code>EPage</code> shows a single screen (e.g. a trial, an instructions page)</li>
             <li><code>ESequence</code> runs a sequence of epochs in order (e.g. the full experiment)</li>
             <li><code>ERepeat</code> runs one epoch many times (e.g. a block of trials).</li>
@@ -121,6 +132,9 @@ const trials = [
         </EPage>
       </ESequence>
 
+      <!-- TODO all of the following sections should include some example code  -->
+      <!-- TODO add a section on EPage (can be brief, maybe just one page) -->
+
       <!-- ========================= ESEQUENCE ========================= -->
 
       <!-- ESequence is the workhorse for showing things one at a time. Each direct
@@ -132,14 +146,16 @@ const trials = [
         <EPage name="intro">
           <h2>ESequence</h2>
           <p>
-            An <code>ESequence</code> renders its children one at a time. It starts
-            on the first child; each time the active child finishes, the sequence
-            advances; once the last child finishes, the sequence finishes too.
-          </p>
-          <p>
-            Each direct child is its own epoch — most often an <code>EPage</code>
-            with a <code>PContinue</code>, which finishes when the participant
-            continues. The example below is a sequence of four such steps.
+            <!-- TODO make the language here less implementationy.
+             The role of rendering and done() should be kept in comments.
+             The comment should point to the one below about non-epoch children.
+              -->
+            An <code>ESequence</code> renders its children one at a time. 
+            When a child is rendered, its associated epoch begins. When it
+            ends (i.e., calls `done()`), ESequence renders the next child. This
+            continues until there are no children left. 
+            Then the ESesquence calls `done()`, 
+            returning control to its parent (most likely, another ESequence).
           </p>
           <PContinue/>
         </EPage>
@@ -158,7 +174,7 @@ const trials = [
             <PContinue/>
           </EPage>
 
-          <!-- Note that this child is *not* an epoch, but just a plain div.
+          <!-- Note that this child is *not* an epoch, but just a plain div.O
                This is fine because the div contains an epoch. Otherwise,
                a placeholder leaf epoch would start, and it would have no
                natural way to end.
@@ -172,7 +188,7 @@ const trials = [
               must finish before the outer one advances. This is how a small,
               self-contained piece becomes part of a larger structure — the active
               epoch is now {{ currentEpoch.id }}.
-            </p>
+            </p>This 
             <ESequence name="nested" flex-center flex-col gap-5 min-h-40 b-1 b-gray-200 rounded p6>
               <EPage name="step1"> Step 1 <PContinue/></EPage>
               <ESequence name="2" flex-center flex-col gap-3>
