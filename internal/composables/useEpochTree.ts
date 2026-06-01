@@ -199,11 +199,6 @@ const getLiveRoot = (current: Epoch): Epoch | null => {
   return TOP_EPOCH.children[0] ?? null
 }
 
-// The id of the current page's root epoch, used to scope the outline cache per page.
-const getLiveRootId = (current: Epoch): string | null => {
-  return getLiveRoot(current)?.id ?? null
-}
-
 const upsertCurrentPath = (
   root: EpochNode,
   current: Epoch,
@@ -453,10 +448,11 @@ export const useEpochTree = createGlobalState(() => {
 
   const initializeOutline = async () => {
     if (hasInitializedOutline.value) return
-    // Wait until the page's root epoch has mounted; otherwise there is nothing to build from
-    // (e.g. mid-navigation when currentEpoch is still TOP_EPOCH).
-    const rootId = getLiveRootId(currentEpoch.value)
-    if (!rootId || rootId === '__TOP_EPOCH__') return
+    // Wait until an epoch on the current page has mounted; otherwise there is nothing to build
+    // from (e.g. mid-navigation when currentEpoch is still TOP_EPOCH). We check currentEpoch
+    // directly rather than getLiveRoot, whose TOP_EPOCH.children[0] fallback could return a
+    // stale root left over from a previously visited page.
+    if (currentEpoch.value._name === '__TOP_EPOCH__') return
 
     const key = pageKey()
     hasInitializedOutline.value = true
