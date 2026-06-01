@@ -40,13 +40,13 @@ const currentEpoch = useCurrentEpoch()
       <div v-if="step == 2" flex-col gap-3>
         <div>Oh my goodness, I didn't see this coming!</div>
         <ESequence name="surpriseSequence">
-          <EContinue button="much surprise" />
-          <EContinue button="very unexpect " />
+          <EPage name=surprise><PContinue button="much surprise" /></EPage>
+          <EPage name=unexpect><PContinue button="very unexpect " /></EPage>
         </ESequence>
       </div>
       <div v-else flex-col gap-3>
         everything is going according to plan...
-        <EContinue button />
+        <EPage><PContinue button /></EPage>
       </div>
     </ERepeat>
   </div>

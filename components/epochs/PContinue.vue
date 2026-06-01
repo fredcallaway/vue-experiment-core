@@ -1,9 +1,7 @@
 <script lang="ts">
 export const [provideContinueParams, useContinueParams, ProvideContinueParams] = defineParams({
-  name: 'EContinue',
   button: false as boolean | string,
   delay: 0,
-  prompt: false,
   small: false,
 })
 export type ContinueParams = ReturnType<typeof useContinueParams>
@@ -11,27 +9,21 @@ export type ContinueParams = ReturnType<typeof useContinueParams>
 
 <script lang="ts" setup>
 
-const props = withDefaults(defineProps<{ 
-  name?: string, 
-  button?: boolean | string, 
+const props = withDefaults(defineProps<{
+  button?: boolean | string,
   delay?: NumberLike,
-  prompt?: boolean,
   small?: boolean,
 }>(), {
   button: undefined, // this prevents casting undefined to false, needed for defineParams
-  prompt: undefined,
   small: undefined,
 })
 
-const { name, button, delay, prompt, small } = useContinueParams({ 
+const { button, delay, small } = useContinueParams({
   ...props,
-  delay: R.isDefined(props.delay) ? ensureNumber(props.delay) : undefined, 
+  delay: R.isDefined(props.delay) ? ensureNumber(props.delay) : undefined,
 })
 
-const epoch = useEpoch(name ?? 'EContinue')
-
-const emit = defineEmits<{ (e: 'mounted', epoch: Epoch): void }>()
-onMounted(() => emit('mounted', epoch))
+const parentEpoch = injectParentEpoch()
 
 const waitTime = replaceFast(delay, clamp(delay / 5, 200, delay))
 const ready = useTimeout(waitTime)
@@ -42,15 +34,12 @@ const buttonText = computed(() => typeof button === 'string' ? button : 'Continu
 
 <template>
   <div>
-    <div :class="{ 'prompt': prompt }">
-      <slot />
-    </div>
     <div flex-center v-if="button">
       <PButton 
         once 
         :disabled="!ready" 
         :value="buttonText" 
-        @click="epoch.done"
+        @click="parentEpoch.next"
         :class="[
           'btn-primary',
           delay > 0 && 'transition-opacity-300',
@@ -59,7 +48,7 @@ const buttonText = computed(() => typeof button === 'string' ? button : 'Continu
         ]"
       />
     </div>
-    <PKey v-else-if="ready" keys="SPACE" @press="epoch.done">
+    <PKey v-else-if="ready" keys="SPACE" @press="parentEpoch.next">
       <div text-primary-300 font-italic text-center
         :class="[
           delay > 0 && 'animate-fade-in ease-in-out',

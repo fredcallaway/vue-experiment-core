@@ -40,13 +40,15 @@ const trials = [
       <!-- A trial is usually a small sequence: stimulus, response, feedback.
            Note `trials[step]` — the iteration index selects the trial data. -->
       <ESequence name="trial" flex-center flex-col gap-4>
-        <EContinue button="Respond">
+        <EPage name="stimulus">
           The word is
           <span font-bold :class="`text-${trials[step].color}`">{{ trials[step].word }}</span>.
-        </EContinue>
-        <EContinue button="Next trial">
+          <PContinue button="Respond"/>
+        </EPage>
+        <EPage name="feedback">
           You saw trial {{ step + 1 }}. On to the next.
-        </EContinue>
+          <PContinue button="Next trial"/>
+        </EPage>
       </ESequence>
     </ERepeat>
 

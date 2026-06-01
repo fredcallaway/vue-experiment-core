@@ -174,6 +174,10 @@ const makeId = (name: string, parent: Epoch | MultistepEpoch | PhaseEpoch) => {
 
 const hasFlag = (attrs: Record<string, any>, flag: string) => attrs[flag] === "" || attrs[flag] === true
 
+// Inject the epoch provided by the nearest enclosing epoch component (or TOP_EPOCH).
+// Use this from presentational components (e.g. PContinue) that act on their parent epoch.
+export const injectParentEpoch = (): Epoch => inject<Epoch>('__EPOCH__', TOP_EPOCH)
+
 // this is a trick to do string validation with typescript
 type NoHyphen<S extends string> =
   S extends `${string}-${string}`
@@ -193,7 +197,7 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
     throw new Error('useEpoch: done attribute is no longer supported')
   }
 
-  const parentEpoch = inject<Epoch>('__EPOCH__', TOP_EPOCH)
+  const parentEpoch = injectParentEpoch()
   if (parentEpoch.isPseudoLeaf) {
     logWarn('useEpoch: parent epoch is a leaf', { parentEpoch: parentEpoch.id })
   }

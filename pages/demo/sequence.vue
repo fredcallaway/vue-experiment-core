@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 
 // ESequence is the workhorse for showing things one at a time. Each direct
-// child is an *epoch* (EContinue, EPage, ESequence, ERepeat, ...). The sequence
+// child is an *epoch* (EPage, ESequence, ERepeat, ...). The sequence
 // shows the first child; when that child finishes (calls `done`), it advances to
 // the next; when the last child finishes, the sequence itself finishes.
 //
@@ -24,18 +24,20 @@ const currentEpoch = useCurrentEpoch()
       </p>
     </div>
 
-    <!-- Each child below is a separate epoch. The simplest leaf is EContinue,
-         which finishes when the participant clicks its button. -->
+    <!-- Each child below is a separate epoch. The simplest leaf is an EPage with
+         a PContinue, which finishes when the participant continues. -->
     <ESequence flex-center flex-col gap-5 min-h-40 b-1 b-gray-200 rounded p6>
-      <EContinue>
+      <EPage>
         <div font-bold>Step 1</div>
-        This is the first child. Click the button to advance.
-      </EContinue>
+        This is the first child. Continue to advance.
+        <PContinue/>
+      </EPage>
 
-      <EContinue>
+      <EPage>
         <div font-bold>Step 2</div>
         The previous child finished, so the sequence moved on to this one.
-      </EContinue>
+        <PContinue/>
+      </EPage>
 
       <!-- Note that this child is *not* an epoch, but just a plain div. 
            This is fine because the div contains an epoch. Otherwise,
@@ -51,20 +53,21 @@ const currentEpoch = useCurrentEpoch()
           finish before the outer one advances. The current epoch is {{ currentEpoch.id }}.
         </p>
         <ESequence name=nested flex-center flex-col gap-5 min-h-40 b-1 b-gray-200 rounded p6>
-          <EContinue name=1> Step 1 </EContinue>
+          <EPage name=step1> Step 1 <PContinue/></EPage>
           <ESequence name=2 flex-center flex-col gap-3>
-            <EContinue name=A>Step 2A</EContinue>
-            <EContinue name=B>Step 2B</EContinue>
+            <EPage name=A>Step 2A<PContinue/></EPage>
+            <EPage name=B>Step 2B<PContinue/></EPage>
           </ESequence>
-          <EContinue name=3>Step 3</EContinue>
+          <EPage name=step3>Step 3<PContinue/></EPage>
         </ESequence>
       </div>
 
       <!-- The last child: when it finishes the whole sequence is done. -->
-      <EContinue button="Restart from the top">
+      <EPage>
         <div font-bold>Done</div>
         That was the last child, so the sequence has finished.
-      </EContinue>
+        <PContinue button="Restart from the top"/>
+      </EPage>
     </ESequence>
   </div>
 </template>

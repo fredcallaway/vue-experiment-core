@@ -24,12 +24,13 @@
     </div>
 
     <ESequence name="DemoError" flex-center flex-col gap-4 min-h-30 b-1 b-gray-200 rounded p6>
-      <EContinue button name="PreError">
+      <EPage name="PreError">
         The next page will throw an error.
-      </EContinue>
+        <PContinue button/>
+      </EPage>
       <!-- Throwing on mount simulates a bug in a trial. The boundary catches it,
            logs it, and renders the fallback in place of this content. -->
-      <EContinue name="brokenPage" button @mounted="throwError('Test error. Please ignore')" />
+      <EPage name="brokenPage" @mounted="throwError('Test error. Please ignore')" />
     </ESequence>
   </div>
 </template>

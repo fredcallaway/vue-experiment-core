@@ -27,7 +27,33 @@ This branch simplifies the template by removing playback-specific infrastructure
 - Removed the `core/pages/test/` pages and the `Test` NavBar link; the `/demo` section replaces them.
 - Updated the deploy/git-status clean-worktree check to ignore `core/pages/demo` instead of `core/pages/test`.
 - Scoped the epoch outline cache per page (keyed by the page's root epoch id) so the outline rebuilds when navigating between pages with different timelines, e.g. `/dev` and `/demo/*`. The `localStorage` key changed from `epoch-outline` to `epoch-outline:<rootId>`; the old key is now unused and can be cleared.
-- **⚠️ Possible styling break:** `EContinue` no longer applies `flex-center flex-col` to its root element; only the button is wrapped in a `flex-center` div. Previously the entire component (prompt slot + button/key) was horizontally centered as a column. If your project relied on `EContinue` centering its slotted prompt content, that content will now follow normal block layout. Wrap the affected content in your own centering container (e.g. `flex-center flex-col`) where needed.
+- **⚠️ Breaking:** Removed `EContinue` in favor of `EPage` + `PContinue`. See "EContinue Removal" below.
+
+## EContinue Removal
+
+`EContinue` bundled three concerns — the epoch wrapper, the content slot, and the continue affordance — which made the button placement rigid and the component impossible to compose. It is replaced by `EPage` (epoch wrapper + slot) and a standalone `PContinue` (the continue button / space-key affordance). This lets you place the continue control anywhere in the page and lets a page have other interactive content alongside it.
+
+`PContinue` advances its parent epoch (via `injectParentEpoch().next()`), so it must be used inside an epoch component — almost always an `EPage`. Do not place a bare `PContinue` directly under `ERepeat`/`ESequence` without an enclosing `EPage`.
+
+Migration: replace each `EContinue` with an `EPage` wrapping the same slot content plus a `PContinue`, moving the affordance props (`button`, `delay`, `small`) onto `PContinue` and the epoch props (`name`, `prompt`, `duration`) onto `EPage`. Add a `PContinue` only where the page should advance on continue.
+
+```vue
+<!-- before -->
+<EContinue name="welcome" button="Start" delay=500>
+  <h2>Welcome!</h2>
+</EContinue>
+
+<!-- after -->
+<EPage name="welcome">
+  <h2>Welcome!</h2>
+  <PContinue button="Start" delay=500/>
+</EPage>
+```
+
+Notes:
+- `EContinue` placed the affordance after the slot automatically; with `EPage` you place `<PContinue/>` explicitly, so put it last to match the old layout.
+- The `prompt` styling that `EContinue` applied to its slot is provided by `EPage`'s `prompt` prop; `PContinue` no longer has a `prompt` prop.
+- `EContinue` defaulted its epoch `name` to `'EContinue'`. If you had multiple unnamed `EContinue` siblings in one sequence, give the resulting `EPage`s distinct `name`s (unnamed `EPage`s all default to `'EPage'` and will collide).
 
 ## Playback Removal
 
