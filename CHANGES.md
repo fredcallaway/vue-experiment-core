@@ -54,7 +54,7 @@ Notes:
 - `EContinue` placed the affordance after the slot automatically; with `EPage` you place `<PContinue/>` explicitly, so put it last to match the old layout.
 - The `prompt` styling that `EContinue` applied to its slot is provided by `EPage`'s `prompt` prop; `PContinue` no longer has a `prompt` prop.
 - Naming is unaffected. A straight `EContinue` → `EPage` swap preserves epoch ids: under an `ESequence`/`ERepeat`/phase parent the step index is part of the id (`seq[0]-EPage`, `seq[1]-EPage`, …), so unnamed siblings do not collide. `EContinue` defaulted `name` to `'EContinue'` and `EPage` defaults to `'EPage'`; only the leaf segment changes.
-- **⚠️ Possible styling break:** neither `EPage` nor `PContinue` centers slot content; only the `PContinue` button is wrapped in a `flex-center` div. Earlier versions of `EContinue` applied `flex-center flex-col` to the whole component, centering the slotted prompt content as a column. If your project still uses that earlier `EContinue` (e.g. on the bleeding branch) and relies on it centering slot content, wrap the affected content in your own centering container (e.g. `flex-center flex-col`) after migrating.
+- **⚠️ Styling break:** `EContinue` applied `flex-center flex-col` to its root, centering the slotted content as a column. Neither `EPage` nor `PContinue` does this — only the `PContinue` button is wrapped in a `flex-center` div — so after migrating, content that previously appeared centered will follow normal block layout. To restore the old behavior, put the utilities on the `EPage` tag, which forwards them to its root: `<EPage flex-center flex-col>…</EPage>`.
 
 ## Playback Removal
 
