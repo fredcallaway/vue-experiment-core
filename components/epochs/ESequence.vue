@@ -5,14 +5,24 @@ import { defineComponent, type VNode, Comment, Fragment, cloneVNode, computed } 
 // NOTE: we can remove this when we switch to using normal reactive state (not in useEpoch)
 // Persist across HMR using Vite's hot data bag
 const __hot = import.meta.dev ? import.meta.hot : null
-const hmrState: Map<string, number> | null = import.meta.dev 
+const hmrState: Map<string, number> | null = import.meta.dev
   ? ((__hot?.data?.ESequenceHmrState as any) ?? new Map())
   : null
 if (__hot) {
   __hot.data.ESequenceHmrState = hmrState
 }
 
-console.log('hmrState', hmrState)
+// Track whether an HMR update is in flight. When a *page* is edited, Nuxt tears the page down
+// and rebuilds it (unmount-then-mount), unlike a component edit which patches in place. Without
+// this flag, the old ESequence's onUnmounted would delete its saved step before the new instance
+// reads it, resetting the tree to step 0 and dropping currentEpoch to __TOP_EPOCH__ (which breaks
+// the outline). Editing the page does not dispose this module, so hmrState itself survives; we
+// only need to suppress the unmount-time delete while the swap is happening.
+let isHmrUpdating = false
+if (__hot) {
+  __hot.on('vite:beforeUpdate', () => { isHmrUpdating = true })
+  __hot.on('vite:afterUpdate', () => { isHmrUpdating = false })
+}
 
 const isCommentNode = (node: VNode) => node.type === Comment
 const isFragmentNode = (node: VNode) => node.type === Fragment
@@ -72,8 +82,10 @@ export default defineComponent({
       watchEffect(() => {
         hmrState.set(E.id, E.step.value)
       })
-      // clear on unmount or epoch end (usually synonymous)
+      // clear on unmount or epoch end (usually synonymous), but NOT when the unmount is just
+      // an HMR teardown — there the step must survive so the rebuilt tree restores its position.
       onUnmounted(() => {
+        if (isHmrUpdating) return
         hmrState.delete(E.id)
       })
       // clear when the epoch ends
