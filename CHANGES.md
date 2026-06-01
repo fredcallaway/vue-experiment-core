@@ -28,7 +28,6 @@ This branch simplifies the template by removing playback-specific infrastructure
 - Updated the deploy/git-status clean-worktree check to ignore `core/pages/demo` instead of `core/pages/test`.
 - Scoped the epoch outline cache per page (keyed by the page's root epoch id) so the outline rebuilds when navigating between pages with different timelines, e.g. `/dev` and `/demo/*`. The `localStorage` key changed from `epoch-outline` to `epoch-outline:<rootId>`; the old key is now unused and can be cleared.
 - **⚠️ Breaking:** Removed `EContinue` in favor of `EPage` + `PContinue`. See "EContinue Removal" below.
-- Phase epochs (`usePhaseEpoch`) now create a real child epoch per phase instead of an internal pseudo-leaf. The child is named after the phase, so its logged `epoch.start` id and outline/jump path changed from `…[<phase>]-leaf_<phase>` to `…[<phase>]-<phase>`. Epochs and affordances mounted inside a `<Phase>` (e.g. an `EPage`, or a `PContinue`) now attach to that phase's child epoch automatically. Any saved jump targets or data keyed on the old `leaf_<phase>` ids must be updated.
 
 ## EContinue Removal
 

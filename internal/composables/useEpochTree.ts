@@ -387,9 +387,6 @@ export const useEpochTree = createGlobalState(() => {
 
     let unwatch = null as (() => void) | null
     let traversalSucceeded = false
-    // Track which leaves we've visited so a phase epoch that revisits a phase
-    // (a possible loop) ends its parent rather than spinning forever.
-    const visited = new Set<string>()
     const doTraversal = () => new Promise((resolve) => {
       unwatch = watchImmediate(currentEpoch, async (epoch) => {
         console.log(`[${performance.now().toFixed(2)}] traversing`, epoch.id)
@@ -406,14 +403,6 @@ export const useEpochTree = createGlobalState(() => {
         }
         if (epoch.isPseudoLeaf || !('step' in epoch)) {
           await nextTick()
-          // If we've already traversed this leaf, the parent is looping over its
-          // children (e.g. a phase epoch revisiting a phase): end the parent.
-          if (visited.has(epoch.id)) {
-            console.log('  revisited leaf -> ending parent', epoch._parent.id)
-            epoch._parent.done()
-            return
-          }
-          visited.add(epoch.id)
           epoch.done()
         }
       })
