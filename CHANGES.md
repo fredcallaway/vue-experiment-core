@@ -27,6 +27,7 @@ This branch simplifies the template by removing playback-specific infrastructure
 - Removed the `core/pages/test/` pages and the `Test` NavBar link; the `/demo` section replaces them.
 - Updated the deploy/git-status clean-worktree check to ignore `core/pages/demo` instead of `core/pages/test`.
 - Scoped the epoch outline cache per page (keyed by the page's root epoch id) so the outline rebuilds when navigating between pages with different timelines, e.g. `/dev` and `/demo/*`. The `localStorage` key changed from `epoch-outline` to `epoch-outline:<rootId>`; the old key is now unused and can be cleared.
+- **⚠️ Possible styling break:** `EContinue` no longer applies `flex-center flex-col` to its root element; only the button is wrapped in a `flex-center` div. Previously the entire component (prompt slot + button/key) was horizontally centered as a column. If your project relied on `EContinue` centering its slotted prompt content, that content will now follow normal block layout. Wrap the affected content in your own centering container (e.g. `flex-center flex-col`) where needed.
 
 ## Playback Removal
 
