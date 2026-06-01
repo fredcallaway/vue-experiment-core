@@ -2,11 +2,6 @@
 
 const currentEpoch = useCurrentEpoch()
 
-defineWindowSize({
-  width: 600,
-  height: 800,
-})
-
 </script>
 
 <template>
