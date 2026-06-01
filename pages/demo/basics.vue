@@ -24,7 +24,7 @@ defineWindowSize({
 
 <template>
   <div p4>
-    <ESequence>
+    <ESequence name=basics>
 
       <!-- ========================= WELCOME ========================= -->
 
@@ -33,10 +33,10 @@ defineWindowSize({
         <p>
           If you're just starting with the template, you've come to the right
           place. This tutorial explains the core idea the whole framework is built
-          on — the <b>epoch</b> — and introduces the two components you'll use to
-          build almost any experiment.
+          on: the <b>epoch</b>.
         </p>
-        <p mt-3>
+        <p>
+          <!-- TODO: convert these to NuxtLink -->
           The other demos (see the <code>/demo</code> index) drill into specific
           features. Start here, then explore those once the basics click.
         </p>
@@ -50,12 +50,24 @@ defineWindowSize({
         <EPage name="what">
           <h2>What is an epoch?</h2>
           <p>
-            An <b>epoch</b> is one stretch of the experiment that eventually
-            <i>finishes</i> and hands control to whatever comes next. A page of
-            instructions, a single trial, a whole block of trials, the entire
-            experiment — each is an epoch.
+            An <b>epoch</b> is a period of time in the experiment with a start and an end.
+            A single trial, a block of trials, the instructions, the entire experiment — each is an epoch.
+            Bigger epochs are built out of smaller ones, and be flexibly composed.
           </p>
-          <p mt-3>
+          <p>
+            If you're familiar with jsPsych, an epoch combines the idea of a "timeline" and a "plugin"
+            into one composable unit. 
+            <!-- TODO expand this -->
+          </p>
+          <p>
+            For the CS nerds, the epoch system defines a hierarchical state machine where each
+            epoch is a state (that can include its own machine). You can also think of it like
+            the call stack in an executed program: epochs are like functions that can "call" 
+            other epochs based on their own internal control flow.
+            <!-- TODO check that this is technically correct; adjust as needed. -->
+          </p>
+
+          <p>
             That's the key idea: every part of the experiment, from the smallest
             screen to the whole study, is an epoch. Bigger epochs are built out of
             smaller ones, so the same handful of components compose all the way up.
@@ -66,46 +78,40 @@ defineWindowSize({
         <EPage name="tree">
           <h2>The epoch tree</h2>
           <p>
-            Because epochs nest, your experiment forms a <b>tree</b>. At any moment
-            exactly one leaf is active — that's what the participant sees. The path
-            from the root to that leaf is the "current epoch".
+            Because epochs nest, your experiment forms a <b>tree</b>. Epochs that have
+            children (e.g. `ESequence` and `ERepeat`, covered below) are <b>branches</b>.
+            Epochs without children are <b>leaves</b>. 
+            At any moment, exactly one leaf is active — this is the <b>current epoch</b>.
+            In most cases, it will define the main content that the participant is interacting
+            with at the moment (the current trial). Persistent display elements, like a trial
+            counter or running bonus, will be defined in higher-level branch epochs (the block).
           </p>
-          <p mt-3>
-            Right now the active epoch is
-            <code>{{ currentEpoch.id }}</code>. An epoch's id is its name joined to
-            its ancestors' names, so it doubles as its address in the tree. You can
-            see the whole tree, and jump around it, from the outline in the
-            <code>/dev</code> panel (see the <b>devtools</b> demo).
-          </p>
-          <PContinue/>
-        </EPage>
-
-        <EPage name="done">
-          <h2>Finishing an epoch</h2>
           <p>
-            An epoch runs until it calls <code>done()</code>. When a leaf finishes,
-            control returns to its parent, which decides what happens next —
-            usually advancing to the next child. When the parent runs out of
-            children, <i>it</i> finishes, and so on up the tree until the whole
-            experiment is done.
+            <!-- TODO check if epoch ids are guaranteed to be unique.
+             In practice they almost (?) always are unique because ESequence and ERepeat
+             add indices. Perhaps a sophisticated user could break this somehow. Should
+             we add a check for this in useEpoch? If so flag it as a possible followup. -->
+            Every epoch has a unique <b>id</b> that identifies its place in the tree.
+            An epoch's id is formed by attaching its name to its parent's id 
+            (with indices inserted in brackets for sequential epochs; discussed later).
+            The id of the current epoch is <code>{{ currentEpoch.id }}</code>.
           </p>
-          <p mt-3>
-            You rarely call <code>done()</code> by hand. Components like
-            <code>PContinue</code> call it for you when the participant continues —
-            that's how a button press or spacebar advances the experiment.
+          <p>
+            You can see the whole tree, and jump around it, in the outline to the right
+            (see the <b>devtools</b> demo).
           </p>
           <PContinue/>
         </EPage>
 
-        <EPage name="components">
+        <EPage name="building">
           <h2>The building blocks</h2>
           <p>You'll meet three epoch components again and again:</p>
           <ul mt-3 flex-col gap-2>
-            <li><code>EPage</code> — a single screen; the most common leaf epoch.</li>
-            <li><code>ESequence</code> — shows its children one after another.</li>
-            <li><code>ERepeat</code> — runs one template many times (i.e. trials).</li>
+            <li><code>EPage</code> shows a single screen (e.g. a trial, an instructions page)</li>
+            <li><code>ESequence</code> runs a sequence of epochs in order (e.g. the full experiment)</li>
+            <li><code>ERepeat</code> runs one epoch many times (e.g. a block of trials).</li>
           </ul>
-          <p mt-3>
+          <p>
             <code>ESequence</code> and <code>ERepeat</code> are how you compose
             epochs into larger structures. The next two sections cover each in
             detail. (Specialized epochs — phases, navigable instructions, surveys —
@@ -130,7 +136,7 @@ defineWindowSize({
             on the first child; each time the active child finishes, the sequence
             advances; once the last child finishes, the sequence finishes too.
           </p>
-          <p mt-3>
+          <p>
             Each direct child is its own epoch — most often an <code>EPage</code>
             with a <code>PContinue</code>, which finishes when the participant
             continues. The example below is a sequence of four such steps.
@@ -204,7 +210,7 @@ defineWindowSize({
             <code>step</code> (0-indexed) so each iteration can show its own
             content.
           </p>
-          <p mt-3>
+          <p>
             Each iteration is a fresh epoch, so iterations have independent state
             and are logged separately. <code>ERepeat</code> advances when an
             iteration finishes and is itself done after the last one — exactly the
@@ -242,7 +248,7 @@ defineWindowSize({
             <code>ERepeat</code> you can express most of an experiment's structure.
             Everything else builds on the same epoch model.
           </p>
-          <p mt-3 text-sm text-gray-600>
+          <p text-sm text-gray-600>
             One detail worth knowing: <code>ERepeat</code> always runs iterations
             <code>0..count-1</code> in order, so to randomize trials you shuffle
             your data array before rendering (e.g. with <code>random.shuffle</code>)
