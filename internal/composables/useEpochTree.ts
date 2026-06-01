@@ -41,32 +41,21 @@ const cloneSubtreeForStep = (
   parent: EpochNode,
   sourcePrefix: string,
   targetPrefix: string,
-  sourceStep: number,
-  targetStep: number,
-  isDirectChild: boolean,
 ): EpochNode => {
-  let id = source.id.startsWith(sourcePrefix)
+  const id = source.id.startsWith(sourcePrefix)
     ? `${targetPrefix}${source.id.slice(sourcePrefix.length)}`
     : `${targetPrefix}-${source.name}`
-  let name = source.name
-
-  // Pseudo leaves in IndexableEpochs include the step in their name.
-  // Keep those names in sync with the cloned step.
-  if (isDirectChild && source.name === `leaf_${sourceStep}`) {
-    name = `leaf_${targetStep}`
-    id = `${targetPrefix}-${name}`
-  }
 
   const clone: EpochNode = {
     id,
-    name: name,
+    name: source.name,
     parent: parent,
     children: [],
     nSteps: source.nSteps,
     hasIdenticalChildren: source.hasIdenticalChildren,
   }
   clone.children = source.children.map(child =>
-    cloneSubtreeForStep(child, clone, sourcePrefix, targetPrefix, sourceStep, targetStep, false)
+    cloneSubtreeForStep(child, clone, sourcePrefix, targetPrefix)
   )
   return clone
 }
@@ -111,7 +100,7 @@ const materializeIdenticalChildren = (node: EpochNode) => {
 
     const targetPrefix = `${node.id}[${step}]`
     completeChildren.push(
-      cloneSubtreeForStep(sourceChild, node, sourcePrefix, targetPrefix, sourceStep, step, true)
+      cloneSubtreeForStep(sourceChild, node, sourcePrefix, targetPrefix)
     )
   }
   node.children = completeChildren
@@ -387,6 +376,9 @@ export const useEpochTree = createGlobalState(() => {
 
     let unwatch = null as (() => void) | null
     let traversalSucceeded = false
+    // Track which step-less leaves we've visited so a phase epoch that revisits a
+    // phase (a possible loop) ends its parent rather than spinning forever.
+    const visited = new Set<string>()
     const doTraversal = () => new Promise((resolve) => {
       unwatch = watchImmediate(currentEpoch, async (epoch) => {
         console.log(`[${performance.now().toFixed(2)}] traversing`, epoch.id)
@@ -401,8 +393,16 @@ export const useEpochTree = createGlobalState(() => {
           epoch.done()
           return
         }
-        if (epoch.isPseudoLeaf || !('step' in epoch)) {
+        if (!('step' in epoch)) {
           await nextTick()
+          // If we've already traversed this leaf, the parent is looping over its
+          // children (e.g. a phase epoch revisiting a phase): end the parent.
+          if (visited.has(epoch.id)) {
+            console.log('  revisited leaf -> ending parent', epoch._parent.id)
+            epoch._parent.done()
+            return
+          }
+          visited.add(epoch.id)
           epoch.done()
         }
       })

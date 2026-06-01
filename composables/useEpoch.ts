@@ -10,7 +10,6 @@ export type Epoch = {
   _parent: Epoch,
   children: Epoch[]  // only includes children that have been mounted
   isNoEpoch?: boolean,
-  isPseudoLeaf?: boolean,
   isDisabled?: boolean
   hasIdenticalChildren?: boolean,
   id: string,
@@ -39,6 +38,8 @@ export type PhaseEpoch<T extends string = string> = IndexableEpoch & {
   phase: ComputedRef<T>,
   phases: readonly T[],
   goTo: (phase: T) => void,
+  // the child epoch for the currently-active phase (one per phase entry)
+  phaseEpoch: Ref<Epoch | null>,
 }
 export const isPhaseEpoch = (epoch: Epoch): epoch is PhaseEpoch<any> => {
   return 'phase' in epoch && 'phases' in epoch
@@ -52,7 +53,6 @@ type EpochProps = {
   id?: string,
   isDisabled?: boolean,
   isNoEpoch?: boolean,
-  isPseudoLeaf?: boolean,
   next?: () => void,
 }
 // Create a new epoch and adds it to the tree.
@@ -70,7 +70,6 @@ const makeEpoch = (props: EpochProps): Epoch => {
     _parent: props.parent,
     children: props.children ?? [],
     isNoEpoch: props.isNoEpoch ?? false,
-    isPseudoLeaf: props.isPseudoLeaf ?? false,
     isDisabled: props.isDisabled,
     id: props.id ?? makeId(props.name, props.parent),
 
@@ -176,7 +175,14 @@ const hasFlag = (attrs: Record<string, any>, flag: string) => attrs[flag] === ""
 
 // Inject the epoch provided by the nearest enclosing epoch component (or TOP_EPOCH).
 // Use this from presentational components (e.g. PContinue) that act on their parent epoch.
-export const injectParentEpoch = (): Epoch => inject<Epoch>('__EPOCH__', TOP_EPOCH)
+// A phase epoch is never itself a parent: it resolves to the child epoch of its
+// currently-active phase, so epochs/affordances mounted inside a <Phase> attach to
+// that phase's child rather than to the phase epoch itself.
+export const injectParentEpoch = (): Epoch => {
+  const E = inject<Epoch>('__EPOCH__', TOP_EPOCH)
+  if (isPhaseEpoch(E) && E.phaseEpoch.value) return E.phaseEpoch.value
+  return E
+}
 
 // this is a trick to do string validation with typescript
 type NoHyphen<S extends string> =
@@ -198,9 +204,6 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
   }
 
   const parentEpoch = injectParentEpoch()
-  if (parentEpoch.isPseudoLeaf) {
-    logWarn('useEpoch: parent epoch is a leaf', { parentEpoch: parentEpoch.id })
-  }
 
   const epoch = makeEpoch({
     name,
@@ -258,42 +261,35 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
   E.nSteps = nSteps
   E.step = step
 
-  // For sequential epochs that don't have explicit child epochs, we create them.
-  // TODO: maybe we should do this at epoch intialization; would be more robust
-  const startNewPseudoLeaf = (parent: Epoch, name: string) => {
-    const epoch = makeEpoch({
-      name,
-      parent,
-      isPseudoLeaf: true
-    })
-    setCurrentEpoch(epoch)
-    logEvent(`epoch.start`, {id: epoch.id})
-    return epoch
-  }
-  let activeLeaf: Epoch | null = null
-
+  // Detect a step that became active without a real child epoch mounting for it.
+  // Phase epochs manage their own children (created eagerly in goTo/init), so this
+  // detection only applies to the base indexable case (ESequence/ERepeat). The
+  // phase guard is checked inside assertChild because phase markers (phase/phases)
+  // are only assigned after useIndexableEpoch returns.
   watchImmediate(step, () => {
     if (E.isNoEpoch) return
-    const ensureChild = R.once(() => {
-      // NOTE: we need the latter condition because sequential epochs don't necessarily
-      // become currentEpoch between steps (if calling E.goTo or E.next directly)
-      if (_currentEpoch.id === E.id || _currentEpoch.id === activeLeaf?.id) {
-        const name = 'leaf_' + (isPhaseEpoch(E) ? E.phases[step.value] : String(step.value))
-        activeLeaf = startNewPseudoLeaf(E, name)
-      } else {
-        activeLeaf = null
+    const assertChild = R.once(() => {
+      if (isPhaseEpoch(E)) return
+      // No real child mounted and took over as currentEpoch.
+      // NOTE: sequential epochs don't necessarily become currentEpoch between steps
+      // (if calling E.goTo or E.next directly), so currentEpoch being E itself means
+      // nothing mounted for this step.
+      if (_currentEpoch.id === E.id) {
+        throw new Error(
+          `Indexable epoch "${E.id}" step ${step.value} has no child epoch. ` +
+          `Children of an indexable epoch (ESequence/ERepeat) must be epochs; ` +
+          `wrap presentational content in <EPage>.`
+        )
       }
     })
-    
+
     if (getCurrentInstance()) {
-      onMounted(ensureChild)
+      onMounted(assertChild)
     } else {
-      console.debug('useIndexableEpoch: not in a component, using nextTick to ensure child')
-      // TODO: figure out how this happens. It could result in creating a leaf unnecesarily.
-      void nextTick(ensureChild)
+      void nextTick(assertChild)
     }
   })
-  
+
   E.next = () => {
     if (step.value < E.nSteps-1) {
       step.value += 1
@@ -321,18 +317,57 @@ export function usePhaseEpoch<const T extends readonly string[]>(
   const E = useIndexableEpoch(name, phases.length) as unknown as PhaseEpoch<Phase>
   const baseGoTo = E.goTo
 
+  // The currently-active phase child epoch. injectParentEpoch resolves a phase
+  // epoch to this child, so epochs/affordances mounted in the active <Phase>
+  // attach to the phase's child rather than the phase epoch itself.
+  E.phaseEpoch = shallowRef<Epoch | null>(null)
+
+  // Create the child epoch for the current phase, ending the previous one first.
+  // We disable (rather than done()) the previous child so ending it does not
+  // advance the parent — the phase change itself is the navigation.
+  const enterPhaseChild = () => {
+    const prev = E.phaseEpoch.value
+    if (prev) prev.isDisabled = true
+    const child = makeEpoch({ name: E.phase.value, parent: E })
+    setCurrentEpoch(child)
+    logEvent(`epoch.start`, { id: child.id })
+    E.phaseEpoch.value = child
+  }
+
   E.goTo = (arg: Phase | number) => {
     if (typeof arg === 'number') {
       baseGoTo(arg)
-      return
+    } else {
+      const phase = assertOneOf(arg, phases, `PhaseEpoch "${name}": goTo(${arg}) is not a valid phase (${phases.join(', ')})`)
+      baseGoTo(phases.indexOf(phase))
     }
-    const phase = assertOneOf(arg, phases, `PhaseEpoch "${name}": goTo(${arg}) is not a valid phase (${phases.join(', ')})`)
-    const step = phases.indexOf(phase)
-    baseGoTo(step)
+    if (!E.isNoEpoch) enterPhaseChild()
   }
-  
+
+  // next/prev advance the step directly in useIndexableEpoch, bypassing goTo;
+  // route them through goTo so they also enter the new phase's child epoch.
+  E.next = () => {
+    if (E.step.value < E.nSteps - 1) E.goTo(E.step.value + 1)
+    else E.done()
+  }
+  E.prev = () => E.goTo(E.step.value - 1)
+
+  // Ending the phase epoch ends its active phase child too.
+  const baseDone = E.done
+  E.done = (result?: any) => {
+    const child = E.phaseEpoch.value
+    if (child) {
+      child.isDisabled = true
+      E.phaseEpoch.value = null
+    }
+    baseDone(result)
+  }
+
   E.phase = computed(() => phases[E.step.value])
   E.phases = phases
+
+  // Enter the first phase's child epoch (goTo is not called for the initial phase).
+  if (!E.isNoEpoch) enterPhaseChild()
 
   return E
 }
@@ -381,9 +416,6 @@ const jumpToEpochImpl = async (parts: string[]): Promise<null | string> => {
   for (let i = 0; i < parts.length; i++) {
     await nextTick()  // maybe unnecessary; should help ensure currentEpoch is up to date
     const part = parts[i]
-    if (part.startsWith('leaf_')) {
-      continue
-    }
 
     // Extend expected prefix
     if (i === 0) {

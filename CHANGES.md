@@ -28,6 +28,7 @@ This branch simplifies the template by removing playback-specific infrastructure
 - Updated the deploy/git-status clean-worktree check to ignore `core/pages/demo` instead of `core/pages/test`.
 - Scoped the epoch outline cache per page (keyed by the page's root epoch id) so the outline rebuilds when navigating between pages with different timelines, e.g. `/dev` and `/demo/*`. The `localStorage` key changed from `epoch-outline` to `epoch-outline:<rootId>`; the old key is now unused and can be cleared.
 - **⚠️ Breaking:** Removed `EContinue` in favor of `EPage` + `PContinue`. See "EContinue Removal" below.
+- **⚠️ Breaking:** Removed the internal pseudo-leaf mechanism. Phase epochs (`usePhaseEpoch`) now create a real child epoch per phase, and `ESequence`/`ERepeat` now require epoch children. See "Pseudo-Leaf Removal" below.
 
 ## EContinue Removal
 
@@ -55,6 +56,24 @@ Notes:
 - The `prompt` styling that `EContinue` applied to its slot is provided by `EPage`'s `prompt` prop; `PContinue` no longer has a `prompt` prop.
 - Naming is unaffected. A straight `EContinue` → `EPage` swap preserves epoch ids: under an `ESequence`/`ERepeat`/phase parent the step index is part of the id (`seq[0]-EPage`, `seq[1]-EPage`, …), so unnamed siblings do not collide. `EContinue` defaulted `name` to `'EContinue'` and `EPage` defaults to `'EPage'`; only the leaf segment changes.
 - **⚠️ Styling break:** `EContinue` applied `flex-center flex-col` to its root, centering the slotted content as a column. Neither `EPage` nor `PContinue` does this — only the `PContinue` button is wrapped in a `flex-center` div — so after migrating, content that previously appeared centered will follow normal block layout. To restore the old behavior, put the utilities on the `EPage` tag, which forwards them to its root: `<EPage flex-center flex-col>…</EPage>`.
+
+## Pseudo-Leaf Removal
+
+The epoch system previously had an internal **pseudo-leaf** mechanism: `useIndexableEpoch` (used by `ESequence`, `ERepeat`, and `usePhaseEpoch`) ran a watcher that, whenever a step became active without a real child epoch mounting for it, synthesized a placeholder epoch named `leaf_<step>` (or `leaf_<phase>`). This was load-bearing in two unrelated ways and special-cased across the jump, outline, and traversal code. It has been removed entirely.
+
+In its place:
+
+- **Phase epochs create real child epochs.** Each phase of a `usePhaseEpoch` now gets a real epoch named after the phase, created directly when the phase changes (in `goTo`, and once at init for the first phase). Phases are now ordinary epochs: they log `epoch.start`, appear in the outline, and are directly jump-addressable. Epochs and affordances mounted inside an active `<Phase>` (e.g. a nested `<ESequence>`, or a `PContinue`) now attach to that phase's child epoch automatically.
+
+- **`ESequence`/`ERepeat` require epoch children.** The pseudo-leaf used to cover for a bare presentational leaf (e.g. a `<PContinue>` directly under `<ESequence>` with no enclosing `EPage`). That is no longer supported: a sequence step with no child epoch now throws an informative error. Wrap such content in an `EPage` (this is already how the real experiment and demos are written).
+
+**⚠️ Breaking for saved data / jump targets.** The per-phase epoch id changed from `…[<phase>]-leaf_<phase>` to `…[<phase>]-<phase>` (e.g. `clicktest[play]-play`). Any saved jump targets or data keyed on the old `leaf_<phase>` ids must be updated. Sequence/repeat step ids are unaffected (the `leaf_<step>` segment was internal and skipped in jump paths).
+
+Migration:
+
+- Ensure every direct child of an `ESequence`/`ERepeat` is an epoch component (almost always an `EPage`). A bare `<PContinue>` under a sequence must be wrapped: `<EPage><PContinue button/></EPage>`.
+- Update any persisted `jump` URL params or saved data that reference `leaf_<phase>` ids to the new `<phase>` ids.
+- See `docs/adr/0001-remove-pseudo-leaf.md` for the full rationale.
 
 ## Playback Removal
 
