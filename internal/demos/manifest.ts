@@ -10,16 +10,37 @@ import PhasesDemo from './PhasesDemo.vue'
 // state and the outline; a page edit would tear the tree down and reset it to __TOP_EPOCH__.
 
 export type DemoEntry = {
+  // Card title shown on the index; defaults to the slug when omitted.
+  title?: string
+  // One-line summary of what the demo shows, displayed on the index card.
+  summary: string
   component: Component
   // Minimum window size enforced while the demo runs (defaults to 800x600 when omitted).
   windowSize?: { width: number; height: number }
 }
 
 export const demos: Record<string, DemoEntry> = {
-  basics: { component: BasicsDemo, windowSize: { width: 600, height: 800 } },
-  devtools: { component: DevtoolsDemo },
-  instructions: { component: InstructionsDemo },
-  phases: { component: PhasesDemo },
+  basics: {
+    title: 'Basics',
+    summary: 'Building an experiment from epochs, pages, and sequences.',
+    component: BasicsDemo,
+    windowSize: { width: 600, height: 800 },
+  },
+  devtools: {
+    title: 'Devtools',
+    summary: 'The /dev panel: navigation controls, a live epoch outline, and an error boundary.',
+    component: DevtoolsDemo,
+  },
+  instructions: {
+    title: 'Instructions',
+    summary: 'Navigable instruction pages, gating Next until each page is completed.',
+    component: InstructionsDemo,
+  },
+  phases: {
+    title: 'Phases',
+    summary: 'One epoch with several visual phases that share state and animate between each other.',
+    component: PhasesDemo,
+  },
 }
 
 export const demoSlugs = Object.keys(demos)
