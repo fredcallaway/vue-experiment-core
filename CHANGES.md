@@ -53,7 +53,7 @@ Migration: replace each `EContinue` with an `EPage` wrapping the same slot conte
 Notes:
 - `EContinue` placed the affordance after the slot automatically; with `EPage` you place `<PContinue/>` explicitly, so put it last to match the old layout.
 - The `prompt` styling that `EContinue` applied to its slot is provided by `EPage`'s `prompt` prop; `PContinue` no longer has a `prompt` prop.
-- A straight `EContinue` → `EPage` swap preserves naming behavior: `EContinue` defaulted its epoch `name` to `'EContinue'` and `EPage` defaults to `'EPage'`, so unnamed siblings collide on a shared id either way (only the first registers in the parent's `children`). This is unchanged by the migration. If you want distinct entries in the outline, give unnamed siblings explicit `name`s — but that is optional cleanup, not required.
+- Naming is unaffected. A straight `EContinue` → `EPage` swap preserves epoch ids: under an `ESequence`/`ERepeat`/phase parent the step index is part of the id (`seq[0]-EPage`, `seq[1]-EPage`, …), so unnamed siblings do not collide. `EContinue` defaulted `name` to `'EContinue'` and `EPage` defaults to `'EPage'`; only the leaf segment changes.
 
 ## Playback Removal
 
