@@ -8,6 +8,7 @@ import ParamsDemo from './ParamsDemo.vue'
 import PhasesDemo from './PhasesDemo.vue'
 import ResponsesDemo from './ResponsesDemo.vue'
 import SurveysDemo from './SurveysDemo.vue'
+import TimingDemo from './TimingDemo.vue'
 
 // Registry of demo tutorials, keyed by URL slug (/demo/<slug>). The [slug] page renders the
 // matching component, and the index lists them. Each demo's epoch tree lives in its component
@@ -71,6 +72,11 @@ export const demos: Record<string, DemoEntry> = {
     title: 'Surveys',
     summary: 'Survey epochs (buttons, multi-buttons, text) and a project-declared data view.',
     component: SurveysDemo,
+  },
+  timing: {
+    title: 'Timing',
+    summary: 'useTimer countdowns, fixed-duration pages, and awaitable sleeps.',
+    component: TimingDemo,
   },
 }
 
