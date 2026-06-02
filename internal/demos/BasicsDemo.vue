@@ -20,6 +20,10 @@ const trials = [
   { word: 'leaf', color: 'green' },
 ]
 
+// Shared state for the ESequence example trial: the response page records the choice,
+// the feedback page reads it. In a real experiment you'd log this instead (see the data demo).
+const example = reactive<{ choice?: string }>({})
+
 </script>
 
 <template>
@@ -168,7 +172,49 @@ const trials = [
           </p>
           <PContinue/>
         </EPage>
-        <!-- TODO add two more pages showing use of done and state -->
+
+        <!-- `state` is a reactive scratch object scoped to this page, handy for tracking
+             interaction without reaching for a logger. It's exposed as a slot prop. -->
+        <EPage name="state" v-slot="{ state }">
+          <h2>Page state</h2>
+          <p>
+            Each <code>EPage</code> hands its slot a reactive <code>state</code> object — a
+            per-page scratchpad for whatever the participant does on the page. Here we just
+            count clicks:
+          </p>
+          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto my-3 v-pre><code>&lt;EPage name="demo" v-slot="{ state }"&gt;
+  &lt;button @click="state.clicks = (state.clicks ?? 0) + 1"&gt;Click&lt;/button&gt;
+&lt;/EPage&gt;</code></pre>
+          <div flex-center gap-3 my-3>
+            <button b-1 b-gray-300 rounded px-3 py-1 @click="state.clicks = (state.clicks ?? 0) + 1">Click me</button>
+            <span text-gray-600>clicks: {{ state.clicks ?? 0 }}</span>
+          </div>
+          <p text-sm text-gray-600>
+            State lives only as long as the page's epoch. To keep data, log it instead
+            (see the <NuxtLink to="/demo/data">data demo</NuxtLink>).
+          </p>
+          <PContinue/>
+        </EPage>
+
+        <!-- `done` (also a slot prop) finishes the page from script. Affordances like
+             PContinue call it for you, but you can call it directly to end on any event. -->
+        <EPage name="done" v-slot="{ done }">
+          <h2>Finishing a page</h2>
+          <p>
+            A page finishes when its epoch is told it's <code>done</code>. Affordances like
+            <code>PContinue</code> call <code>done()</code> for you, but the slot also exposes
+            <code>done</code> directly, so you can end the page on any event:
+          </p>
+          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto my-3 v-pre><code>&lt;EPage name="demo" v-slot="{ done }"&gt;
+  &lt;button @click="done"&gt;I'm finished&lt;/button&gt;
+&lt;/EPage&gt;</code></pre>
+          <div flex-center my-3>
+            <button b-1 b-gray-300 rounded px-3 py-1 @click="done">I'm finished</button>
+          </div>
+          <p text-sm text-gray-600>
+            Clicking the button advances the sequence, just like a <code>PContinue</code> would.
+          </p>
+        </EPage>
       </ESequence>
 
       <!-- ========================= ESEQUENCE ========================= -->
@@ -198,59 +244,69 @@ const trials = [
           <PContinue/>
         </EPage>
 
-        <!-- TODO adjust structure of example
-          - stimulus: "red"
-          - response: two buttons, red and blue (PButtons)
-          - feedack: correct/incorrect
+        <EPage name="example-intro">
+          <p>
+            Here is that <code>stimulus → response → feedback</code> trial as a running
+            example. Each page is a separate epoch; when one finishes the sequence advances
+            to the next.
+          </p>
+          <PContinue/>
+        </EPage>
 
-          nested shouldn't be in example
-        -->
-        <!-- Each child below is a separate epoch. -->
+        <!-- The trial sketched above, made concrete. The three pages are separate epochs;
+             `example` (a plain reactive object in the script) carries the response from the
+             response page to the feedback page. -->
+        <ESequence name="example" flex-center flex-col gap-5 min-h-50 b-1 b-gray-200 rounded p6>
+          <EPage name="stimulus">
+            <div text-sm text-gray-600>Stimulus</div>
+            <p>What color is this word?</p>
+            <div text-2xl font-bold text-red>red</div>
+            <PContinue button="Respond"/>
+          </EPage>
+
+          <EPage name="response" v-slot="{ done }" flex-center flex-col gap-3>
+            <div text-sm text-gray-600>Response</div>
+            <p>Click the color the word was printed in.</p>
+            <PButtons values="red blue" @click="(v) => { example.choice = v; done() }" />
+          </EPage>
+
+          <EPage name="feedback">
+            <div text-sm text-gray-600>Feedback</div>
+            <p v-if="example.choice === 'red'" text-green font-bold>Correct!</p>
+            <p v-else text-red font-bold>Incorrect — the word was red.</p>
+            <PContinue button="Finish trial"/>
+          </EPage>
+        </ESequence>
+      </ESequence>
+
+      <!-- ========================= NESTING ========================= -->
+
+      <!-- Nesting gets its own section: a sequence's child can itself be a sequence,
+           which is how small self-contained pieces compose into larger structures. -->
+      <ESequence name="nesting">
+        <EPage name="intro">
+          <h2>Nesting</h2>
+          <p>
+            Because a sequence's child is just an epoch, a child can itself be an
+            <code>ESequence</code>. The inner sequence must finish before the outer one
+            advances. This is how a small, self-contained piece (like the trial above)
+            becomes part of a larger structure — the active epoch below is
+            <code>{{ currentEpoch.id }}</code>.
+          </p>
+          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;ESequence name="block"&gt;
+  &lt;ESequence name="trial"&gt;...&lt;/ESequence&gt;
+  &lt;EPage name="break"&gt;...&lt;/EPage&gt;
+&lt;/ESequence&gt;</code></pre>
+          <PContinue/>
+        </EPage>
+
         <ESequence name="example" flex-center flex-col gap-5 min-h-40 b-1 b-gray-200 rounded p6>
-          <EPage name="step1">
-            <div font-bold>Step 1</div>
-            This is the first child. Continue to advance.
-            <PContinue/>
-          </EPage>
-
-          <EPage name="step2">
-            <div font-bold>Step 2</div>
-            The previous child finished, so the sequence moved on to this one.
-            <PContinue/>
-          </EPage>
-
-          <!-- Note that this child is *not* an epoch, but just a plain div.
-               This is fine because the div contains an epoch. Otherwise,
-               a placeholder leaf epoch would start, and it would have no
-               natural way to end.
-
-               This pattern lets us keep some content stable on screen while the
-               inner "nested" ESequence steps through its own children. -->
-          <div>
-            <h3 font-bold>Nesting</h3>
-            <p mt-1 mb-3>
-              A child of a sequence can itself be a sequence. The inner sequence
-              must finish before the outer one advances. This is how a small,
-              self-contained piece becomes part of a larger structure — the active
-              epoch is now {{ currentEpoch.id }}.
-            </p>
-            <ESequence name="nested" flex-center flex-col gap-5 min-h-40 b-1 b-gray-200 rounded p6>
-              <EPage name="step1"> Step 1 <PContinue/></EPage>
-              <ESequence name="step2" flex-center flex-col gap-3>
-                <EPage name="A">Step 2A<PContinue/></EPage>
-                <EPage name="B">Step 2B<PContinue/></EPage>
-              </ESequence>
-              <EPage name="step3">Step 3<PContinue/></EPage>
-            </ESequence>
-          </div>
-
-          <!-- The last child: when it finishes the whole sequence is done. -->
-          <EPage name="done">
-            <div font-bold>Done</div>
-            That was the last child, so the sequence has finished — and control
-            returns to its parent.
-            <PContinue button="Continue"/>
-          </EPage>
+          <EPage name="step1">Step 1<PContinue/></EPage>
+          <ESequence name="step2" flex-center flex-col gap-3>
+            <EPage name="A">Step 2A (inner sequence)<PContinue/></EPage>
+            <EPage name="B">Step 2B (inner sequence)<PContinue/></EPage>
+          </ESequence>
+          <EPage name="step3">Step 3<PContinue button="Continue"/></EPage>
         </ESequence>
       </ESequence>
 
