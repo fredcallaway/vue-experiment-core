@@ -4,6 +4,7 @@ import CustomEpochDemo from './CustomEpochDemo.vue'
 import DataDemo from './DataDemo.vue'
 import DevtoolsDemo from './DevtoolsDemo.vue'
 import InstructionsDemo from './InstructionsDemo.vue'
+import ParamsDemo from './ParamsDemo.vue'
 import PhasesDemo from './PhasesDemo.vue'
 import ResponsesDemo from './ResponsesDemo.vue'
 
@@ -44,6 +45,11 @@ export const demos: Record<string, DemoEntry> = {
     summary: 'The pipeline: typed events -> data views -> export rows, grouped per trial.',
     component: DataDemo,
     windowSize: { width: 1000, height: 700 },
+  },
+  params: {
+    title: 'Params & conditions',
+    summary: 'defineParams overrides and useConditions assignment (with the dev inspector).',
+    component: ParamsDemo,
   },
   devtools: {
     title: 'Devtools',
