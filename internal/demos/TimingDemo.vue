@@ -30,15 +30,17 @@ const runSleep = async () => {
 <template>
   <div w150 mx-auto p10 flex-col gap-6>
 
-    <div>
-      <h2 text-xl font-bold>Timing</h2>
-      <p mt-2>
-        Countdowns, fixed-duration pages, and awaitable delays — the three timing
-        primitives you'll reach for in trials.
-      </p>
-    </div>
-
     <ESequence name="timing" flex-col gap-5>
+
+      <!-- ===================== Intro ===================== -->
+      <EPage name="intro" flex-col gap-3 b-1 b-gray-200 rounded p6>
+        <h2 text-xl font-bold>Timing</h2>
+        <p>
+          Countdowns, fixed-duration pages, and awaitable delays — the three timing
+          primitives you'll reach for in trials.
+        </p>
+        <PContinue button="Start" />
+      </EPage>
 
       <!-- ===================== useTimer ===================== -->
       <EPage name="timer" flex-col gap-3 b-1 b-gray-200 rounded p6>
