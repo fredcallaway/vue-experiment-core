@@ -49,16 +49,18 @@ const onGuardedChoice = (value: string) => {
 <template>
   <div w150 mx-auto p10>
 
-    <div mb-6>
-      <h2 text-xl font-bold>Collecting responses</h2>
-      <p mt-2>
-        Mouse and keyboard input, declarative and script-side. Navigate with the
-        buttons or arrow keys; each page is a self-contained example.
-      </p>
-    </div>
+    <!-- Everything lives inside the top-level (navigable) sequence, including the
+         intro page — no content sits outside the epoch tree. -->
+    <ENavigableSequence v-slot="{ enableNext }" header="Responses">
 
-    <ENavigableSequence v-slot="{ enableNext }" header="Responses"
-                        class="b-1 b-gray-200 rounded p6 min-h-70">
+      <!-- ===================== Intro ===================== -->
+      <EPage @mounted="enableNext" name="intro" flex-col gap-3>
+        <h2 text-xl font-bold>Collecting responses</h2>
+        <p>
+          Mouse and keyboard input, declarative and script-side. Navigate with the
+          buttons or arrow keys; each page is a self-contained example.
+        </p>
+      </EPage>
 
       <!-- ===================== PButton / PButtons ===================== -->
       <EPage @mounted="enableNext" name="buttons" v-slot="{ state }" flex-col gap-4>
