@@ -19,11 +19,13 @@ const currentEpoch = useCurrentEpoch()
 
       <EPage name="controls">
         <h2>Controls</h2>
-        These are the controls. You can...
-        left/right
-        pinning
-        fast mode
-
+        <p mt-2>
+          The controls let you move through the experiment without playing it
+          straight through. The arrows step to the previous/next leaf epoch; the pin
+          marks the current epoch so a reload jumps back to it (handy when iterating
+          on one trial); and the lightning toggle is <b>fast mode</b>, which collapses
+          delays so you can race through.
+        </p>
         <div flex-center my4>
           <EpochControls max-w-40 />
         </div>
@@ -37,8 +39,11 @@ const currentEpoch = useCurrentEpoch()
         <EPage name="intro">
           <h2>Outline</h2>
 
-          This is the outline. It shows you the full structure of the experiment.
-          You can click ... TODO
+          <p mt-2>
+            The outline is a live tree of the epochs that have run so far. Click any
+            leaf to jump straight to it, or pin one to return there on reload. The
+            reindex button rebuilds the tree if it has gone stale.
+          </p>
 
           <div flex-center my4>
             <EpochOutline max-w-60 max-h-70 />
@@ -119,15 +124,6 @@ const currentEpoch = useCurrentEpoch()
         </ESequence>
       </ESequence>
 
-      <!-- TODO: event view -->
     </ESequence>
   </div>
 </template>
-
-<style>
-
-.navigable-sequence .prompt {
-  color: red !important;
-}
-
-</style>
