@@ -1,4 +1,4 @@
-import { logEvent, logDebug } from './logEvent'
+import { logEvent, logDebug, recentlyErrored } from './logEvent'
 
 export type Epoch = {
   done: (result?: any) => void,
@@ -270,6 +270,10 @@ export function useIndexableEpoch(name: string, nSteps: number, stepRef?: Ref<nu
     if (E.isNoEpoch) return
     const assertChild = R.once(() => {
       if (isPhaseEpoch(E)) return
+      // A child that threw during setup never mounts, which looks identical to
+      // "no child epoch" here. Don't manufacture a misleading error on top of the
+      // real one; the root-cause error has already been surfaced.
+      if (recentlyErrored()) return
       // No real child mounted and took over as currentEpoch.
       // NOTE: sequential epochs don't necessarily become currentEpoch between steps
       // (if calling E.goTo or E.next directly), so currentEpoch being E itself means
