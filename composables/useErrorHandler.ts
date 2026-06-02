@@ -11,6 +11,14 @@ type HandlerEntry = {
   sequence: number
 }
 
+// Timestamp of the most recent error Vue caught and dispatched. Used to suppress
+// cascade guards: a single root-cause error (e.g. a child whose setup threw)
+// leaves the app half-mounted, which trips downstream sanity checks that then
+// throw their own (misleading) errors. Such guards can call recentlyErrored() to
+// stay quiet when a real error has just been reported.
+let lastErrorTime = 0
+export const recentlyErrored = (withinMs = 1000) => Date.now() - lastErrorTime < withinMs
+
 
 export const useErrorHandler = createGlobalState(() => {
   const nuxtApp = useNuxtApp()
@@ -27,6 +35,7 @@ export const useErrorHandler = createGlobalState(() => {
   }
 
   const vueErrorHandler = (err: unknown, instance: any, info: string) => {
+    lastErrorTime = Date.now()
     const sortedHandlers = getSortedHandlers()
     let currentIndex = 0
     

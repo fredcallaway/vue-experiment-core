@@ -96,18 +96,9 @@ function extractErrorData(...args: [Error, any?] | [string, any?]): ErrorData {
   }
 }
 
-// Timestamp of the most recent surfaced error. Used to suppress cascade guards:
-// a single root-cause error (e.g. a child whose setup threw) leaves the app in a
-// half-mounted state that trips downstream sanity checks, which then throw their
-// own (misleading) errors. Such guards can call recentlyErrored() to stay quiet
-// when a real error has just been reported.
-let lastErrorTime = 0
-export const recentlyErrored = (withinMs = 1000) => Date.now() - lastErrorTime < withinMs
-
 // logError(new Error('test error'), 'in trial set up')
 // logError('my error', {reason: 'test reason'})
 export const logError = (...args: [Error, any?] | [string, any?]) => {
-  lastErrorTime = Date.now()
   const errorData = toSafeDataObject(extractErrorData(...args))
   logEvent('error', errorData)
   console.error('logError', ...args)

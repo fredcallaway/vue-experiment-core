@@ -1,4 +1,5 @@
-import { logEvent, logDebug, recentlyErrored } from './logEvent'
+import { logEvent, logDebug } from './logEvent'
+import { recentlyErrored } from './useErrorHandler'
 
 export type Epoch = {
   done: (result?: any) => void,
