@@ -32,17 +32,24 @@ const errorDetails = ref<any>(null)
 const { pushHandler } = useErrorHandler()
 const popHandler = pushHandler((err, instance, info, next) => {
   if (props.captureErrors) {
-    errorDetails.value = {
-
-    }
-    errorDetails.value = {
+    logError(err as Error, {
       componentName: instance?.$options?.__name,
       componentPath: instance?.$options?.__file,
       info,
+    })
+    // A single root-cause error often cascades into follow-on errors (a failed
+    // setup leaves a half-mounted component whose render throws, which trips
+    // downstream guards). Those arrive after the real one, so keep the first
+    // error on the page rather than letting the last (least informative) win.
+    if (!error.value) {
+      errorDetails.value = {
+        componentName: instance?.$options?.__name,
+        componentPath: instance?.$options?.__file,
+        info,
+      }
+      useCurrentSession().error = String(err)
+      error.value = err
     }
-    logError(err as Error, toRaw(errorDetails.value))
-    useCurrentSession().error = String(err)
-    error.value = err
     return
   }
   next()
