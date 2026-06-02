@@ -1,5 +1,6 @@
 import type { Component } from 'vue'
 import BasicsDemo from './BasicsDemo.vue'
+import CustomEpochDemo from './CustomEpochDemo.vue'
 import DevtoolsDemo from './DevtoolsDemo.vue'
 import InstructionsDemo from './InstructionsDemo.vue'
 import PhasesDemo from './PhasesDemo.vue'
@@ -25,6 +26,11 @@ export const demos: Record<string, DemoEntry> = {
     summary: 'Building an experiment from epochs, pages, and sequences.',
     component: BasicsDemo,
     windowSize: { width: 600, height: 800 },
+  },
+  'custom-epoch': {
+    title: 'Custom epoch',
+    summary: 'Writing your own leaf epoch: params, events, data views, and done().',
+    component: CustomEpochDemo,
   },
   devtools: {
     title: 'Devtools',
