@@ -56,6 +56,10 @@ const trials = [
             and across experiments.
           </p>
           <p>
+            <!-- TODO leaf and branch concepts not introduced yet. Either remove that 
+             language or move this note to after tree. We could even make a full demo
+             focused on jsPsych users and just point to that here.
+              -->
             If you're familiar with jsPsych, an epoch combines the idea of a "timeline" and a "plugin"
             into one composable unit. A leaf epoch plays the role of a plugin (a single screen with its
             own behavior), while a branch epoch plays the role of a timeline (an ordered collection of
@@ -94,6 +98,7 @@ const trials = [
           </p>
           <p>
             You can see the whole tree, and jump around it, in the outline to the right
+            <!-- TODO link here and all other references to demos -->
             (see the <b>devtools</b> demo).
           </p>
           <PContinue/>
@@ -133,10 +138,10 @@ const trials = [
             <li><code>ERepeat</code> runs one epoch many times (e.g. a block of trials).</li>
           </ul>
           <p>
+            <!-- TODO mention EPage here -->
             <code>ESequence</code> and <code>ERepeat</code> are how you compose
             epochs into larger structures. The next two sections cover each in
-            detail. (Specialized epochs — phases, navigable instructions, surveys —
-            have their own demos.)
+            detail. 
           </p>
           <PContinue/>
         </EPage>
@@ -149,21 +154,26 @@ const trials = [
           <h2>EPage</h2>
           <p>
             <code>EPage</code> is the simplest epoch: it shows one screen and
-            finishes when the participant continues. Most leaves of your tree are
-            <code>EPage</code>s — instruction screens, individual trials, feedback.
+            finishes when the participant continues. For simple experiments,
+            all the leaves of your tree will be <code>EPage</code>s — 
+            instruction screens, individual trials, even sections of a trial.
           </p>
+          <!-- TODO <PContinue button> for a button (default is press space)  -->
           <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;EPage name="instructions"&gt;
   Press the button when you're ready.
   &lt;PContinue/&gt;
 &lt;/EPage&gt;</code></pre>
           <p mt-3>
+            <!-- TODO: Make this very short and include a link to the relevant demo -->
             <code>PContinue</code> is one of several <b>affordances</b> — small
             components that let the participant end the current epoch. A page
-            finishes when its epoch is told it's <code>done</code>, which usually
-            happens when an affordance like <code>PContinue</code> is activated.
+            finishes when its epoch is told it's <code>done</code>, 
+            <!-- NOTE this isn't correct in general -->
+            <!-- which usually happens when an affordance like <code>PContinue</code> is activated. -->
           </p>
           <PContinue/>
         </EPage>
+        <!-- TODO add two more pages showing use of done and state -->
       </ESequence>
 
       <!-- ========================= ESEQUENCE ========================= -->
@@ -185,14 +195,21 @@ const trials = [
             finishes, handing control back to its parent (usually another
             <code>ESequence</code>).
           </p>
-          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;ESequence name="block"&gt;
-  &lt;EPage name="intro"&gt;...&lt;/EPage&gt;
-  &lt;EPage name="trial"&gt;...&lt;/EPage&gt;
-  &lt;EPage name="outro"&gt;...&lt;/EPage&gt;
+          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;ESequence name="trial"&gt;
+  &lt;EPage name="stimulus"&gt;...&lt;/EPage&gt;
+  &lt;EPage name="response"&gt;...&lt;/EPage&gt;
+  &lt;EPage name="feedback"&gt;...&lt;/EPage&gt;
 &lt;/ESequence&gt;</code></pre>
           <PContinue/>
         </EPage>
 
+        <!-- TODO adjust structure of example
+          - stimulus: "red"
+          - response: two buttons, red and blue (PButtons)
+          - feedack: correct/incorrect
+
+          nested shouldn't be in example
+        -->
         <!-- Each child below is a separate epoch. -->
         <ESequence name="example" flex-center flex-col gap-5 min-h-40 b-1 b-gray-200 rounded p6>
           <EPage name="step1">
@@ -224,7 +241,7 @@ const trials = [
             </p>
             <ESequence name="nested" flex-center flex-col gap-5 min-h-40 b-1 b-gray-200 rounded p6>
               <EPage name="step1"> Step 1 <PContinue/></EPage>
-              <ESequence name="2" flex-center flex-col gap-3>
+              <ESequence name="step2" flex-center flex-col gap-3>
                 <EPage name="A">Step 2A<PContinue/></EPage>
                 <EPage name="B">Step 2B<PContinue/></EPage>
               </ESequence>
@@ -236,7 +253,7 @@ const trials = [
           <EPage name="done">
             <div font-bold>Done</div>
             That was the last child, so the sequence has finished — and control
-            returns to <i>its</i> parent.
+            returns to its parent.
             <PContinue button="Continue"/>
           </EPage>
         </ESequence>
@@ -283,6 +300,7 @@ const trials = [
 
           <!-- A trial is usually a small sequence: stimulus, response, feedback.
                Note `trials[step]` — the iteration index selects the trial data. -->
+          <!-- TODO simplify this; just show a sequence of words with bare PContinue (not button)  -->
           <ESequence name="trial" flex-center flex-col gap-4>
             <EPage name="stimulus">
               The word is
@@ -303,12 +321,16 @@ const trials = [
             <code>ERepeat</code> you can express most of an experiment's structure.
             Everything else builds on the same epoch model.
           </p>
+          <!-- TODO Consider whether this is critical. Perhaps it should be a comment. 
+           If we keep it, it should be in the repeat section.
+            -->
           <p text-sm text-gray-600>
             One detail worth knowing: <code>ERepeat</code> always runs iterations
             <code>0..count-1</code> in order, so to randomize trials you shuffle
             your data array before rendering (e.g. with <code>random.shuffle</code>)
             — the order lives in the data, not the loop.
           </p>
+          <!-- TODO Add a "What next?" section or page with pointers to some other demos and the index -->
           <PContinue button="Restart from the top"/>
         </EPage>
       </ESequence>
