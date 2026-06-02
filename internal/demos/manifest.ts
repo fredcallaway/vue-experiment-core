@@ -1,6 +1,7 @@
 import type { Component } from 'vue'
 import BasicsDemo from './BasicsDemo.vue'
 import CustomEpochDemo from './CustomEpochDemo.vue'
+import DataDemo from './DataDemo.vue'
 import DevtoolsDemo from './DevtoolsDemo.vue'
 import InstructionsDemo from './InstructionsDemo.vue'
 import PhasesDemo from './PhasesDemo.vue'
@@ -37,6 +38,12 @@ export const demos: Record<string, DemoEntry> = {
     title: 'Responses',
     summary: 'Collecting input: buttons and keys, declarative and script-side, plus gating.',
     component: ResponsesDemo,
+  },
+  data: {
+    title: 'Data',
+    summary: 'The pipeline: typed events -> data views -> export rows, grouped per trial.',
+    component: DataDemo,
+    windowSize: { width: 1000, height: 700 },
   },
   devtools: {
     title: 'Devtools',
