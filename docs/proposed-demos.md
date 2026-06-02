@@ -66,29 +66,34 @@ The demo page would wrap this in an `ERepeat` so the reader sees independent per
 
 **Proposal.** A demo that defines a parameter set, renders the same epoch twice with different `params` overrides to show they're independent, and registers a condition with `useConditions().choice(...)` / `.permute(...)` so the reader can open the dev UI, see it in the condition inspector, and pin it. Explain the `condition.<key>` URL params and how pinning interacts with the assignment counter.
 
+### 4. `responses` — Collecting participant input
+
+**Gap.** Response collection is used in essentially every trial, but the components and helpers that do it (`PButton`, `PButtons`, `PContinue`, `usePButton`, `PKey`, `onKeyPress`, `promiseKeyPress`) are never explained as a group. The only keyboard example is a single page buried in the instructions flow, and the simplified branch's removal of `useParticipant` (`CHANGES.md`) means the current response model — including how to gate input during transitions — has no reference. This merges the previously separate "keyboard" and "affordances" proposals into one high-priority demo, since in practice mouse and keyboard responses are two sides of the same concern.
+
+**Proposal.** A demo that covers both response modalities and both usage styles:
+
+- **Buttons (declarative):** `<PButton @click>` and `<PButtons values="left right" @click>`, including `:disabled` gating and the `once` prop.
+- **Buttons (script-side):** `usePButton().promise('click')` — awaiting a typed button event from script while the template renders the button, as `EClickTest`'s start button does.
+- **Keys (component):** `<PKey keys="F J" @press>` exposing the `{ key, rt }` payload with reaction time.
+- **Keys (script-side):** `promiseKeyPress('F J')` for awaiting a response, and `onKeyPress(...)` for a persistent listener (auto-unsubscribed on unmount).
+- **`PContinue`:** how it advances its parent epoch (button or space-key affordance).
+- **Gating during transitions:** the post-`useParticipant` pattern of guarding handlers with an `animating`/phase flag and `:disabled`, since the template no longer blocks input automatically.
+
 ## Secondary demos
 
 Useful but narrower; worth adding once the priority set lands.
 
-### 4. `surveys` — Survey epochs
+### 5. `surveys` — Survey epochs
 
 **Gap.** `ESurveyWrapper`, `ESurveyButtons`, `ESurveyMultiButtons`, and `ESurveyText` replaced `ESurveySequence` on this branch and projects must now declare their own survey data views (`CHANGES.md`), but there's no demo. A worked example of a short survey plus the data view that extracts responses would save every project from rediscovering the pattern.
 
-### 5. `keyboard` — Keyboard responses
-
-**Gap.** Keyboard handling moved to `utils/keyPress.ts` (`onKeyPress`, `promiseKeyPress`, `PKey`) and the only example is a single page buried in the instructions flow. A focused demo showing both the `PKey` component and the script-side `promiseKeyPress` (with reaction times), plus gating input during transitions with an `animating`/phase guard, would document the post-`useParticipant` response model.
-
-### 6. `affordances` — `PButton`, `PButtons`, `PContinue`, and `usePButton`
-
-**Gap.** The participant-input components are used everywhere but never explained as a group. A demo contrasting declarative use (`<PButton @click>`) with the script-side `usePButton().promise('click')` pattern (as used in `EClickTest`'s start button) would clarify when to reach for each, including how `PContinue` advances its parent epoch.
-
-### 7. `timing` — Timers and fixed-duration pages
+### 6. `timing` — Timers and fixed-duration pages
 
 **Gap.** `useTimer`, `EPage :duration`, and `useLocalAsync().sleep` are the timing primitives (the latter two added/changed on this branch) with no dedicated example. A demo with a countdown timer, an auto-advancing fixed-duration feedback page, and an awaited delay would cover the common timing needs in one place.
 
 ## Suggested ordering
 
-The demo index currently reads top-to-bottom as a learning path. Proposed insertion: **basics → custom-epoch → data → params → phases → instructions → surveys → keyboard → affordances → timing → devtools**, so a reader moves from composing built-ins, to authoring their own epoch, to the data and configuration concerns, before the more specialized components.
+The demo index currently reads top-to-bottom as a learning path. Proposed insertion: **basics → custom-epoch → responses → data → params → phases → instructions → surveys → timing → devtools**, so a reader moves from composing built-ins, to authoring their own epoch and collecting input, to the data and configuration concerns, before the more specialized components.
 
 ## Not proposed (out of scope)
 
