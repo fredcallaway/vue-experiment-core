@@ -14,15 +14,6 @@
 <template>
   <div w150 mx-auto p10>
 
-    <div mb-6>
-      <h2 text-xl font-bold>ENavigableSequence</h2>
-      <p mt-2>
-        A sequence the participant can navigate with Back/Next (or the arrow
-        keys) — use it for instructions. Call <code>enableNext</code> from a page
-        to unlock the Next button once the page's requirement is met.
-      </p>
-    </div>
-
     <!-- `header` labels the nav controls ("Instructions 1 of 3"). The slot
          exposes `enableNext`; until a page calls it, the Next control is
          disabled, so participants can't skip ahead. -->
@@ -31,7 +22,12 @@
 
       <!-- A pure reading page can enable Next as soon as it mounts. -->
       <EPage @mounted="enableNext" name="welcome" flex-col gap-3>
-        <div font-bold>Welcome</div>
+        <h2 text-xl font-bold>ENavigableSequence</h2>
+        <p>
+          A sequence the participant can navigate with Back/Next (or the arrow
+          keys) — use it for instructions. Call <code>enableNext</code> from a page
+          to unlock the Next button once the page's requirement is met.
+        </p>
         <div>
           Navigate with the arrow keys or the buttons above. Try going Back and
           Next — earlier pages stay available so participants can re-read them.
