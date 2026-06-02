@@ -1,6 +1,8 @@
 # Proposed New Demos
 
-The `/demo` section currently covers the structural core: **basics** (epochs, `ESequence`, `ERepeat`), **devtools**, **instructions** (`ENavigableSequence`), and **phases**. These teach how to *compose* epochs, but several features a developer reaches for when building a real task have no runnable, commented reference. This doc proposes demos to fill those gaps.
+> **Status (implemented).** All six demos below have since been built and registered in `manifest.ts`: `custom-epoch`, `responses`, `data`, `params`, `surveys`, and `timing`. This doc is retained as the design rationale.
+
+The `/demo` section previously covered only the structural core: **basics** (epochs, `ESequence`, `ERepeat`), **devtools**, **instructions** (`ENavigableSequence`), and **phases**. These teach how to *compose* epochs, but several features a developer reaches for when building a real task had no runnable, commented reference. This doc proposed demos to fill those gaps.
 
 Each demo follows the existing conventions: a self-contained component under `internal/demos/`, registered in `manifest.ts` with a slug, title, and one-line summary; the epoch tree lives in the component (not the page) so component-level HMR preserves running state; prose-as-documentation in the template with mechanics explained in comments.
 
