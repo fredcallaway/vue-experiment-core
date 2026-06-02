@@ -4,6 +4,7 @@ import CustomEpochDemo from './CustomEpochDemo.vue'
 import DevtoolsDemo from './DevtoolsDemo.vue'
 import InstructionsDemo from './InstructionsDemo.vue'
 import PhasesDemo from './PhasesDemo.vue'
+import ResponsesDemo from './ResponsesDemo.vue'
 
 // Registry of demo tutorials, keyed by URL slug (/demo/<slug>). The [slug] page renders the
 // matching component, and the index lists them. Each demo's epoch tree lives in its component
@@ -31,6 +32,11 @@ export const demos: Record<string, DemoEntry> = {
     title: 'Custom epoch',
     summary: 'Writing your own leaf epoch: params, events, data views, and done().',
     component: CustomEpochDemo,
+  },
+  responses: {
+    title: 'Responses',
+    summary: 'Collecting input: buttons and keys, declarative and script-side, plus gating.',
+    component: ResponsesDemo,
   },
   devtools: {
     title: 'Devtools',
