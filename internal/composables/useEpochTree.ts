@@ -24,7 +24,7 @@ type CachedEpochOutline = {
 // unnamed <ESequence> defaults to "ESequence"), which would collide in the cache and leak one
 // page's outline into another. This lets each page keep its own outline and rebuild on switch.
 const OUTLINE_CACHE_PREFIX = 'epoch-outline'
-const OUTLINE_CACHE_MAX_AGE_MS = 1_000
+const OUTLINE_CACHE_MAX_AGE_MS = 60_000
 const outlineCacheKey = (pageKey: string) => `${OUTLINE_CACHE_PREFIX}:${pageKey}`
 const outlineScanAttemptKey = (pageKey: string) => `${outlineCacheKey(pageKey)}:scan-attempted`
 
