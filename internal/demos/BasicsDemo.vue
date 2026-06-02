@@ -244,7 +244,7 @@ const example = reactive<{ choice?: string }>({})
           <PContinue/>
         </EPage>
 
-        <EPage name="example-intro">
+        <EPage name="exampleIntro">
           <p>
             Here is that <code>stimulus → response → feedback</code> trial as a running
             example. Each page is a separate epoch; when one finishes the sequence advances
@@ -280,7 +280,7 @@ const example = reactive<{ choice?: string }>({})
 
         <!-- Nesting: a sequence's child can itself be a sequence. Kept within the
              ESequence section since it's the same mechanism, just one level deeper. -->
-        <EPage name="nesting-intro">
+        <EPage name="nestingIntro">
           <h3 font-bold>Nesting</h3>
           <p>
             Because a sequence's child is just an epoch, a child can itself be an
