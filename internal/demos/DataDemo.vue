@@ -2,13 +2,18 @@
 
 // The "data" tutorial. The simplified branch removed automatic participant.* logging
 // in favor of explicit, semantic logs, so understanding the data pipeline is now
-// essential. This demo makes the whole pipeline visible at once:
+// essential. A few intro EPages walk through the pipeline conceptually (where data
+// goes, logEvent, declareEventLogger), then the final "example" page makes the whole
+// thing visible at once:
 //
 //   declareEventLogger  ->  typed events in the log  ->  declareDataView  ->  export rows
 //
 // The key idea the custom-epoch demo didn't cover: a single trial usually logs
 // *several* events (onset, response, ...), and the data view groups them back into one
 // row per trial with chunkBy, keyed off the event that starts each trial.
+//
+// The intro pages tell the reader to watch the EventView panel on the right rather than
+// building a custom event log — that panel already shows the live stream.
 
 // Two typed loggers, with their matching `isX` type guards. The guards are what you
 // filter the event stream with — both to select your events and to mark trial bounds.
@@ -72,7 +77,99 @@ const rows = computed(() =>
 </script>
 
 <template>
-  <div w200 mx-auto p10 flex-col gap-6>
+  <ESequence name="data">
+
+    <!-- ========================= INTRO ========================= -->
+
+    <EPage name="intro">
+      <h2>Recording data</h2>
+      <p>
+        Everything a participant does is recorded as a stream of <b>events</b>. This
+        tutorial covers how events get written, how they reach permanent storage, and
+        how you turn the raw stream into tidy export rows.
+      </p>
+      <p>
+        As you read, watch the <b>EventView</b> panel on the right: it shows the live
+        event log for this session. Every event you log shows up there, so it's the
+        first place to look when checking that your task is recording what you expect.
+      </p>
+      <PContinue/>
+    </EPage>
+
+    <!-- ========================= DATA WRITER ========================= -->
+
+    <EPage name="writer">
+      <h2>Where data goes</h2>
+      <p>
+        Logged events are collected by the <b>data writer</b>
+        (<code>useDataWriter()</code>) and synced to a
+        <a href="https://firebase.google.com/docs/database" target="_blank" rel="noopener">Firebase
+        Realtime Database</a> (RTDB). You almost never call the data writer directly —
+        the template wires it up for you. It batches writes and flushes them in the
+        background, so logging is cheap and a dropped connection won't lose data
+        (queued writes are held in <code>localStorage</code> and retried when the
+        participant comes back online).
+      </p>
+      <p>
+        The upshot: just log events as they happen and trust that they'll make it to
+        the database. The rest of this tutorial is about <i>how</i> to log them.
+      </p>
+      <PContinue/>
+    </EPage>
+
+    <!-- ========================= LOGEVENT ========================= -->
+
+    <EPage name="logEvent">
+      <h2>logEvent</h2>
+      <p>
+        The lowest-level way to record something is <code>logEvent</code>: a name and
+        an optional payload object.
+      </p>
+      <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>logEvent('trial.response', { correct: true, rt: 482 })</code></pre>
+      <p mt-3>
+        That's it — the event is queued for the database and broadcast to the EventView,
+        where it'll appear immediately. Try logging one now and watch the panel on the
+        right:
+      </p>
+      <div flex-center my-3>
+        <button b-1 b-gray-300 rounded px-3 py-1 @click="logEvent('demo.click', { at: Date.now() })">
+          logEvent('demo.click')
+        </button>
+      </div>
+      <p text-sm text-gray-600>
+        <code>logEvent</code> is untyped, so it's easy to typo a name or pass the wrong
+        shape. For the events that make up your data, prefer a declared logger — next.
+      </p>
+      <PContinue/>
+    </EPage>
+
+    <!-- ========================= DECLAREEVENTLOGGER ========================= -->
+
+    <EPage name="declareEventLogger">
+      <h2>declareEventLogger</h2>
+      <p>
+        <code>declareEventLogger</code> wraps <code>logEvent</code> with a fixed event
+        name and a TypeScript payload type. It returns a typed <b>logger</b> and a
+        matching type guard:
+      </p>
+      <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>const [logResponse, isResponse] =
+  declareEventLogger&lt;{ correct: boolean; rt: number }&gt;('trial.response')
+
+logResponse({ correct: true, rt: 482 })  // typechecked</code></pre>
+      <p mt-3>
+        The logger gives you autocomplete and catches mistakes at compile time. The
+        guard (<code>isResponse</code>) is how you later pick these events out of the
+        stream — both to select them and to mark trial boundaries, as you'll see in the
+        example. Declare one logger per event type your task produces.
+      </p>
+      <PContinue/>
+    </EPage>
+
+    <!-- ========================= EXAMPLE ========================= -->
+
+    <EPage name="example">
+
+    <div w200 mx-auto flex-col gap-6>
 
     <div>
       <h2 text-xl font-bold>Events, data views, and exports</h2>
@@ -129,5 +226,9 @@ const rows = computed(() =>
         <div v-else text-sm text-gray-400 italic>No rows yet.</div>
       </div>
     </div>
-  </div>
+    </div>
+
+    </EPage>
+
+  </ESequence>
 </template>
