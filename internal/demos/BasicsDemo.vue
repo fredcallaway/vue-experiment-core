@@ -56,15 +56,11 @@ const trials = [
             and across experiments.
           </p>
           <p>
-            <!-- TODO leaf and branch concepts not introduced yet. Either remove that 
-             language or move this note to after tree. We could even make a full demo
-             focused on jsPsych users and just point to that here.
-              -->
             If you're familiar with jsPsych, an epoch combines the idea of a "timeline" and a "plugin"
-            into one composable unit. A leaf epoch plays the role of a plugin (a single screen with its
-            own behavior), while a branch epoch plays the role of a timeline (an ordered collection of
-            sub-epochs). The difference is that the same component can do both, and the two compose
-            without the timeline/plugin distinction baked in.
+            into one composable unit. A single screen with its own behavior plays the role of a plugin,
+            while an ordered collection of sub-epochs plays the role of a timeline. The difference is
+            that the same component can do both, and the two compose without the timeline/plugin
+            distinction baked in.
           </p>
           <p>
             For the CS nerds, the epoch system defines a hierarchical state machine where each
@@ -98,8 +94,7 @@ const trials = [
           </p>
           <p>
             You can see the whole tree, and jump around it, in the outline to the right
-            <!-- TODO link here and all other references to demos -->
-            (see the <b>devtools</b> demo).
+            (see the <NuxtLink to="/demo/devtools">devtools demo</NuxtLink>).
           </p>
           <PContinue/>
         </EPage>
@@ -138,10 +133,9 @@ const trials = [
             <li><code>ERepeat</code> runs one epoch many times (e.g. a block of trials).</li>
           </ul>
           <p>
-            <!-- TODO mention EPage here -->
-            <code>ESequence</code> and <code>ERepeat</code> are how you compose
-            epochs into larger structures. The next two sections cover each in
-            detail. 
+            <code>EPage</code> is where the participant actually does something, while
+            <code>ESequence</code> and <code>ERepeat</code> are how you compose epochs into
+            larger structures. The next sections cover each in detail.
           </p>
           <PContinue/>
         </EPage>
@@ -158,18 +152,19 @@ const trials = [
             all the leaves of your tree will be <code>EPage</code>s — 
             instruction screens, individual trials, even sections of a trial.
           </p>
-          <!-- TODO <PContinue button> for a button (default is press space)  -->
           <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;EPage name="instructions"&gt;
   Press the button when you're ready.
   &lt;PContinue/&gt;
 &lt;/EPage&gt;</code></pre>
           <p mt-3>
-            <!-- TODO: Make this very short and include a link to the relevant demo -->
+            By default <code>PContinue</code> advances when the participant presses space;
+            pass <code>button</code> (e.g. <code>&lt;PContinue button="Next"/&gt;</code>) to show
+            a button instead.
+          </p>
+          <p mt-3>
             <code>PContinue</code> is one of several <b>affordances</b> — small
-            components that let the participant end the current epoch. A page
-            finishes when its epoch is told it's <code>done</code>, 
-            <!-- NOTE this isn't correct in general -->
-            <!-- which usually happens when an affordance like <code>PContinue</code> is activated. -->
+            components that let the participant end the current epoch. See the
+            <NuxtLink to="/demo/responses">responses demo</NuxtLink> for the full set.
           </p>
           <PContinue/>
         </EPage>
@@ -282,6 +277,11 @@ const trials = [
             iteration finishes and is itself done after the last one — exactly the
             <code>done</code>-propagation you saw with <code>ESequence</code>.
           </p>
+          <p text-sm text-gray-600>
+            <code>ERepeat</code> always runs iterations <code>0..count-1</code> in order, so to
+            randomize trials you shuffle your data array before rendering (e.g. with
+            <code>random.shuffle</code>) — the order lives in the data, not the loop.
+          </p>
           <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;ERepeat name="trials" :count="trials.length" v-slot="{ step }"&gt;
   &lt;EPage name="trial"&gt;
     The word is {{ trials[step].word }}.
@@ -298,20 +298,12 @@ const trials = [
                  class="flex-col gap-4 min-h-50 b-1 b-gray-200 rounded p6">
           <div text-sm text-gray-600>Trial {{ step + 1 }} / {{ nSteps }}</div>
 
-          <!-- A trial is usually a small sequence: stimulus, response, feedback.
-               Note `trials[step]` — the iteration index selects the trial data. -->
-          <!-- TODO simplify this; just show a sequence of words with bare PContinue (not button)  -->
-          <ESequence name="trial" flex-center flex-col gap-4>
-            <EPage name="stimulus">
-              The word is
-              <span font-bold :class="`text-${trials[step].color}`">{{ trials[step].word }}</span>.
-              <PContinue button="Respond"/>
-            </EPage>
-            <EPage name="feedback">
-              You saw trial {{ step + 1 }}. On to the next.
-              <PContinue button="Next trial"/>
-            </EPage>
-          </ESequence>
+          <!-- `trials[step]` — the iteration index selects this iteration's data. -->
+          <EPage name="stimulus" flex-center flex-col gap-4>
+            The word is
+            <span font-bold :class="`text-${trials[step].color}`">{{ trials[step].word }}</span>.
+            <PContinue/>
+          </EPage>
         </ERepeat>
 
         <EPage name="outro">
@@ -321,16 +313,13 @@ const trials = [
             <code>ERepeat</code> you can express most of an experiment's structure.
             Everything else builds on the same epoch model.
           </p>
-          <!-- TODO Consider whether this is critical. Perhaps it should be a comment. 
-           If we keep it, it should be in the repeat section.
-            -->
-          <p text-sm text-gray-600>
-            One detail worth knowing: <code>ERepeat</code> always runs iterations
-            <code>0..count-1</code> in order, so to randomize trials you shuffle
-            your data array before rendering (e.g. with <code>random.shuffle</code>)
-            — the order lives in the data, not the loop.
+          <p>
+            <b>What next?</b> The <NuxtLink to="/demo">demo index</NuxtLink> drills into
+            specific features — writing your own leaf epoch
+            (<NuxtLink to="/demo/custom-epoch">custom epoch</NuxtLink>), collecting input
+            (<NuxtLink to="/demo/responses">responses</NuxtLink>), and the logging pipeline
+            (<NuxtLink to="/demo/data">data</NuxtLink>) are good places to go from here.
           </p>
-          <!-- TODO Add a "What next?" section or page with pointers to some other demos and the index -->
           <PContinue button="Restart from the top"/>
         </EPage>
       </ESequence>
