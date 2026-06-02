@@ -188,6 +188,37 @@ const getLiveRoot = (current: Epoch): Epoch | null => {
   return TOP_EPOCH.children[0] ?? null
 }
 
+// Detect whether the live epoch path is structurally consistent with the cached tree. Epoch ids
+// encode position and name (`parentId[index]-name`), so if the experiment's structure changed
+// (an epoch added, removed, or renamed) the live path will contain a node whose cached parent has
+// a *different* id at the same step index. That mismatch means the cache is outdated and must be
+// rebuilt, regardless of its age. Returns false when a conflicting position is found.
+const livePathMatchesCache = (root: EpochNode, current: Epoch): boolean => {
+  const livePath = getLivePath(current)
+  if (livePath.length === 0) return true
+  if (livePath[0].id !== root.id) return false
+
+  let parent: EpochNode = root
+  for (let i = 1; i < livePath.length; i += 1) {
+    const live = livePath[i]
+    const byId = parent.children.find(existing => existing.id === live.id)
+    if (byId) {
+      parent = byId
+      continue
+    }
+    // No id match: if a cached child already occupies this step index but with a different id,
+    // the structure has diverged. (A missing index is fine — the live path can legitimately reach
+    // epochs the cached traversal hadn't materialized yet.)
+    const step = getStepIndex(parent.id, live.id)
+    if (step !== null) {
+      const occupant = parent.children.find(existing => getStepIndex(parent.id, existing.id) === step)
+      if (occupant && occupant.id !== live.id) return false
+    }
+    return true
+  }
+  return true
+}
+
 const upsertCurrentPath = (
   root: EpochNode,
   current: Epoch,
@@ -332,18 +363,35 @@ export const useEpochTree = createGlobalState(() => {
     markOutlineStale(reason)
   }
 
-  const refreshTree = () => {
-    if (isLoadedFromCache.value && root.value) {
-      syncCachedOutlineForCurrentEpoch(root.value, currentEpoch.value)
-      return
-    }
-
+  const rebuildFromLivePath = () => {
     const source = getLiveRoot(currentEpoch.value)
     root.value = source ? cloneEpochTree(source, null, errorsById.value) : null
     if (root.value) {
       loadedPageKey.value = pageKey()
       upsertCurrentPath(root.value, currentEpoch.value, errorsById.value)
     }
+  }
+
+  const refreshTree = () => {
+    if (isLoadedFromCache.value && root.value) {
+      // The cached outline can become outdated when the experiment structure changes between
+      // sessions. We can't see the whole live tree at once (only the active path is materialized),
+      // so we validate incrementally: as navigation reaches each epoch, check the live path still
+      // agrees with the cache. On a mismatch, drop the cache and rebuild, re-traversing when
+      // automatic traversal is on so the full outline comes back without a manual Reindex.
+      if (!livePathMatchesCache(root.value, currentEpoch.value)) {
+        console.warn('Cached epoch outline diverged from the live timeline structure; rebuilding.')
+        clearCachedOutline(pageKey())
+        isLoadedFromCache.value = false
+        rebuildFromLivePath()
+        if (autoTraverse.value) void traverseTimeline({ saveAndReload: true })
+        return
+      }
+      syncCachedOutlineForCurrentEpoch(root.value, currentEpoch.value)
+      return
+    }
+
+    rebuildFromLivePath()
   }
 
   type TraverseTimelineOptions = {
@@ -462,7 +510,31 @@ export const useEpochTree = createGlobalState(() => {
     hasInitializedOutline.value = true
     loadedPageKey.value = key
 
-    // Automatic traversal disabled: build the outline from the live path only.
+    // A cached outline (e.g. from a previous traversal or a Reindex Timeline click) is always
+    // honored, even when automatic traversal is off: autoTraverse only governs whether we *start*
+    // a traversal on our own, not whether we use one that already ran.
+    if (canUseLocalStorage()) {
+      const cached = loadCachedOutline(key)
+      if (cached) {
+        const cachedRoot = hydrateEpochNode(cached.root)
+        // Discard a cache that no longer matches the live experiment structure (epochs added,
+        // removed, or renamed). This is what lets us keep a long TTL: outdated outlines are caught
+        // structurally rather than by expiry. Fall through to rebuild below.
+        if (livePathMatchesCache(cachedRoot, currentEpoch.value)) {
+          root.value = cachedRoot
+          isLoadedFromCache.value = true
+          cacheSavedAt.value = cached.savedAt
+          hasTraversed.value = true
+          syncCachedOutlineForCurrentEpoch(root.value, currentEpoch.value)
+          return
+        }
+        console.warn('Cached epoch outline does not match the live timeline structure; rebuilding.')
+        clearCachedOutline(key)
+      }
+    }
+
+    // No cache. With automatic traversal disabled, build the outline from the live path only
+    // rather than stepping through the whole timeline; the user can click Reindex Timeline.
     if (!autoTraverse.value) {
       refreshTree()
       return
@@ -471,18 +543,6 @@ export const useEpochTree = createGlobalState(() => {
     if (!canUseLocalStorage()) {
       console.warn('Epoch outline cache unavailable; falling back to direct traversal')
       await traverseTimeline()
-      return
-    }
-
-    const cached = loadCachedOutline(key)
-    if (cached) {
-      root.value = hydrateEpochNode(cached.root)
-      isLoadedFromCache.value = true
-      cacheSavedAt.value = cached.savedAt
-      hasTraversed.value = true
-      if (root.value) {
-        syncCachedOutlineForCurrentEpoch(root.value, currentEpoch.value)
-      }
       return
     }
 
