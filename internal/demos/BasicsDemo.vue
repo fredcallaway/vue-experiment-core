@@ -40,10 +40,17 @@ const example = reactive<{ choice?: string }>({})
           on: the <b>epoch</b>.
         </p>
         <p>
-          The other demos (see the <NuxtLink to="/demo">demo index</NuxtLink>)
+          The <NuxtLink to="/demo">other demos</NuxtLink>
           drill into specific features. Start here, then explore those once the
           basics click.
         </p>
+        <div card-info >
+          <h3>Tip</h3>
+
+          <!-- TODO instruction to open this file and follow along -->
+          <!-- MAYBE set it up to render the code from this file in the browser -->
+
+        </div>
         <PContinue/>
       </EPage>
 

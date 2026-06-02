@@ -67,10 +67,13 @@ const onGuardedChoice = (value: string) => {
         <div font-bold>Buttons</div>
         <p>
           <code>PButton</code> emits <code>@click</code> with its <code>value</code>;
-          <code>PButtons</code> renders several from a space-separated list. Both take
-          <code>:disabled</code>, and <code>once</code> removes a button after its
+          <code>PButtons</code> renders several from a list (separated by space, comma, or |).
+          
+          <!-- TODO make once work on PButtons -->
+          Both take <code>:disabled</code>, and <code>once</code> removes a button after its
           first click.
         </p>
+        
         <PButtons values="red green blue" @click="(v) => state.choice = v" />
         <div v-if="state.choice" text-green>You clicked <b>{{ state.choice }}</b>.</div>
       </EPage>
@@ -121,6 +124,7 @@ const onGuardedChoice = (value: string) => {
       </EPage>
 
       <!-- ===================== Gating input ===================== -->
+       <!-- TODO remove this section (and associated code) -->
       <EPage @mounted="enableNext" name="gating" flex-col gap-4>
         <div font-bold>Gating input during transitions</div>
         <p>
