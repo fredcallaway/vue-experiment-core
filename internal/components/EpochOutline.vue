@@ -11,6 +11,7 @@ const {
   outlineStaleReason,
   markCachedOutlineStale,
   reindexTimeline,
+  autoTraverse,
 } = useEpochTree()
 
 const collapsed = ref<Record<string, boolean>>({})
@@ -415,16 +416,20 @@ const indentBase = 8
     :style="{ height: `${outlineHeight}px`, minWidth: `${maxSeenWidth}px` }"
   >
     <h2 ml2 mb0 shrink-0>Epochs</h2>
-    <IconButton
-      absolute
-      right-1
-      top-1
-      icon="i-mdi-refresh"
-      :title="isOutlineStale ? (outlineStaleReason ?? 'Epoch outline is stale. Reindex Timeline.') : 'Reindex Timeline'"
-      :tone="isOutlineStale ? 'danger' : 'default'"
-      :disabled="isTraversing || isJumping"
-      @click="reindexTimeline"
-    />
+    <div absolute right-1 top-1 flex="~ items-center gap-1">
+      <IconToggle
+        v-model="autoTraverse"
+        label="Automatic Traversal"
+        icon="i-mdi-map-search"
+      />
+      <IconButton
+        icon="i-mdi-refresh"
+        :title="isOutlineStale ? (outlineStaleReason ?? 'Epoch outline is stale. Reindex Timeline.') : 'Reindex Timeline'"
+        :tone="isOutlineStale ? 'danger' : 'default'"
+        :disabled="isTraversing || isJumping"
+        @click="reindexTimeline"
+      />
+    </div>
 
     <!-- <EpochControls w-fit class="py0! ml2"  /> -->
 

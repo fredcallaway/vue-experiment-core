@@ -235,6 +235,10 @@ export const useEpochTree = createGlobalState(() => {
   // The page the current outline belongs to. Used to key the cache and detect page switches.
   const pageKey = () => route.path
 
+  // When off, the outline is built only from the live path (no full traversal of the timeline).
+  // This avoids stepping through the whole experiment just to discover epochs.
+  const autoTraverse = useSessionStorage('epoch-outline-auto-traverse', true)
+
   const root = ref<EpochNode | null>(null)
   const isTraversing = ref(false)
   const hasTraversed = ref(false)
@@ -458,6 +462,12 @@ export const useEpochTree = createGlobalState(() => {
     hasInitializedOutline.value = true
     loadedPageKey.value = key
 
+    // Automatic traversal disabled: build the outline from the live path only.
+    if (!autoTraverse.value) {
+      refreshTree()
+      return
+    }
+
     if (!canUseLocalStorage()) {
       console.warn('Epoch outline cache unavailable; falling back to direct traversal')
       await traverseTimeline()
@@ -538,5 +548,6 @@ export const useEpochTree = createGlobalState(() => {
     traverseTimeline,
     reindexTimeline,
     clearCachedOutline,
+    autoTraverse,
   }
 })
