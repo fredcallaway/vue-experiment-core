@@ -105,7 +105,7 @@ const onGuardedChoice = (value: string) => {
       </EPage>
 
       <!-- ===================== promiseKeyPress / onKeyPress (script-side) ===================== -->
-      <EPage @mounted="enableNext" name="keys-script" flex-col gap-4>
+      <EPage @mounted="enableNext" name="keysScript" flex-col gap-4>
         <div font-bold>Keys in script</div>
         <p>
           <code>promiseKeyPress('F J')</code> resolves on the next matching key (with

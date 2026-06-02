@@ -12,6 +12,11 @@
 // and (4) ends itself with epoch.done(). Optionally it declares a data view that turns
 // its events into export rows. EChoice.vue is annotated with each step.
 
+// EChoice lives alongside this demo (not in an auto-imported components dir), so import
+// it explicitly. The import also runs EChoice's module script, which is what registers
+// its `choice` data view below.
+import EChoice from './EChoice.vue'
+
 // Trials to run the epoch over. ERepeat gives each iteration its own epoch instance,
 // so RTs and logs are independent and per-trial.
 const trials = ['Which feels warmer?', 'Which feels closer?', 'Which feels heavier?']
