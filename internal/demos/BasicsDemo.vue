@@ -277,15 +277,11 @@ const example = reactive<{ choice?: string }>({})
             <PContinue button="Finish trial"/>
           </EPage>
         </ESequence>
-      </ESequence>
 
-      <!-- ========================= NESTING ========================= -->
-
-      <!-- Nesting gets its own section: a sequence's child can itself be a sequence,
-           which is how small self-contained pieces compose into larger structures. -->
-      <ESequence name="nesting">
-        <EPage name="intro">
-          <h2>Nesting</h2>
+        <!-- Nesting: a sequence's child can itself be a sequence. Kept within the
+             ESequence section since it's the same mechanism, just one level deeper. -->
+        <EPage name="nesting-intro">
+          <h3 font-bold>Nesting</h3>
           <p>
             Because a sequence's child is just an epoch, a child can itself be an
             <code>ESequence</code>. The inner sequence must finish before the outer one
@@ -300,7 +296,7 @@ const example = reactive<{ choice?: string }>({})
           <PContinue/>
         </EPage>
 
-        <ESequence name="example" flex-center flex-col gap-5 min-h-40 b-1 b-gray-200 rounded p6>
+        <ESequence name="nesting" flex-center flex-col gap-5 min-h-40 b-1 b-gray-200 rounded p6>
           <EPage name="step1">Step 1<PContinue/></EPage>
           <ESequence name="step2" flex-center flex-col gap-3>
             <EPage name="A">Step 2A (inner sequence)<PContinue/></EPage>
