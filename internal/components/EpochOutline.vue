@@ -158,7 +158,10 @@ const visibleRows = computed<OutlineRow[]>(() => {
 const listElRef = useTemplateRef('listEl')
 
 const runAutoCollapse = async () => {
-  const listEl = assertDefined(listElRef.value)
+  // The list element may not be attached yet when a layout refresh fires during mount
+  // (same race scrollCurrentIntoView guards against); bail until it's available.
+  const listEl = listElRef.value
+  if (!listEl) return
   const index = indexTree(assertDefined(outlineRoot.value))
 
   // Drop stale collapse state.
