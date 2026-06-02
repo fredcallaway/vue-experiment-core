@@ -36,9 +36,9 @@ const trials = [
           on: the <b>epoch</b>.
         </p>
         <p>
-          <!-- TODO: convert these to NuxtLink -->
-          The other demos (see the <code>/demo</code> index) drill into specific
-          features. Start here, then explore those once the basics click.
+          The other demos (see the <NuxtLink to="/demo">demo index</NuxtLink>)
+          drill into specific features. Start here, then explore those once the
+          basics click.
         </p>
         <PContinue/>
       </EPage>
@@ -57,15 +57,18 @@ const trials = [
           </p>
           <p>
             If you're familiar with jsPsych, an epoch combines the idea of a "timeline" and a "plugin"
-            into one composable unit.
-            <!-- TODO expand this -->
+            into one composable unit. A leaf epoch plays the role of a plugin (a single screen with its
+            own behavior), while a branch epoch plays the role of a timeline (an ordered collection of
+            sub-epochs). The difference is that the same component can do both, and the two compose
+            without the timeline/plugin distinction baked in.
           </p>
           <p>
             For the CS nerds, the epoch system defines a hierarchical state machine where each
-            epoch is a state (that can include its own machine). You can also think of it like
-            the call stack in an executed program: epochs are like functions that can "call"
-            other epochs based on their own internal control flow.
-            <!-- TODO check that this is technically correct; adjust as needed. -->
+            epoch is a state that can contain its own machine. You can also think of it like
+            the call stack in a running program: the active path from the root down to the current
+            leaf is a stack of nested epochs, and a branch epoch "calls" its children based on its
+            own internal control flow — when a child finishes, control returns to the parent, which
+            decides what comes next.
           </p>
           <PContinue/>
         </EPage>
@@ -82,17 +85,11 @@ const trials = [
             counter or running bonus, will be defined in higher-level branch epochs (the block).
           </p>
           <p>
-            <!-- TODO check if epoch ids are guaranteed to be unique.
-             In practice they almost (?) always are unique because ESequence and ERepeat
-             add indices. Perhaps a sophisticated user could break this somehow. Should
-             we add a check for this in useEpoch? If so flag it as a possible followup. -->
-            <!-- TODO decide whether it is important for users to know about ids at this point.
-             I think it might only become relevant when we start talking about data logging.
-             But perhaps it's good foundation.
-             -->
-            Every epoch has a unique <b>id</b> that identifies its place in the tree.
+            Every epoch has an <b>id</b> that identifies its place in the tree.
             An epoch's id is formed by attaching its name to its parent's id
             (with indices inserted in brackets for multistep epochs; discussed later).
+            Because <code>ESequence</code> and <code>ERepeat</code> insert a step
+            index, sibling epochs get distinct ids even when they share a name.
             The id of the current epoch is <code>{{ currentEpoch.id }}</code>.
           </p>
           <p>
@@ -102,17 +99,30 @@ const trials = [
           <PContinue/>
         </EPage>
 
-        <!-- TODO page introducing components and template style. Give a tiny bit
-         of background for users that aren't (yet) familiar with Vue along with a
-         pointer to a good beginner Vue tutorial.
-         
-         This page should include a rendered code example showing a super minimal
-         example template. 
-         
-         It could come after the next page or be integrated with that page.
-         The requirement is to not use "epoch components" before saying that epochs
-         have associated components (and what components are).
-        -->
+        <EPage name="components">
+          <h2>Epochs are components</h2>
+          <p>
+            You build an experiment by writing Vue <b>components</b> — reusable
+            chunks of UI defined in <code>.vue</code> files. Each epoch has an
+            associated component, and you compose epochs the same way you nest HTML:
+            by nesting tags in a <code>&lt;template&gt;</code>. New to Vue? The
+            <a href="https://vuejs.org/tutorial/" target="_blank" rel="noopener">official tutorial</a>
+            is a good 20-minute introduction; you only need the basics.
+          </p>
+          <p>Here is about the smallest experiment you can write:</p>
+          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;ESequence name="experiment"&gt;
+  &lt;EPage name="hello"&gt;
+    Hello, world!
+    &lt;PContinue/&gt;
+  &lt;/EPage&gt;
+&lt;/ESequence&gt;</code></pre>
+          <p mt-3>
+            It renders a single screen with the text and a continue button. The
+            very page you're reading is built the same way — out of an
+            <code>ESequence</code> of <code>EPage</code>s, which you'll meet next.
+          </p>
+          <PContinue/>
+        </EPage>
 
         <EPage name="building">
           <h2>The building blocks</h2>
@@ -132,31 +142,54 @@ const trials = [
         </EPage>
       </ESequence>
 
-      <!-- TODO all of the following sections should include some example code  -->
-      <!-- TODO add a section on EPage (can be brief, maybe just one page) -->
+      <!-- ========================= EPAGE ========================= -->
+
+      <ESequence name="page">
+        <EPage name="intro">
+          <h2>EPage</h2>
+          <p>
+            <code>EPage</code> is the simplest epoch: it shows one screen and
+            finishes when the participant continues. Most leaves of your tree are
+            <code>EPage</code>s — instruction screens, individual trials, feedback.
+          </p>
+          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;EPage name="instructions"&gt;
+  Press the button when you're ready.
+  &lt;PContinue/&gt;
+&lt;/EPage&gt;</code></pre>
+          <p mt-3>
+            <code>PContinue</code> is one of several <b>affordances</b> — small
+            components that let the participant end the current epoch. A page
+            finishes when its epoch is told it's <code>done</code>, which usually
+            happens when an affordance like <code>PContinue</code> is activated.
+          </p>
+          <PContinue/>
+        </EPage>
+      </ESequence>
 
       <!-- ========================= ESEQUENCE ========================= -->
 
       <!-- ESequence is the workhorse for showing things one at a time. Each direct
            child is an epoch. The sequence shows its first child; when that child
            finishes, it advances to the next; when the last child finishes, the
-           sequence itself finishes — handing control up to its own parent. -->
+           sequence itself finishes — handing control up to its own parent. The
+           done()/render mechanics are intentionally kept in comments rather than
+           prose; see also the "non-epoch children" note in the example below. -->
       <ESequence name="sequence">
 
         <EPage name="intro">
           <h2>ESequence</h2>
           <p>
-            <!-- TODO make the language here less implementationy.
-             The role of rendering and done() should be kept in comments.
-             The comment should point to the one below about non-epoch children.
-              -->
-            An <code>ESequence</code> renders its children one at a time. 
-            When a child is rendered, its associated epoch begins. When it
-            ends (i.e., calls `done()`), ESequence renders the next child. This
-            continues until there are no children left. 
-            Then the ESesquence calls `done()`, 
-            returning control to its parent (most likely, another ESequence).
+            An <code>ESequence</code> shows its children one at a time. It starts
+            with the first child; when that child finishes, the sequence moves on
+            to the next; and when the last child finishes, the sequence itself
+            finishes, handing control back to its parent (usually another
+            <code>ESequence</code>).
           </p>
+          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;ESequence name="block"&gt;
+  &lt;EPage name="intro"&gt;...&lt;/EPage&gt;
+  &lt;EPage name="trial"&gt;...&lt;/EPage&gt;
+  &lt;EPage name="outro"&gt;...&lt;/EPage&gt;
+&lt;/ESequence&gt;</code></pre>
           <PContinue/>
         </EPage>
 
@@ -232,6 +265,12 @@ const trials = [
             iteration finishes and is itself done after the last one — exactly the
             <code>done</code>-propagation you saw with <code>ESequence</code>.
           </p>
+          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;ERepeat name="trials" :count="trials.length" v-slot="{ step }"&gt;
+  &lt;EPage name="trial"&gt;
+    The word is {{ trials[step].word }}.
+    &lt;PContinue/&gt;
+  &lt;/EPage&gt;
+&lt;/ERepeat&gt;</code></pre>
           <PContinue/>
         </EPage>
 
