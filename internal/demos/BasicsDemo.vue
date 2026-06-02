@@ -8,7 +8,7 @@
 // The epoch tree lives in this component (not directly in the page) so that editing
 // it triggers component-level HMR, which patches in place and preserves the running
 // epoch state. A page edit instead tears the page down and rebuilds it, which resets
-// currentEpoch to __TOP_EPOCH__ and breaks the outline. See pages/demo/basics.vue.
+// currentEpoch to __TOP_EPOCH__ and breaks the outline. See internal/demos/manifest.ts.
 
 const currentEpoch = useCurrentEpoch()
 
@@ -24,7 +24,7 @@ const trials = [
 
 <template>
   <div p4>
-    <ESequence name=basics>
+    <ESequence name="basics">
 
       <!-- ========================= WELCOME ========================= -->
 
@@ -77,7 +77,7 @@ const trials = [
           <h2>The epoch tree</h2>
           <p>
             Because epochs nest, your experiment forms a <b>tree</b>. Epochs that have
-            children (e.g. `ESequence` and `ERepeat`) are <b>branches</b>.
+            children (e.g. <code>ESequence</code> and <code>ERepeat</code>) are <b>branches</b>.
             Epochs without children are <b>leaves</b>.
             At any moment, exactly one leaf is active — this is the <b>current epoch</b>.
             In most cases, it will define the main content that the participant is interacting
@@ -207,7 +207,7 @@ const trials = [
             <PContinue/>
           </EPage>
 
-          <!-- Note that this child is *not* an epoch, but just a plain div.O
+          <!-- Note that this child is *not* an epoch, but just a plain div.
                This is fine because the div contains an epoch. Otherwise,
                a placeholder leaf epoch would start, and it would have no
                natural way to end.
@@ -221,7 +221,7 @@ const trials = [
               must finish before the outer one advances. This is how a small,
               self-contained piece becomes part of a larger structure — the active
               epoch is now {{ currentEpoch.id }}.
-            </p>This 
+            </p>
             <ESequence name="nested" flex-center flex-col gap-5 min-h-40 b-1 b-gray-200 rounded p6>
               <EPage name="step1"> Step 1 <PContinue/></EPage>
               <ESequence name="2" flex-center flex-col gap-3>
