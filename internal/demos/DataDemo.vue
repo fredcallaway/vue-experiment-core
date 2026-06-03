@@ -90,7 +90,7 @@ const rows = computed(() =>
         how you turn the raw stream into tidy export rows.
       </p>
       <p>
-        As you read, watch the <b>EventView</b> panel on the right: it shows the live
+        As you read, watch the <b>Events</b> panel on the right: it shows the live
         event log for this session. Every event you log shows up there, so it's the
         first place to look when checking that your task is recording what you expect.
       </p>
