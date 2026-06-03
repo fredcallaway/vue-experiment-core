@@ -8,6 +8,7 @@ type FormattedEvent = {
   data?: Record<string, any>
   isError?: boolean
   errorMinimal?: string
+  isJumpDivider?: boolean
   cardClass?: string
 }
 
@@ -58,11 +59,49 @@ const formatErrorEvent = (data: Record<string, any>) => {
   }
 }
 
+// While a jump is in progress we buffer events (starting with jump.start) for
+// up to JUMP_COLLAPSE_TIMEOUT_MS. If jump.success arrives, the whole buffer is
+// collapsed into a single divider. If an error arrives or the timer elapses, the
+// buffered events are flushed and render as usual.
+const JUMP_COLLAPSE_TIMEOUT_MS = 500
+let jumpBuffer: FormattedEvent[] | null = null
+let jumpTimer: ReturnType<typeof setTimeout> | undefined
+
+const flushJumpBuffer = () => {
+  if (jumpTimer !== undefined) {
+    clearTimeout(jumpTimer)
+    jumpTimer = undefined
+  }
+  if (jumpBuffer === null) return
+  const buffered = jumpBuffer
+  jumpBuffer = null
+  // buffered holds events oldest-first; unshift in order to keep newest-first.
+  for (const event of buffered) events.unshift(event)
+}
+
+const collapseJumpBuffer = (timestamp: number) => {
+  if (jumpTimer !== undefined) {
+    clearTimeout(jumpTimer)
+    jumpTimer = undefined
+  }
+  jumpBuffer = null
+  events.unshift({
+    eventType: 'jump',
+    timestamp,
+    isJumpDivider: true,
+  })
+}
+
+const pushEvent = (event: FormattedEvent) => {
+  if (jumpBuffer !== null) jumpBuffer.push(event)
+  else events.unshift(event)
+}
+
 useLogEventBus().on((event) => {
   if (isEpochEvent(event)) {
     const { id, ...rest } = event.data
     const caption = typeof id === 'string' ? id : undefined
-    events.unshift({
+    pushEvent({
       ...event,
       caption,
       data: R.isEmpty(rest) ? undefined : rest,
@@ -70,7 +109,7 @@ useLogEventBus().on((event) => {
   }
   else if (isParticipantEvent(event)) {
     const caption = event.eventType.slice('participant.'.length)
-    events.unshift({
+    pushEvent({
       ...event,
       caption,
       data: R.isEmpty(event.data) ? undefined : event.data,
@@ -78,9 +117,11 @@ useLogEventBus().on((event) => {
     })
   }
   else if (isErrorEvent(event)) {
+    // An error during a jump ends the wait: flush buffered events, then render.
+    flushJumpBuffer()
     const { message, ...rest } = event.data
     const { minimal } = formatErrorEvent({ message, ...rest })
-    events.unshift({
+    pushEvent({
       ...event,
       caption: message,
       data: R.isEmpty(rest) ? undefined : rest,
@@ -90,7 +131,7 @@ useLogEventBus().on((event) => {
     })
   }
   else {
-    events.unshift({
+    pushEvent({
       ...event,
       data: R.isEmpty(event.data) ? undefined : event.data,
     })
@@ -98,8 +139,12 @@ useLogEventBus().on((event) => {
 })
 
 useDebugBus().on(({message, info}) => {
-  if (message.startsWith('jump.')) {
-    events.unshift({
+  if (message === 'jump.start') {
+    // Begin buffering. jump.start itself is the first buffered event.
+    flushJumpBuffer()
+    jumpBuffer = []
+    jumpTimer = setTimeout(flushJumpBuffer, JUMP_COLLAPSE_TIMEOUT_MS)
+    pushEvent({
       eventType: message,
       timestamp: Date.now(),
       caption: info.epochId,
@@ -107,7 +152,20 @@ useDebugBus().on(({message, info}) => {
     })
     return
   }
-  events.unshift({
+  if (message === 'jump.success') {
+    if (jumpBuffer !== null) collapseJumpBuffer(Date.now())
+    return
+  }
+  if (message.startsWith('jump.')) {
+    pushEvent({
+      eventType: message,
+      timestamp: Date.now(),
+      caption: info.epochId,
+      cardClass: 'card-purple',
+    })
+    return
+  }
+  pushEvent({
     eventType: message,
     timestamp: Date.now(),
     data: info,
@@ -277,6 +335,10 @@ onMounted(() => {
       cancelAnimationFrame(measureRaf)
       measureRaf = 0
     }
+    if (jumpTimer !== undefined) {
+      clearTimeout(jumpTimer)
+      jumpTimer = undefined
+    }
   })
 })
 
@@ -326,6 +388,10 @@ onUpdated(() => {
       @wheel="onHorizontalWheel"
     >
       <template v-for="(event, index) in filteredEvents" :key="`${event.timestamp}-${index}`">
+        <div v-if="event.isJumpDivider" flex="~ row items-center justify-center" w="260px" min-w="260px" h-full opacity-50 text-xs font-bold>
+          ────── jump ──────
+        </div>
+        <template v-else>
         <template v-if="event.data !== undefined">
           <Teleport to="body">
             <div
@@ -388,6 +454,7 @@ onUpdated(() => {
             </div>
           </template>
         </div>
+        </template>
       </template>
     </div>
   </div>
@@ -417,6 +484,10 @@ onUpdated(() => {
     </div>
     <div class="subtle-scrollbar flex-1 min-h-0" flex="~ col gap-2" overflow-y-auto>
       <template v-for="(event, index) in filteredEvents" :key="`${event.timestamp}-${index}`">
+        <div v-if="event.isJumpDivider" flex="~ row items-center justify-center" my-1 opacity-50 text-xs font-bold>
+          ────── jump ──────
+        </div>
+        <template v-else>
         <template v-if="event.data !== undefined">
           <Teleport to="body">
             <div
@@ -479,6 +550,7 @@ onUpdated(() => {
             </div>
           </template>
         </div>
+        </template>
       </template>
     </div>
   </div>
