@@ -257,41 +257,37 @@ const trials = [
           </p>
           <DemoCode code='
             <ESequence name="trial">
+              <EPage name="ready">...</EPage>
               <EPage name="stimulus">...</EPage>
               <EPage name="response">...</EPage>
               <EPage name="feedback">...</EPage>
             </ESequence>
-          '/>
-          <p mt-3>
-            Here is that <code>stimulus → response → feedback</code> trial as a running
-            example. Each page is a separate epoch; when one finishes the sequence advances
-            to the next.
-          </p>
-          <div text-sm text-gray >current epoch: {{  currentEpoch.id }}</div>
-          <ESequence name="seq" flex-center flex-col gap-5 border-2 p2 h-60 >
-            <EPage name="ready">
-              <PContinue button=start />
-            </EPage>
+          '>
+            <ESequence name="seq" flex-center flex-col gap-5 border-2 p2 h-60 >
+              <EPage name="ready">
+                <PContinue button=start />
+              </EPage>
 
-            <EPage name="stimulus" duration=1000>
-              <div text-2xl font-bold text-red>red</div>
-            </EPage>
+              <EPage name="stimulus" duration=1000>
+                <div text-2xl font-bold text-red>red</div>
+              </EPage>
 
-            <EPage name="response" v-slot="{ done }" flex-center flex-col gap-3>
-              <p>Click the color the word was printed in.</p>
-              <PButtons
-                values="red blue"
-                classes="btn-red btn-blue"
-                @click="(v) => { state.choice = v; done() }"
-              />
-            </EPage>
+              <EPage name="response" v-slot="{ done }" flex-center flex-col gap-3>
+                <p>Click the color the word was printed in.</p>
+                <PButtons
+                  values="red blue"
+                  classes="btn-red btn-blue"
+                  @click="(v) => { state.choice = v; done() }"
+                />
+              </EPage>
 
-            <EPage name="feedback">
-              <p v-if="state.choice === 'red'" text-green text-xl font-bold>Correct!</p>
-              <p v-else text-red font-bold>Incorrect — the word was red.</p>
-              <PContinue button="Finish trial"/>
-            </EPage>
-          </ESequence>
+              <EPage name="feedback">
+                <p v-if="state.choice === 'red'" text-green text-xl font-bold>Correct!</p>
+                <p v-else text-red font-bold>Incorrect — the word was red.</p>
+                <PContinue button="Finish trial"/>
+              </EPage>
+            </ESequence>
+          </DemoCode>
         </EPage>
 
         <EPage name=temporal>
@@ -345,9 +341,13 @@ const trials = [
             <code>{{ currentEpoch.id }}</code>.
           </p>
           <DemoCode layout="column" code='
-            <ESequence name="block">
-              <ESequence name="trial">...</ESequence>
-              <EPage name="break">...</EPage>
+            <ESequence name="block" flex-center flex-col gap-5>
+              <EPage name="step1">Step 1<PContinue/></EPage>
+              <ESequence name="step2" flex-center flex-col gap-3>
+                <EPage name="A">Step 2A (inner sequence)<PContinue/></EPage>
+                <EPage name="B">Step 2B (inner sequence)<PContinue/></EPage>
+              </ESequence>
+              <EPage name="step3">Step 3<PContinue button="Continue"/></EPage>
             </ESequence>
           '>
             <ESequence name="block" flex-center flex-col gap-5>
