@@ -35,8 +35,12 @@ const outlineScanAttemptKey = (pageKey: string) => `${outlineCacheKey(pageKey)}:
 const OUTLINE_WORKER_FLAG = 'outlineWorker'
 const OUTLINE_WORKER_CHANNEL = 'epoch-outline-worker'
 const isOutlineWorker = () => import.meta.client && getUrlFlag(OUTLINE_WORKER_FLAG)
-// Message a worker broadcasts after it saves a fresh cache for a route, so consumers can reload it.
-type OutlineWorkerMessage = { type: 'outline-updated'; pageKey: string }
+// Messages over the worker channel. The consumer asks the worker to (re)traverse a route
+// ('request-traversal', e.g. on Reindex or when its cache is missing/diverged); the worker
+// announces a freshly saved cache ('outline-updated') so consumers can swap it into place.
+type OutlineWorkerMessage =
+  | { type: 'request-traversal'; pageKey: string }
+  | { type: 'outline-updated'; pageKey: string }
 
 const getStepIndex = (parentId: string, childId: string) => {
   const escapedParentId = parentId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -390,12 +394,13 @@ export const useEpochTree = createGlobalState(() => {
     channel?.postMessage({ type: 'outline-updated', pageKey: key } satisfies OutlineWorkerMessage)
   }
 
-  // The consumer's only way to obtain a full outline: it cannot traverse (ADR 0003), so the iframe
-  // worker does it. The iframe is mounted by the dev layout and re-traverses on mount/HMR, so this
-  // is currently a no-op marker — the broadcast listener below is what actually applies the result.
+  // The consumer can't traverse (ADR 0003), so it asks the iframe worker to do it and applies the
+  // result when the worker broadcasts 'outline-updated'. Sent on Reindex and when the cache is
+  // missing or diverged.
   const requestWorkerTraversal = () => {
     if (isOutlineWorker()) return
-    console.debug('Outline: awaiting worker traversal for', pageKey())
+    console.debug('Outline: requesting worker traversal for', pageKey())
+    channel?.postMessage({ type: 'request-traversal', pageKey: pageKey() } satisfies OutlineWorkerMessage)
   }
 
   // Swap a worker-produced outline into place without reloading the tab.
@@ -624,9 +629,17 @@ export const useEpochTree = createGlobalState(() => {
     refreshTree()
   }
 
-  // The worker tab: traverse the timeline, save the cache, and broadcast. initializeOutline (run
-  // from onMounted) already calls traverseTimeline({ save: true }) when isOutlineWorker(); re-run on
-  // HMR so a structure change during development produces a fresh outline without a manual reindex.
+  // Worker: re-traverse and re-broadcast when a consumer requests it (Reindex, missing/diverged
+  // cache). traverseTimeline early-returns while already traversing, so overlapping requests are
+  // harmless. Only handle requests for the route this worker is pinned to.
+  const handleWorkerRequest = (key: string) => {
+    if (key !== pageKey()) return
+    console.debug('Outline worker: traversal requested for', key)
+    void traverseTimeline({ save: true, force: true })
+  }
+
+  // Worker also re-traverses on HMR so a structure change during development refreshes the outline
+  // without a manual reindex.
   const runAsWorker = () => {
     if (import.meta.hot) {
       import.meta.hot.accept(() => {
@@ -643,13 +656,20 @@ export const useEpochTree = createGlobalState(() => {
   // NOTE: this will miss epochs that are not always created (e.g. because condition or randomness)
   onMounted(async () => {
     isMounted = true
-    if (isOutlineWorker()) runAsWorker()
-    // Consumer tab: apply outlines the worker produces, in place, without reloading.
-    if (!isOutlineWorker() && channel) {
+    if (channel) {
       channel.onmessage = (event: MessageEvent<OutlineWorkerMessage>) => {
-        if (event.data?.type === 'outline-updated') reloadOutlineFromCache(event.data.pageKey)
+        const msg = event.data
+        if (!msg) return
+        if (isOutlineWorker()) {
+          // Worker applies consumer requests; ignores its own update announcements.
+          if (msg.type === 'request-traversal') handleWorkerRequest(msg.pageKey)
+        } else {
+          // Consumer applies worker-produced outlines in place, without reloading.
+          if (msg.type === 'outline-updated') reloadOutlineFromCache(msg.pageKey)
+        }
       }
     }
+    if (isOutlineWorker()) runAsWorker()
     await initializeOutline()
   })
 
