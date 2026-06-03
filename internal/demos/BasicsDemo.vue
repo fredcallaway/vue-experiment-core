@@ -386,7 +386,7 @@ const trials = [
           </p>
 
           <DemoCode layout="column" :code="`
-            <ERepeat name='trials' :count='trials.length' v-slot='{ step, nSteps }'>
+            <ERepeat name=trials :count='trials.length' v-slot='{ step, nSteps }'>
               <div>Trial {{ step + 1 }} / {{ nSteps }}</div>
               <EPage name='stimulus'>
                 The word is {{ trials[step].word }}.
@@ -401,7 +401,7 @@ const trials = [
               <!-- `trials[step]` — the iteration index selects this iteration's data. -->
               <EPage name="stimulus" flex-center flex-col gap-4>
                 The word is
-                <span font-bold :class="`text-${trials[step].color}`">{{ trials[step].word }}</span>.
+                <span font-bold :class="`text-${trials[step].color}`">{{ trials[step].word }}</span>
                 <PContinue/>
               </EPage>
             </ERepeat>
