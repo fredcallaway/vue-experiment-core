@@ -403,14 +403,15 @@ export const useEpochTree = createGlobalState(() => {
     channel?.postMessage({ type: 'request-traversal', pageKey: pageKey() } satisfies OutlineWorkerMessage)
   }
 
-  // Swap a worker-produced outline into place without reloading the tab.
+  // Swap a worker-produced outline into place without reloading the tab. The worker has just
+  // finished a clean traversal, so its tree is authoritative — we do not re-validate it against the
+  // consumer's live path here. (After an in-place HMR the consumer's live path can still reference
+  // stale epoch instances, which would wrongly fail livePathMatchesCache and drop a valid update.)
   const reloadOutlineFromCache = (key: string) => {
     if (key !== pageKey()) return
     const cached = loadCachedOutline(key)
     if (!cached) return
-    const cachedRoot = hydrateEpochNode(cached.root)
-    if (!livePathMatchesCache(cachedRoot, currentEpoch.value)) return
-    root.value = cachedRoot
+    root.value = hydrateEpochNode(cached.root)
     isLoadedFromCache.value = true
     cacheSavedAt.value = cached.savedAt
     hasTraversed.value = true
@@ -525,7 +526,16 @@ export const useEpochTree = createGlobalState(() => {
       await nextTick()
       const liveRoot = getLiveRoot(previous)
       if (liveRoot) setCurrentEpoch(liveRoot)
-      await jumpToEpoch(previous.id)
+      // Restore the pre-traversal position. This can throw when the structure changed during the
+      // walk (e.g. an HMR edit removed/renamed `previous.id`): the jump fails to find the old epoch.
+      // It must not abort the save below — the discovered tree is still valid — so we guard it and,
+      // on failure, fall back to the root so the live structure stays mounted for refreshTree.
+      try {
+        await jumpToEpoch(previous.id)
+      } catch (error) {
+        console.warn(`Could not restore position to ${previous.id} after traversal; using root.`, error)
+        if (liveRoot) await jumpToEpoch(liveRoot.id).catch(() => {})
+      }
       refreshTree()
       if (traversalSucceeded && options.save && root.value) {
         saveCachedOutline(root.value)
@@ -565,6 +575,14 @@ export const useEpochTree = createGlobalState(() => {
     hasInitializedOutline.value = true
     loadedPageKey.value = key
 
+    // The worker exists only to produce a fresh outline, so it ignores any cache and always
+    // traverses. This is what makes an HMR reload of the worker iframe pick up structural changes:
+    // were it to honor a still-fresh cache here, an edit would leave the outline stale.
+    if (isOutlineWorker()) {
+      await traverseTimeline({ save: true })
+      return
+    }
+
     // A cached outline (e.g. from a previous traversal or a Reindex Timeline click) is always
     // honored, even when automatic traversal is off: autoTraverse only governs whether we *start*
     // a traversal on our own, not whether we use one that already ran.
@@ -586,13 +604,6 @@ export const useEpochTree = createGlobalState(() => {
         console.warn('Cached epoch outline does not match the live timeline structure; rebuilding.')
         clearCachedOutline(key)
       }
-    }
-
-    // The worker is the only context that traverses: it steps the timeline, saves the cache, and
-    // broadcasts. Run it directly here when we *are* the worker.
-    if (isOutlineWorker()) {
-      await traverseTimeline({ save: true })
-      return
     }
 
     // Consumer tab, no usable cache. Show a partial outline from the live path immediately so the
@@ -638,15 +649,23 @@ export const useEpochTree = createGlobalState(() => {
     void traverseTimeline({ save: true, force: true })
   }
 
-  // Worker also re-traverses on HMR so a structure change during development refreshes the outline
-  // without a manual reindex.
+  // The worker must refresh its outline when the experiment changes during development. We listen
+  // for Vite's `vite:afterUpdate`, which fires on *every* hot update regardless of which module
+  // changed — an `import.meta.hot.accept` here would only catch edits to this file, missing the
+  // experiment-component edits that actually change the structure.
+  //
+  // We reload the worker document rather than re-traversing in place: in-place HMR leaves stale
+  // epoch instances behind (TOP_EPOCH.children is never pruned on unmount), so re-traversing over
+  // the polluted tree merges the old and new structures. A full reload of the (invisible, stateless)
+  // worker gives a clean epoch tree; its fresh mount then traverses and broadcasts as usual.
+  // Debounced because one edit fires several updates.
   const runAsWorker = () => {
-    if (import.meta.hot) {
-      import.meta.hot.accept(() => {
-        console.debug('Outline worker: HMR update; re-traversing')
-        void reindexTimeline()
-      })
-    }
+    if (!import.meta.hot) return
+    const reload = useDebounceFn(() => {
+      console.debug('Outline worker: HMR update; reloading worker for a clean traversal')
+      if (import.meta.client) window.location.reload()
+    }, 300)
+    import.meta.hot.on('vite:afterUpdate', reload)
   }
 
   // React both to epoch changes (tree updates within a page) and route changes (page switches).
