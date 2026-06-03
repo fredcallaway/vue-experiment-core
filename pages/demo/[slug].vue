@@ -12,7 +12,7 @@ const demo = computed(() => demos[slug.value])
 
 // use a narrow default for demos
 // can override in the component file
-defineWindowSize({ width: 600, height: 800 })
+defineWindowSize({ width: 700, height: 800 })
 
 </script>
 
