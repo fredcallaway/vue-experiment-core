@@ -1,195 +1,140 @@
-# ADR 0003: Run outline traversal off-screen to avoid disrupting the participant
+# ADR 0003: Run outline traversal in a hidden iframe worker (no participant-tab reload)
 
-- **Status:** Proposed (feasibility study; no decision)
+- **Status:** Accepted (direction chosen; implementation pending)
 - **Date:** 2026-06-02
 - **Scope:** `core/` template layer, `simplified` branch
 - **Related:** [0001-remove-pseudo-leaf.md](./0001-remove-pseudo-leaf.md), [0002-epoch-id-not-unique-over-time.md](./0002-epoch-id-not-unique-over-time.md)
 - **Relevant files:** `core/internal/composables/useEpochTree.ts`, `core/internal/components/EpochOutline.vue`,
-  `core/composables/useEpoch.ts`, `core/composables/useDataWriter.ts`, `core/utils/globals.ts`,
-  `core/composables/useRandom.ts`, `core/composables/useMultipleTabDetection.ts`
+  `core/layouts/default.vue`, `core/pages/dev.vue`, `core/composables/useEpoch.ts`,
+  `core/composables/useDataWriter.ts`, `core/composables/useMultipleTabDetection.ts`
 
 ## Context
 
 The epoch outline (the "Epochs" dev panel) shows the full structure of an experiment timeline.
-Discovering that structure is expensive: the system does not have a static description of the
-tree, so it learns the tree by **actually stepping the live experiment**. `traverseTimeline`
-(`useEpochTree.ts:402`) watches `currentEpoch` and repeatedly calls `epoch.done()` / `goTo()`
-to walk from the current position all the way to `__TOP_EPOCH__`, with the `DataWriter`
-disabled (`useDataWriter().withDisabled(...)`), recording each epoch it passes through. When it
-finishes it jumps the participant back to where they were and saves the serialized tree to
-`localStorage` (`saveCachedOutline`).
+There is no static description of that structure: the system discovers it by **actually stepping
+the live experiment**. `traverseTimeline` (`useEpochTree.ts:402`) watches `currentEpoch` and
+repeatedly calls `epoch.done()` / `goTo()` to walk from the current position to `__TOP_EPOCH__`
+with the `DataWriter` disabled, recording each epoch. When it finishes it tries to restore the
+developer's position (`setCurrentEpoch(liveRoot)` + `jumpToEpoch(previous.id)` + `refreshTree()`,
+`useEpochTree.ts:477-480`) and then, when `saveAndReload` is set, does a hard
+`window.location.reload()` (`useEpochTree.ts:487`).
 
-This is disruptive in two ways:
+**That reload is the friction this ADR removes.** It is disruptive to the *developer* — it
+flashes the page and discards scroll position and transient UI state every time the outline is
+(re)built, e.g. after the structure changes during development.
 
-1. **During traversal**, the live experiment is driven forward through every epoch — components
-   mount and unmount, phases advance and loop, animations are suppressed. The participant's view
-   is hijacked for the duration.
-2. **After traversal**, when `saveAndReload` is set, the code does a hard
-   `window.location.reload()` (`useEpochTree.ts:487`). Stepping the whole timeline and jumping
-   back cannot be guaranteed to restore pristine component / phase-loop / RNG-consumption state,
-   so the reload exists to put the participant back on a clean load that matches the freshly
-   saved outline. **That reload is the core disruption this ADR is about.**
+The reload is not gratuitous. Stepping the experiment forward and jumping back **cannot** restore
+pristine page-level state: experiment components can have arbitrary mount/unmount side effects,
+and we do not control or constrain that state. **In-place recovery after a same-tab traversal is
+therefore impossible by assumption** — which is exactly why the reload exists, and why simply
+deleting it (or trying to clean up after the jump-back) is not an option. If the outline is to be
+produced without disrupting the developer, **the traversal must not run in the developer's tab at
+all.**
 
-To avoid both, traversal is gated behind `autoTraverse` (default on, toggle in the panel) and
-cached aggressively: the cache is honored across reloads and validated *structurally* against
-the live path rather than by a short TTL (`livePathMatchesCache`), so a saved outline survives a
-long time. But the *first* discovery on any new page, and any rebuild after the structure
-changes, still pays the traverse-and-reload cost.
+Two existing properties make an off-tab producer cheap:
 
-**Goal:** keep the outline current without ever stepping or reloading the participant's tab.
-Run the traversal somewhere off-screen, and have the participant's tab pick up the result.
+- **The outline cache is already cross-context.** It is plain serializable JSON
+  (`CachedEpochOutline`) in route-keyed `localStorage` (`OUTLINE_CACHE_PREFIX`), shared across
+  same-origin tabs, and the template already runs a `BroadcastChannel`
+  (`useMultipleTabDetection.ts`).
+- **The dev chrome is already gated.** `layouts/default.vue` renders the whole dev panel —
+  including `<EpochOutline />` — only when `devTools` is on (driven by `getUrlFlag('noDev')`). A
+  context loaded with `?noDev` renders the bare experiment with **no outline panel**, so a worker
+  cannot recurse into spawning its own worker.
 
-## Why this is even possible
+Determinism of the produced tree is **explicitly out of scope**: we assume the epoch outline is
+always the same for a given experiment, so a fresh load reconstructs the same structure.
 
-Two properties of the current system make an off-screen traversal tractable:
+## Decision
 
-- **Epoch structure is deterministic per session.** `Math.random` is globally replaced by a
-  session-seeded RNG (`globals.ts:5-15`, `useRandom.ts`). The global stream is seeded by
-  `sessionId` and is *not* persisted (`storeState` defaults false), so a **fresh load** of the
-  same `session_id` reconstructs the *same* tree — that is exactly what the participant's own tab
-  would produce on a clean reload. A second context that loads the experiment fresh with the same
-  `session_id` will traverse the identical structure. (Caveat: any epoch whose existence depends
-  on `trueRandom()`, wall-clock time, or live server state is not reproducible — see Risks.)
-- **The cache is already cross-context.** The outline lives in `localStorage` keyed by route
-  (`OUTLINE_CACHE_PREFIX`), which is shared across same-origin tabs, and the template already
-  runs a `BroadcastChannel` for multi-tab coordination (`useMultipleTabDetection.ts`). A worker
-  context can write the cache and ping the participant tab to load it — no traversal needed in
-  the participant tab at all.
+Run the traversal in a **hidden, same-origin `<iframe>` worker** (Option A below). The
+developer's tab becomes a **pure consumer**: it never traverses, never reloads, and only swaps
+`root` from the cache the worker produces.
 
-So the participant tab's job shrinks to: **never traverse; only ever load a cache that something
-else produced.** It already supports this — a cache is honored even when `autoTraverse` is off
-(`initializeOutline`, the "always honored" branch). The open question is *what* produces the
-cache and *how* the participant tab is told to refresh it without a self-reload.
+Decided parameters:
 
-## Options
+- **Refresh trigger: on HMR / structure change.** The worker re-traverses when the experiment
+  structure changes (HMR update or detected divergence) and pushes a fresh outline, which the
+  developer's tab loads in place. No manual Reindex required for the common case (Reindex remains
+  as a manual fallback).
+- **Worker isolation: force debug/dummy mode.** The worker boots with `mode: 'debug'` (the path
+  `pages/dev.vue:7-18` already uses) so its `DataWriter` never writes the real session — rather
+  than introducing a separate worker boot mode.
 
-The four options differ in *where* the off-screen traversal runs. In all of them the producer
-loads the experiment fresh at the current page with the participant's `session_id`, runs
-`traverseTimeline`, writes the route-keyed cache, and signals the participant tab to hot-swap
-the new tree into `root` (no `window.location.reload`).
+## Options considered
 
-### A. Hidden same-origin iframe (in the participant's own page)
+In all of A–C the producer loads the experiment fresh at the current route, runs
+`traverseTimeline`, writes the route-keyed cache, and signals the developer's tab to hot-swap the
+new tree into `root` — replacing `window.location.reload()` in the consumer path.
 
-The participant's page mounts an invisible `<iframe>` pointing at the dev/exp route with the
-same `session_id` (and a flag like `?outline_worker=1`). The iframe is a full, independent Nuxt
-app instance: its own Vue tree, its own `currentEpoch`, its own seeded RNG. It traverses itself,
-writes the `localStorage` cache (shared with the parent, same origin), and `postMessage`s the
-parent. The parent reloads the cache into `root` in place.
+### A. Hidden same-origin iframe — **chosen**
 
-- **Pros:** No second browser, no tooling; ships with the app. Same-origin → shared
-  `localStorage` and trivial `postMessage`. The iframe stepping itself never touches the parent's
-  DOM, components, or RNG stream, so **the participant sees nothing** and no reload is needed.
-- **Cons:** The iframe boots a second copy of the whole app (cost, memory) and a second
-  `DataWriter` / session lifecycle that must be neutralized so it does not log events or write to
-  Firebase (must force `mode: 'debug'` or a dedicated no-op writer, like `/dev` already does at
-  `dev.vue:7-18`). `useMultipleTabDetection` will see the iframe as another tab and could trip
-  multi-tab warnings / `isPrimary` logic — the worker must be excluded. Same-origin iframes share
-  the event loop with the parent, so a heavy traversal still competes for the main thread (jank,
-  not correctness).
+The developer's page mounts an invisible `<iframe>` at the same route with `?noDev` (so it
+renders no outline panel). The iframe is an independent app instance: its own Vue tree, its own
+`currentEpoch`. It traverses itself, writes the shared `localStorage` cache, and `postMessage`s /
+broadcasts the parent, which reloads the cache into `root` in place.
 
-### B. Separate browser tab (opened/owned by the participant tab)
+- **Pros:** Ships with the app; no second browser, no popup permission, no server. Same-origin →
+  shared `localStorage` and trivial messaging. The iframe stepping itself never touches the
+  parent's DOM, components, or state, so **the developer sees nothing and the tab never reloads**
+  — which is the whole goal. The parent's job shrinks to "load a cache someone else made," which
+  the code already supports (a cache is honored even when `autoTraverse` is off).
+- **Cons / work required:**
+  - The iframe is a second tab → trips `useMultipleTabDetection` (heartbeats, `isPrimary`,
+    `sessionMismatch`). The worker must be excluded from it.
+  - HMR coordination: both app instances HMR on edit; the worker must detect the structure change,
+    re-traverse, push the cache, and signal the parent to swap — correctly across HMR boundaries.
+  - Must guarantee the iframe renders no outline panel (`?noDev`) so it never spawns its own
+    worker.
+  - Resource cost (a second app instance) — judged a non-issue for a dev workflow.
 
-Like A, but the worker is a real top-level tab (`window.open` with `?outline_worker=1`), not an
-iframe. Communicates via `BroadcastChannel` (already present) + shared `localStorage`.
+### B. Separate top-level tab (`window.open`)
 
-- **Pros:** A real tab gets its own event loop, so traversal does not jank the participant tab.
-  Reuses the existing `BroadcastChannel` infra directly.
-- **Cons:** `window.open` is popup-blocked unless user-initiated; a visible extra tab is itself a
-  distraction (defeats the purpose) unless minimized/backgrounded, and background tabs are
-  throttled by the browser (timers/rAF clamped), which can stall a watcher-driven traversal that
-  depends on ticks. Same `DataWriter` and multi-tab-detection neutralization problems as A, now
-  for a real tab that the detection logic is specifically built to notice.
+Same as A but a real tab instead of an iframe.
 
-### C. Out-of-band Playwright / headless browser (dev-only)
+- **Rejected:** popup-blocked unless user-initiated; a visible extra tab is itself a distraction;
+  background tabs are throttled (timers/rAF clamped), which can stall the watcher-driven
+  traversal. No advantage over A for this audience.
 
-A headless browser, driven by Playwright, loads the route with the participant's `session_id`,
-traverses, and writes the cache to a shared store the participant tab can read. Because it is a
-*separate browser*, `localStorage` is **not** shared; the cache must travel over a side channel
-(a tiny dev endpoint, a file the dev server serves, or Firebase under a debug path), and the
-participant tab polls / subscribes to it.
+### C. Out-of-band Playwright / headless browser + RTDB store
 
-- **Pros:** Fully off the participant's machine path — zero main-thread or tab cost in the
-  participant browser. Can run on a schedule / in CI to pre-warm caches for known sessions. Good
-  fit for a **developer** pre-generating outlines, which is the actual audience of the dev panel.
-- **Cons:** Heaviest infrastructure (a server-side runner, a transport for the cache, auth for
-  the participant tab to fetch it). Determinism is more fragile across a genuinely different
-  browser/runtime if anything reads `navigator`, timing, or viewport. Not viable for a real
-  participant in the field (no Playwright on their machine) — this is a dev/preview tool, not a
-  production mechanism.
+A headless browser traverses and writes the outline to a shared store. Because it is a separate
+browser, `localStorage` is not shared, so the outline travels via RTDB (`useDatabase()`
+get/set/sync already exist) under a session-independent path; the consumer reads it.
 
-### D. Don't traverse at all — declare the structure (out of scope here, noted for contrast)
+- **Not for the primary goal.** This does **nothing** for developer friction — a developer
+  editing code still has no outline unless something produced one. Its value is the **secondary**
+  audience: researchers viewing `/dev` from a live URL (who are not running the experiment
+  themselves). For that case, writing the outline to RTDB from dev-mode traversal (and reading it
+  on live `/dev`) is a cheap follow-on using existing primitives, optionally pre-warmed by
+  Playwright at deploy. Tracked as future work, not part of this decision.
 
-Replace runtime discovery with a static/derived description of the tree (e.g. a build-time or
-mount-time declaration of epoch structure), eliminating traversal entirely.
+### D. Declare the structure statically
 
-- **Pros:** No traversal, no reload, no off-screen anything — the disruption simply ceases to
-  exist. Strictly the cleanest end state.
-- **Cons:** Large redesign of how structure is known; conditional/randomized structure still
-  cannot be fully known without running; orthogonal to "run traversal elsewhere." Listed only to
-  frame the others as *workarounds for runtime discovery*, not the only path.
+Replace runtime discovery with a static/derived description, eliminating traversal entirely.
 
-## Cross-cutting work required by A–C
+- **Out of scope.** Cleanest long-term end state but a large redesign; orthogonal to "stop
+  disrupting the developer's tab now."
 
-Any off-screen producer needs the same three things, independent of where it runs:
+## Consequences
 
-1. **A neutralized producer session.** The worker must not log events, must not write the
-   participant's Firebase data, and must not double-count toward bonus/session state. The
-   cleanest lever is the existing one: force `mode: 'debug'` (as `/dev` already does) or give the
-   worker a dedicated no-op `DataWriter`. `traverseTimeline` already disables the writer *during*
-   the walk; the concern is the rest of the worker's lifecycle (init, `epoch.start` on first
-   mount, unload).
-2. **Exclusion from multi-tab detection.** `useMultipleTabDetection` would treat the worker as a
-   rival tab (heartbeats, `isPrimary`, `sessionMismatch` logging). The worker (and iframe) must
-   announce itself as a worker and be filtered out, or skip the composable entirely when
-   `?outline_worker=1`.
-3. **A hot-swap path in the participant tab.** Today a fresh cache is consumed only on
-   load/route-change/init. We need a "cache updated externally → rebuild `root` from it now"
-   entry point: on a `BroadcastChannel`/`storage` event, re-run the existing cache-load branch of
-   `initializeOutline` and assign `root` — **without** `window.location.reload`. This is the one
-   genuinely new piece of participant-tab logic; everything else already exists.
-
-## Risks and unknowns
-
-- **Determinism is load-bearing.** The whole approach rests on "same session → same tree." It
-  breaks for structure that depends on `trueRandom()`, wall-clock, server responses, or any RNG
-  consumed in a *different order* than the participant tab consumes it. The walk-order in a
-  worker that only traverses may differ from a participant who interacts, if interaction consumes
-  the global RNG stream. **This needs empirical validation on the example projects before
-  committing** (graphnav2, bandit-task, rlwm-task, prakhar-prediction).
-- **The reload exists for a reason.** Replacing `window.location.reload()` with an in-place
-  `root` swap is only safe in the participant tab *because the participant tab never traversed* —
-  it stays on its clean load and only swaps data. We must make sure no code path leaves the
-  participant tab having traversed and then expects the reload to clean up after it.
-- **Background-tab / iframe throttling** can stall a watcher-driven traversal (B especially).
-- **Second app boot cost** (A, B): memory and CPU for a whole extra Nuxt instance per page that
-  needs an outline.
-
-## Recommendation (non-binding)
-
-There **is** a plausible way forward, and it is **Option A (hidden same-origin iframe)** for the
-in-app case, because it reuses shared `localStorage`, needs no popup permission, never touches
-the participant's DOM/RNG, and turns the participant tab's job into "load a cache someone else
-made" — which the code already supports. The new work is small and well-contained: neutralize the
-iframe's session, exclude it from multi-tab detection, and add a broadcast-driven in-place cache
-reload to the participant tab (replacing the `reload()`).
-
-**Option C (Playwright)** is the better fit for a *developer* pre-warming outlines (and could run
-in CI), but is not a participant-facing mechanism. **Option B** is dominated by A for the in-app
-case (popup/throttling costs without a compensating benefit). **Option D** is the real long-term
-fix but a separate, much larger effort.
-
-Before building anything, validate the determinism assumption (Risks #1) on the example projects;
-if structure is not reliably reproducible from `session_id` alone, none of A–C are sound and the
-effort should redirect toward D.
+- The developer's tab no longer reloads when the outline is built — scroll and transient UI
+  state survive structure changes.
+- A new "worker" responsibility exists: a hidden iframe that boots in debug mode, traverses, and
+  publishes the outline; plus consumer-side logic to hot-swap `root` on a broadcast/storage
+  signal instead of reloading.
+- `useMultipleTabDetection` must learn to ignore the worker iframe.
+- The in-tab `traverseTimeline` reload path (`useEpochTree.ts:481-488`) is removed from the
+  developer/consumer path; traversal logic moves into the worker context.
 
 ## Open questions
 
-- Is epoch structure reproducible from `session_id` alone across the example projects, or does
-  any of them branch structure on `trueRandom()` / server state / interaction-order RNG?
-- For A, what is the lightest way to neutralize the iframe's `DataWriter` and session — reuse the
-  `/dev` `mode: 'debug'` path, or a dedicated `?outline_worker=1` boot mode that skips data,
-  multi-tab detection, bonus, and unload entirely?
-- Should the in-place cache swap also drive the *current* page outline live as the participant
-  navigates, or only refresh on the broadcast signal?
-- Does the participant tab need any traversal capability left at all, or can `autoTraverse` and
-  the in-tab `traverseTimeline` be removed from the participant path once a producer exists?
+- What exactly signals "structure changed" to the worker for the HMR-triggered re-traverse — a
+  Vite HMR hook in the worker, or the existing `livePathMatchesCache` divergence check applied in
+  the worker?
+- How does the parent mount/own the iframe lifecycle (only on `/dev` with dev tools, torn down on
+  route change)?
+- Exact mechanism to exclude the worker from `useMultipleTabDetection` (a query flag the
+  composable checks, or skip the composable when `?noDev`).
+- Confirm `?noDev` is the right worker flag, or whether a dedicated `?outline_worker=1` flag is
+  warranted purely to make intent explicit (without changing the debug-mode isolation decision).
