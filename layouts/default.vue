@@ -4,6 +4,12 @@ useErrorLogging()
 const { violated } = useWindowEnforcer()
 const mounted = useMounted()
 
+// The hidden outline-worker iframe loads this layout with ?outlineWorker=1 (and ?noDev). It must
+// run the bare experiment with no dev chrome, force debug mode so its DataWriter never touches the
+// real session, and mount the worker driver that runs the traversal. See ADR 0003.
+const isOutlineWorker = getUrlFlag('outlineWorker')
+if (isOutlineWorker) useCurrentSession().mode = 'debug'
+
 const devTools = ref(!getUrlFlag('noDev'))
 
 provide('devTools', devTools)
@@ -36,6 +42,8 @@ provide('devTools', devTools)
         <EventView flex-1 ref="eventViewRef"/>
       </div>
     </div>
+    <!-- Produces the outline off this tab so it never has to traverse/reload (ADR 0003). -->
+    <OutlineWorkerFrame />
   </div>
   <div v-else fixed inset-0 bg-gray-600 >
     <NavBar mb-2/>
@@ -44,5 +52,6 @@ provide('devTools', devTools)
         <Experiment />
       </MainContent>
     </div>
+    <OutlineWorkerDriver v-if="isOutlineWorker" />
   </div>
 </template>

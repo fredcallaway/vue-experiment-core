@@ -28,6 +28,16 @@ const OUTLINE_CACHE_MAX_AGE_MS = 60_000
 const outlineCacheKey = (pageKey: string) => `${OUTLINE_CACHE_PREFIX}:${pageKey}`
 const outlineScanAttemptKey = (pageKey: string) => `${outlineCacheKey(pageKey)}:scan-attempted`
 
+// Traversal steps the live experiment forward, which leaves page-level state we cannot restore
+// (see ADR 0003). So the developer's tab never traverses: a hidden iframe loaded with this flag
+// runs the traversal in a throwaway context, saves the cache, and broadcasts an update; the
+// developer's tab swaps the new outline into place without reloading.
+const OUTLINE_WORKER_FLAG = 'outlineWorker'
+const OUTLINE_WORKER_CHANNEL = 'epoch-outline-worker'
+const isOutlineWorker = () => import.meta.client && getUrlFlag(OUTLINE_WORKER_FLAG)
+// Message a worker broadcasts after it saves a fresh cache for a route, so consumers can reload it.
+type OutlineWorkerMessage = { type: 'outline-updated'; pageKey: string }
+
 const getStepIndex = (parentId: string, childId: string) => {
   const escapedParentId = parentId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const match = childId.match(new RegExp(`^${escapedParentId}\\[(\\d+)\\]`))
@@ -372,6 +382,38 @@ export const useEpochTree = createGlobalState(() => {
     }
   }
 
+  // BroadcastChannel between the hidden worker iframe and the developer's tab. Created lazily and
+  // only on the client (it does not exist during SSR).
+  const channel = import.meta.client ? new BroadcastChannel(OUTLINE_WORKER_CHANNEL) : null
+
+  const broadcastOutlineUpdated = (key: string) => {
+    channel?.postMessage({ type: 'outline-updated', pageKey: key } satisfies OutlineWorkerMessage)
+  }
+
+  // The consumer's only way to obtain a full outline: it cannot traverse (ADR 0003), so the iframe
+  // worker does it. The iframe is mounted by the dev layout and re-traverses on mount/HMR, so this
+  // is currently a no-op marker — the broadcast listener below is what actually applies the result.
+  const requestWorkerTraversal = () => {
+    if (isOutlineWorker()) return
+    console.debug('Outline: awaiting worker traversal for', pageKey())
+  }
+
+  // Swap a worker-produced outline into place without reloading the tab.
+  const reloadOutlineFromCache = (key: string) => {
+    if (key !== pageKey()) return
+    const cached = loadCachedOutline(key)
+    if (!cached) return
+    const cachedRoot = hydrateEpochNode(cached.root)
+    if (!livePathMatchesCache(cachedRoot, currentEpoch.value)) return
+    root.value = cachedRoot
+    isLoadedFromCache.value = true
+    cacheSavedAt.value = cached.savedAt
+    hasTraversed.value = true
+    loadedPageKey.value = key
+    syncCachedOutlineForCurrentEpoch(root.value, currentEpoch.value)
+    console.info('Outline: applied worker-produced outline for', key)
+  }
+
   const refreshTree = () => {
     if (isLoadedFromCache.value && root.value) {
       // The cached outline can become outdated when the experiment structure changes between
@@ -384,7 +426,9 @@ export const useEpochTree = createGlobalState(() => {
         clearCachedOutline(pageKey())
         isLoadedFromCache.value = false
         rebuildFromLivePath()
-        if (autoTraverse.value) void traverseTimeline({ saveAndReload: true })
+        // Show the partial live-path outline now; the worker will re-traverse and broadcast a
+        // full one shortly (the consumer tab never traverses itself — see ADR 0003).
+        if (autoTraverse.value) requestWorkerTraversal()
         return
       }
       syncCachedOutlineForCurrentEpoch(root.value, currentEpoch.value)
@@ -395,7 +439,7 @@ export const useEpochTree = createGlobalState(() => {
   }
 
   type TraverseTimelineOptions = {
-    saveAndReload?: boolean
+    save?: boolean
     force?: boolean
   }
 
@@ -478,24 +522,30 @@ export const useEpochTree = createGlobalState(() => {
       if (liveRoot) setCurrentEpoch(liveRoot)
       await jumpToEpoch(previous.id)
       refreshTree()
-      if (traversalSucceeded && options.saveAndReload && root.value) {
+      if (traversalSucceeded && options.save && root.value) {
         saveCachedOutline(root.value)
         if (canUseLocalStorage()) {
           localStorage.removeItem(outlineScanAttemptKey(pageKey()))
         }
-        if (import.meta.client) {
-          window.location.reload()
-        }
+        // The consumer tab listens for this and swaps the fresh outline into place — no reload.
+        broadcastOutlineUpdated(pageKey())
       }
       console.groupEnd()
       console.timeEnd('traverseTimeline')
     }
   }
 
+  // Manual "Reindex" from the panel. In the worker this traverses directly; in the consumer tab
+  // it drops the cache, shows a partial live-path outline, and asks the worker to re-traverse.
   const reindexTimeline = async () => {
     clearCachedOutline()
     isLoadedFromCache.value = false
-    await traverseTimeline({ saveAndReload: true, force: true })
+    if (isOutlineWorker()) {
+      await traverseTimeline({ save: true, force: true })
+      return
+    }
+    rebuildFromLivePath()
+    requestWorkerTraversal()
   }
 
   const initializeOutline = async () => {
@@ -533,28 +583,17 @@ export const useEpochTree = createGlobalState(() => {
       }
     }
 
-    // No cache. With automatic traversal disabled, build the outline from the live path only
-    // rather than stepping through the whole timeline; the user can click Reindex Timeline.
-    if (!autoTraverse.value) {
-      refreshTree()
+    // The worker is the only context that traverses: it steps the timeline, saves the cache, and
+    // broadcasts. Run it directly here when we *are* the worker.
+    if (isOutlineWorker()) {
+      await traverseTimeline({ save: true })
       return
     }
 
-    if (!canUseLocalStorage()) {
-      console.warn('Epoch outline cache unavailable; falling back to direct traversal')
-      await traverseTimeline()
-      return
-    }
-
-    if (localStorage.getItem(outlineScanAttemptKey(key))) {
-      localStorage.removeItem(outlineScanAttemptKey(key))
-      console.warn('Epoch outline scan was already attempted without producing a fresh cache')
-      refreshTree()
-      return
-    }
-
-    localStorage.setItem(outlineScanAttemptKey(key), String(Date.now()))
-    await traverseTimeline({ saveAndReload: true })
+    // Consumer tab, no usable cache. Show a partial outline from the live path immediately so the
+    // panel isn't empty, then ask the worker to produce the full one (it broadcasts when ready).
+    refreshTree()
+    if (autoTraverse.value) requestWorkerTraversal()
   }
 
   // Reset outline state so the next epoch change rebuilds for the new page.
@@ -585,6 +624,18 @@ export const useEpochTree = createGlobalState(() => {
     refreshTree()
   }
 
+  // The worker tab: traverse the timeline, save the cache, and broadcast. initializeOutline (run
+  // from onMounted) already calls traverseTimeline({ save: true }) when isOutlineWorker(); re-run on
+  // HMR so a structure change during development produces a fresh outline without a manual reindex.
+  const runAsWorker = () => {
+    if (import.meta.hot) {
+      import.meta.hot.accept(() => {
+        console.debug('Outline worker: HMR update; re-traversing')
+        void reindexTimeline()
+      })
+    }
+  }
+
   // React both to epoch changes (tree updates within a page) and route changes (page switches).
   watch([currentEpoch, () => route.path], () => { void syncOutlineForCurrentPage() })
 
@@ -592,6 +643,13 @@ export const useEpochTree = createGlobalState(() => {
   // NOTE: this will miss epochs that are not always created (e.g. because condition or randomness)
   onMounted(async () => {
     isMounted = true
+    if (isOutlineWorker()) runAsWorker()
+    // Consumer tab: apply outlines the worker produces, in place, without reloading.
+    if (!isOutlineWorker() && channel) {
+      channel.onmessage = (event: MessageEvent<OutlineWorkerMessage>) => {
+        if (event.data?.type === 'outline-updated') reloadOutlineFromCache(event.data.pageKey)
+      }
+    }
     await initializeOutline()
   })
 
