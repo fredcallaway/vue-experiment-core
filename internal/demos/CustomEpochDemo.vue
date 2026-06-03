@@ -41,17 +41,17 @@ const choiceRows = computed(() =>
       <EPage name="intro" flex-col gap-4>
         <h2 text-xl font-bold>Writing your own epoch</h2>
         <p>
-          The other demos compose <i>built-in</i> epochs. This one builds a brand-new
-          leaf epoch — a two-button forced choice, defined in <code>EChoice.vue</code> —
+          The other demos compose <i>built-in</i> epochs. This one builds one from scratch
+          — a two-button forced choice, defined in <code>EChoice.vue</code> —
           to show the four things every custom epoch does: declare <b>parameters</b>,
-          declare the <b>epoch</b>, log typed <b>events</b>, and call <code>done()</code>
+          declare the <b>epoch</b>, log typed <b>events</b>, and call <b><code>done()</code></b>
           to hand control back to its parent. A <b>data view</b> turns those events into
           export rows.
         </p>
         <p text-sm text-gray-600>
+          <!-- TODO format this as a tip like in BasicsDemo -->
           Read <code>EChoice.vue</code> next to this page — the comments walk through each
-          step. <code>EClickTest</code> is the same anatomy with timers, phases, and
-          scoring on top.
+          step.
         </p>
         <PContinue/>
       </EPage>
