@@ -191,15 +191,17 @@ const trials = [
             per-page scratchpad for whatever the participant does on the page. Here we just
             count clicks:
           </p>
-          <DemoCode my-3 :code="`
+          <DemoCode my-3 layout="column" :code="`
             <EPage name='demo' v-slot='{ state }'>
-              <button @click='state.clicks = (state.clicks ?? 0) + 1'>Click</button>
+              <button @click='state.clicks = (state.clicks ?? 0) + 1'>Click me</button>
+              clicks: {{ state.clicks ?? 0 }}
             </EPage>
-          `"/>
-          <div flex-center gap-3 my-3>
-            <button b-1 b-gray-300 rounded px-3 py-1 @click="state.clicks = (state.clicks ?? 0) + 1">Click me</button>
-            <span text-gray-600>clicks: {{ state.clicks ?? 0 }}</span>
-          </div>
+          `">
+            <div flex-center gap-3>
+              <button b-1 b-gray-300 rounded px-3 py-1 @click="state.clicks = (state.clicks ?? 0) + 1">Click me</button>
+              <span text-gray-600>clicks: {{ state.clicks ?? 0 }}</span>
+            </div>
+          </DemoCode>
           <p text-gray-600>
             Note: EPage state lives only as long as the page's epoch. To keep data, log it instead
             (see the <NuxtLink to="/demo/data">data demo</NuxtLink>).
@@ -222,14 +224,15 @@ const trials = [
             <code>PContinue</code> call <code>done()</code> for you, but the slot also exposes
             <code>done</code> directly, so you can end the page on any event:
           </p>
-          <DemoCode my-3 :code="`
+          <DemoCode my-3 layout="column" :code="`
             <EPage name='demo' v-slot='{ done }'>
               <button @click='done'>I'm finished</button>
             </EPage>
-          `"/>
-          <div flex-center my-3>
-            <button b-1 b-gray-300 rounded px-3 py-1 @click="done">I'm finished</button>
-          </div>
+          `">
+            <div flex-center>
+              <button b-1 b-gray-300 rounded px-3 py-1 @click="done">I'm finished</button>
+            </div>
+          </DemoCode>
           <p text-gray-600>
             Clicking the button advances the sequence, just like a <code>PContinue</code> would.
           </p>
@@ -382,28 +385,28 @@ const trials = [
             step indexes a list of trials defined in the setup block.
           </p>
 
-          <DemoCode :code="`
-            <ERepeat name='trials' :count='trials.length' v-slot='{ step }'>
-              <EPage name='trial'>
+          <DemoCode layout="column" :code="`
+            <ERepeat name='trials' :count='trials.length' v-slot='{ step, nSteps }'>
+              <div>Trial {{ step + 1 }} / {{ nSteps }}</div>
+              <EPage name='stimulus'>
                 The word is {{ trials[step].word }}.
                 <PContinue/>
               </EPage>
             </ERepeat>
-          `"/>
-          <PContinue/>
+          `">
+            <ERepeat name=trials :count="trials.length" v-slot="{ step, nSteps }"
+                     class="flex-col gap-4">
+              <div text-sm text-gray-600>Trial {{ step + 1 }} / {{ nSteps }}</div>
+
+              <!-- `trials[step]` — the iteration index selects this iteration's data. -->
+              <EPage name="stimulus" flex-center flex-col gap-4>
+                The word is
+                <span font-bold :class="`text-${trials[step].color}`">{{ trials[step].word }}</span>.
+                <PContinue/>
+              </EPage>
+            </ERepeat>
+          </DemoCode>
         </EPage>
-
-        <ERepeat name=trials :count="trials.length" v-slot="{ step, nSteps }"
-                 class="flex-col gap-4">
-          <div text-sm text-gray-600>Trial {{ step + 1 }} / {{ nSteps }}</div>
-
-          <!-- `trials[step]` — the iteration index selects this iteration's data. -->
-          <EPage name="stimulus" flex-center flex-col gap-4>
-            The word is
-            <span font-bold :class="`text-${trials[step].color}`">{{ trials[step].word }}</span>.
-            <PContinue/>
-          </EPage>
-        </ERepeat>
         <!-- Each iteration is a fresh epoch, so iterations have independent state
         and are logged separately. <code>ERepeat</code> advances when 
         iteration finishes and is itself done after the last one — exactly the
