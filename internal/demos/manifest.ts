@@ -21,8 +21,6 @@ export type DemoEntry = {
   // One-line summary of what the demo shows, displayed on the index card.
   summary: string
   component: Component
-  // Minimum window size enforced while the demo runs (defaults to 800x600 when omitted).
-  windowSize?: { width: number; height: number }
 }
 
 export const demos: Record<string, DemoEntry> = {
@@ -30,7 +28,6 @@ export const demos: Record<string, DemoEntry> = {
     title: 'Basics',
     summary: 'Building an experiment from epochs, pages, and sequences.',
     component: BasicsDemo,
-    windowSize: { width: 600, height: 800 },
   },
   'custom-epoch': {
     title: 'Custom epoch',
@@ -46,7 +43,6 @@ export const demos: Record<string, DemoEntry> = {
     title: 'Data',
     summary: 'The pipeline: typed events -> data views -> export rows, grouped per trial.',
     component: DataDemo,
-    windowSize: { width: 1000, height: 700 },
   },
   params: {
     title: 'Params & conditions',

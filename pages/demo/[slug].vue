@@ -10,13 +10,9 @@ const route = useRoute()
 const slug = computed(() => String(route.params.slug))
 const demo = computed(() => demos[slug.value])
 
-watchImmediate(demo, (entry) => {
-  if (entry?.windowSize) {
-    defineWindowSize(entry.windowSize)
-  } else {
-    defineWindowSize({ width: 600, height: 800 })
-  }
-})
+// use a narrow default for demos
+// can override in the component file
+defineWindowSize({ width: 600, height: 800 })
 
 </script>
 
