@@ -77,7 +77,8 @@ const rows = computed(() =>
 </script>
 
 <template>
-  <ESequence name="data">
+  <div p4>
+    <ESequence name="data">
 
     <!-- ========================= INTRO ========================= -->
 
@@ -165,70 +166,82 @@ logResponse({ correct: true, rt: 482 })  // typechecked</code></pre>
       <PContinue/>
     </EPage>
 
-    <!-- ========================= EXAMPLE ========================= -->
+    <!-- ========================= DATA VIEWS ========================= -->
 
-    <EPage name="example">
-
-    <div w200 mx-auto flex-col gap-6>
-
-    <div>
-      <h2 text-xl font-bold>Events, data views, and exports</h2>
-      <p mt-2>
+    <EPage name="dataViews">
+      <h2>Data views and exports</h2>
+      <p>
         Logged <b>events</b> are your raw record; a <b>data view</b> transforms them
-        into export rows. Each trial below logs an <code>onset</code> and a
-        <code>response</code> event; the data view groups them back into one row per
-        trial. Run a few trials and watch both sides fill in.
+        into export rows. A <code>declareDataView</code> filters the session's events
+        down to the ones it cares about, then reshapes them — typically one row per
+        trial.
       </p>
-    </div>
-
-    <!-- The task -->
-    <div b-1 b-gray-200 rounded p6 flex-col flex-center gap-4 min-h-40>
-      <template v-if="!done">
-        <div text-sm text-gray-500>Trial {{ trial + 1 }} / {{ stimuli.length }}</div>
-        <div text-3xl font-bold>{{ stimuli[trial] }}</div>
-        <div text-sm text-gray-600>Which word is it?</div>
-        <PButtons values="cat dog" @click="(v) => respond(v as 'cat' | 'dog')" />
-      </template>
-      <div v-else text-gray-500 italic>All trials done — see the rows below.</div>
-    </div>
-
-    <!-- Both ends of the pipeline, side by side. -->
-    <div flex gap-6>
-      <!-- Raw event log: the unprocessed record, one entry per logEvent call. -->
-      <div flex-1>
-        <h3 font-bold mb-2>Raw events</h3>
-        <p text-sm text-gray-600 mb-2>One entry per <code>logOnset</code>/<code>logResponse</code> call.</p>
-        <div v-if="rawEvents.length" text-xs font-mono b-1 b-gray-200 rounded p3 flex-col gap-1 max-h-60 overflow-y-auto>
-          <div v-for="(e, i) in rawEvents" :key="i">
-            <span text-purple>{{ e.eventType }}</span> {{ JSON.stringify(e.data) }}
-          </div>
-        </div>
-        <div v-else text-sm text-gray-400 italic>No events yet.</div>
-      </div>
-
-      <!-- Data view: grouped into one row per trial. This is the export shape. -->
-      <div flex-1>
-        <h3 font-bold mb-2>Data view (<code>trial</code>)</h3>
-        <p text-sm text-gray-600 mb-2>One row per trial, via <code>chunkBy(isOnset)</code>.</p>
-        <table v-if="rows.length" text-sm b-1 b-gray-200 rounded w-full>
-          <thead bg-gray-50>
-            <tr><th p2 text-left>trial</th><th p2 text-left>stimulus</th><th p2 text-left>correct</th><th p2 text-left>rt</th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="(row, i) in rows" :key="i" b-t b-gray-100>
-              <td p2>{{ row.trial }}</td>
-              <td p2>{{ row.stimulus }}</td>
-              <td p2>{{ row.correct === null ? '—' : String(row.correct) }}</td>
-              <td p2>{{ row.rt ?? '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div v-else text-sm text-gray-400 italic>No rows yet.</div>
-      </div>
-    </div>
-    </div>
-
+      <p>
+        A single trial usually logs <i>several</i> events (an onset, a response, …), so
+        the view groups them back together with <code>chunkBy</code>, keyed off the
+        event that starts each trial. The next page runs a task that does exactly this.
+      </p>
+      <PContinue/>
     </EPage>
 
-  </ESequence>
+    <!-- ========================= EXAMPLE ========================= -->
+
+    <!-- The interactive task and both ends of its pipeline on one screen, so you can
+         respond and watch the raw events and the grouped rows fill in together. -->
+    <EPage name="example" flex-col gap-6>
+      <p>
+        Each trial logs an <code>onset</code> and a <code>response</code> event; the
+        <code>trial</code> data view groups them back into one row per trial. Run a few
+        trials and watch both sides fill in.
+      </p>
+
+      <!-- The task -->
+      <div flex-col flex-center gap-4 min-h-40>
+        <template v-if="!done">
+          <div text-sm text-gray-500>Trial {{ trial + 1 }} / {{ stimuli.length }}</div>
+          <div text-3xl font-bold>{{ stimuli[trial] }}</div>
+          <div text-sm text-gray-600>Which word is it?</div>
+          <PButtons values="cat dog" @click="(v) => respond(v as 'cat' | 'dog')" />
+        </template>
+        <div v-else text-gray-500 italic>All trials done — see the rows below.</div>
+      </div>
+
+      <!-- Both ends of the pipeline, side by side. -->
+      <div flex gap-6>
+        <!-- Raw event log: the unprocessed record, one entry per logEvent call. -->
+        <div flex-1>
+          <h3 font-bold mb-2>Raw events</h3>
+          <p text-sm text-gray-600 mb-2>One entry per <code>logOnset</code>/<code>logResponse</code> call.</p>
+          <div v-if="rawEvents.length" text-xs font-mono b-1 b-gray-200 rounded p3 flex-col gap-1 max-h-60 overflow-y-auto>
+            <div v-for="(e, i) in rawEvents" :key="i">
+              <span text-purple>{{ e.eventType }}</span> {{ JSON.stringify(e.data) }}
+            </div>
+          </div>
+          <div v-else text-sm text-gray-400 italic>No events yet.</div>
+        </div>
+
+        <!-- Data view: grouped into one row per trial. This is the export shape. -->
+        <div flex-1>
+          <h3 font-bold mb-2>Data view (<code>trial</code>)</h3>
+          <p text-sm text-gray-600 mb-2>One row per trial, via <code>chunkBy(isOnset)</code>.</p>
+          <table v-if="rows.length" text-sm b-1 b-gray-200 rounded w-full>
+            <thead bg-gray-50>
+              <tr><th p2 text-left>trial</th><th p2 text-left>stimulus</th><th p2 text-left>correct</th><th p2 text-left>rt</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, i) in rows" :key="i" b-t b-gray-100>
+                <td p2>{{ row.trial }}</td>
+                <td p2>{{ row.stimulus }}</td>
+                <td p2>{{ row.correct === null ? '—' : String(row.correct) }}</td>
+                <td p2>{{ row.rt ?? '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else text-sm text-gray-400 italic>No rows yet.</div>
+        </div>
+      </div>
+    </EPage>
+
+    </ESequence>
+  </div>
 </template>

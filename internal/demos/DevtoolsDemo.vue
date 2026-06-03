@@ -71,7 +71,7 @@ const currentEpoch = useCurrentEpoch()
           </p>
 
           <ERepeat name="DemoOutline" :count="4" v-slot="{ step }"
-                   class="flex-col gap-4 min-h-40 b-1 b-gray-200 rounded p6 mt-4">
+                   class="flex-col gap-4 mt-4">
             <div text-sm text-gray-600>Iteration {{ step + 1 }} / 4</div>
 
             <!-- Iteration index 2 (the 3rd) has a different internal structure (an
@@ -113,7 +113,7 @@ const currentEpoch = useCurrentEpoch()
           <PContinue/>
         </EPage>
 
-        <ESequence name="demo" flex-center flex-col gap-4 min-h-30 b-1 b-gray-200 rounded p6>
+        <ESequence name="demo" flex-center flex-col gap-4>
           <EPage name="PreError">
             The next page will throw an error.
             <PContinue button/>

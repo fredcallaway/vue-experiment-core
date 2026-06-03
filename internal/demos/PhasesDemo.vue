@@ -20,7 +20,7 @@ watch(epoch.phase, async (newPhase) => {
 </script>
 
 <template>
-  <div w150 mx-auto p10 flex-col gap-6>
+  <div p4 flex-col gap-6>
 
     <div>
       <h2 text-xl font-bold>Phases</h2>
@@ -35,7 +35,7 @@ watch(epoch.phase, async (newPhase) => {
       </p>
     </div>
 
-    <div b-1 b-gray-200 rounded p6 min-h-50>
+    <div min-h-50>
       <!-- A Phase can match multiple phase names (space-separated). Modifiers:
            - constant: always mounted; just invisible when inactive (keeps state)
            - persist:  kept mounted between its first and last active phase

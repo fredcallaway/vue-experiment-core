@@ -263,7 +263,7 @@ const example = reactive<{ choice?: string }>({})
         <!-- The trial sketched above, made concrete. The three pages are separate epochs;
              `example` (a plain reactive object in the script) carries the response from the
              response page to the feedback page. -->
-        <ESequence name="example" flex-center flex-col gap-5 min-h-50 b-1 b-gray-200 rounded p6>
+        <ESequence name="example" flex-center flex-col gap-5>
           <EPage name="stimulus">
             <div text-sm text-gray-600>Stimulus</div>
             <p>What color is this word?</p>
@@ -303,7 +303,7 @@ const example = reactive<{ choice?: string }>({})
           <PContinue/>
         </EPage>
 
-        <ESequence name="nesting" flex-center flex-col gap-5 min-h-40 b-1 b-gray-200 rounded p6>
+        <ESequence name="nesting" flex-center flex-col gap-5>
           <EPage name="step1">Step 1<PContinue/></EPage>
           <ESequence name="step2" flex-center flex-col gap-3>
             <EPage name="A">Step 2A (inner sequence)<PContinue/></EPage>
@@ -354,7 +354,7 @@ const example = reactive<{ choice?: string }>({})
              iteration's data. ERepeat advances when the child (an ESequence here)
              finishes, and finishes itself after the last iteration. -->
         <ERepeat name="trials" :count="trials.length" v-slot="{ step, nSteps }"
-                 class="flex-col gap-4 min-h-50 b-1 b-gray-200 rounded p6">
+                 class="flex-col gap-4">
           <div text-sm text-gray-600>Trial {{ step + 1 }} / {{ nSteps }}</div>
 
           <!-- `trials[step]` — the iteration index selects this iteration's data. -->

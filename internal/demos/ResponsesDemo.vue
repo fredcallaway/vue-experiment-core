@@ -51,7 +51,7 @@ const onGuardedChoice = (value: string) => {
 </script>
 
 <template>
-  <div w150 mx-auto p10>
+  <div p4>
 
     <!-- Everything lives inside the top-level (navigable) sequence, including the
          intro page — no content sits outside the epoch tree. -->

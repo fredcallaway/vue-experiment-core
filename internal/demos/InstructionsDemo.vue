@@ -12,13 +12,12 @@
 </script>
 
 <template>
-  <div w150 mx-auto p10>
+  <div p4>
 
     <!-- `header` labels the nav controls ("Instructions 1 of 3"). The slot
          exposes `enableNext`; until a page calls it, the Next control is
          disabled, so participants can't skip ahead. -->
-    <ENavigableSequence v-slot="{ enableNext }" header="Instructions"
-                        class="b-1 b-gray-200 rounded p6 min-h-60">
+    <ENavigableSequence v-slot="{ enableNext }" header="Instructions">
 
       <!-- A pure reading page can enable Next as soon as it mounts. -->
       <EPage @mounted="enableNext" name="welcome" flex-col gap-3>

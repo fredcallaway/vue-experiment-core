@@ -28,12 +28,12 @@ const runSleep = async () => {
 </script>
 
 <template>
-  <div w150 mx-auto p10 flex-col gap-6>
+  <div p4>
 
-    <ESequence name="timing" flex-col gap-5>
+    <ESequence name="timing">
 
       <!-- ===================== Intro ===================== -->
-      <EPage name="intro" flex-col gap-3 b-1 b-gray-200 rounded p6>
+      <EPage name="intro" flex-col gap-3>
         <h2 text-xl font-bold>Timing</h2>
         <p>
           Countdowns, fixed-duration pages, and awaitable delays — the three timing
@@ -43,7 +43,7 @@ const runSleep = async () => {
       </EPage>
 
       <!-- ===================== useTimer ===================== -->
-      <EPage name="timer" flex-col gap-3 b-1 b-gray-200 rounded p6>
+      <EPage name="timer" flex-col gap-3>
         <div font-bold>useTimer</div>
         <p text-sm text-gray-600>
           A reactive countdown. <code>formattedTimeLeft</code> updates each second;
@@ -62,13 +62,13 @@ const runSleep = async () => {
       <!-- ===================== EPage :duration ===================== -->
       <!-- This page has no continue control; :duration makes it advance on its own
            after 1200ms. Common for fixation crosses and fixed-length feedback. -->
-      <EPage name="fixation" :duration="1200" flex-col flex-center gap-3 b-1 b-gray-200 rounded p10>
+      <EPage name="fixation" :duration="1200" flex-col flex-center gap-3>
         <div text-5xl>+</div>
         <div text-sm text-gray-500>Fixed-duration page — auto-advances in 1.2 s…</div>
       </EPage>
 
       <!-- ===================== useLocalAsync().sleep ===================== -->
-      <EPage name="sleep" flex-col gap-3 b-1 b-gray-200 rounded p6 min-h-50>
+      <EPage name="sleep" flex-col gap-3>
         <div font-bold>useLocalAsync().sleep</div>
         <p text-sm text-gray-600>
           An awaitable delay for async epoch logic — here it gates a reveal. Because it
