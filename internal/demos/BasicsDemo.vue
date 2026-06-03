@@ -256,13 +256,6 @@ const trials = [
   &lt;EPage name="response"&gt;...&lt;/EPage&gt;
   &lt;EPage name="feedback"&gt;...&lt;/EPage&gt;
 &lt;/ESequence&gt;</code></pre>
-          <div card-warn mt3>
-            <h3>Take note!</h3>
-            Every child of an ESequence must be an epoch component (or a div that contains one).
-            This ensures that there is always an active leaf epoch that can call <code>done()</code>
-            and allow the ESequence to continue. If you break this rule, the template will
-            throw a clear error (e.g. "step 0 has no child epoch"), so you'll know to fix it.
-          </div>
           <PContinue/>
         </EPage>
 
@@ -293,6 +286,14 @@ const trials = [
             <li>Children of ESequence and ERepeat must start with E.</li>
             <li>Components that start with E must have an epoch as a parent (usually ESequence or ERepeat).</li>
           </ol>
+          <p>
+            But don't worry! If you forget to follow the rule, you'll get an informative error message.
+          </p>
+          <!--
+            Technically, the child can be a div that renders an epoch; but this pattern should
+            generally be avoided.
+            TODO check that we actually throw an error message when trying to render two EPage at once.
+          -->
 
         </EPage>
 
@@ -375,35 +376,23 @@ const trials = [
           <h2>ERepeat</h2>
           <p>
             Experiments are mostly repetition: the same trial, run many times with
-            different stimuli. <code>ERepeat</code> captures that. It renders one
-            template <code>count</code> times, passing the slot a
-            <code>step</code> (0-indexed) so each iteration can show its own
-            content.
+            different stimuli. <code>ERepeat</code> captures that by running a single
+            child epoch multiple times. Like ESequence, it moves to the next iteration
+            when the child calls <code>done()</code>. We use the <code>step</code> slot
+            variable (a counter starting at 0) to show different content on each iteration.
+            In most cases (including the example below),
+            step indexes a list of trials defined in the setup block.
           </p>
+
           <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;ERepeat name="trials" :count="trials.length" v-slot="{ step }"&gt;
   &lt;EPage name="trial"&gt;
     The word is {{ trials[step].word }}.
     &lt;PContinue/&gt;
   &lt;/EPage&gt;
 &lt;/ERepeat&gt;</code></pre>
-          <p>
-            Each iteration is a fresh epoch, so iterations have independent state
-            and are logged separately. <code>ERepeat</code> advances when 
-            iteration finishes and is itself done after the last one — exactly the
-            <code>done</code>-propagation you saw with <code>ESequence</code>.
-          </p>
-          <div card-info>
-            <h3>Tip</h3>
-            <code>ERepeat</code> always runs iterations <code>0..count-1</code> in order.
-            To randomize trials you shuffle your data array before rendering (e.g. with
-            <code>random.shuffle</code>) — the order lives in the data, not the loop.
-          </div>
           <PContinue/>
         </EPage>
 
-        <!-- The slot template is reused for every iteration; `step` selects this
-             iteration's data. ERepeat advances when the child (an ESequence here)
-             finishes, and finishes itself after the last iteration. -->
         <ERepeat name=trials :count="trials.length" v-slot="{ step, nSteps }"
                  class="flex-col gap-4">
           <div text-sm text-gray-600>Trial {{ step + 1 }} / {{ nSteps }}</div>
@@ -415,24 +404,30 @@ const trials = [
             <PContinue/>
           </EPage>
         </ERepeat>
-
-        <EPage name="outro">
-          <h2>That's the core</h2>
-          <p>
-            With <code>EPage</code>, <code>ESequence</code>, and
-            <code>ERepeat</code> you can express most of an experiment's structure.
-            Everything else builds on the same epoch model.
-          </p>
-          <p>
-            <b>What next?</b> The <NuxtLink to="/demo">demo index</NuxtLink> drills into
-            specific features — writing your own leaf epoch
-            (<NuxtLink to="/demo/custom-epoch">custom epoch</NuxtLink>), collecting input
-            (<NuxtLink to="/demo/responses">responses</NuxtLink>), and the logging pipeline
-            (<NuxtLink to="/demo/data">data</NuxtLink>) are good places to go from here.
-          </p>
-          <PContinue button="Restart from the top"/>
-        </EPage>
+        <!-- Each iteration is a fresh epoch, so iterations have independent state
+        and are logged separately. <code>ERepeat</code> advances when 
+        iteration finishes and is itself done after the last one — exactly the
+        <code>done</code>-propagation you saw with <code>ESequence</code>. -->
+        <!-- <code>ERepeat</code> always runs iterations <code>0..count-1</code> in order.
+        To randomize trials you shuffle your data array before rendering (e.g. with
+        <code>random.shuffle</code>) — the order lives in the data, not the loop. -->
       </ESequence>
+
+      <EPage name="outro">
+        <h2>That's the core</h2>
+        <p>
+          With <code>EPage</code>, <code>ESequence</code>, and
+          <code>ERepeat</code> you can express most of an experiment's structure.
+          Everything else builds on the same epoch model.
+        </p>
+        <p>
+          <b>What next?</b> The <NuxtLink to="/demo">demo index</NuxtLink> drills into
+          specific features — writing your own leaf epoch
+          (<NuxtLink to="/demo/custom-epoch">custom epoch</NuxtLink>), collecting input
+          (<NuxtLink to="/demo/responses">responses</NuxtLink>), and the logging pipeline
+          (<NuxtLink to="/demo/data">data</NuxtLink>) are good places to go from here.
+        </p>
+      </EPage>
     </ESequence>
   </div>
 </template>
