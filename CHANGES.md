@@ -18,6 +18,7 @@ This branch simplifies the template by removing playback-specific infrastructure
 - Replaced `EInstructions` with `ENavigableSequence`, a sequence wrapper that lets users move between pages.
 - Added optional `navPages` config for custom top-level developer navigation links.
 - Added a condition inspector that can view and pin registered `useConditions` choices from the developer UI.
+- Added a live `DataView` panel to the developer UI (`default` layout) that previews a declared `declareDataView` against the running session's events. It auto-selects the view whose name matches the current epoch (e.g. `clicktest`), with a dropdown to pick any registered view. If your project overrides `core/layouts/default.vue`, add `<DataView mb-2/>` to the right-hand dev column to get it.
 - Removed the old `EpochView`; epoch navigation now lives in `EpochControls` and `EpochOutline`.
 - Fixed `useLocalAsync` so settled promises are no longer reported as pending on component unmount.
 - Added a key-press demonstration to the demo experiment.

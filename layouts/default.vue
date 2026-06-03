@@ -32,6 +32,7 @@ provide('devTools', devTools)
       <div w="600px" relative  v-if="!violated">
         <Inspector mb-2/>
         <ConditionView mb-2/>
+        <DataView mb-2/>
         <EventView flex-1 ref="eventViewRef"/>
       </div>
     </div>
