@@ -4,7 +4,7 @@
 // configurable and counterbalanced:
 //
 //   defineParams   — typed, defaulted settings, overridable per-instance via a
-//                    `params` prop. Used by almost every epoch (EClickTest, EChoice).
+//                    `params` prop. Used by almost every epoch (EClickTest, CustomEpochDemo).
 //   useConditions  — between-subject assignment (which variant a participant gets),
 //                    cycling across sessions and pinnable from the dev UI.
 //
