@@ -7,7 +7,6 @@ import InstructionsDemo from './InstructionsDemo.vue'
 import ParamsDemo from './ParamsDemo.vue'
 import PhasesDemo from './PhasesDemo.vue'
 import ResponsesDemo from './ResponsesDemo.vue'
-import SourceDemo from './SourceDemo.vue'
 import SurveysDemo from './SurveysDemo.vue'
 import TimingDemo from './TimingDemo.vue'
 
@@ -64,11 +63,6 @@ export const demos: Record<string, DemoEntry> = {
     title: 'Phases',
     summary: 'One epoch with several visual phases that share state and animate between each other.',
     component: PhasesDemo,
-  },
-  source: {
-    title: 'Source alongside render',
-    summary: 'DemoCode: show a snippet next to its live result (the code/render duplication is exact).',
-    component: SourceDemo,
   },
   surveys: {
     title: 'Surveys',

@@ -1,14 +1,20 @@
 <script lang="ts" setup>
 
-// Shows a code snippet next to (or above) its live render, for demo tutorials.
+// Shows a teaching snippet next to (or above) an optional live render, for demo tutorials.
 //
-// Authoring is write-twice but the copies are *exact*: the snippet is passed as the
-// `code` string prop and the live version goes in the default slot. Because `code` is a
-// plain JS string (not template markup), it can contain literal `<EPage>…</EPage>` with no
-// HTML escaping and no `v-pre` — the component escapes it for display via text binding. This
-// replaces the hand-escaped `<pre v-pre><code>&lt;EPage&gt;…</code></pre>` blocks in the demos.
+// The `code` prop and the default slot are DELIBERATELY DECOUPLED — they are not two copies of
+// the same text. `code` is an *idealized* snippet written for clarity: minimal, ellipses welcome,
+// stripped of the layout scaffolding a presentable live widget needs. The slot is a *live example*
+// of the same concept. They illustrate one idea from two angles; do not try to keep them
+// byte-identical (that fight is what this component exists to avoid).
 //
-// `code` is rendered verbatim, so write it already-trimmed/indented the way you want it shown.
+// Because `code` is a plain JS string (not template markup), it can contain literal
+// `<EPage>…</EPage>` with no HTML escaping and no `v-pre` — the component escapes it for display
+// via text binding. It's rendered verbatim, so write it already trimmed/indented as you want shown.
+//
+// Used only in BasicsDemo, to give a first-time human reader inline code alongside a running
+// widget. If this spreads to many demos, that's the trigger to add a build step that derives the
+// displayed snippet from real source — until then, decoupled-by-hand is the right scale.
 
 const props = defineProps<{
   // The snippet to display. May be a multi-line template string with leading indentation; it's

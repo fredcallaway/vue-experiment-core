@@ -340,10 +340,10 @@ const trials = [
             Because a sequence's child is just an epoch, a child can itself be an
             <code>ESequence</code>. The inner sequence must finish before the outer one
             advances. This is how a small, self-contained piece (like the trial above)
-            becomes part of a larger structure — the active epoch below is
-            <code>{{ currentEpoch.id }}</code>.
+            becomes part of a larger structure. Step through the live sequence below and
+            watch the active epoch: <code>{{ currentEpoch.id }}</code>.
           </p>
-          <DemoCode layout="column" code='
+          <div b-1 b-gray-200 rounded p3 my-3>
             <ESequence name="block" flex-center flex-col gap-5>
               <EPage name="step1">Step 1<PContinue/></EPage>
               <ESequence name="step2" flex-center flex-col gap-3>
@@ -352,16 +352,7 @@ const trials = [
               </ESequence>
               <EPage name="step3">Step 3<PContinue button="Continue"/></EPage>
             </ESequence>
-          '>
-            <ESequence name="block" flex-center flex-col gap-5>
-              <EPage name="step1">Step 1<PContinue/></EPage>
-              <ESequence name="step2" flex-center flex-col gap-3>
-                <EPage name="A">Step 2A (inner sequence)<PContinue/></EPage>
-                <EPage name="B">Step 2B (inner sequence)<PContinue/></EPage>
-              </ESequence>
-              <EPage name="step3">Step 3<PContinue button="Continue"/></EPage>
-            </ESequence>
-          </DemoCode>
+          </div>
         </EPage>
       </ESequence>
 
