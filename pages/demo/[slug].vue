@@ -17,13 +17,35 @@ defineWindowSize({ width: 600, height: 800 })
 </script>
 
 <template>
-  <!-- key on slug so the epoch tree fully remounts when switching demos -->
-  <component :is="demo.component" v-if="demo" :key="slug" />
-  <div v-else p10>
-    <h2 text-xl font-bold>Unknown demo</h2>
-    <p mt-2>
-      No demo named <code>{{ slug }}</code>. See the
-      <NuxtLink to="/demo">demo index</NuxtLink>.
-    </p>
+  <div class="demo-page">
+    <!-- key on slug so the epoch tree fully remounts when switching demos -->
+    <component :is="demo.component" v-if="demo" :key="slug" />
+    <div v-else p10>
+      <h2 text-xl font-bold>Unknown demo</h2>
+      <p mt-2>
+        No demo named <code>{{ slug }}</code>. See the
+        <NuxtLink to="/demo">demo index</NuxtLink>.
+      </p>
+    </div>
   </div>
 </template>
+
+<style>
+.demo-page ul, .demo-page ol {
+  margin-bottom: 0.5em;
+  padding-inline-start: 1.5em;
+}
+
+.demo-page ul {
+  list-style: disc;
+}
+
+.demo-page ol {
+  list-style: decimal;
+}
+
+.demo-page li {
+  display: list-item;
+}
+
+</style>
