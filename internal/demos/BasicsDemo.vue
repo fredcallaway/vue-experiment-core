@@ -114,12 +114,14 @@ const trials = [
             is a good 20-minute introduction; you only need the basics.
           </div>
           <p mt-3>Here is about the smallest experiment you can write:</p>
-          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;ESequence name="experiment"&gt;
-  &lt;EPage name="hello"&gt;
-    Hello, world!
-    &lt;PContinue/&gt;
-  &lt;/EPage&gt;
-&lt;/ESequence&gt;</code></pre>
+          <DemoCode code='
+            <ESequence name="experiment">
+              <EPage name="hello">
+                Hello, world!
+                <PContinue/>
+              </EPage>
+            </ESequence>
+          '/>
           <p mt-3>
             It renders a single screen with the text and a continue button. The
             very page you're reading is built the same way: an
@@ -161,12 +163,12 @@ const trials = [
             all the leaves of your tree will be <code>EPage</code>s — 
             instruction screens, individual trials, even sections of a trial.
           </p>
-          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto>
-<code>&lt;EPage name="instructions"&gt;
-  Press the button when you're ready.
-  &lt;PContinue/&gt;
-&lt;/EPage&gt;
-</code></pre>
+          <DemoCode code='
+            <EPage name="instructions">
+              Press the button when you&apos;re ready.
+              <PContinue/>
+            </EPage>
+          '/>
           <p mt-3>
             By default <code>PContinue</code> advances when the participant presses space;
             pass <code>button</code> (e.g. <code>&lt;PContinue button="Next"/&gt;</code>) to show
@@ -189,11 +191,11 @@ const trials = [
             per-page scratchpad for whatever the participant does on the page. Here we just
             count clicks:
           </p>
-          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto my-3 v-pre>
-<code>&lt;EPage name="demo" v-slot="{ state }"&gt;
-  &lt;button @click="state.clicks = (state.clicks ?? 0) + 1"&gt;Click&lt;/button&gt;
-&lt;/EPage&gt;
-</code></pre>
+          <DemoCode my-3 :code="`
+            <EPage name='demo' v-slot='{ state }'>
+              <button @click='state.clicks = (state.clicks ?? 0) + 1'>Click</button>
+            </EPage>
+          `"/>
           <div flex-center gap-3 my-3>
             <button b-1 b-gray-300 rounded px-3 py-1 @click="state.clicks = (state.clicks ?? 0) + 1">Click me</button>
             <span text-gray-600>clicks: {{ state.clicks ?? 0 }}</span>
@@ -220,9 +222,11 @@ const trials = [
             <code>PContinue</code> call <code>done()</code> for you, but the slot also exposes
             <code>done</code> directly, so you can end the page on any event:
           </p>
-          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto my-3 v-pre><code>&lt;EPage name="demo" v-slot="{ done }"&gt;
-  &lt;button @click="done"&gt;I'm finished&lt;/button&gt;
-&lt;/EPage&gt;</code></pre>
+          <DemoCode my-3 :code="`
+            <EPage name='demo' v-slot='{ done }'>
+              <button @click='done'>I'm finished</button>
+            </EPage>
+          `"/>
           <div flex-center my-3>
             <button b-1 b-gray-300 rounded px-3 py-1 @click="done">I'm finished</button>
           </div>
@@ -242,7 +246,7 @@ const trials = [
            prose; see also the "non-epoch children" note in the example below. -->
       <ESequence name="sequence">
 
-        <EPage name="intro">
+        <EPage name="intro" v-slot="{ state }">
           <h2>ESequence</h2>
           <p>
             An <code>ESequence</code> shows its children one at a time. It starts
@@ -251,12 +255,43 @@ const trials = [
             to the next child, and so on. When the last child finishes, the sequence itself
             finishes, handing control back to its parent (usually another <code>ESequence</code>).
           </p>
-          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;ESequence name="trial"&gt;
-  &lt;EPage name="stimulus"&gt;...&lt;/EPage&gt;
-  &lt;EPage name="response"&gt;...&lt;/EPage&gt;
-  &lt;EPage name="feedback"&gt;...&lt;/EPage&gt;
-&lt;/ESequence&gt;</code></pre>
-          <PContinue/>
+          <DemoCode code='
+            <ESequence name="trial">
+              <EPage name="stimulus">...</EPage>
+              <EPage name="response">...</EPage>
+              <EPage name="feedback">...</EPage>
+            </ESequence>
+          '/>
+          <p mt-3>
+            Here is that <code>stimulus → response → feedback</code> trial as a running
+            example. Each page is a separate epoch; when one finishes the sequence advances
+            to the next.
+          </p>
+          <div text-sm text-gray >current epoch: {{  currentEpoch.id }}</div>
+          <ESequence name="seq" flex-center flex-col gap-5 border-2 p2 h-60 >
+            <EPage name="ready">
+              <PContinue button=start />
+            </EPage>
+
+            <EPage name="stimulus" duration=1000>
+              <div text-2xl font-bold text-red>red</div>
+            </EPage>
+
+            <EPage name="response" v-slot="{ done }" flex-center flex-col gap-3>
+              <p>Click the color the word was printed in.</p>
+              <PButtons
+                values="red blue"
+                classes="btn-red btn-blue"
+                @click="(v) => { state.choice = v; done() }"
+              />
+            </EPage>
+
+            <EPage name="feedback">
+              <p v-if="state.choice === 'red'" text-green text-xl font-bold>Correct!</p>
+              <p v-else text-red font-bold>Incorrect — the word was red.</p>
+              <PContinue button="Finish trial"/>
+            </EPage>
+          </ESequence>
         </EPage>
 
         <EPage name=temporal>
@@ -297,48 +332,10 @@ const trials = [
 
         </EPage>
 
-        <EPage name="example" v-slot="{ state }">
-          <h2>ESequence</h2>
-          <p>
-            Here is that <code>stimulus → response → feedback</code> trial as a running
-            example. Each page is a separate epoch; when one finishes the sequence advances
-            to the next.
-          </p>
-          <div text-sm text-gray >current epoch: {{  currentEpoch.id }}</div>
-          <ESequence name="seq" flex-center flex-col gap-5 border-2 p2 h-60 >
-            <EPage name="ready">
-              <PContinue button=start />
-            </EPage>
-
-            <EPage name="stimulus" duration=1000>
-              <div text-2xl font-bold text-red>red</div>
-            </EPage>
-
-            <EPage name="response" v-slot="{ done }" flex-center flex-col gap-3>
-              <p>Click the color the word was printed in.</p>
-              <PButtons
-                values="red blue" 
-                classes="btn-red btn-blue" 
-                @click="(v) => { state.choice = v; done() }" 
-              />
-            </EPage>
-
-            <EPage name="feedback">
-              <p v-if="state.choice === 'red'" text-green text-xl font-bold>Correct!</p>
-              <p v-else text-red font-bold>Incorrect — the word was red.</p>
-              <PContinue button="Finish trial"/>
-            </EPage>
-          </ESequence>
-        </EPage>
-
-        <!-- The trial sketched above, made concrete. The three pages are separate epochs;
-             `example` (a plain reactive object in the script) carries the response from the
-             response page to the feedback page. -->
-
-
         <!-- Nesting: a sequence's child can itself be a sequence. Kept within the
-             ESequence section since it's the same mechanism, just one level deeper. -->
-        <EPage name="nestingIntro">
+             ESequence section since it's the same mechanism, just one level deeper. The
+             code snippet sits alongside the live nested sequence it describes. -->
+        <EPage name="nesting">
           <h3 font-bold>Nesting</h3>
           <p>
             Because a sequence's child is just an epoch, a child can itself be an
@@ -347,21 +344,22 @@ const trials = [
             becomes part of a larger structure — the active epoch below is
             <code>{{ currentEpoch.id }}</code>.
           </p>
-          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;ESequence name="block"&gt;
-  &lt;ESequence name="trial"&gt;...&lt;/ESequence&gt;
-  &lt;EPage name="break"&gt;...&lt;/EPage&gt;
-&lt;/ESequence&gt;</code></pre>
-          <PContinue/>
+          <DemoCode layout="column" code='
+            <ESequence name="block">
+              <ESequence name="trial">...</ESequence>
+              <EPage name="break">...</EPage>
+            </ESequence>
+          '>
+            <ESequence name="block" flex-center flex-col gap-5>
+              <EPage name="step1">Step 1<PContinue/></EPage>
+              <ESequence name="step2" flex-center flex-col gap-3>
+                <EPage name="A">Step 2A (inner sequence)<PContinue/></EPage>
+                <EPage name="B">Step 2B (inner sequence)<PContinue/></EPage>
+              </ESequence>
+              <EPage name="step3">Step 3<PContinue button="Continue"/></EPage>
+            </ESequence>
+          </DemoCode>
         </EPage>
-
-        <ESequence name="nesting" flex-center flex-col gap-5>
-          <EPage name="step1">Step 1<PContinue/></EPage>
-          <ESequence name="step2" flex-center flex-col gap-3>
-            <EPage name="A">Step 2A (inner sequence)<PContinue/></EPage>
-            <EPage name="B">Step 2B (inner sequence)<PContinue/></EPage>
-          </ESequence>
-          <EPage name="step3">Step 3<PContinue button="Continue"/></EPage>
-        </ESequence>
       </ESequence>
 
       <!-- ========================= EREPEAT ========================= -->
@@ -384,12 +382,14 @@ const trials = [
             step indexes a list of trials defined in the setup block.
           </p>
 
-          <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto v-pre><code>&lt;ERepeat name="trials" :count="trials.length" v-slot="{ step }"&gt;
-  &lt;EPage name="trial"&gt;
-    The word is {{ trials[step].word }}.
-    &lt;PContinue/&gt;
-  &lt;/EPage&gt;
-&lt;/ERepeat&gt;</code></pre>
+          <DemoCode :code="`
+            <ERepeat name='trials' :count='trials.length' v-slot='{ step }'>
+              <EPage name='trial'>
+                The word is {{ trials[step].word }}.
+                <PContinue/>
+              </EPage>
+            </ERepeat>
+          `"/>
           <PContinue/>
         </EPage>
 
