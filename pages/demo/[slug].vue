@@ -14,7 +14,7 @@ watchImmediate(demo, (entry) => {
   if (entry?.windowSize) {
     defineWindowSize(entry.windowSize)
   } else {
-    resetWindowSize()
+    defineWindowSize({ width: 600, height: 800 })
   }
 })
 
