@@ -80,6 +80,7 @@ const fmtCell = (value: unknown) => (value === null || value === undefined ? 'â€
     min-w="300px"
     flex="~ col"
     relative
+    h="500px"
   >
     <div flex="~ row items-center gap-2" mb-2>
       <h2 shrink-0>Data</h2>
@@ -97,16 +98,16 @@ const fmtCell = (value: unknown) => (value === null || value === undefined ? 'â€
       </select>
     </div>
 
-    <div v-if="result && !result.ok" text-xs text-red-600 font-mono whitespace-pre-wrap>
+    <div v-if="result && !result.ok" text-xs text-red-600 font-mono whitespace-pre-wrap flex-1 min-h-0 overflow-y-auto>
       {{ result.error }}
     </div>
 
     <template v-else-if="view?.format === 'json'">
-      <pre text-xs class="subtle-scrollbar whitespace-pre-wrap break-words max-h-60 overflow-y-auto">{{ jsonText }}</pre>
+      <pre text-xs class="subtle-scrollbar whitespace-pre-wrap break-words flex-1 min-h-0 overflow-y-auto">{{ jsonText }}</pre>
     </template>
 
     <template v-else-if="rows.length">
-      <div class="subtle-scrollbar max-h-60 overflow-y-auto">
+      <div class="subtle-scrollbar flex-1 min-h-0 overflow-y-auto">
         <table text-xs b-1 b-gray-200 rounded w-full>
           <thead bg-gray-50>
             <tr>
