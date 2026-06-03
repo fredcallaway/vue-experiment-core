@@ -55,55 +55,23 @@ const onChoice = (option: string) => {
   epoch.done()
 }
 
-// To show the data view live, collect the running session's events (the same thing the
-// export path feeds to the view) and run the declared transform over them. A real
-// export reads the saved SessionData from disk; here we just watch the event bus.
-const events = reactive<LogEvent[]>([])
-useLogEventBus().on(e => events.push(e))
-const choiceView = useDataViews().choice
-const choiceRows = computed(() =>
-  choiceView.fn({ meta: {} as any, events: [...events] }) as { option: string; rt: number }[]
-)
-
 </script>
 
 <template>
   <div p4 flex-col gap-6>
 
     <!-- ========================= INTRO ========================= -->
-    <p text-sm text-gray-600>
-      This demo <i>is</i> a custom epoch, written from scratch. Read its source —
-      <code>CustomEpochDemo.vue</code> — alongside the live example below; the comments
-      walk through the four things every custom epoch does.
+    <h2>Custom Epochs</h2>
+    <p ext-gray-600>
+      This demo shows how to write epochs with complex internal
+      state and control flow. Open the source file — 
+      <code>CustomEpochDemo.vue</code> — to follow along.
     </p>
 
     <!-- ========================= THE EPOCH ========================= -->
     <div flex-col flex-center gap-4 min-h-40>
       <div text-lg font-bold>Which feels warmer?</div>
       <PButtons values="left right" :disabled="!ready" @click="onChoice" />
-    </div>
-
-    <!-- ========================= DATA VIEW ========================= -->
-    <!-- The live data view: every choice.made event becomes one row here, the exact
-         shape a project would export. Make a choice and watch a row appear. -->
-    <div>
-      <h3 font-bold mb-2>Data view (<code>choice</code>)</h3>
-      <p text-sm text-gray-600 mb-2>
-        Each response logs a <code>choice.made</code> event; the data view maps those to
-        rows. This is what you'd download.
-      </p>
-      <table v-if="choiceRows.length" text-sm b-1 b-gray-200 rounded w-full>
-        <thead bg-gray-50>
-          <tr><th p2 text-left>option</th><th p2 text-left>rt (ms)</th></tr>
-        </thead>
-        <tbody>
-          <tr v-for="(row, i) in choiceRows" :key="i" b-t b-gray-100>
-            <td p2>{{ row.option }}</td>
-            <td p2>{{ Math.round(row.rt) }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <div v-else text-sm text-gray-400 italic>No responses yet — make a choice above.</div>
     </div>
 
   </div>
