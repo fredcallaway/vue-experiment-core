@@ -31,6 +31,7 @@ export const [provideSimonParams, useSimonParams] = defineParams({
   maxRounds: 8,      // round count at which we call it a win
   flashMs: 450,      // how long each pad lights up while the computer plays
   gapMs: 200,        // dark gap between flashes
+  startDelayMs: 700, // pause after the participant is ready, before the sequence plays
 })
 export type SimonParams = ReturnType<typeof useSimonParams>
 
@@ -58,10 +59,10 @@ const params = useSimonParams(props.params)
 const { sleep } = useLocalAsync()
 
 // 2. Declare the epoch BEFORE composables that depend on epoch context. We use a phase
-//    epoch: one component, three visual states it moves between without remounting.
-const phases = ['show', 'recall', 'feedback'] as const
+//    epoch: one component, several visual states it moves between without remounting.
+const phases = ['start', 'show', 'recall', 'feedback'] as const
 const E = usePhaseEpoch('simon', phases)
-const { Phase, goToPhase } = useDisplayPhases(phases, { duration: 0 })
+const { goToPhase } = useDisplayPhases(phases, { duration: 0 })
 watch(E.phase, goToPhase)
 
 // --- Internal state -------------------------------------------------------------
@@ -113,10 +114,18 @@ const finishRound = (correct: boolean) => {
 // Bind the four pad keys for the lifetime of the epoch; the handler gates on `accepting`.
 PADS.forEach((pad, i) => onKeyPress(pad.key, () => onPad(i)))
 
+// SPACE both starts the game (from `start`) and advances after feedback. The handler
+// gates on the current phase so a stray press mid-sequence does nothing.
+onKeyPress('SPACE', () => {
+  if (E.phase.value === 'start') E.goTo('show')
+  else if (E.phase.value === 'feedback') nextRound()
+})
+
 // 4. The control flow lives in one watcher keyed on the current phase.
 watchImmediate(E.phase, async (phase) => {
   if (phase === 'show') {
-    // Extend the sequence by one and play the whole thing back.
+    // Brief beat after "ready", then extend the sequence and play it back.
+    await sleep(params.startDelayMs)
     sequence.value = R.times(targetLength.value, () => random.int(0, PADS.length - 1))
     inputPos.value = 0
     await playSequence()
@@ -145,47 +154,50 @@ const nextRound = () => {
     </p>
 
     <!-- ========================= THE GAME ========================= -->
-    <div flex-col flex-center gap-5 min-h-60>
+    <!-- Every row below keeps a fixed footprint regardless of phase, so the pads
+         never jump when the prompt, the progress dots, or the message changes. -->
+    <div flex-col flex-center gap-5>
 
-      <div text-lg font-bold>
+      <div h-7 text-lg font-bold flex-center>
         <span v-if="E.phase.value === 'show'">Watch…</span>
         <span v-else-if="E.phase.value === 'recall'">Your turn — repeat the sequence</span>
-        <span v-else>{{ lastCorrect ? 'Correct!' : 'Wrong — back to round 1' }}</span>
+        <span v-else-if="E.phase.value === 'feedback'">{{ lastCorrect ? 'Correct!' : 'Wrong — back to round 1' }}</span>
       </div>
 
       <div text-sm text-gray-500>Round {{ round }} / {{ params.maxRounds }}</div>
 
-      <!-- The four pads. A pad lights up while the computer plays it, briefly when
-           pressed, and is dimmed whenever input is not being accepted. -->
+      <!-- The four pads. Dim by default; a pad lights up while the computer plays it
+           and briefly when the participant presses its key. -->
       <div flex gap-3>
-        <button
+        <div
           v-for="(pad, i) in PADS"
           :key="i"
           class="pad"
-          :class="[pad.color, { lit: litPad === i, idle: !accepting }]"
-          @click="onPad(i)"
+          :class="[pad.color, { lit: litPad === i }]"
         >
           {{ pad.key }}
-        </button>
+        </div>
       </div>
 
-      <!-- Recall progress: filled dots for pads entered so far. -->
-      <div v-if="E.phase.value === 'recall'" flex gap-2 h-3>
+      <!-- Recall progress: filled dots for pads entered so far. Always rendered (just
+           empty outside recall) so its row reserves height in every phase. -->
+      <div flex gap-2 h-3>
         <div
-          v-for="n in sequence.length"
+          v-for="n in (E.phase.value === 'recall' ? sequence.length : 0)"
           :key="n"
           class="dot"
           :class="{ done: n <= inputPos }"
         />
       </div>
 
-      <Phase which="feedback" flex-center>
-        <PButton
-          once
-          :value="!lastCorrect ? 'Try again' : round >= params.maxRounds ? 'Finish' : 'Next round'"
-          @click="nextRound"
-        />
-      </Phase>
+      <!-- Bottom prompt. Fixed height; SPACE drives start and feedback (see onKeyPress). -->
+      <div h-7 text-gray-500 flex-center>
+        <span v-if="E.phase.value === 'start'">Press <kbd>space</kbd> to begin</span>
+        <span v-else-if="E.phase.value === 'feedback'">
+          Press <kbd>space</kbd> to
+          {{ !lastCorrect ? 'try again' : round >= params.maxRounds ? 'finish' : 'continue' }}
+        </span>
+      </div>
     </div>
 
   </div>
@@ -193,22 +205,22 @@ const nextRound = () => {
 
 <style scoped>
 .pad {
-  @apply w-20 h-20 rounded-xl text-white text-2xl font-bold flex items-center justify-center cursor-pointer select-none;
+  @apply w-20 h-20 rounded-xl text-white text-2xl font-bold flex items-center justify-center select-none;
   opacity: 0.45;
   transition: opacity 120ms ease, transform 120ms ease;
 }
+/* Pads are dim by default and light up when played back or pressed. */
 .pad.lit {
   opacity: 1;
   transform: scale(1.08);
-}
-/* Pads are clickable during recall; during show/feedback they only display. */
-.pad.idle {
-  cursor: default;
 }
 .dot {
   @apply w-3 h-3 rounded-full bg-gray-300;
 }
 .dot.done {
   @apply bg-gray-700;
+}
+kbd {
+  @apply px-1.5 py-0.5 rounded border border-gray-300 bg-gray-100 text-gray-700 text-sm font-mono;
 }
 </style>
