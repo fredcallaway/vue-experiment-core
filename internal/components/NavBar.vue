@@ -68,7 +68,7 @@ const getNavTarget = (linkPath: string) => {
         v-for="link in topNavLinks"
         :key="link.path"
         :to="getNavTarget(link.path)"
-        :class="isActiveLink(link.path) ? 'text-black cursor-default' : 'text-gray-300'"
+        :class="isActiveLink(link.path) ? 'text-black' : 'text-gray-300'"
       >
         {{ link.label }}
       </NuxtLink>
