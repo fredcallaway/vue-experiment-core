@@ -5,8 +5,10 @@ This branch simplifies the template by removing playback-specific infrastructure
 ## Summary
 
 - Removed the playback page and playback controller UI from `core`.
-- Removed `useParticipant.ts` and the `participant.*` event bus/logging abstraction.
-- Kept `PButton`, `PButtons`, and `PKey`, but they no longer log `participant.*` events.
+- Removed `useParticipant.ts` and its event-bus / pid / input-blocking abstraction.
+- Kept `PButton`, `PButtons`, and `PKey`; they (and `usePButton`, `PContinue`, and
+  `onKeyPress`) still log `participant.*` events automatically, now directly from the
+  primitives rather than through `useParticipant`. See "Logging" below.
 - Moved keyboard response handling into `core/utils/keyPress.ts`.
 - Removed template-managed participant input blocking; projects should block input explicitly in task code, usually with an `animating` or phase-state guard.
 - Kept `usePButton`, but rewrote it to use a local event controller instead of `useParticipant`.
@@ -105,7 +107,9 @@ Migration guidance:
 - Playback support.
 - Input blocking during display transitions.
 
-Those responsibilities are now split or removed.
+Those responsibilities are now split or removed. Automatic `participant.*` logging was
+kept, but the input primitives now log directly (see "Logging"); the buses, pids,
+playback, and input blocking are gone.
 
 ### Removed APIs
 
@@ -124,9 +128,18 @@ validateKeySpec()
 
 ### Logging
 
-`PButton`, `PButtons`, and `PKey` no longer log automatically.
+The template-provided input primitives log their events automatically under the
+`participant.*` namespace, and the developer event view highlights them:
 
-Use semantic task logs instead:
+- `PButton`, `PButtons`, `usePButton`, and `PContinue` (button mode) log
+  `participant.click`, `participant.hover`, and `participant.mousedown`, each with
+  `{ value }`.
+- `onKeyPress` — and therefore `PKey`, `promiseKeyPress`, and `PContinue`'s space-key
+  affordance — logs `participant.keyPress` with `{ key, rt }`.
+
+These logs are for inspection/debugging, not your data record. They are emitted by the
+generic primitives and are easy to bypass with regular buttons or custom UI, so don't
+rely on them for coverage. Log semantic task data explicitly:
 
 ```ts
 logTrial({
@@ -135,8 +148,6 @@ logTrial({
   reward,
 })
 ```
-
-This is intentional. Generic automatic logs like `participant.click` gave a false sense of data coverage and were easy to bypass with regular buttons or custom UI.
 
 ## Keyboard Responses
 

@@ -36,14 +36,17 @@ const controller = props.controller ?? createEventController<PButtonTypeMap>()
 controller.on('click', (value: string) => {
   if (disabled.value) return
   clicked.value = true
+  logEvent('participant.click', { value })
   emit('click', value)
 })
 controller.on('hover', (value: string) => {
   if (disabled.value) return
+  logEvent('participant.hover', { value })
   emit('hover', value)
 })
 controller.on('mousedown', (value: string) => {
   if (disabled.value) return
+  logEvent('participant.mousedown', { value })
   emit('mousedown', value)
 })
 

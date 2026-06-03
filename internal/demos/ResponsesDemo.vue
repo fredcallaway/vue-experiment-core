@@ -10,6 +10,10 @@
 //   - script-side: await a typed response in script (usePButton().promise,
 //     promiseKeyPress) — useful inside async trial logic.
 //
+// Every input below logs automatically under the participant.* namespace
+// (participant.click / hover / mousedown / keyPress), shown highlighted in the event
+// view. This is just for inspection — log semantic task data yourself with logTrial.
+//
 // Since the simplified branch removed useParticipant, the template no longer blocks
 // input during transitions. You gate it yourself — the last page shows the pattern.
 

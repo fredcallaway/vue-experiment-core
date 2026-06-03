@@ -67,7 +67,16 @@ useLogEventBus().on((event) => {
       caption,
       data: R.isEmpty(rest) ? undefined : rest,
     })
-  } 
+  }
+  else if (isParticipantEvent(event)) {
+    const caption = event.eventType.slice('participant.'.length)
+    events.unshift({
+      ...event,
+      caption,
+      data: R.isEmpty(event.data) ? undefined : event.data,
+      cardClass: 'card-primary',
+    })
+  }
   else if (isErrorEvent(event)) {
     const { message, ...rest } = event.data
     const { minimal } = formatErrorEvent({ message, ...rest })
@@ -109,6 +118,8 @@ useDebugBus().on(({message, info}) => {
 
 const eventFilters: Record<string, (eventType: string) => boolean> = {
   epoch: (t) => t.startsWith('epoch'),
+  participant: (t) => t.startsWith('participant'),
+  hover: (t) => ['participant.hover', 'participant.mousedown'].includes(t),
 }
 
 const showFilters = R.mapValues(eventFilters, (_, name) => 

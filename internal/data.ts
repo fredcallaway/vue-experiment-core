@@ -50,6 +50,12 @@ export const isEpochEvent = (event: LogEvent): event is EpochEvent => {
   return 'id' in event.data && event.eventType.startsWith('epoch.')
 }
 
+// Participant input events (clicks, key presses, etc.) logged automatically by the
+// template-provided input primitives (PButton, PKey, onKeyPress, …) under participant.*
+export const isParticipantEvent = (event: LogEvent): boolean => {
+  return event.eventType.startsWith('participant.')
+}
+
 export type ErrorEvent = BaseLogEvent<{
   message: string
   info?: any

@@ -2,6 +2,7 @@ import { onKeyStroke } from '@vueuse/core'
 
 import { assert } from './asserts'
 import { isTextInputFocused } from './misc'
+import { logEvent } from '../composables/logEvent'
 
 export const KEYS = [
   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
@@ -72,10 +73,9 @@ export const onKeyPress = (
       throw new Error('key is null in onKeyStroke handler: string2key likely has a bug')
     }
 
-    handler({
-      key,
-      rt: Math.round(performance.now() - startTime),
-    })
+    const keyPress: KeyPress = { key, rt: Math.round(performance.now() - startTime) }
+    logEvent('participant.keyPress', keyPress)
+    handler(keyPress)
   }, { dedupe })
 }
 
