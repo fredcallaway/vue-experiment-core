@@ -175,7 +175,8 @@ const makeId = (name: string, parent: Epoch | MultistepEpoch | PhaseEpoch) => {
 const hasFlag = (attrs: Record<string, any>, flag: string) => attrs[flag] === "" || attrs[flag] === true
 
 // Inject the epoch provided by the nearest enclosing epoch component (or TOP_EPOCH).
-// Use this from presentational components (e.g. PContinue) that act on their parent epoch.
+// Used by useEpoch to find a new epoch's parent; also usable from a component that needs
+// to act on its enclosing epoch directly.
 // A phase epoch is never itself a parent: it resolves to the child epoch of its
 // currently-active phase, so epochs/affordances mounted inside a <Phase> attach to
 // that phase's child rather than to the phase epoch itself.
