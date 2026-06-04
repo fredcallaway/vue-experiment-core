@@ -8,16 +8,15 @@ const currentEpoch = useCurrentEpoch()
   <div p4>
     <ESequence name="devtools">
 
-      <EPage name="intro">
+      <EContinue name="intro">
         <h2>Devtools</h2>
         The <code>/dev</code> panel gives you tools for building and debugging an
         experiment: controls for moving around, a live outline of the epoch tree,
         and an error boundary that keeps a single bug from stranding the
         participant. This tutorial walks through each.
-        <PContinue/>
-      </EPage>
+      </EContinue>
 
-      <EPage name="controls">
+      <EContinue name="controls">
         <h2>Controls</h2>
         <p mt-2>
           The controls let you move through the experiment without playing it
@@ -29,8 +28,7 @@ const currentEpoch = useCurrentEpoch()
         <div flex-center my4>
           <EpochControls max-w-40 />
         </div>
-        <PContinue />
-      </EPage>
+      </EContinue>
 
       <!-- The outline is a live tree of every epoch in the experiment. It shows
            you the full structure and lets you jump around it. -->
@@ -50,9 +48,9 @@ const currentEpoch = useCurrentEpoch()
           </div>
 
           <ESequence name="example_sequence">
-            <EPage name="a"><PContinue button /></EPage>
-            <EPage name="b"><PContinue button /></EPage>
-            <EPage name="c"><PContinue button /></EPage>
+            <EContinue name="a" button />
+            <EContinue name="b" button />
+            <EContinue name="c" button />
           </ESequence>
         </EPage>
 
@@ -80,13 +78,13 @@ const currentEpoch = useCurrentEpoch()
             <div v-if="step == 2" flex-col gap-3>
               <div>Oh my goodness, I didn't see this coming!</div>
               <ESequence name="surpriseSequence">
-                <EPage name="surprise"><PContinue button="much surprise" /></EPage>
-                <EPage name="unexpect"><PContinue button="very unexpect " /></EPage>
+                <EContinue name="surprise" button="much surprise" />
+                <EContinue name="unexpect" button="very unexpect " />
               </ESequence>
             </div>
             <div v-else flex-col gap-3>
               everything is going according to plan...
-              <EPage><PContinue button /></EPage>
+              <EContinue button />
             </div>
           </ERepeat>
         </EPage>
@@ -98,7 +96,7 @@ const currentEpoch = useCurrentEpoch()
            one trial doesn't silently strand the participant. -->
       <ESequence name="error">
 
-        <EPage name="intro">
+        <EContinue name="intro">
           <h2>Error handling</h2>
           <p mt-2>
             Epoch content runs inside an error boundary. When an epoch throws, the
@@ -110,14 +108,12 @@ const currentEpoch = useCurrentEpoch()
             an epoch. In real code you won't call it yourself; unexpected exceptions
             are caught the same way.
           </p>
-          <PContinue/>
-        </EPage>
+        </EContinue>
 
         <ESequence name="demo" flex-center flex-col gap-4>
-          <EPage name="PreError">
+          <EContinue name="PreError" button>
             The next page will throw an error.
-            <PContinue button/>
-          </EPage>
+          </EContinue>
           <!-- Throwing on mount simulates a bug in a trial. The boundary catches
                it, logs it, and renders the fallback in place of this content. -->
           <EPage name="brokenPage" @mounted="throwError('Test error. Please ignore')" />

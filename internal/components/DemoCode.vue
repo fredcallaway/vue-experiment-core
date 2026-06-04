@@ -18,7 +18,7 @@
 
 const props = defineProps<{
   // The snippet to display. May be a multi-line template string with leading indentation; it's
-  // trimmed and dedented before display. e.g. code="<EPage name='hi'>Hello<PContinue/></EPage>"
+  // trimmed and dedented before display. e.g. code="<EContinue name='hi'>Hello</EContinue>"
   code: string
   // Side-by-side (default) puts code and render in two columns; otherwise code sits above.
   layout?: 'row' | 'column'

@@ -55,18 +55,17 @@ const order = permute('cueOrder', ['A', 'B', 'C'])
     <ESequence name="params">
 
       <!-- ===================== Intro ===================== -->
-      <EPage name="intro" flex-col gap-3>
+      <EContinue name="intro" flex-col gap-3>
         <h2 text-xl font-bold>Parameters and conditions</h2>
         <p>
           <code>defineParams</code> gives an epoch typed, defaulted settings you can
           override per instance. <code>useConditions</code> assigns between-subject
           variants that cycle across sessions and can be pinned from the dev UI.
         </p>
-        <PContinue/>
-      </EPage>
+      </EContinue>
 
       <!-- ===================== Params ===================== -->
-      <EPage name="paramsOverrides" flex-col gap-4>
+      <EContinue name="paramsOverrides" flex-col gap-4>
         <h3 font-bold>Params overrides</h3>
         <p text-sm text-gray-600>
           The same <code>Swatch</code> component, rendered three times. Defaults apply
@@ -78,8 +77,7 @@ const order = permute('cueOrder', ['A', 'B', 'C'])
           <Swatch :params="{ color: 'tomato' }" />
           <Swatch :params="{ color: 'seagreen', size: 120 }" />
         </div>
-        <PContinue/>
-      </EPage>
+      </EContinue>
 
       <!-- ===================== Conditions ===================== -->
       <EPage name="conditions" flex-col gap-4>

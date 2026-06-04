@@ -2,6 +2,7 @@ import type { Component } from 'vue'
 import BasicsDemo from './BasicsDemo.vue'
 import CustomEpochDemo from './CustomEpochDemo.vue'
 import DataDemo from './DataDemo.vue'
+import ExperimentDemo from './ExperimentDemo.vue'
 import DevtoolsDemo from './DevtoolsDemo.vue'
 import InstructionsDemo from './InstructionsDemo.vue'
 import ParamsDemo from './ParamsDemo.vue'
@@ -28,6 +29,11 @@ export const demos: Record<string, DemoEntry> = {
     title: 'Basics',
     summary: 'Building an experiment from epochs, pages, and sequences.',
     component: BasicsDemo,
+  },
+  experiment: {
+    title: 'Full experiment',
+    summary: 'A short end-to-end study: consent, instructions, trials, survey, and completion.',
+    component: ExperimentDemo,
   },
   custom: {
     title: 'Custom epochs',

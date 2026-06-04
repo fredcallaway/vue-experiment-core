@@ -47,11 +47,10 @@
 
       <!-- The final page. Finishing a navigable sequence works like ESequence:
            the last child completing finishes the whole thing. -->
-      <EPage name="ready">
+      <EContinue name="ready" button="Start">
         <div font-bold>Ready</div>
         That's the end of the instructions.
-        <PContinue button="Start"/>
-      </EPage>
+      </EContinue>
 
     </ENavigableSequence>
   </div>

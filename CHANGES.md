@@ -6,7 +6,7 @@ This branch simplifies the template by removing playback-specific infrastructure
 
 - Removed the playback page and playback controller UI from `core`.
 - Removed `useParticipant.ts` and its event-bus / pid / input-blocking abstraction.
-- Kept `PButton`, `PButtons`, and `PKey`; they (and `usePButton`, `PContinue`, and
+- Kept `PButton`, `PButtons`, and `PKey`; they (and `usePButton`, `EContinue`, and
   `onKeyPress`) still log `participant.*` events automatically, now directly from the
   primitives rather than through `useParticipant`. See "Logging" below.
 - Moved keyboard response handling into `core/utils/keyPress.ts`.
@@ -31,35 +31,41 @@ This branch simplifies the template by removing playback-specific infrastructure
 - Updated the deploy/git-status clean-worktree check to ignore `core/pages/demo` instead of `core/pages/test`.
 - Scoped the epoch outline cache per page (keyed by the page's root epoch id) so the outline rebuilds when navigating between pages with different timelines, e.g. `/dev` and `/demo/*`. The `localStorage` key changed from `epoch-outline` to `epoch-outline:<rootId>`; the old key is now unused and can be cleared.
 - Moved epoch-outline traversal off the developer's tab into a hidden iframe worker, so building/refreshing the outline no longer reloads the page (see `core/docs/adr/0003-offscreen-outline-traversal.md`). The developer's `/dev` tab no longer traverses the timeline itself; it mounts a hidden iframe (`?outlineWorker=1&noDev`) that traverses, saves the shared `localStorage` cache, and broadcasts an update over a `BroadcastChannel`, which the tab applies in place. The worker re-traverses on HMR. **If your project overrides `core/layouts/default.vue`:** add `<OutlineWorkerFrame />` inside the dev-tools (`v-if="devTools"`) branch and `<OutlineWorkerDriver v-if="isOutlineWorker" />` inside the bare (`v-else`) branch, and force debug mode for the worker in `<script setup>` with `const isOutlineWorker = getUrlFlag('outlineWorker'); if (isOutlineWorker) useCurrentSession().mode = 'debug'`.
-- **⚠️ Breaking:** Removed `EContinue` in favor of `EPage` + `PContinue`. See "EContinue Removal" below.
+- **⚠️ Breaking:** Removed `PContinue`; `EContinue` is the standard continue affordance. See "EContinue" below.
 - **⚠️ Breaking:** Removed the internal pseudo-leaf mechanism. Phase epochs (`usePhaseEpoch`) now create a real child epoch per phase, and `ESequence`/`ERepeat` now require epoch children. See "Pseudo-Leaf Removal" below.
 
-## EContinue Removal
+## EContinue
 
-`EContinue` bundled three concerns — the epoch wrapper, the content slot, and the continue affordance — which made the button placement rigid and the component impossible to compose. It is replaced by `EPage` (epoch wrapper + slot) and a standalone `PContinue` (the continue button / space-key affordance). This lets you place the continue control anywhere in the page and lets a page have other interactive content alongside it.
+`EContinue` is the standard leaf epoch: it shows content and advances when the participant continues (a button, or the space key). It is the default for the most common screen in any experiment — an instruction or text page — and bundles the epoch wrapper, content slot, and continue affordance into one component.
 
-`PContinue` advances its parent epoch (via `injectParentEpoch().next()`), so it must be used inside an epoch component — almost always an `EPage`. Do not place a bare `PContinue` directly under `ERepeat`/`ESequence` without an enclosing `EPage`.
+This reverses an earlier decision on this branch that removed `EContinue` in favor of `EPage` + a standalone `PContinue`. In practice, `EContinue` is the dominant idiom in real experiments built on the template, and the split forced the verbose `EPage` + `PContinue` pairing for the most common screen. `PContinue` has been **removed**; its only real advantage over `EContinue` — placing the affordance manually — is now covered by `EContinue`'s `#bottom` slot, which renders content below the button / space prompt.
 
-Migration: replace each `EContinue` with an `EPage` wrapping the same slot content plus a `PContinue`, moving the affordance props (`button`, `delay`, `small`) onto `PContinue` and the epoch props (`name`, `prompt`, `duration`) onto `EPage`. Add a `PContinue` only where the page should advance on continue.
+The division of labor:
+
+- **`EContinue`** — the standard leaf for "show this, then continue". Props: `name`, `button` (boolean or label), `delay` (minimum reading time, ms), `prompt` (apply prompt styling to the slot), `small`. Slots: default (the content) and `#bottom` (content below the affordance).
+- **`EPage`** — the lower-level epoch wrapper that `EContinue` builds on. Reach for it directly only when you need a bare epoch with no built-in continue control: a page that auto-advances via `:duration`, or one whose slot drives `done()`/`state` from script.
+- **A custom component** — anything with real internal logic (phases, timing, shared state). A trial is a component, not an inline epoch tree. See the custom-epoch and full-experiment demos.
+
+Migration (from the removed `EPage` + `PContinue` pairing back to `EContinue`):
 
 ```vue
-<!-- before -->
-<EContinue name="welcome" button="Start" delay=500>
-  <h2>Welcome!</h2>
-</EContinue>
-
-<!-- after -->
-<EPage name="welcome">
+<!-- before (PContinue removed) -->
+<EPage name="welcome" flex-center flex-col>
   <h2>Welcome!</h2>
   <PContinue button="Start" delay=500/>
 </EPage>
+
+<!-- after -->
+<EContinue name="welcome" button="Start" delay=500>
+  <h2>Welcome!</h2>
+</EContinue>
 ```
 
 Notes:
-- `EContinue` placed the affordance after the slot automatically; with `EPage` you place `<PContinue/>` explicitly, so put it last to match the old layout.
-- The `prompt` styling that `EContinue` applied to its slot is provided by `EPage`'s `prompt` prop; `PContinue` no longer has a `prompt` prop.
-- Naming is unaffected. A straight `EContinue` → `EPage` swap preserves epoch ids: under an `ESequence`/`ERepeat`/phase parent the step index is part of the id (`seq[0]-EPage`, `seq[1]-EPage`, …), so unnamed siblings do not collide. `EContinue` defaulted `name` to `'EContinue'` and `EPage` defaults to `'EPage'`; only the leaf segment changes.
-- **⚠️ Styling break:** `EContinue` applied `flex-center flex-col` to its root, centering the slotted content as a column. Neither `EPage` nor `PContinue` does this — only the `PContinue` button is wrapped in a `flex-center` div — so after migrating, content that previously appeared centered will follow normal block layout. To restore the old behavior, put the utilities on the `EPage` tag, which forwards them to its root: `<EPage flex-center flex-col>…</EPage>`.
+- Move the affordance props (`button`, `delay`, `small`) onto `EContinue`; the slot content stays as the default slot.
+- `EContinue` centers its content (`flex-center flex-col`) by default, so the explicit `flex-center flex-col` that the `EPage` migration added is no longer needed.
+- Where a page had other content *after* the continue control, put it in the `#bottom` slot.
+- Keep `EPage` where the page has no continue affordance (e.g. a `:duration` page, or a page whose slot calls `done()` directly).
 
 ## Pseudo-Leaf Removal
 
@@ -67,15 +73,15 @@ The epoch system previously had an internal **pseudo-leaf** mechanism: `useIndex
 
 In its place:
 
-- **Phase epochs create real child epochs.** Each phase of a `usePhaseEpoch` now gets a real epoch named after the phase, created directly when the phase changes (in `goTo`, and once at init for the first phase). Phases are now ordinary epochs: they log `epoch.start`, appear in the outline, and are directly jump-addressable. Epochs and affordances mounted inside an active `<Phase>` (e.g. a nested `<ESequence>`, or a `PContinue`) now attach to that phase's child epoch automatically.
+- **Phase epochs create real child epochs.** Each phase of a `usePhaseEpoch` now gets a real epoch named after the phase, created directly when the phase changes (in `goTo`, and once at init for the first phase). Phases are now ordinary epochs: they log `epoch.start`, appear in the outline, and are directly jump-addressable. Epochs and affordances mounted inside an active `<Phase>` (e.g. a nested `<ESequence>`) now attach to that phase's child epoch automatically.
 
-- **`ESequence`/`ERepeat` require epoch children.** The pseudo-leaf used to cover for a bare presentational leaf (e.g. a `<PContinue>` directly under `<ESequence>` with no enclosing `EPage`). That is no longer supported: a sequence step with no child epoch now throws an informative error. Wrap such content in an `EPage` (this is already how the real experiment and demos are written).
+- **`ESequence`/`ERepeat` require epoch children.** The pseudo-leaf used to cover for a bare presentational leaf with no enclosing epoch. That is no longer supported: a sequence step with no child epoch now throws an informative error. Use an `EContinue` (or another epoch component) as the child (this is already how the real experiment and demos are written).
 
 **⚠️ Breaking for saved data / jump targets.** The per-phase epoch id changed from `…[<phase>]-leaf_<phase>` to `…[<phase>]-<phase>` (e.g. `clicktest[play]-play`). Any saved jump targets or data keyed on the old `leaf_<phase>` ids must be updated. Sequence/repeat step ids are unaffected (the `leaf_<step>` segment was internal and skipped in jump paths).
 
 Migration:
 
-- Ensure every direct child of an `ESequence`/`ERepeat` is an epoch component (almost always an `EPage`). A bare `<PContinue>` under a sequence must be wrapped: `<EPage><PContinue button/></EPage>`.
+- Ensure every direct child of an `ESequence`/`ERepeat` is an epoch component (almost always an `EContinue`, or a custom trial component).
 - Update any persisted `jump` URL params or saved data that reference `leaf_<phase>` ids to the new `<phase>` ids.
 - See `docs/adr/0001-remove-pseudo-leaf.md` for the full rationale.
 
@@ -133,10 +139,10 @@ validateKeySpec()
 The template-provided input primitives log their events automatically under the
 `participant.*` namespace, and the developer event view highlights them:
 
-- `PButton`, `PButtons`, `usePButton`, and `PContinue` (button mode) log
+- `PButton`, `PButtons`, `usePButton`, and `EContinue` (button mode) log
   `participant.click`, `participant.hover`, and `participant.mousedown`, each with
   `{ value }`.
-- `onKeyPress` — and therefore `PKey`, `promiseKeyPress`, and `PContinue`'s space-key
+- `onKeyPress` — and therefore `PKey`, `promiseKeyPress`, and `EContinue`'s space-key
   affordance — logs `participant.keyPress` with `{ key, rt }`.
 
 These logs are for inspection/debugging, not your data record. They are emitted by the

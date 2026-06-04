@@ -48,9 +48,9 @@ watch(epoch.phase, async (newPhase) => {
       <Phase which="apple" flex-center flex-col gap-5>
         <div font-bold>apple</div>
         <ESequence name="applesequence" text-lg>
-          <EPage name="reddelicious">Red Delicious<PContinue button/></EPage>
-          <EPage name="grannysmith">Granny Smith<PContinue button/></EPage>
-          <EPage name="honeycrisp">Honeycrisp<PContinue button/></EPage>
+          <EContinue name="reddelicious" button>Red Delicious</EContinue>
+          <EContinue name="grannysmith" button>Granny Smith</EContinue>
+          <EContinue name="honeycrisp" button>Honeycrisp</EContinue>
         </ESequence>
       </Phase>
 

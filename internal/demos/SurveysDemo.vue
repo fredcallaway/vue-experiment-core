@@ -37,15 +37,14 @@ const rows = computed(() =>
     <ESequence name="surveys">
 
       <!-- ========================= INTRO ========================= -->
-      <EPage name="intro" flex-col gap-3>
+      <EContinue name="intro" flex-col gap-3>
         <h2 text-xl font-bold>Surveys</h2>
         <p>
           Survey epochs wrapped in an <code>ESurveyWrapper</code>. Each logs a
           <code>survey.response</code> event; the project declares a data view to export
           them. On the next page, answer the questions and watch the rows fill in.
         </p>
-        <PContinue/>
-      </EPage>
+      </EContinue>
 
       <!-- ========================= SURVEY + DATA VIEW ========================= -->
       <EPage name="survey" flex-col gap-6>

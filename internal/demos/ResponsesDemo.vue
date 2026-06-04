@@ -2,8 +2,9 @@
 
 // The "responses" tutorial. Collecting participant input — mouse and keyboard — is
 // part of nearly every trial, but the pieces that do it are spread across components
-// (PButton, PButtons, PContinue, PKey) and helpers (usePButton, onKeyPress,
-// promiseKeyPress). This demo gathers them in one place, each on its own page.
+// (PButton, PButtons, PKey) and helpers (usePButton, onKeyPress, promiseKeyPress).
+// This demo gathers them in one place, each on its own page. (To advance a page, see
+// EContinue in the basics demo — it's the standard "continue" affordance.)
 //
 // Two recurring patterns cut across both modalities:
 //   - declarative: render a component and handle its @click/@press event, vs.
@@ -143,17 +144,19 @@ const onGuardedChoice = (value: string) => {
         </div>
       </EPage>
 
-      <!-- ===================== PContinue ===================== -->
-      <EPage name="continue" flex-col gap-4>
-        <div font-bold>PContinue</div>
+      <!-- ===================== EContinue ===================== -->
+      <!-- EContinue is itself an epoch (not a P-component): it shows content and
+           advances on a button or the space key. It's the standard leaf for a
+           "read this, then continue" screen — see the basics demo. -->
+      <EContinue name="continue" button="Finish" flex-col gap-4>
+        <div font-bold>EContinue</div>
         <p>
-          <code>PContinue</code> is the standard "advance" affordance: a button (with
-          <code>button="…"</code>) or a space-key prompt by default. It calls
-          <code>next()</code> on its parent epoch, so it lives inside an
-          <code>EPage</code>. Here it finishes the demo.
+          <code>EContinue</code> is the standard "advance" affordance: a screen that
+          shows its content and finishes on a button (with <code>button="…"</code>) or
+          the space key by default. It's the leaf you'll use for most instruction and
+          text screens. Here it finishes the demo.
         </p>
-        <PContinue button="Finish" />
-      </EPage>
+      </EContinue>
 
     </ENavigableSequence>
   </div>

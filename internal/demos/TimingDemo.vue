@@ -33,17 +33,16 @@ const runSleep = async () => {
     <ESequence name="timing">
 
       <!-- ===================== Intro ===================== -->
-      <EPage name="intro" flex-col gap-3>
+      <EContinue name="intro" button="Start" flex-col gap-3>
         <h2 text-xl font-bold>Timing</h2>
         <p>
           Countdowns, fixed-duration pages, and awaitable delays — the three timing
           primitives you'll reach for in trials.
         </p>
-        <PContinue button="Start" />
-      </EPage>
+      </EContinue>
 
       <!-- ===================== useTimer ===================== -->
-      <EPage name="timer" flex-col gap-3>
+      <EContinue name="timer" button="Next" flex-col gap-3>
         <div font-bold>useTimer</div>
         <p text-sm text-gray-600>
           A reactive countdown. <code>formattedTimeLeft</code> updates each second;
@@ -56,8 +55,7 @@ const runSleep = async () => {
           <PButton value="Pause" color="gray" :disabled="timer.status.value !== 'running'" @click="timer.pause" />
           <PButton value="Reset" color="gray" @click="timer.reset" />
         </div>
-        <PContinue button="Next" />
-      </EPage>
+      </EContinue>
 
       <!-- ===================== EPage :duration ===================== -->
       <!-- This page has no continue control; :duration makes it advance on its own
@@ -68,7 +66,7 @@ const runSleep = async () => {
       </EPage>
 
       <!-- ===================== useLocalAsync().sleep ===================== -->
-      <EPage name="sleep" flex-col gap-3>
+      <EContinue name="sleep" button="Finish" flex-col gap-3>
         <div font-bold>useLocalAsync().sleep</div>
         <p text-sm text-gray-600>
           An awaitable delay for async epoch logic — here it gates a reveal. Because it
@@ -77,8 +75,7 @@ const runSleep = async () => {
         </p>
         <PButton value="Reveal after 1.5 s" @click="runSleep" />
         <div v-if="revealed" text-green text-lg>Revealed!</div>
-        <PContinue button="Finish" />
-      </EPage>
+      </EContinue>
 
     </ESequence>
   </div>

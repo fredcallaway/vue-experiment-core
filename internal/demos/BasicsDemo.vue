@@ -28,7 +28,7 @@ const trials = [
 
       <!-- ========================= WELCOME ========================= -->
 
-      <EPage name="welcome">
+      <EContinue name="welcome">
         <h2>Welcome!</h2>
         <p>
           If you're just starting with the template, you've come to the right
@@ -39,17 +39,16 @@ const trials = [
           <h3>Tip</h3>
 
           This tutorial <em>is</em> an epoch! Open its source code in your
-          text editor to see how it works in more detail: 
+          text editor to see how it works in more detail:
           <code>core/internal/demos/BasicsDemo.vue</code>
         </div>
-        <PContinue/>
-      </EPage>
+      </EContinue>
 
       <!-- ========================= EPOCHS ========================= -->
 
       <ESequence name="epochs">
 
-        <EPage name="what">
+        <EContinue name="what">
           <h2>What is an epoch?</h2>
           <p>
             An <b>epoch</b> is a period of time in the experiment with a start and an end.
@@ -58,12 +57,12 @@ const trials = [
             and across experiments.
           </p>
           <p>
-            If you're familiar with <b>jsPsych</b>, an epoch combines the idea of a "timeline" and a "plugin"
-            into one composable unit. Like a timeline, epochs can string together different
-            sections and be hierarchically nested. Like a plugin, epochs can take parameters,
-            record data, and be defined with arbitrary HTML and javascript. The difference is
-            that the same component can do both.
-            An epoch is a <em>plugin that can have its own internal timeline.</em>
+            If you're familiar with <b>jsPsych</b>, an epoch is most like a "timeline": it
+            strings together sections of the experiment and can be hierarchically nested.
+            But unlike a jsPsych timeline — which is a flat list of trials — epochs compose
+            into a <em>tree</em>, so a self-contained block of trials can be dropped into a
+            larger experiment unchanged. Individual trials, like jsPsych's plugins, are
+            usually <b>components</b> you write (or reuse); epochs are how you arrange them.
           </p>
           <p>
             If you're familiar with computer science, the epoch system defines a <b>hierarchical state machine</b>
@@ -71,10 +70,9 @@ const trials = [
             You can also think of it like a <b>call stack</b> where each epoch is a <em>function</em>
             (more precisely, a function call).
           </p>
-          <PContinue/>
-        </EPage>
+        </EContinue>
 
-        <EPage name="tree">
+        <EContinue name="tree">
           <h2>The epoch tree</h2>
           <p>
             Because epochs can be hierarchically nested, your experiment forms a <b>tree</b>. Epochs that have
@@ -97,16 +95,15 @@ const trials = [
             You can see the whole tree, and jump around it, in the outline to the right
             (see the <NuxtLink to="/demo/devtools">devtools demo</NuxtLink>).
           </p>
-          <PContinue/>
-        </EPage>
+        </EContinue>
 
-        <EPage name="components">
+        <EContinue name="components">
           <h2>Epochs are components</h2>
           <p>
             You build an experiment by writing Vue <b>components</b> — reusable
             chunks of UI and logic defined in <code>.vue</code> files. Each epoch has an
             associated component, and you compose epochs the same way you nest HTML:
-            by nesting tags in a <code>&lt;template&gt;</code>. 
+            by nesting tags in a <code>&lt;template&gt;</code>.
           </p>
           <div card-info>
             New to Vue? The
@@ -116,127 +113,88 @@ const trials = [
           <p mt-3>Here is about the smallest experiment you can write:</p>
           <DemoCode code='
             <ESequence name="experiment">
-              <EPage name="hello">
-                Hello, world!
-                <PContinue/>
-              </EPage>
+              <EContinue name="hello">Hello, world!</EContinue>
+              <EContinue name="bye">Goodbye, world!</EContinue>
             </ESequence>
           '/>
           <p mt-3>
-            It renders a single screen with the text and a continue button. The
-            very page you're reading is built the same way: an
-            <code>ESequence</code> of <code>EPage</code>s.
+            It shows two screens in turn, each advancing on a press of space. The very
+            page you're reading is built the same way: an <code>ESequence</code> of
+            <code>EContinue</code>s.
           </p>
           <p>
             By convention, components that define epochs start with <code>E</code>.
             Components that start with <code>P</code> define actions the participant can take
             (see the <NuxtLink to="/demo/responses">responses demo</NuxtLink>).
           </p>
-          <PContinue/>
-        </EPage>
+        </EContinue>
 
-        <EPage name="building">
+        <EContinue name="building">
           <h2>The building blocks</h2>
           <p>There are three core epochs that you'll use in almost every experiment.</p>
           <ul my-3 flex-col gap-2>
-            <li><b><code>EPage</code></b> shows a single screen (e.g. a trial, an instructions page)</li>
+            <li><b><code>EContinue</code></b> shows a single screen and advances on a button or key press (e.g. an instructions page)</li>
             <li><b><code>ESequence</code></b> runs a sequence of epochs in order (e.g. the full experiment)</li>
             <li><b><code>ERepeat</code></b> runs one epoch many times (e.g. a block of trials).</li>
           </ul>
           <p>
-            <code>EPage</code> is where the participant actually does something, while
-            <code>ESequence</code> and <code>ERepeat</code> are how you compose epochs into
-            larger structures. The next sections cover each in detail.
+            <code>EContinue</code> is the standard leaf for a "read this, then continue"
+            screen, while <code>ESequence</code> and <code>ERepeat</code> compose epochs
+            into larger structures. Anything more involved than continuing — a trial with
+            real logic — is a custom component (covered below). The next sections take
+            each in turn.
           </p>
-          <PContinue/>
-        </EPage>
+        </EContinue>
       </ESequence>
 
-      <!-- ========================= EPAGE ========================= -->
+      <!-- ========================= ECONTINUE ========================= -->
 
-      <ESequence name="page">
-        <EPage name="intro">
-          <h2>EPage</h2>
+      <ESequence name="continue">
+        <EContinue name="intro">
+          <h2>EContinue</h2>
           <p>
-            <code>EPage</code> is the simplest epoch: it shows one screen and
-            finishes when the participant continues. For simple experiments,
-            all the leaves of your tree will be <code>EPage</code>s — 
-            instruction screens, individual trials, even sections of a trial.
+            <code>EContinue</code> is the simplest leaf epoch: it shows one screen and
+            finishes when the participant continues. Most instruction and text screens
+            in an experiment are a single <code>EContinue</code>.
           </p>
           <DemoCode code='
-            <EPage name="instructions">
+            <EContinue name="instructions">
               Press the button when you&apos;re ready.
-              <PContinue/>
-            </EPage>
+            </EContinue>
           '/>
           <p mt-3>
-            By default <code>PContinue</code> advances when the participant presses space;
-            pass <code>button</code> (e.g. <code>&lt;PContinue button="Next"/&gt;</code>) to show
-            a button instead.
+            By default <code>EContinue</code> advances when the participant presses space;
+            pass <code>button</code> (e.g. <code>&lt;EContinue button="Next"&gt;…&lt;/EContinue&gt;</code>)
+            to show a button instead, and <code>delay</code> to enforce a minimum reading time.
           </p>
-          <p mt-3>
-            <code>PContinue</code> is one of several <b>affordances</b> — small
-            components that let the participant end the current epoch. See the
-            <NuxtLink to="/demo/responses">responses demo</NuxtLink> for the full set.
-          </p>
-          <PContinue/>
-        </EPage>
+        </EContinue>
 
-        <!-- `state` is a reactive scratch object scoped to this page, handy for tracking
-             interaction without reaching for a logger. It's exposed as a slot prop. -->
-        <EPage name="state" v-slot="{ state }">
-          <h2>EPage: Using internal state</h2>
+        <EContinue name="component">
+          <h2>When a screen does more</h2>
           <p>
-            Each <code>EPage</code> hands its slot a reactive <code>state</code> object — a
-            per-page scratchpad for whatever the participant does on the page. Here we just
-            count clicks:
+            <code>EContinue</code> is for "show this, then move on". The moment a screen
+            has real logic — internal phases, timing, or state shared across those phases
+            (a trial, say) — write it as a <b>custom component</b> instead, with ordinary
+            Vue-native state. That component is itself a leaf epoch.
           </p>
-          <DemoCode my-3 layout="column" :code="`
-            <EPage name='demo' v-slot='{ state }'>
-              <button @click='state.clicks = (state.clicks ?? 0) + 1'>Click me</button>
-              clicks: {{ state.clicks ?? 0 }}
-            </EPage>
-          `">
-            <div flex-center gap-3>
-              <button b-1 b-gray-300 rounded px-3 py-1 @click="state.clicks = (state.clicks ?? 0) + 1">Click me</button>
-              <span text-gray-600>clicks: {{ state.clicks ?? 0 }}</span>
-            </div>
-          </DemoCode>
-          <p text-gray-600>
-            Note: EPage state lives only as long as the page's epoch. To keep data, log it instead
-            (see the <NuxtLink to="/demo/data">data demo</NuxtLink>).
+          <p>
+            This is the single most important pattern in the template, and the one real
+            experiments are built from: <code>EContinue</code> and the composers below
+            give you the <em>structure</em>; custom components give you the <em>trials</em>.
+            The <NuxtLink to="/demo/custom">custom-epoch demo</NuxtLink> walks through
+            writing one, and the <NuxtLink to="/demo/experiment">full-experiment demo</NuxtLink>
+            shows the two working together.
           </p>
           <div card-info>
-            <h3>Tip</h3>
-            You should only use EPage state for simple cases. For epochs
-            with more complex state, you should define a 
-            <NuxtLink to="/demo/custom">custom epoch</NuxtLink> instead.
+            <h3>Under the hood</h3>
+            <code>EContinue</code> is a thin wrapper over a lower-level epoch,
+            <code>EPage</code>, plus a continue affordance. You rarely use
+            <code>EPage</code> directly — reach for it only when you need a bare epoch
+            wrapper with no built-in continue control (for instance, a page that advances
+            itself after a fixed <code>duration</code>, or one whose slot drives
+            <code>done()</code> from script).
           </div>
-          <PContinue/>
-        </EPage>
-
-        <!-- `done` (also a slot prop) finishes the page from script. Affordances like
-             PContinue call it for you, but you can call it directly to end on any event. -->
-        <EPage name="done" v-slot="{ done }">
-          <h2>EPage: Calling done</h2>
-          <p>
-            A page finishes when its epoch calls the <code>done()</code> function.
-            <code>PContinue</code> call <code>done()</code> for you, but the slot also exposes
-            <code>done</code> directly, so you can end the page on any event:
-          </p>
-          <DemoCode my-3 layout="column" :code="`
-            <EPage name='demo' v-slot='{ done }'>
-              <button @click='done'>I'm finished</button>
-            </EPage>
-          `">
-            <div flex-center>
-              <button b-1 b-gray-300 rounded px-3 py-1 @click="done">I'm finished</button>
-            </div>
-          </DemoCode>
-          <p text-gray-600>
-            Clicking the button advances the sequence, just like a <code>PContinue</code> would.
-          </p>
-        </EPage>
+        </EContinue>
       </ESequence>
 
       <!-- ========================= ESEQUENCE ========================= -->
@@ -249,7 +207,7 @@ const trials = [
            prose; see also the "non-epoch children" note in the example below. -->
       <ESequence name="sequence">
 
-        <EPage name="intro" v-slot="{ state }">
+        <EContinue name="intro">
           <h2>ESequence</h2>
           <p>
             An <code>ESequence</code> shows its children one at a time. It starts
@@ -258,42 +216,32 @@ const trials = [
             to the next child, and so on. When the last child finishes, the sequence itself
             finishes, handing control back to its parent (usually another <code>ESequence</code>).
           </p>
+          <p mt-3>
+            A whole experiment is one big <code>ESequence</code>: instructions, then a
+            block of trials, then a survey. Each child is an epoch — an
+            <code>EContinue</code> for a simple screen, a custom component for a trial,
+            or another composer for a whole section:
+          </p>
           <DemoCode code='
-            <ESequence name="trial">
-              <EPage name="ready">...</EPage>
-              <EPage name="stimulus">...</EPage>
-              <EPage name="response">...</EPage>
-              <EPage name="feedback">...</EPage>
+            <ESequence name="experiment">
+              <EConsent>...</EConsent>
+              <EContinue name="instructions">...</EContinue>
+              <StroopTrial />          <!-- a custom trial component -->
+              <ESurvey />
             </ESequence>
-          '>
-            <ESequence name="seq" flex-center flex-col gap-5 border-2 p2 h-60 >
-              <EPage name="ready">
-                <PContinue button=start />
-              </EPage>
+          '/>
+          <p mt-3>
+            Step through the live sequence below — three screens shown one at a time —
+            and watch the active epoch in the outline.
+          </p>
+          <ESequence name="seq" flex-center flex-col gap-5 border-2 p2 my-3 h-40>
+            <EContinue name="first" button="next">First screen</EContinue>
+            <EContinue name="second" button="next">Second screen</EContinue>
+            <EContinue name="third" button="done">Third screen</EContinue>
+          </ESequence>
+        </EContinue>
 
-              <EPage name="stimulus" duration=1000>
-                <div text-2xl font-bold text-red>red</div>
-              </EPage>
-
-              <EPage name="response" v-slot="{ done }" flex-center flex-col gap-3>
-                <p>Click the color the word was printed in.</p>
-                <PButtons
-                  values="red blue"
-                  classes="btn-red btn-blue"
-                  @click="(v) => { state.choice = v; done() }"
-                />
-              </EPage>
-
-              <EPage name="feedback">
-                <p v-if="state.choice === 'red'" text-green text-xl font-bold>Correct!</p>
-                <p v-else text-red font-bold>Incorrect — the word was red.</p>
-                <PContinue button="Finish trial"/>
-              </EPage>
-            </ESequence>
-          </DemoCode>
-        </EPage>
-
-        <EPage name=temporal>
+        <EContinue name=temporal>
           <h2>ESequence: temporal vs. spatial composition</h2>
           <p>
             ESequence works quite differently from normal Vue components.
@@ -312,24 +260,18 @@ const trials = [
           <p>
             Importantly, you will also use normal spatial composition alongside the
             temporal composition provided by epochs. And you'll need to take some
-            care to not mix the two types of composition.
-            Fortunately, as long as you stick to our convention of prefixing epoch components
-            with <code>E</code>, you can just follow two simple rules:
+            care to not mix the two types of composition. The rule is simple:
           </p>
           <ol>
-            <li>Children of ESequence and ERepeat must start with E.</li>
-            <li>Components that start with E must have an epoch as a parent (usually ESequence or ERepeat).</li>
+            <li>Each direct child of an <code>ESequence</code> or <code>ERepeat</code> must be an <b>epoch</b> — a built-in like <code>EContinue</code>, or a custom component that declares one with <code>useEpoch</code>.</li>
+            <li>An epoch component must have an epoch as its parent (usually <code>ESequence</code> or <code>ERepeat</code>).</li>
           </ol>
           <p>
-            But don't worry! If you forget to follow the rule, you'll get an informative error message.
+            Built-in epochs are prefixed with <code>E</code> by convention; your own
+            trial components don't have to be, but it's a useful habit. Either way,
+            if you break the rule you'll get an informative error message.
           </p>
-          <!--
-            Technically, the child can be a div that renders an epoch; but this pattern should
-            generally be avoided.
-            TODO check that we actually throw an error message when trying to render two EPage at once.
-          -->
-
-        </EPage>
+        </EContinue>
 
         <!-- Nesting: a sequence's child can itself be a sequence. Kept within the
              ESequence section since it's the same mechanism, just one level deeper. The
@@ -339,18 +281,18 @@ const trials = [
           <p>
             Because a sequence's child is just an epoch, a child can itself be an
             <code>ESequence</code>. The inner sequence must finish before the outer one
-            advances. This is how a small, self-contained piece (like the trial above)
-            becomes part of a larger structure. Step through the live sequence below and
-            watch the active epoch: <code>{{ currentEpoch.id }}</code>.
+            advances. This is how a small, self-contained section becomes part of a
+            larger structure. Step through the live sequence below and watch the active
+            epoch: <code>{{ currentEpoch.id }}</code>.
           </p>
           <div b-1 b-gray-200 rounded p3 my-3>
             <ESequence name="block" flex-center flex-col gap-5>
-              <EPage name="step1">Step 1<PContinue/></EPage>
+              <EContinue name="step1">Step 1</EContinue>
               <ESequence name="step2" flex-center flex-col gap-3>
-                <EPage name="A">Step 2A (inner sequence)<PContinue/></EPage>
-                <EPage name="B">Step 2B (inner sequence)<PContinue/></EPage>
+                <EContinue name="A">Step 2A (inner sequence)</EContinue>
+                <EContinue name="B">Step 2B (inner sequence)</EContinue>
               </ESequence>
-              <EPage name="step3">Step 3<PContinue button="Continue"/></EPage>
+              <EContinue name="step3" button="Continue">Step 3</EContinue>
             </ESequence>
           </div>
         </EPage>
@@ -379,22 +321,20 @@ const trials = [
           <DemoCode layout="column" :code="`
             <ERepeat name=trials :count='trials.length' v-slot='{ step, nSteps }'>
               <div>Trial {{ step + 1 }} / {{ nSteps }}</div>
-              <EPage name='stimulus'>
-                The word is {{ trials[step].word }}.
-                <PContinue/>
-              </EPage>
+              <!-- a trial is usually its own component, fed this iteration's data -->
+              <StroopTrial :word='trials[step].word' :color='trials[step].color' />
             </ERepeat>
           `">
             <ERepeat name=trials :count="trials.length" v-slot="{ step, nSteps }"
                      class="flex-col gap-4">
               <div text-sm text-gray-600>Trial {{ step + 1 }} / {{ nSteps }}</div>
 
-              <!-- `trials[step]` — the iteration index selects this iteration's data. -->
-              <EPage name="stimulus" flex-center flex-col gap-4>
+              <!-- `trials[step]` — the iteration index selects this iteration's data.
+                   Here the "trial" is just an EContinue; a real one would be a component. -->
+              <EContinue name="stimulus" flex-center flex-col gap-4>
                 The word is
                 <span font-bold :class="`text-${trials[step].color}`">{{ trials[step].word }}</span>
-                <PContinue/>
-              </EPage>
+              </EContinue>
             </ERepeat>
           </DemoCode>
         </EPage>
@@ -410,14 +350,15 @@ const trials = [
       <EPage name="outro">
         <h2>That's the core</h2>
         <p>
-          With <code>EPage</code>, <code>ESequence</code>, and
-          <code>ERepeat</code> you can express most of an experiment's structure.
-          Everything else builds on the same epoch model.
+          With <code>EContinue</code>, <code>ESequence</code>, and
+          <code>ERepeat</code> you can express most of an experiment's structure — and
+          custom components fill in the trials. Everything else builds on the same epoch model.
         </p>
         <p>
           <b>What next?</b> The <NuxtLink to="/demo">demo index</NuxtLink> drills into
-          specific features — writing your own leaf epoch
-          (<NuxtLink to="/demo/custom-epoch">custom epoch</NuxtLink>), collecting input
+          specific features — writing your own trial component
+          (<NuxtLink to="/demo/custom">custom epoch</NuxtLink>), assembling a whole study
+          (<NuxtLink to="/demo/experiment">full experiment</NuxtLink>), collecting input
           (<NuxtLink to="/demo/responses">responses</NuxtLink>), and the logging pipeline
           (<NuxtLink to="/demo/data">data</NuxtLink>) are good places to go from here.
         </p>

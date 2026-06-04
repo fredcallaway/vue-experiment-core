@@ -82,7 +82,7 @@ const rows = computed(() =>
 
     <!-- ========================= INTRO ========================= -->
 
-    <EPage name="intro">
+    <EContinue name="intro">
       <h2>Recording data</h2>
       <p>
         Everything a participant does is recorded as a stream of <b>events</b>. This
@@ -94,12 +94,11 @@ const rows = computed(() =>
         event log for this session. Every event you log shows up there, so it's the
         first place to look when checking that your task is recording what you expect.
       </p>
-      <PContinue/>
-    </EPage>
+    </EContinue>
 
     <!-- ========================= DATA WRITER ========================= -->
 
-    <EPage name="writer">
+    <EContinue name="writer">
       <h2>Where data goes</h2>
       <p>
         Logged events are collected by the <b>data writer</b>
@@ -115,12 +114,11 @@ const rows = computed(() =>
         The upshot: just log events as they happen and trust that they'll make it to
         the database. The rest of this tutorial is about <i>how</i> to log them.
       </p>
-      <PContinue/>
-    </EPage>
+    </EContinue>
 
     <!-- ========================= LOGEVENT ========================= -->
 
-    <EPage name="logEvent">
+    <EContinue name="logEvent">
       <h2>logEvent</h2>
       <p>
         The lowest-level way to record something is <code>logEvent</code>: a name and
@@ -141,12 +139,11 @@ const rows = computed(() =>
         <code>logEvent</code> is untyped, so it's easy to typo a name or pass the wrong
         shape. For the events that make up your data, prefer a declared logger — next.
       </p>
-      <PContinue/>
-    </EPage>
+    </EContinue>
 
     <!-- ========================= DECLAREEVENTLOGGER ========================= -->
 
-    <EPage name="declareEventLogger">
+    <EContinue name="declareEventLogger">
       <h2>declareEventLogger</h2>
       <p>
         <code>declareEventLogger</code> wraps <code>logEvent</code> with a fixed event
@@ -163,12 +160,11 @@ logResponse({ correct: true, rt: 482 })  // typechecked</code></pre>
         stream — both to select them and to mark trial boundaries, as you'll see in the
         example. Declare one logger per event type your task produces.
       </p>
-      <PContinue/>
-    </EPage>
+    </EContinue>
 
     <!-- ========================= DATA VIEWS ========================= -->
 
-    <EPage name="dataViews">
+    <EContinue name="dataViews">
       <h2>Data views and exports</h2>
       <p>
         Logged <b>events</b> are your raw record; a <b>data view</b> transforms them
@@ -181,8 +177,7 @@ logResponse({ correct: true, rt: 482 })  // typechecked</code></pre>
         the view groups them back together with <code>chunkBy</code>, keyed off the
         event that starts each trial. The next page runs a task that does exactly this.
       </p>
-      <PContinue/>
-    </EPage>
+    </EContinue>
 
     <!-- ========================= EXAMPLE ========================= -->
 
