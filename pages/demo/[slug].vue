@@ -4,11 +4,12 @@
 // manifest. Each demo's epoch tree lives in its component so that editing the demo
 // triggers component-level HMR (preserving epoch state and the outline) rather than
 // a full page teardown. See internal/demos/manifest.ts.
-import { demos } from '../../internal/demos/manifest'
+import { demos, resolveDemoComponent } from '../../internal/demos/manifest'
 
 const route = useRoute()
 const slug = computed(() => String(route.params.slug))
 const demo = computed(() => demos[slug.value])
+const component = computed(() => demo.value ? resolveDemoComponent(demo.value) : undefined)
 
 // use a narrow default for demos
 // can override in the component file
@@ -19,7 +20,7 @@ defineWindowSize({ width: 700, height: 800 })
 <template>
   <div class="demo-page">
     <!-- key on slug so the epoch tree fully remounts when switching demos -->
-    <component :is="demo.component" v-if="demo" :key="slug" />
+    <component :is="component" v-if="component" :key="slug" />
     <div v-else p10>
       <h2 text-xl font-bold>Unknown demo</h2>
       <p mt-2>

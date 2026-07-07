@@ -1,6 +1,6 @@
 # ADR 0005: Isolate demo imports from the data-view registry
 
-- **Status:** Proposed (no decision)
+- **Status:** Accepted and implemented
 - **Date:** 2026-07-07
 - **Scope:** `core/` template layer, `simplified` branch
 - **Related:** [0004-playwright-testing.md](./0004-playwright-testing.md)

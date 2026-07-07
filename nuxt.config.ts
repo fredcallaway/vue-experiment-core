@@ -36,7 +36,7 @@ export default defineNuxtConfig({
   ],
 
   imports: {
-    dirs: ['composables', 'internal/**', 'internal']
+    dirs: ['composables', 'internal/composables', 'internal'],
   },
   
   compatibilityDate: '2025-05-15',

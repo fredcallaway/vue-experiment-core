@@ -1,15 +1,4 @@
-import type { Component } from 'vue'
-import BasicsDemo from './BasicsDemo.vue'
-import CustomEpochDemo from './CustomEpochDemo.vue'
-import DataDemo from './DataDemo.vue'
-import ExperimentDemo from './ExperimentDemo.vue'
-import DevtoolsDemo from './DevtoolsDemo.vue'
-import InstructionsDemo from './InstructionsDemo.vue'
-import ParamsDemo from './ParamsDemo.vue'
-import PhasesDemo from './PhasesDemo.vue'
-import ResponsesDemo from './ResponsesDemo.vue'
-import SurveysDemo from './SurveysDemo.vue'
-import TimingDemo from './TimingDemo.vue'
+import { defineAsyncComponent, type Component } from 'vue'
 
 // Registry of demo tutorials, keyed by URL slug (/demo/<slug>). The [slug] page renders the
 // matching component, and the index lists them. Each demo's epoch tree lives in its component
@@ -21,65 +10,67 @@ export type DemoEntry = {
   title?: string
   // One-line summary of what the demo shows, displayed on the index card.
   summary: string
-  component: Component
+  component: () => Promise<{ default: Component }>
 }
 
 export const demos: Record<string, DemoEntry> = {
   basics: {
     title: 'Basics',
     summary: 'Building an experiment from epochs, pages, and sequences.',
-    component: BasicsDemo,
+    component: () => import('./BasicsDemo.vue'),
   },
   experiment: {
     title: 'Full experiment',
     summary: 'A short end-to-end study: consent, instructions, trials, survey, and completion.',
-    component: ExperimentDemo,
+    component: () => import('./ExperimentDemo.vue'),
   },
   custom: {
     title: 'Custom epochs',
     summary: 'Writing your own leaf epoch: params, events, data views, and done().',
-    component: CustomEpochDemo,
+    component: () => import('./CustomEpochDemo.vue'),
   },
   responses: {
     title: 'Responses',
     summary: 'Collecting input: buttons and keys, declarative and script-side, plus gating.',
-    component: ResponsesDemo,
+    component: () => import('./ResponsesDemo.vue'),
   },
   data: {
     title: 'Data',
     summary: 'The pipeline: typed events -> data views -> export rows, grouped per trial.',
-    component: DataDemo,
+    component: () => import('./DataDemo.vue'),
   },
   params: {
     title: 'Params & conditions',
     summary: 'defineParams overrides and useConditions assignment (with the dev inspector).',
-    component: ParamsDemo,
+    component: () => import('./ParamsDemo.vue'),
   },
   devtools: {
     title: 'Devtools',
     summary: 'The /dev panel: navigation controls, a live epoch outline, and an error boundary.',
-    component: DevtoolsDemo,
+    component: () => import('./DevtoolsDemo.vue'),
   },
   instructions: {
     title: 'Instructions',
     summary: 'Navigable instruction pages, gating Next until each page is completed.',
-    component: InstructionsDemo,
+    component: () => import('./InstructionsDemo.vue'),
   },
   phases: {
     title: 'Phases',
     summary: 'One epoch with several visual phases that share state and animate between each other.',
-    component: PhasesDemo,
+    component: () => import('./PhasesDemo.vue'),
   },
   surveys: {
     title: 'Surveys',
     summary: 'Survey epochs (buttons, multi-buttons, text) and a project-declared data view.',
-    component: SurveysDemo,
+    component: () => import('./SurveysDemo.vue'),
   },
   timing: {
     title: 'Timing',
     summary: 'useTimer countdowns, fixed-duration pages, and awaitable sleeps.',
-    component: TimingDemo,
+    component: () => import('./TimingDemo.vue'),
   },
 }
 
 export const demoSlugs = Object.keys(demos)
+
+export const resolveDemoComponent = (entry: DemoEntry) => defineAsyncComponent(entry.component)
