@@ -16,6 +16,23 @@ const storageKey = (sessionId: string) => `dataWriter-${sessionId}`
 
 type WriteMode = DataMode | 'dummy'
 
+const normalizeDatabaseShape = (value: unknown): unknown => {
+  const walk = (data: SafeData): unknown => {
+    if (Array.isArray(data)) return data.map(walk)
+    if (data && typeof data === 'object') {
+      const entries = Object.entries(data)
+        .map(([key, child]) => [key, walk(child)] as const)
+        .filter(([, child]) => child !== undefined)
+
+      if (entries.length === 0) return undefined
+      return Object.fromEntries(entries)
+    }
+    return data
+  }
+
+  return walk(toSafeData(value))
+}
+
 export class DataWriter {
   private meta: SessionMeta | null = null  // null before initialized
   private mode: WriteMode = 'dummy'
@@ -154,7 +171,7 @@ export class DataWriter {
       const snapshot2 = await db.get(this.dbPath('meta'))
       const dbMeta = snapshot2.val() as SessionMeta
       const localMeta = toRaw(meta)
-      if (!R.isDeepEqual(localMeta, dbMeta)) {
+      if (!R.isDeepEqual(normalizeDatabaseShape(localMeta), normalizeDatabaseShape(dbMeta))) {
         logError('DataWriter.metaMismatch', {localMeta, dbMeta})
       }
       assert(dbMeta.sessionId == localMeta.sessionId, 'sessionId must match between meta and database')
