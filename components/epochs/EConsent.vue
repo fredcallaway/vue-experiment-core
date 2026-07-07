@@ -23,9 +23,6 @@ const abortExperiment = async (reason: 'TIMEOUT' | 'ABORTED') => {
   }
 }
 
-// this provides basic bot-detection
-useMouseTracking({ minPixels: 1, minRate: 0, maxRate: 60, maxFrames: 500 })
-
 // const totalTimeoutSeconds = 150
 // const { idle } = useIdle(30_000)
 // const timer = useTimer(120_000, { immediate: false })
@@ -57,6 +54,10 @@ const slots = useSlots()
 </script>
 
 <template>
+  <!-- This provides basic bot-detection. Use MouseTracker instead of calling
+       useMouseTracking directly when tracking should follow component lifetime. -->
+  <MouseTracker :min-pixels="1" :min-rate="0" :max-rate="60" :max-frames="500" />
+
   <!-- abort screen -->
   <div v-if="aborted" flex-center hfull>
     <div my5 italic text-gray>the experiment has been aborted</div>

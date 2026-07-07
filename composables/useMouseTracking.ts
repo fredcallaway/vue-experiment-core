@@ -11,14 +11,14 @@ interface MouseTracking {
 
 // minPixels is the move distance necessary to trigger a recording
 // {min,max}Rate bounds recordings per second, trumps minPixels (unless zero movement)
-interface MouseTrackingOptions {
+export interface MouseTrackingOptions {
   minPixels?: number
   minRate?: number
   maxRate?: number
   maxFrames?: number
 }
 
-interface MouseTrackingData {
+export interface MouseTrackingData {
   x: Array<number>
   y: Array<number>
   t: Array<number>
@@ -32,12 +32,8 @@ let currentInstance: MouseTracking | null = null
 
 export const useMouseTracking = (options: MouseTrackingOptions = {}): MouseTracking => {
   if (currentInstance) {
-    if (import.meta.hot) {
-      console.warn('Mouse tracking already active, stopping previous instance')
-      currentInstance.cancel()
-    } else {
-      throw new Error('Mouse tracking already active')
-    }
+    console.warn('Mouse tracking already active, stopping previous instance')
+    currentInstance.done()
   }
   let isActive = true
 
@@ -135,8 +131,8 @@ export const useMouseTracking = (options: MouseTrackingOptions = {}): MouseTrack
     }
   })
 
-  onUnmounted(() => {
-    done()
+  onScopeDispose(() => {
+    if (isActive) done()
   })
 
   currentInstance = {

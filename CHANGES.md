@@ -38,6 +38,8 @@ This branch simplifies the template by removing playback-specific infrastructure
 - Prolific study-list caching now records a completeness watermark. The first refresh backfills the full project study history; later refreshes only page back to the previous watermark while preserving the complete cached history. This makes Prolific's previous-studies blocklist use all cached historical study IDs without refetching the entire project on every study creation.
 - Fixed Prolific study-list caching for projects with no studies. A successful empty refresh now records freshness instead of immediately refreshing again.
 - The Prolific dashboard now requires a valid project ID before showing messages or studies. When setup validation fails, it shows API-token and project-ID instructions and can create a Prolific project through the Prolific API.
+- Added a `MouseTracker` component as the standard way to attach mouse tracking to an epoch or phase-sized component. Prefer `<MouseTracker />` in the template over calling `useMouseTracking(...)` directly; pass options such as `:max-frames` only when the defaults need to be changed.
+- Changed `useMouseTracking` overlap handling: if a second tracker starts while one is active, core now logs a warning and calls `done()` on the previous tracker so recorded frames are saved, instead of cancelling in HMR and throwing outside HMR.
 - **⚠️ Breaking:** Removed `PContinue`; `EContinue` is the standard continue affordance. See "EContinue" below.
 - **⚠️ Breaking:** Removed the internal pseudo-leaf mechanism. Phase epochs (`usePhaseEpoch`) now create a real child epoch per phase, and `ESequence`/`ERepeat` now require epoch children. See "Pseudo-Leaf Removal" below.
 
