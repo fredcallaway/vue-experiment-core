@@ -384,17 +384,27 @@ const handleScroll = (row: OutlineRow, event: WheelEvent) => {
 
 // calculating height (same approach as EventView)
 const { height: winHeight } = useWindowSize()
-const { top, width } = useElementBounding(useTemplateRef('top-div'))
+// Measure a zero-height anchor pinned to the panel's top-left, NOT the panel
+// itself. useElementBounding installs a ResizeObserver; measuring the same
+// element we then write `height`/`minWidth` back onto is a feedback loop that
+// never settles — under effectiveScale the sub-pixel width ratchets maxSeenWidth
+// up on every frame, pegging a CPU core (and firing the "ResizeObserver loop"
+// warning that logEvent suppresses). The anchor's box doesn't change when we
+// resize the panel, so our own writes can't re-trigger the measurement.
+const { top, width } = useElementBounding(useTemplateRef('measure-anchor'))
 const { effectiveScale } = useSizeScale()
 const outlineHeight = computed(() => {
   const usedSpace = (top.value + 10) * effectiveScale.value + 20
   return (winHeight.value - usedSpace) / effectiveScale.value
 })
 
-// don't allow width to decrease (only increase)
+// don't allow width to decrease (only increase). Quantize to integer layout
+// pixels (getBoundingClientRect bakes effectiveScale in; minWidth is applied in
+// layout space) so the value converges instead of ratcheting on sub-pixel noise.
 const maxSeenWidth = ref(150) // 150 minimum
 watchEffect(() => {
-  maxSeenWidth.value = Math.max(maxSeenWidth.value, width.value)
+  const layoutWidth = Math.ceil(width.value / (effectiveScale.value || 1))
+  if (layoutWidth > maxSeenWidth.value) maxSeenWidth.value = layoutWidth
 })
 
 const indentStep = 14
@@ -415,6 +425,8 @@ const indentBase = 8
 
     :style="{ height: `${outlineHeight}px`, minWidth: `${maxSeenWidth}px` }"
   >
+    <!-- zero-height measurement anchor: see useElementBounding note in <script> -->
+    <div ref="measure-anchor" absolute left-0 right-0 top-0 h-0 pointer-events-none />
     <h2 ml2 mb0 shrink-0>Epochs</h2>
     <div absolute right-1 top-1 flex="~ items-center gap-1">
       <IconToggle
