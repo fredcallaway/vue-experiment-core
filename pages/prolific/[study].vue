@@ -248,6 +248,9 @@ const getDataStatus = (sub: Submission) => {
   const session = sessionsBySessionId.value[sub.id]
   if (!session) return { text: 'missing', color: 'text-gray-400' }
   if (!session.noReturnTime) {
+    if (session.completionTime && getCodeType(sub.study_code) === 'COMPLETED') {
+      return { text: 'full', color: 'text-green-600' }
+    }
     if (sub.status === 'RETURNED') return { text: 'minimal', color: 'text-gray-400' }
     return { text: 'minimal', color: 'text-red-600' }
   }
