@@ -34,6 +34,7 @@ This branch simplifies the template by removing playback-specific infrastructure
 - Removed demo modules from Nuxt's auto-import scan and lazy-load `/demo/<slug>` components from the demo manifest, so demo-only `declareDataView` calls are not registered by opening dashboards or the `/demo` index. See `core/docs/adr/0005-isolate-demo-imports-from-data-view-registry.md`.
 - Fixed `DataWriter.metaMismatch` false positives when repeated debug sessions include empty local metadata objects, such as the `conditions: {}` object created by `useConditions()`, that Firebase omits when read back.
 - Prolific submission review now treats sessions with a normal completion code and saved `completionTime` as full data even if `noReturnTime` was not recorded. Error and disconnected completion codes are not promoted by `completionTime` alone.
+- Prolific study creation now has explicit participant exclusion options. The create-study filter panel can add a custom blocklist containing all valid participant IDs in `live/meta`, and can separately add Prolific's previous-studies blocklist. Both options are enabled by default in `studyDraft.exclusions`.
 - **⚠️ Breaking:** Removed `PContinue`; `EContinue` is the standard continue affordance. See "EContinue" below.
 - **⚠️ Breaking:** Removed the internal pseudo-leaf mechanism. Phase epochs (`usePhaseEpoch`) now create a real child epoch per phase, and `ESequence`/`ERepeat` now require epoch children. See "Pseudo-Leaf Removal" below.
 

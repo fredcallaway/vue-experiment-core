@@ -22,6 +22,10 @@ export type ProlificConfig = {
   total_available_places: number
   device_compatibility?: string[]
   eligibility?: EligibilityConfig
+  exclusions?: {
+    databaseParticipants?: boolean
+    previousStudies?: boolean
+  }
   filters?: {
     filter_id: string
     selected_values?: string[]
@@ -44,6 +48,10 @@ export const DEFAULT_PROLIFIC_CONFIG: ProlificConfig = {
     minApprovalRate: 99,
     requireEnglishFluency: true,
     requireEnglishPrimary: true,
+  },
+  exclusions: {
+    databaseParticipants: true,
+    previousStudies: true,
   },
 }
 

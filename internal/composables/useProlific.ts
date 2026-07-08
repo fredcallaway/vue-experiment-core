@@ -359,24 +359,70 @@ export const useProlific = createGlobalState(() => {
     }))
   }
 
+  const addSelectedValuesFilter = (filters: Filter[], filterId: string, values: string[]) => {
+    const selectedValues = R.unique(values)
+    if (selectedValues.length === 0) return
+
+    const existingFilter = filters.find(f => f.filter_id === filterId)
+    if (existingFilter) {
+      existingFilter.selected_values = R.unique([...(existingFilter.selected_values || []), ...selectedValues])
+    } else {
+      filters.push({
+        filter_id: filterId,
+        selected_values: selectedValues
+      })
+    }
+  }
+
+  const fetchDatabaseParticipantIds = async (): Promise<string[]> => {
+    const snapshot = await useDatabase().get('live/meta')
+    const metas = snapshot.val() as Record<string, SessionMeta> | null
+    if (!metas) return []
+
+    return R.unique(Object.values(metas)
+      .map(meta => meta.participantId)
+      .filter((participantId): participantId is string => isProlificIdentifier(participantId)))
+  }
+
+  const fetchCustomBlocklistFilterId = async (): Promise<string> => {
+    type ProlificFilterInfo = {
+      filter_id: string
+      title?: string
+      data_type?: string
+    }
+
+    try {
+      const response = await request<{ results: ProlificFilterInfo[] }>('GET', '/filters/?filter_tag=custom-group')
+      const blocklistFilter = response.results.find(filter => {
+        const label = `${filter.filter_id} ${filter.title ?? ''}`.toLowerCase()
+        return filter.data_type === 'ParticipantID' && (label.includes('blocklist') || label.includes('blacklist'))
+      })
+      if (blocklistFilter) return blocklistFilter.filter_id
+    } catch (error) {
+      console.warn('Could not resolve Prolific custom blocklist filter id; using default.', error)
+    }
+
+    return 'custom_blocklist'
+  }
+
   // Prolific operations
   const createStudy = async (cfg: ProlificConfig & { internal_name: string }): Promise<StudyFull> => {
-    const studies = await studiesCache.getListAsync()
-    const previousStudyIds = studies.map((s: Study) => s.id)
-
     const filters = cfg.eligibility 
       ? eligibilityToFilters(cfg.eligibility)
       : [...(cfg.filters || [])]
-    const existingBlocklist = filters.find(f => f.filter_id === 'previous_studies_blocklist')
 
-    if (existingBlocklist) {
-      const existingValues = existingBlocklist.selected_values || []
-      existingBlocklist.selected_values = R.unique([...existingValues, ...previousStudyIds])
-    } else if (previousStudyIds.length > 0) {
-      filters.push({
-        filter_id: 'previous_studies_blocklist',
-        selected_values: previousStudyIds
-      })
+    if (cfg.exclusions?.previousStudies) {
+      const studies = await studiesCache.getListAsync()
+      const previousStudyIds = studies.map((s: Study) => s.id)
+      addSelectedValuesFilter(filters, 'previous_studies_blocklist', previousStudyIds)
+    }
+
+    if (cfg.exclusions?.databaseParticipants) {
+      const participantIds = await fetchDatabaseParticipantIds()
+      if (participantIds.length > 0) {
+        const blocklistFilterId = await fetchCustomBlocklistFilterId()
+        addSelectedValuesFilter(filters, blocklistFilterId, participantIds)
+      }
     }
 
     const payload: StudyPayload = {

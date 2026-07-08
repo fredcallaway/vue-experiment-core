@@ -210,6 +210,22 @@ const onDeploy = async () => {
               />
               <span>Require English as primary language</span>
             </label>
+
+            <label class="flex items-center gap-2">
+              <input
+                v-model="formData.exclusions!.databaseParticipants"
+                type="checkbox"
+              />
+              <span>Exclude participants in database</span>
+            </label>
+
+            <label class="flex items-center gap-2">
+              <input
+                v-model="formData.exclusions!.previousStudies"
+                type="checkbox"
+              />
+              <span>Exclude participants from previous Prolific studies</span>
+            </label>
           </div>
 
           <div class="space-y-4">
