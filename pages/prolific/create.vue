@@ -185,7 +185,7 @@ const onDeploy = async () => {
 
       <!-- Eligibility Card -->
       <div card-gray>
-        <div class="grid grid-cols-2 gap-6">
+        <div class="grid grid-cols-[1fr_auto] gap-6 items-start">
           <div class="space-y-4">
             <label class="flex items-center gap-2">
               <input 
@@ -228,7 +228,7 @@ const onDeploy = async () => {
             </label>
           </div>
 
-          <div class="space-y-4">
+          <div class="space-y-4 w-45">
             <div>
               <label class="block mb-2 font-semibold">Min Submissions</label>
               <NumberInput text-base 
