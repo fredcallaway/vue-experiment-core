@@ -3,6 +3,19 @@ const API_INTERVAL = 1000
 const API_CONCURRENCY_LIMIT = 3
 const STUDIES_CACHE_KEY_PREFIX = 'prolific_studies'
 
+type ProlificWorkspace = {
+  id: string
+  title?: string
+  name?: string
+}
+
+type ProlificProject = {
+  id: string
+  title: string
+  description?: string
+  workspace: string
+}
+
 export const useProlific = createGlobalState(() => {
   const { config: prolificConfig } = useProlificConfig()
   const projectId = useDatabase().sync('/prolificProjectId', '')
@@ -56,6 +69,22 @@ export const useProlific = createGlobalState(() => {
       console.error('API request failed', { method, path, body, error, time: performance.now() - now })
       throw new ProlificError(`API request failed: ${error}`)
     }
+  }
+
+  const directRequest = async <T>(method: string, path: string, body?: any): Promise<T> => {
+    const response = await baseRequest(method, path, body)
+    const responseText = await response.text()
+    const data = responseText.trim()
+      ? JSON.parse(responseText)
+      : {}
+
+    if (!response.ok) {
+      throw new ProlificError(
+        `API Error: ${method} ${path}\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`
+      )
+    }
+
+    return data as T
   }
 
   const status = ref<('unknown' | 'ok' | 'invalidToken' | 'invalidProjectId')>('unknown')
@@ -191,6 +220,18 @@ export const useProlific = createGlobalState(() => {
     })
   }
 
+  const listWorkspaces = async (): Promise<ProlificWorkspace[]> => {
+    const response = await directRequest<{ results: ProlificWorkspace[] }>('GET', '/workspaces/')
+    return response.results
+  }
+
+  const createProject = async (
+    workspaceId: string,
+    project: { title: string, description?: string }
+  ): Promise<ProlificProject> => {
+    return await directRequest<ProlificProject>('POST', `/workspaces/${workspaceId}/projects/`, project)
+  }
+
   const fetchStudies = async ({page = null as number | null, status = null as string | null}): Promise<{ results: StudyShort[], meta: { count: number } }> => {
     let query = 'ordering=-date_created'
     if (page) {
@@ -296,6 +337,12 @@ export const useProlific = createGlobalState(() => {
     fetchItem: fetchStudy,
     getItemId: (study) => study.id,
     minRefreshInterval: 60_000,  // 60s
+  })
+
+  watch(projectId, (newProjectId, oldProjectId) => {
+    if (newProjectId === oldProjectId) return
+    studiesCache.clear()
+    guaranteedCompleteTime.value = null
   })
 
   // Get list interface with sorting
@@ -803,6 +850,8 @@ export const useProlific = createGlobalState(() => {
     projectId,
     status: readonly(status),
     studyList,
+    listWorkspaces,
+    createProject,
     getStudyCache,
     request,
     createStudy,
