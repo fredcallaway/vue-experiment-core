@@ -1,11 +1,17 @@
 const PAGE_SIZE = 5
 const API_INTERVAL = 1000
 const API_CONCURRENCY_LIMIT = 3
+const STUDIES_CACHE_KEY_PREFIX = 'prolific_studies'
 
 export const useProlific = createGlobalState(() => {
   const { config: prolificConfig } = useProlificConfig()
   const projectId = useDatabase().sync('/prolificProjectId', '')
   const token = ref('')
+  const studiesCacheKey = `${STUDIES_CACHE_KEY_PREFIX}_${projectId.value}`
+  const guaranteedCompleteTime = useLocalStorage<number | null>(
+    `asyncListCache:${studiesCacheKey}:guaranteedCompleteTime`,
+    null,
+  )
 
   const loadToken = async () => {
     try {
@@ -204,16 +210,51 @@ export const useProlific = createGlobalState(() => {
     }
   }
 
+  const getStudyDate = (study: StudyShort) => new Date(study.date_created).getTime()
+
+  const isBeforeGuaranteedCompleteTime = (study: StudyShort, time: number | null) => {
+    return time !== null && getStudyDate(study) < time
+  }
+
+  const pageStartsBeforeGuaranteedCompleteTime = (studies: StudyShort[], time: number | null) => {
+    return studies.length > 0 && isBeforeGuaranteedCompleteTime(studies[0], time)
+  }
+
+  const pageEndsBeforeGuaranteedCompleteTime = (studies: StudyShort[], time: number | null) => {
+    return studies.length > 0 && isBeforeGuaranteedCompleteTime(studies.at(-1)!, time)
+  }
+
   // Async generator for study list
   const fetchStudyList = async function*(): AsyncGenerator<StudyShort[], void, unknown> {
-    // 1. First page of -date_created (immediate)
+    const syncStartedAt = Date.now()
+    const previousGuaranteedCompleteTime = guaranteedCompleteTime.value
+
     const firstPageResponse = await fetchStudies({ page: 1 })
     yield firstPageResponse.results
 
-    // Calculate max page based on total count
     const maxPage = Math.ceil(firstPageResponse.meta.count / PAGE_SIZE)
 
-    // 2. Status queries in parallel
+    if (!pageStartsBeforeGuaranteedCompleteTime(firstPageResponse.results, previousGuaranteedCompleteTime)) {
+      let page = 2
+      let reachedGuaranteedCompleteTime = pageEndsBeforeGuaranteedCompleteTime(
+        firstPageResponse.results,
+        previousGuaranteedCompleteTime,
+      )
+
+      while (page <= maxPage && !reachedGuaranteedCompleteTime) {
+        const pageResponse = await fetchStudies({ page })
+
+        if (pageResponse.results.length === 0) break
+
+        yield pageResponse.results
+        reachedGuaranteedCompleteTime = pageEndsBeforeGuaranteedCompleteTime(
+          pageResponse.results,
+          previousGuaranteedCompleteTime,
+        )
+        page++
+      }
+    }
+
     const statusQueries = [
       fetchStudies({ status: 'AWAITING REVIEW' }),
       fetchStudies({ status: 'ACTIVE' }),
@@ -227,29 +268,7 @@ export const useProlific = createGlobalState(() => {
       }
     }
 
-    // 3. Remaining -date_created pages
-    let page = 2
-    const twoWeeksAgo = Date.now() - 14 * 24 * 60 * 60 * 1000
-
-    while (page <= maxPage) {
-      const pageResponse = await fetchStudies({ page })
-
-      if (pageResponse.results.length === 0) break
-
-      yield pageResponse.results
-
-      // Check if all studies in this page are old
-      const allOld = pageResponse.results.every(s =>
-        new Date(s.date_created).getTime() < twoWeeksAgo
-      )
-
-      if (allOld) {
-        console.debug('Early stop: all studies in page older than 2 weeks')
-        break
-      }
-
-      page++
-    }
+    guaranteedCompleteTime.value = syncStartedAt
   }
 
   // Fetch individual study with submissions
@@ -272,7 +291,7 @@ export const useProlific = createGlobalState(() => {
 
   // Create cache
   const studiesCache = useAsyncListCache<StudyShort, StudyFull>({
-    storageKey: `prolific_studies_${projectId.value}`,
+    storageKey: studiesCacheKey,
     fetchList: fetchStudyList,
     fetchItem: fetchStudy,
     getItemId: (study) => study.id,

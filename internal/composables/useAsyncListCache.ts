@@ -97,6 +97,7 @@ export function useAsyncListCache<TShort extends object, TFull extends TShort>(
       console.debug('[asyncListCache] Already refreshing list')
       // don't return until refresh is done
       await until(isLoadingList).toBe(false)
+      if (listError.value) throw listError.value
       return
     }
 
@@ -166,8 +167,7 @@ export function useAsyncListCache<TShort extends object, TFull extends TShort>(
 
   const getListAsync = async () => {
     const listCache = getListCache()
-    listCache.refresh()
-    await until(listCache.isLoading).toBe(false)
+    await listCache.refresh()
     return listCache.items.value
   }
 
