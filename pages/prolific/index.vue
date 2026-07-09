@@ -14,15 +14,22 @@ const { token, projectId, status, studyList, deleteStudy } = prolific
 const cacheError = ref<Error | null>(null)
 const setupError = ref('')
 const workspaceOptions = ref<{ id: string, label: string }[]>([])
+const projectOptions = ref<{ id: string, label: string }[]>([])
 const selectedWorkspaceId = ref('')
+const selectedExistingProjectId = ref('')
 const projectTitle = ref('Experiment project')
 const projectDescription = ref('Studies for this experiment')
 const isLoadingWorkspaces = ref(false)
+const isLoadingProjects = ref(false)
 const isCreatingProject = ref(false)
 
 const searchQuery = ref('')
 const isReady = computed(() => status.value === 'ok')
-const showSetupInstructions = computed(() => status.value !== 'unknown' && status.value !== 'ok')
+const setupPanel = computed<'token' | 'project' | null>(() => {
+  if (status.value === 'invalidToken') return 'token'
+  if (status.value === 'invalidProjectId') return 'project'
+  return null
+})
 const activeStudyList = computed(() => isReady.value ? studyList.value : null)
 const studies = computed(() => activeStudyList.value?.items.value ?? [])
 const studiesTimestamp = computed(() => activeStudyList.value?.timestamp.value ?? null)
@@ -90,6 +97,34 @@ const loadWorkspaces = async () => {
   }
 }
 
+const loadProjects = async () => {
+  if (!selectedWorkspaceId.value) {
+    projectOptions.value = []
+    selectedExistingProjectId.value = ''
+    return
+  }
+
+  setupError.value = ''
+  isLoadingProjects.value = true
+  try {
+    const projects = await prolific.listProjects(selectedWorkspaceId.value)
+    projectOptions.value = projects.map(project => ({
+      id: project.id,
+      label: project.title || project.id,
+    }))
+    selectedExistingProjectId.value = projectOptions.value[0]?.id ?? ''
+  } catch (error) {
+    setupError.value = error instanceof Error ? error.message : String(error)
+  } finally {
+    isLoadingProjects.value = false
+  }
+}
+
+const useExistingProject = () => {
+  if (!selectedExistingProjectId.value) return
+  projectId.value = selectedExistingProjectId.value
+}
+
 const createProject = async () => {
   if (!selectedWorkspaceId.value) return
 
@@ -125,6 +160,16 @@ onMounted(() => {
   if (studiesTimestamp.value && studiesTimestamp.value < Date.now() - 10000) {
     refreshStudies()
   }
+})
+
+watch(() => setupPanel.value, (panel) => {
+  if (panel === 'project' && workspaceOptions.value.length === 0 && !isLoadingWorkspaces.value) {
+    loadWorkspaces()
+  }
+}, { immediate: true })
+
+watch(selectedWorkspaceId, () => {
+  loadProjects()
 })
 
 whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
@@ -207,75 +252,87 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
       </div>
     </div>
 
-    <div v-if="showSetupInstructions" class="bg-yellow-50 border border-yellow-300 px-4 py-3 rounded mb-4">
+    <div v-if="setupPanel === 'token'" class="bg-yellow-50 border border-yellow-300 px-4 py-3 rounded mb-4">
       <h2 mb-2>Connect Prolific</h2>
+      <p text-red-700 mb-3>
+        The current Prolific API token is missing or invalid.
+      </p>
+      <ol pl-5 list-decimal>
+        <li>Log in to your Prolific account.</li>
+        <li>Click "API Tokens" in the left sidebar.</li>
+        <li>Click "Create API Token" on the top right.</li>
+        <li>Copy the new token and paste it in the box above.</li>
+      </ol>
+    </div>
 
-      <div grid="~ cols-2 gap-6" class="max-lg:grid-cols-1">
-        <div>
-          <h3 mb-1>API token</h3>
-          <p mb-2>
-            Create an API token from your Prolific account settings, then paste it above. Prolific documents API tokens
-            in its
-            <a href="https://docs.prolific.com/api-reference/introduction" target="_blank" rel="noopener">
-              API reference
-            </a>.
-          </p>
-          <p v-if="status === 'invalidToken'" text-red-700>
-            The current token is missing or invalid.
-          </p>
-        </div>
+    <div v-else-if="setupPanel === 'project'" class="bg-yellow-50 border border-yellow-300 px-4 py-3 rounded mb-4">
+      <h2 mb-2>Choose Prolific Project</h2>
+      <p text-red-700 mb-3>
+        The current project ID is missing or invalid.
+      </p>
 
-        <div>
-          <h3 mb-1>Project ID</h3>
-          <p mb-2>
-            The project ID is required. If you already have a Prolific project, open it in Prolific and copy the
-            project ID from the URL, then paste it above.
-          </p>
-          <p v-if="status === 'invalidProjectId'" text-red-700 mb-3>
-            The current project ID is missing or invalid.
-          </p>
+      <div v-if="isLoadingWorkspaces" text-gray-700>
+        Loading workspaces...
+      </div>
+      <div v-else-if="workspaceOptions.length === 0" text-red-700>
+        No Prolific workspaces were found for this API token.
+      </div>
+      <div v-else>
+        <label block mb-3>
+          <span block mb-1 font-semibold text-sm>Workspace</span>
+          <select v-model="selectedWorkspaceId" input w-full>
+            <option v-for="workspace in workspaceOptions" :key="workspace.id" :value="workspace.id">
+              {{ workspace.label }}
+            </option>
+          </select>
+        </label>
 
-          <div class="bg-white border border-yellow-200 rounded p-3">
-            <div font-semibold mb-2>Create a Prolific project from here</div>
-            <div flex="~ gap-2 items-end wrap" mb-3>
-              <button
-                btn-gray
-                :disabled="token.length < 10 || isLoadingWorkspaces"
-                @click="loadWorkspaces"
-              >
-                {{ isLoadingWorkspaces ? 'Loading...' : 'Load Workspaces' }}
-              </button>
-              <select
-                v-if="workspaceOptions.length > 0"
-                v-model="selectedWorkspaceId"
-                input
-              >
-                <option v-for="workspace in workspaceOptions" :key="workspace.id" :value="workspace.id">
-                  {{ workspace.label }}
-                </option>
-              </select>
-            </div>
-
-            <div grid="~ cols-2 gap-3" class="max-lg:grid-cols-1">
-              <label>
-                <span block mb-1 font-semibold text-sm>Project name</span>
-                <input v-model="projectTitle" input w-full />
-              </label>
-              <label>
-                <span block mb-1 font-semibold text-sm>Description</span>
-                <input v-model="projectDescription" input w-full />
-              </label>
-            </div>
-
+        <div class="bg-white border border-yellow-200 rounded p-3 mb-3">
+          <div font-semibold mb-2>Use an existing project</div>
+          <div v-if="isLoadingProjects" text-gray-700>
+            Loading projects...
+          </div>
+          <div v-else-if="projectOptions.length === 0" text-gray-700>
+            This workspace has no projects yet.
+          </div>
+          <div v-else flex="~ gap-2 items-end">
+            <select v-model="selectedExistingProjectId" input flex-1>
+              <option v-for="project in projectOptions" :key="project.id" :value="project.id">
+                {{ project.label }}
+              </option>
+            </select>
             <button
               btn-green
-              mt-3
-              :disabled="!selectedWorkspaceId || isCreatingProject"
-              @click="createProject"
+              :disabled="!selectedExistingProjectId"
+              @click="useExistingProject"
             >
-              {{ isCreatingProject ? 'Creating...' : 'Create Project' }}
+              Use Project
             </button>
           </div>
+        </div>
+
+        <div class="bg-white border border-yellow-200 rounded p-3">
+          <div font-semibold mb-2>Create a new project</div>
+
+          <div grid="~ cols-2 gap-3" class="max-lg:grid-cols-1">
+            <label>
+              <span block mb-1 font-semibold text-sm>Project name</span>
+              <input v-model="projectTitle" input w-full />
+            </label>
+            <label>
+              <span block mb-1 font-semibold text-sm>Description</span>
+              <input v-model="projectDescription" input w-full />
+            </label>
+          </div>
+
+          <button
+            btn-green
+            mt-3
+            :disabled="!selectedWorkspaceId || isCreatingProject"
+            @click="createProject"
+          >
+            {{ isCreatingProject ? 'Creating...' : 'Create Project' }}
+          </button>
         </div>
       </div>
     </div>

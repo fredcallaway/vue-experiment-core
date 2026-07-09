@@ -115,6 +115,11 @@ export const useProlific = createGlobalState(() => {
   const tokenPromise = loadToken()
   
   const debouncedCheckStatus = useDebounceFn(checkStatus, 500)
+  const initializeStatus = async () => {
+    await tokenPromise
+    await until(() => projectId.ready).toBe(true)
+    await checkStatus(token.value, projectId.value)
+  }
   watch([token, projectId], async ([newToken, newProjectId], [oldToken, oldProjectId]) => {
     if (status.value === 'invalidToken' && oldToken === newToken) return
     if (status.value === 'invalidProjectId' && oldProjectId === newProjectId) return
@@ -128,6 +133,7 @@ export const useProlific = createGlobalState(() => {
       await debouncedCheckStatus(newToken, newProjectId)
     }
   })
+  initializeStatus()
   
   // save token when it's valid OR it's been completeley cleared
   watch(status, (newStatus) => {
@@ -222,6 +228,11 @@ export const useProlific = createGlobalState(() => {
 
   const listWorkspaces = async (): Promise<ProlificWorkspace[]> => {
     const response = await directRequest<{ results: ProlificWorkspace[] }>('GET', '/workspaces/')
+    return response.results
+  }
+
+  const listProjects = async (workspaceId: string): Promise<ProlificProject[]> => {
+    const response = await directRequest<{ results: ProlificProject[] }>('GET', `/workspaces/${workspaceId}/projects/`)
     return response.results
   }
 
@@ -851,6 +862,7 @@ export const useProlific = createGlobalState(() => {
     status: readonly(status),
     studyList,
     listWorkspaces,
+    listProjects,
     createProject,
     getStudyCache,
     request,
