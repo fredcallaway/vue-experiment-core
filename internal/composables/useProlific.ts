@@ -117,7 +117,7 @@ export const useProlific = createGlobalState(() => {
   const debouncedCheckStatus = useDebounceFn(checkStatus, 500)
   watch([token, projectId], async ([newToken, newProjectId], [oldToken, oldProjectId]) => {
     if (status.value === 'invalidToken' && oldToken === newToken) return
-    if (status.value === 'invalidProjectId' && oldProjectId === newProjectId || newProjectId.length === 0) return
+    if (status.value === 'invalidProjectId' && oldProjectId === newProjectId) return
     if (status.value === 'unknown') {
       await tokenPromise
       await until(() => projectId.ready).toBe(true)
