@@ -199,13 +199,6 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
               ✗ Invalid
             </span>
           </div>
-          <input 
-            v-model="token" 
-            type="text" 
-            input-mono
-            w-full
-            placeholder="Enter your Prolific API token"
-          />
         </div>
 
         <div>
@@ -259,8 +252,16 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
         <li>Log in to your Prolific account.</li>
         <li>Click "API Tokens" in the left sidebar.</li>
         <li>Click "Create API Token" on the top right.</li>
-        <li>Copy the new token and paste it in the box above.</li>
+        <li>Copy the new token and paste it in the box below.</li>
       </ol>
+      <input
+        v-model="token"
+        type="text"
+        input-mono
+        w-full
+        mt-3
+        placeholder="Enter your Prolific API token"
+      />
     </div>
 
     <div v-else-if="setupPanel === 'project'" class="bg-yellow-50 border border-yellow-300 px-4 py-3 rounded mb-4">
