@@ -11,7 +11,6 @@ const N_PRELOAD_STUDIES = 0
 const prolific = useProlific()
 const { token, projectId, status, studyList, deleteStudy } = prolific
 
-const { items: studies, timestamp: studiesTimestamp, isLoading: loading } = studyList.value
 const cacheError = ref<Error | null>(null)
 const setupError = ref('')
 const workspaceOptions = ref<{ id: string, label: string }[]>([])
@@ -24,6 +23,10 @@ const isCreatingProject = ref(false)
 const searchQuery = ref('')
 const isReady = computed(() => status.value === 'ok')
 const showSetupInstructions = computed(() => status.value !== 'unknown' && status.value !== 'ok')
+const activeStudyList = computed(() => isReady.value ? studyList.value : null)
+const studies = computed(() => activeStudyList.value?.items.value ?? [])
+const studiesTimestamp = computed(() => activeStudyList.value?.timestamp.value ?? null)
+const loading = computed(() => activeStudyList.value?.isLoading.value ?? false)
 const filteredStudies = computed(() => {
   if (!studies.value) return []
   const base = searchQuery.value.trim()
@@ -110,12 +113,17 @@ const goToCreateStudy = () => {
   navigateTo('/prolific/create')
 }
 
+const refreshStudies = async () => {
+  if (!activeStudyList.value) return
+  await activeStudyList.value.refresh()
+}
+
 onMounted(() => {
   // refresh the studies page asynchronously if it's not very recent
   if (status.value !== 'ok') return
   console.log('refresh cache?', studiesTimestamp.value, Date.now())
   if (studiesTimestamp.value && studiesTimestamp.value < Date.now() - 10000) {
-    studyList.value.refresh()
+    refreshStudies()
   }
 })
 
@@ -293,7 +301,7 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
         <div>
           <h2>Studies ({{ filteredStudies.length }})</h2>
           <RefreshButton
-            :refresh="studyList.refresh"
+            :refresh="refreshStudies"
             :is-loading="loading"
             :timestamp="studiesTimestamp"
             label="Last updated:"
