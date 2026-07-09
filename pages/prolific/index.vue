@@ -18,7 +18,6 @@ const projectOptions = ref<{ id: string, label: string }[]>([])
 const selectedWorkspaceId = ref('')
 const selectedExistingProjectId = ref('')
 const projectTitle = ref('Experiment project')
-const projectDescription = ref('Studies for this experiment')
 const isLoadingWorkspaces = ref(false)
 const isLoadingProjects = ref(false)
 const isCreatingProject = ref(false)
@@ -133,7 +132,6 @@ const createProject = async () => {
   try {
     const project = await prolific.createProject(selectedWorkspaceId.value, {
       title: projectTitle.value.trim() || 'Experiment project',
-      description: projectDescription.value.trim() || undefined,
     })
     projectId.value = project.id
   } catch (error) {
@@ -287,52 +285,49 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
           </select>
         </label>
 
-        <div class="bg-white border border-yellow-200 rounded p-3 mb-3">
-          <div font-semibold mb-2>Use an existing project</div>
-          <div v-if="isLoadingProjects" text-gray-700>
-            Loading projects...
-          </div>
-          <div v-else-if="projectOptions.length === 0" text-gray-700>
-            This workspace has no projects yet.
-          </div>
-          <div v-else flex="~ gap-2 items-end">
-            <select v-model="selectedExistingProjectId" input flex-1>
-              <option v-for="project in projectOptions" :key="project.id" :value="project.id">
-                {{ project.label }}
-              </option>
-            </select>
+        <div grid="~ cols-2 gap-3" class="max-lg:grid-cols-1">
+          <div class="bg-white border border-yellow-200 rounded p-3">
+            <div font-semibold mb-2>Use an existing project</div>
+            <div v-if="isLoadingProjects" text-gray-700>
+              Loading projects...
+            </div>
+            <div v-else-if="projectOptions.length === 0" text-gray-700>
+              This workspace has no projects yet.
+            </div>
+            <template v-else>
+              <select v-model="selectedExistingProjectId" input w-full>
+                <option v-for="project in projectOptions" :key="project.id" :value="project.id">
+                  {{ project.label }}
+                </option>
+              </select>
+            </template>
+
             <button
               btn-green
+              mt-3
               :disabled="!selectedExistingProjectId"
               @click="useExistingProject"
             >
               Use Project
             </button>
           </div>
-        </div>
 
-        <div class="bg-white border border-yellow-200 rounded p-3">
-          <div font-semibold mb-2>Create a new project</div>
-
-          <div grid="~ cols-2 gap-3" class="max-lg:grid-cols-1">
+          <div class="bg-white border border-yellow-200 rounded p-3">
+            <div font-semibold mb-2>Create a new project</div>
             <label>
               <span block mb-1 font-semibold text-sm>Project name</span>
               <input v-model="projectTitle" input w-full />
             </label>
-            <label>
-              <span block mb-1 font-semibold text-sm>Description</span>
-              <input v-model="projectDescription" input w-full />
-            </label>
-          </div>
 
-          <button
-            btn-green
-            mt-3
-            :disabled="!selectedWorkspaceId || isCreatingProject"
-            @click="createProject"
-          >
-            {{ isCreatingProject ? 'Creating...' : 'Create Project' }}
-          </button>
+            <button
+              btn-green
+              mt-3
+              :disabled="!selectedWorkspaceId || isCreatingProject"
+              @click="createProject"
+            >
+              {{ isCreatingProject ? 'Creating...' : 'Create Project' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>

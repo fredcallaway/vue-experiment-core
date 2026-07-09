@@ -238,7 +238,7 @@ export const useProlific = createGlobalState(() => {
 
   const createProject = async (
     workspaceId: string,
-    project: { title: string, description?: string }
+    project: { title: string }
   ): Promise<ProlificProject> => {
     return await directRequest<ProlificProject>('POST', `/workspaces/${workspaceId}/projects/`, project)
   }
