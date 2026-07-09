@@ -271,7 +271,7 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
       />
     </div>
 
-    <div v-else-if="setupPanel === 'project'" class="bg-yellow-50 border border-yellow-300 px-4 py-3 rounded mb-4">
+    <div v-else-if="setupPanel === 'project'" class="bg-gray-100 p-4 rounded mb-4">
       <h2 mb-2>Choose Prolific Project</h2>
       <p text-red-700 mb-3>
         The current project ID is missing or invalid.
@@ -294,7 +294,7 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
         </label>
 
         <div grid="~ cols-2 gap-3" class="max-lg:grid-cols-1">
-          <div class="bg-white border border-yellow-200 rounded p-3">
+          <div p-3>
             <div font-semibold mb-2>Use an existing project</div>
             <div v-if="isLoadingProjects" text-gray-700>
               Loading projects...
@@ -320,12 +320,9 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
             </button>
           </div>
 
-          <div class="bg-white border border-yellow-200 rounded p-3">
+          <div p-3>
             <div font-semibold mb-2>Create a new project</div>
-            <label>
-              <span block mb-1 font-semibold text-sm>Project name</span>
-              <input v-model="projectTitle" input w-full />
-            </label>
+            <input v-model="projectTitle" input w-full aria-label="Project name" />
 
             <button
               btn-green
