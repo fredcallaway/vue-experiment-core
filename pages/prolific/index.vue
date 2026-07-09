@@ -276,6 +276,9 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
       <p text-red-700 mb-3>
         The current project ID is missing or invalid.
       </p>
+      <p mb-3>
+        Select an existing project or create a new one.
+      </p>
 
       <div v-if="isLoadingWorkspaces" text-gray-700>
         Loading workspaces...
@@ -284,8 +287,8 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
         No Prolific workspaces were found for this API token.
       </div>
       <div v-else>
-        <label block mb-3>
-          <span block mb-1 font-semibold text-sm>Workspace</span>
+        <label block mb-3 m3>
+          <span block mb-1 font-semibold >Workspace</span>
           <select v-model="selectedWorkspaceId" input w-full>
             <option v-for="workspace in workspaceOptions" :key="workspace.id" :value="workspace.id">
               {{ workspace.label }}
@@ -293,7 +296,7 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
           </select>
         </label>
 
-        <div grid="~ cols-2 gap-3" class="max-lg:grid-cols-1">
+        <div grid="~ cols-2 gap-3">
           <div p-3>
             <div font-semibold mb-2>Use an existing project</div>
             <div v-if="isLoadingProjects" text-gray-700>
