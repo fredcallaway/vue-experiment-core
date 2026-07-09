@@ -199,6 +199,13 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
               ✗ Invalid
             </span>
           </div>
+          <input
+            v-model="token"
+            type="text"
+            input-mono
+            w-full
+            placeholder="Enter your Prolific API token"
+          />
         </div>
 
         <div>
