@@ -154,11 +154,10 @@ export function useAsyncListCache<TShort extends object, TFull extends TShort>(
   const getListCache = () => {
     const now = Date.now()
     const shouldAutoRefresh =
-      Object.keys(cache.value).length === 0 ||
       !listTimestamp.value ||
       (now - (listTimestamp.value ?? 0) >= minRefreshInterval)
 
-    // Auto-refresh if cache is empty, has no timestamp, or interval has passed
+    // Auto-refresh if the list has never refreshed successfully, or the refresh interval has passed.
     if (shouldAutoRefresh && !isLoadingList.value) {
       refreshList()
     }
