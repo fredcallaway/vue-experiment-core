@@ -135,18 +135,9 @@ export const useProlific = createGlobalState(() => {
   })
   initializeStatus()
   
-  // save token when it's valid OR it's been completeley cleared
-  watch(status, (newStatus) => {
-    console.log('watch status', newStatus)
-    if (newStatus === 'ok') {
-      writeToken(token.value)
-    }
-  })
-  watch(token, (newToken) => {
-    if (newToken.length === 0) {
-      writeToken(newToken)
-    }
-  })
+  watchDebounced(token, (newToken) => {
+    writeToken(newToken)
+  }, { debounce: 500, maxWait: 2000 })
 
   // Request queue system
   type QueuedRequest<T> = {
