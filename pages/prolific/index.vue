@@ -250,7 +250,7 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
       </div>
     </div>
 
-    <div v-if="setupPanel === 'token'" class="bg-yellow-50 border border-yellow-300 px-4 py-3 rounded mb-4">
+    <div v-if="setupPanel === 'token'" class="bg-gray-100 p-4 rounded mb-4">
       <h2 mb-2>Connect Prolific</h2>
       <p text-red-700 mb-3>
         The current Prolific API token is missing or invalid.
