@@ -135,12 +135,9 @@ const newPlaces = ref(0)
 const addPlaces = wrap(async () => {
   const toAdd = newPlaces.value
   if (toAdd <= 0) return `No places to add`
-  if (confirm(`Add ${toAdd} places?`)) {
-    await prolific.addPlaces(studyId, toAdd)
-    newPlaces.value = 0
-    return `Added ${toAdd} places`
-  }
-  throw new Error('User cancelled - no places added')
+  await prolific.addPlaces(studyId, toAdd)
+  newPlaces.value = 0
+  return `Added ${toAdd} places`
 })
 
 const assignmentsToReplace = computed(() => {
