@@ -4,6 +4,7 @@ type Hook<S> = {
   emit: (state: S) => Promise<void>
   receive: (callback?: HookCallback<S>) => Promise<void>
   on: (callback: HookCallback<S>) => () => void // unsubscribe
+  reset: () => void
 }
 
 export function defineHook<S>(): Hook<S> {
@@ -40,6 +41,14 @@ export function defineHook<S>(): Hook<S> {
       const unsubscribe = () => subscribers.delete(callback)
       tryOnScopeDispose(unsubscribe)
       return unsubscribe
+    },
+
+    // drop pending receive() waiters (their promises never resolve). Hooks are
+    // usually module-level, so waiters outlive the component that registered them;
+    // call this when (re)entering the consuming flow to clear stale ones left by
+    // jumps or HMR.
+    reset() {
+      queue.length = 0
     },
   }
 }
