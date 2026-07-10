@@ -12,9 +12,9 @@
 // `<EPage>…</EPage>` with no HTML escaping and no `v-pre` — the component escapes it for display
 // via text binding. It's rendered verbatim, so write it already trimmed/indented as you want shown.
 //
-// Used only in BasicsDemo, to give a first-time human reader inline code alongside a running
-// widget. If this spreads to many demos, that's the trigger to add a build step that derives the
-// displayed snippet from real source — until then, decoupled-by-hand is the right scale.
+// Used in the /docs page, to give a first-time human reader inline code alongside prose (and
+// optionally a running widget). If this spreads widely, that's the trigger to add a build step
+// that derives the displayed snippet from real source — until then, decoupled-by-hand is right.
 
 const props = defineProps<{
   // The snippet to display. May be a multi-line template string with leading indentation; it's

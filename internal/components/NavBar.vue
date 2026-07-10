@@ -31,7 +31,8 @@ const topNavLinks = [
   { label: 'Experiment', path: '/dev' },
   { label: 'Prolific', path: '/prolific' },
   { label: 'Data', path: '/data' },
-  { label: 'Demo', path: '/demo' },
+  { label: 'Docs', path: '/docs' },
+  { label: 'Examples', path: '/examples' },
   ...Object.entries(config.navPages ?? {}).map(([label, path]) => ({ label, path })),
 ]
 

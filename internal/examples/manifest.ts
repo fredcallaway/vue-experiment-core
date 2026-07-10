@@ -1,76 +1,104 @@
 import { defineAsyncComponent, type Component } from 'vue'
 
-// Registry of demo tutorials, keyed by URL slug (/demo/<slug>). The [slug] page renders the
-// matching component, and the index lists them. Each demo's epoch tree lives in its component
-// (not the page) so editing it triggers component-level HMR, which preserves the running epoch
-// state and the outline; a page edit would tear the tree down and reset it to __TOP_EPOCH__.
+// Registry of live examples, keyed by URL slug (/examples/<slug>). The [slug] page
+// renders the matching component and the index lists them. README.md in this
+// directory is the agent-facing index of the same material.
+//
+// Each example's epoch tree lives in its component (not the page) so editing it
+// triggers component-level HMR, which preserves the running epoch state and the
+// outline; a page edit would tear the tree down and reset it to __TOP_EPOCH__.
 
-export type DemoEntry = {
+export type ExampleEntry = {
   // Card title shown on the index; defaults to the slug when omitted.
   title?: string
-  // One-line summary of what the demo shows, displayed on the index card.
+  // One-line summary of what the example shows, displayed on the index card.
   summary: string
   component: () => Promise<{ default: Component }>
 }
 
-export const demos: Record<string, DemoEntry> = {
-  basics: {
-    title: 'Basics',
-    summary: 'Building an experiment from epochs, pages, and sequences.',
-    component: () => import('./BasicsDemo.vue'),
+export const examples: Record<string, ExampleEntry> = {
+  sequences: {
+    title: 'Sequences',
+    summary: 'Composing structure from EContinue, ESequence, and ERepeat.',
+    component: () => import('./SequencesExample.vue'),
   },
   experiment: {
     title: 'Full experiment',
-    summary: 'A short end-to-end study: consent, instructions, trials, survey, and completion.',
-    component: () => import('./ExperimentDemo.vue'),
+    summary: 'A short end-to-end study: consent, instructions, trials, survey, completion.',
+    component: () => import('./ExperimentExample.vue'),
   },
-  custom: {
-    title: 'Custom epochs',
-    summary: 'Writing your own leaf epoch: params, events, data views, and done().',
-    component: () => import('./CustomEpochDemo.vue'),
-  },
-  responses: {
-    title: 'Responses',
-    summary: 'Collecting input: buttons and keys, declarative and script-side, plus gating.',
-    component: () => import('./ResponsesDemo.vue'),
-  },
-  data: {
-    title: 'Data',
-    summary: 'The pipeline: typed events -> data views -> export rows, grouped per trial.',
-    component: () => import('./DataDemo.vue'),
-  },
-  params: {
-    title: 'Params & conditions',
-    summary: 'defineParams overrides and useConditions assignment (with the dev inspector).',
-    component: () => import('./ParamsDemo.vue'),
-  },
-  devtools: {
-    title: 'Devtools',
-    summary: 'The /dev panel: navigation controls, a live epoch outline, and an error boundary.',
-    component: () => import('./DevtoolsDemo.vue'),
-  },
-  instructions: {
-    title: 'Instructions',
-    summary: 'Navigable instruction pages, gating Next until each page is completed.',
-    component: () => import('./InstructionsDemo.vue'),
+  trial: {
+    title: 'Custom trial',
+    summary: 'The canonical trial component: params, typed events, data view, phases, done().',
+    component: () => import('./TrialExample.vue'),
   },
   phases: {
     title: 'Phases',
-    summary: 'One epoch with several visual phases that share state and animate between each other.',
-    component: () => import('./PhasesDemo.vue'),
+    summary: 'One epoch with several visual phases that share state.',
+    component: () => import('./PhasesExample.vue'),
   },
-  surveys: {
-    title: 'Surveys',
-    summary: 'Survey epochs (buttons, multi-buttons, text) and a project-declared data view.',
-    component: () => import('./SurveysDemo.vue'),
+  responses: {
+    title: 'Responses',
+    summary: 'Buttons and keys, declarative and script-side, plus input gating.',
+    component: () => import('./ResponsesExample.vue'),
   },
   timing: {
     title: 'Timing',
     summary: 'useTimer countdowns, fixed-duration pages, and awaitable sleeps.',
-    component: () => import('./TimingDemo.vue'),
+    component: () => import('./TimingExample.vue'),
+  },
+  data: {
+    title: 'Data',
+    summary: 'Typed events -> data view -> export rows, grouped per trial with chunkBy.',
+    component: () => import('./DataExample.vue'),
+  },
+  params: {
+    title: 'Params',
+    summary: 'defineParams defaults, subtree provides, and per-instance overrides.',
+    component: () => import('./ParamsExample.vue'),
+  },
+  conditions: {
+    title: 'Conditions',
+    summary: 'Between-subject assignment with useConditions (and dev-UI pinning).',
+    component: () => import('./ConditionsExample.vue'),
+  },
+  surveys: {
+    title: 'Surveys',
+    summary: 'Survey epochs in an ESurveyWrapper and a project-declared data view.',
+    component: () => import('./SurveysExample.vue'),
+  },
+  instructions: {
+    title: 'Instructions',
+    summary: 'ENavigableSequence pages, gating Next until each page is completed.',
+    component: () => import('./InstructionsExample.vue'),
+  },
+  'instructions-embedded': {
+    title: 'Interactive instructions: embedded practice',
+    summary: 'Teach the task by embedding it as a short unscored practice block.',
+    component: () => import('./InstructionsEmbeddedExample.vue'),
+  },
+  'instructions-hooks': {
+    title: 'Interactive instructions: hooks',
+    summary: 'Narrate a live task, pausing and rigging it through defineHook hooks.',
+    component: () => import('./InstructionsHooksExample.vue'),
+  },
+  'instructions-ref': {
+    title: 'Interactive instructions: template ref',
+    summary: 'Drive the task imperatively from instruction pages via an exposed method.',
+    component: () => import('./InstructionsRefExample.vue'),
+  },
+  bonus: {
+    title: 'Bonus',
+    summary: 'useBonus: points, formatted display, and the end-of-study reveal.',
+    component: () => import('./BonusExample.vue'),
+  },
+  'mouse-tracking': {
+    title: 'Mouse tracking',
+    summary: 'Per-trial mouse trajectories with the MouseTracker component.',
+    component: () => import('./MouseTrackingExample.vue'),
   },
 }
 
-export const demoSlugs = Object.keys(demos)
+export const exampleSlugs = Object.keys(examples)
 
-export const resolveDemoComponent = (entry: DemoEntry) => defineAsyncComponent(entry.component)
+export const resolveExampleComponent = (entry: ExampleEntry) => defineAsyncComponent(entry.component)

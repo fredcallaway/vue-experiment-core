@@ -1,11 +1,9 @@
 <script lang="ts" setup>
 
-// One trial of the toy color task, written as a custom component — the pattern real
-// experiments use for anything with internal structure. The trial has two phases
-// (choice -> feedback) that share a piece of state (`correct`). Because it's a single
-// component, that state is just a local `ref`: no need to hoist it to the parent the
-// way sibling EPages would force. This is the component-first pattern the basics demo
-// describes, and what tasks like ECircleGraph / ECorsi do in practice.
+// A minimal custom trial used by the experiment example. Two phases
+// (choice -> feedback) share local state (`correct`) — no hoisting to the parent,
+// as an ESequence of sibling pages would force. For the full trial anatomy
+// (params, typed events, data view), see StroopTrial.vue.
 
 const props = defineProps<{
   target: string       // the color the participant should click

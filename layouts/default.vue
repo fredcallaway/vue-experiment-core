@@ -50,7 +50,7 @@ provide('devTools', devTools)
     <div flex-center min-h-80vh>
       <MainContent bg-white border-4 fixed-width fixed-height>
         <!-- Render the actual page content (the route's component), not a hardcoded <Experiment />:
-             the outline worker loads non-/dev routes (e.g. /demo/<slug>) here too and must traverse
+             the outline worker loads non-/dev routes (e.g. /examples/<slug>) here too and must traverse
              that page's timeline. On /dev the slot is <Experiment />, so preview is unchanged. -->
         <slot v-if="mounted" />
       </MainContent>

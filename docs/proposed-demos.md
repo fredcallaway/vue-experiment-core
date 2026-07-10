@@ -1,6 +1,10 @@
 # Proposed New Demos
 
-> **Status (implemented).** All six demos below have since been built and registered in `manifest.ts`: `custom-epoch`, `responses`, `data`, `params`, `surveys`, and `timing`. This doc is retained as the design rationale.
+> **Status (superseded).** All six demos below were built, and the `/demo` section was
+> then restructured: prose-heavy tutorial content moved to the human-facing `/docs` page
+> (`core/internal/docs/`), and the demos became minimal agent-facing reference
+> implementations at `/examples` (`core/internal/examples/`, indexed by its `README.md`).
+> This doc is retained as design rationale for what the example set should cover.
 
 The `/demo` section previously covered only the structural core: **basics** (epochs, `ESequence`, `ERepeat`), **devtools**, **instructions** (`ENavigableSequence`), and **phases**. These teach how to *compose* epochs, but several features a developer reaches for when building a real task had no runnable, commented reference. This doc proposed demos to fill those gaps.
 

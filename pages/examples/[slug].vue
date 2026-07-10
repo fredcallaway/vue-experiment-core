@@ -1,51 +1,51 @@
 <script lang="ts" setup>
 
-// Single dynamic page for all demos. The slug selects a demo component from the
-// manifest. Each demo's epoch tree lives in its component so that editing the demo
+// Single dynamic page for all examples. The slug selects a component from the
+// manifest. Each example's epoch tree lives in its component so that editing it
 // triggers component-level HMR (preserving epoch state and the outline) rather than
-// a full page teardown. See internal/demos/manifest.ts.
-import { demos, resolveDemoComponent } from '../../internal/demos/manifest'
+// a full page teardown. See internal/examples/manifest.ts.
+import { examples, resolveExampleComponent } from '../../internal/examples/manifest'
 
 const route = useRoute()
 const slug = computed(() => String(route.params.slug))
-const demo = computed(() => demos[slug.value])
-const component = computed(() => demo.value ? resolveDemoComponent(demo.value) : undefined)
+const example = computed(() => examples[slug.value])
+const component = computed(() => example.value ? resolveExampleComponent(example.value) : undefined)
 
-// use a narrow default for demos
+// use a narrow default for examples
 // can override in the component file
 defineWindowSize({ width: 700, height: 800 })
 
 </script>
 
 <template>
-  <div class="demo-page">
-    <!-- key on slug so the epoch tree fully remounts when switching demos -->
+  <div class="example-page">
+    <!-- key on slug so the epoch tree fully remounts when switching examples -->
     <component :is="component" v-if="component" :key="slug" />
     <div v-else p10>
-      <h2 text-xl font-bold>Unknown demo</h2>
+      <h2 text-xl font-bold>Unknown example</h2>
       <p mt-2>
-        No demo named <code>{{ slug }}</code>. See the
-        <NuxtLink to="/demo">demo index</NuxtLink>.
+        No example named <code>{{ slug }}</code>. See the
+        <NuxtLink to="/examples">examples index</NuxtLink>.
       </p>
     </div>
   </div>
 </template>
 
 <style>
-.demo-page ul, .demo-page ol {
+.example-page ul, .example-page ol {
   margin-bottom: 0.5em;
   padding-inline-start: 1.5em;
 }
 
-.demo-page ul {
+.example-page ul {
   list-style: disc;
 }
 
-.demo-page ol {
+.example-page ol {
   list-style: decimal;
 }
 
-.demo-page li {
+.example-page li {
   display: list-item;
 }
 
