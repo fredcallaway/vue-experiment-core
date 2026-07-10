@@ -30,7 +30,9 @@ These apply to all experiment code:
 - **Gate input yourself** during transitions (an `animating`/phase flag + `:disabled`);
   the template does not block input.
 - **Randomize data, not control flow**: build and shuffle a trial array up front
-  (`random.shuffle`), index it with `ERepeat`'s `step`.
+  (`random.shuffle`), index it with `ERepeat`'s `step`. Static stimuli are plain imports
+  from `~/assets/*.json`. To branch structure on a condition, use ordinary `v-if`/order
+  logic around epochs; the assignment comes from `useConditions`.
 - **Naming**: `E*` = epoch components, `P*` = participant-input components. Project code
   lives at the project root (`components/Experiment.vue` etc.), not in `core/`.
 
@@ -54,6 +56,9 @@ Trials:
 - `PhasesExample.vue` (`/examples/phases`) — `usePhaseEpoch` + `useDisplayPhases`:
   one epoch, several visual states sharing component state; `<Phase>` modifiers
   (`constant`/`persist`/`static`), `next`/`goTo`/`done`.
+- `CoinGame.vue` — a loop-driven task: an async main loop in `onMounted` that awaits
+  key presses and sleeps, rather than a phase state machine. Also the host task for the
+  interactive-instruction examples below.
 
 Input:
 
