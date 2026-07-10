@@ -60,6 +60,7 @@ const versionMeta = computed(() => {
 
 const syncLoading = ref<Record<string, boolean>>({})
 const lastSyncTimes = useLocalStorage<Record<string, number | null>>(`lastSyncTimes-${mode}-${version}`, {})
+const syncAllLoading = ref(false)
 
 const preprocessError = ref<any>(null)
 
@@ -130,37 +131,30 @@ const syncSessions = async () => {
 }
 
 const syncAllViews = async () => {
-  await refreshMySessionData()
-  if (syncError.value) {
-    console.error('local data sync failed, skipping view sync', syncError.value)
+  if (syncAllLoading.value) return
+  syncAllLoading.value = true
+  try {
+    await refreshMySessionData()
+    if (syncError.value) {
+      console.error('local data sync failed, skipping view sync', syncError.value)
+    }
+    await Promise.all([
+      syncSessions(),
+      ...Object.keys(csvViews.value).map(syncView),
+      ...Object.keys(jsonViews.value).map(syncView),
+    ])
+  } finally {
+    syncAllLoading.value = false
   }
-  await Promise.all([
-    syncSessions(),
-    ...Object.keys(csvViews.value).map(syncView),
-    ...Object.keys(jsonViews.value).map(syncView),
-  ])
 }
-
-const isViewSynced = (viewName: string) => {
-  const lastSyncTime = lastSyncTimes.value[viewName]
-  if (!lastSyncTime) return false
-  
-  if (!versionMeta.value?.latestUpdateTime) return true
-  
-  return lastSyncTime >= versionMeta.value.latestUpdateTime
-}
-
-const allViewsSynced = computed(() => {
-  // TODO: need some kind of hash checking because preprocessing code could have changed
-  return false
-  if (!versionMeta.value?.latestUpdateTime) return false
-  return Object.keys(csvViews.value).every(isViewSynced)
-})
 
 const lastSyncTime = computed(() => {
   const times = Object.values(lastSyncTimes.value).filter(Boolean) as number[]
   return times.length > 0 ? Math.max(...times) : null
 })
+
+const processedDataPath = computed(() => `data/processed/${mode}/${version}/`)
+const saveDisabled = computed(() => sessionsLoading.value || syncAllLoading.value)
 
 const prepareCombinedData = (view: (sessionData: SessionData) => object[] ) => {
   if (!mySessionData.value) return []
@@ -304,18 +298,16 @@ const completedByCondition = computed(() => {
           <!-- <div><b>Total Bonus:</b> ${{ versionMeta.totalBonus.toFixed(2) }}</div> -->
           <!-- <div><b>Average Bonus:</b> ${{ versionMeta.averageBonus.toFixed(2) }}</div> -->
         </div>
-        <div min-h-6 flex items-center mt-4>
-          <span class="font-mono">data/processed/{{ mode }}/{{ version }}/</span>&nbsp;
-          <span v-if="allViewsSynced"> is up to date</span>
-          <span v-else>
-            was last synchronized at 
-            <RefreshButton
-              :refresh="syncAllViews"
-              :is-loading="sessionsLoading"
-              :timestamp="lastSyncTime"
-              label=""
-            />
+        <div flex items-center gap-2 mt-4>
+          <b>Data:</b>
+          <span>
+            <span class="font-mono">{{ processedDataPath }}</span>
+            <span v-if="lastSyncTime"> was last updated at {{ formatDateTime(lastSyncTime) }}</span>
+            <span v-else> has not been written yet</span>
           </span>
+          <button btn-blue-sm :disabled="saveDisabled" @click="syncAllViews">
+            save
+          </button>
         </div>
       </div>
 

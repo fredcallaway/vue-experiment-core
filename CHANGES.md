@@ -40,6 +40,7 @@ This branch simplifies the template by removing playback-specific infrastructure
 - The Prolific dashboard now requires a valid project ID before showing messages or studies. When setup validation fails, it shows API-token and project-ID instructions and can create a Prolific project through the Prolific API.
 - The Prolific setup panels now use the dashboard's neutral panel styling, with unframed project selection controls.
 - The Prolific study page's Add Places action now executes immediately and reports success after the API call resolves instead of asking for browser confirmation first.
+- The version data dashboard now labels the processed-data path as `Data:`, reports whether it has been written, and uses an explicit Save button instead of the refresh icon.
 - Added a `MouseTracker` component as the standard way to attach mouse tracking to an epoch or phase-sized component. Prefer `<MouseTracker />` in the template over calling `useMouseTracking(...)` directly; pass options such as `:max-frames` only when the defaults need to be changed.
 - Changed `useMouseTracking` overlap handling: if a second tracker starts while one is active, core now logs a warning and calls `done()` on the previous tracker so recorded frames are saved, instead of cancelling in HMR and throwing outside HMR.
 - **⚠️ Breaking:** Removed `PContinue`; `EContinue` is the standard continue affordance. See "EContinue" below.
