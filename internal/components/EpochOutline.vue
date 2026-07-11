@@ -401,7 +401,7 @@ const outlineHeight = computed(() => {
 // don't allow width to decrease (only increase). Quantize to integer layout
 // pixels (getBoundingClientRect bakes effectiveScale in; minWidth is applied in
 // layout space) so the value converges instead of ratcheting on sub-pixel noise.
-const maxSeenWidth = ref(150) // 150 minimum
+const maxSeenWidth = ref(170) // minimum for the header
 watchEffect(() => {
   const layoutWidth = Math.ceil(width.value / (effectiveScale.value || 1))
   if (layoutWidth > maxSeenWidth.value) maxSeenWidth.value = layoutWidth
