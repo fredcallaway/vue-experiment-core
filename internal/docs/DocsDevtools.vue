@@ -1,9 +1,13 @@
+<script lang="ts" setup>
+import DocsPage from './DocsPage.vue'
+</script>
+
 <template>
-  <section id="devtools">
+  <DocsPage name="devtools">
     <h2>Devtools</h2>
     <p>
       The <NuxtLink to="/dev">/dev</NuxtLink> page runs your experiment inside the developer
-      panel:
+      panel — the same one wrapped around these docs:
     </p>
     <ul>
       <li>
@@ -37,5 +41,5 @@
       error is logged and a fallback is shown instead of a blank screen, so one bug doesn't
       silently strand a participant.
     </p>
-  </section>
+  </DocsPage>
 </template>

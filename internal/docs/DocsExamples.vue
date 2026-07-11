@@ -1,11 +1,12 @@
 <script lang="ts" setup>
+import DocsPage from './DocsPage.vue'
 import { examples } from '../examples/manifest'
 
 const entries = Object.entries(examples)
 </script>
 
 <template>
-  <section id="examples">
+  <DocsPage name="examples" last>
     <h2>Examples</h2>
     <p>
       Each example is a live, minimal reference implementation of one pattern — the code to
@@ -28,5 +29,5 @@ const entries = Object.entries(examples)
         <p mt1 mb0 text-sm text-gray-600>{{ example.summary }}</p>
       </NuxtLink>
     </div>
-  </section>
+  </DocsPage>
 </template>

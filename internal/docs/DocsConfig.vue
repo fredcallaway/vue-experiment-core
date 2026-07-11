@@ -1,5 +1,9 @@
+<script lang="ts" setup>
+import DocsPage from './DocsPage.vue'
+</script>
+
 <template>
-  <section id="configuration">
+  <DocsPage name="configuration">
     <h2>Params and conditions</h2>
     <p>Two mechanisms make an experiment configurable and counterbalanced:</p>
     <ul>
@@ -20,5 +24,5 @@
       Project-wide settings (title, completion mode, extra nav pages) live in
       <code>epoch.config.ts</code>.
     </p>
-  </section>
+  </DocsPage>
 </template>
