@@ -47,11 +47,6 @@ export const examples: Record<string, ExampleEntry> = {
     summary: 'useTimer countdowns, fixed-duration pages, and awaitable sleeps.',
     component: () => import('./TimingExample.vue'),
   },
-  data: {
-    title: 'Data',
-    summary: 'Typed events -> data view -> export rows, grouped per trial with chunkBy.',
-    component: () => import('./DataExample.vue'),
-  },
   params: {
     title: 'Params',
     summary: 'defineParams defaults, subtree provides, and per-instance overrides.',

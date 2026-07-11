@@ -37,7 +37,7 @@ const runSleep = async () => {
       <!-- No continue control; :duration advances it automatically. -->
       <EPage name="fixation" :duration="1200" flex-col flex-center gap-3>
         <div text-5xl>+</div>
-        <div text-sm text-gray-500>Fixed-duration page — auto-advances in 1.2 s…</div>
+        <div text-sm text-gray-500>EPage :duration</div>
       </EPage>
 
       <EContinue name="sleep" button="Finish" flex-col gap-3>

@@ -20,11 +20,8 @@ provideProbeParams({ size: 60 })
 <template>
   <div p4>
     <EPage name="params" flex-col gap-8>
-      <p text-sm text-gray-600>
-        The same component rendered three times. Module defaults, then the
-        subtree-wide <code>provideProbeParams({ size: 60 })</code>, then per-instance
-        <code>:params</code> overrides — later layers win.
-      </p>
+      <!-- The same component three times: module defaults, then the subtree-wide
+           provideProbeParams({ size: 60 }), then per-instance :params — later layers win. -->
       <div flex gap-8 items-end justify-center>
         <ProbeTrial />
         <ProbeTrial :params="{ color: 'tomato' }" />

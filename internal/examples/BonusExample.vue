@@ -33,8 +33,9 @@ bonus.centsPerPoint = 10
         You earned {{ bonus.pointsString }}, for a bonus of <b>{{ bonus.dollarsString }}</b>.
       </EContinue>
 
+      <!-- In a real study, ECompletion follows and reports the saved bonus to Prolific. -->
       <EPage name="end" text-center>
-        Done. <code>ECompletion</code> reports the saved bonus to Prolific.
+        Done.
       </EPage>
 
     </ESequence>

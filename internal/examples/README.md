@@ -72,8 +72,10 @@ Timing:
 
 Data:
 
-- `DataExample.vue` (`/examples/data`) — `declareEventLogger` → events →
-  `declareDataView` with `chunkBy` → one row per trial.
+- The pipeline (`declareEventLogger` → typed events → `declareDataView`) is part of the
+  canonical trial: see `StroopTrial.vue`. To group several events per trial into one row,
+  filter with the loggers' type guards and chunk with `chunkBy(events, isOnset)` — snippet
+  in the data section of `/docs` (`core/internal/docs/DocsData.vue`).
 
 Configuration:
 

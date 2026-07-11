@@ -5,8 +5,9 @@
 // sessions so variants stay balanced. Conditions decide *which participant gets
 // what*; they typically feed into params (see the params example).
 //
-// In /dev, the condition inspector lists these and lets you pin one; pinned values
-// are written to `condition.<key>` URL params and excluded from the cycling counter.
+// Reloading advances the assignment counter to the next variant. In /dev, the
+// condition inspector lists these and lets you pin one; pinned values are written
+// to `condition.<key>` URL params and excluded from the cycling counter.
 
 const { isPinned, choice, permute } = useConditions()
 
@@ -27,10 +28,7 @@ useInspect({ rewardPoints })
 <template>
   <div p4>
     <EPage name="conditions" flex-col gap-4>
-      <p text-sm text-gray-600>
-        This session's assignment. Reload to advance the assignment counter, or pin a
-        condition from the inspector in <NuxtLink to="/dev">/dev</NuxtLink>.
-      </p>
+      <p text-sm text-gray-600>This session's assignment:</p>
       <table text-sm b-1 b-gray-200 rounded self-start>
         <thead bg-gray-50>
           <tr><th p2 text-left>key</th><th p2 text-left>assigned</th><th p2 text-left>pinned?</th></tr>
@@ -52,7 +50,6 @@ useInspect({ rewardPoints })
       </table>
       <p text-xs text-gray-500>
         Derived: <code>rewardPoints = {{ rewardPoints }}</code>
-        (e.g. <code>:params="{ points: rewardPoints }"</code>)
       </p>
     </EPage>
   </div>

@@ -31,10 +31,6 @@ const choose = (side: string) => {
 
 <template>
   <div p4 flex-col gap-6>
-    <div text-sm text-gray-600 text-center>
-      Current phase: <code>{{ epoch.phase }}</code>
-    </div>
-
     <div min-h-40 relative>
       <!-- `which` can list several phases. Modifiers:
            constant — always mounted, hidden when inactive (keeps internal state)

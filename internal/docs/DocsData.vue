@@ -42,9 +42,22 @@ import DocsPage from './DocsPage.vue'
         Events are the raw record; a <b>data view</b> (<code>declareDataView</code>)
         transforms a session's events into export rows — typically one row per trial. A trial
         usually logs several events (an onset, a response, …), so the view groups them back
-        together with <code>chunkBy</code>, keyed off the event that starts each trial. See
-        the <NuxtLink to="/examples/data">data example</NuxtLink> for the full pipeline, and
-        watch it live in the Events and DataView panels in <NuxtLink to="/dev">/dev</NuxtLink>.
+        together with <code>chunkBy</code>, keyed off the event that starts each trial:
+      </p>
+      <DemoCode code="
+        declareDataView('trial', (session: SessionData) => {
+          const events = session.events.filter(e => isOnset(e) || isChoice(e))
+          // chunkBy starts a new group at each onset; each group becomes one row
+          return chunkBy(events, isOnset).map(chunk => ({
+            stimulus: chunk.find(isOnset)?.data.stimulus,
+            correct: chunk.find(isChoice)?.data.correct ?? null,
+          }))
+        })
+      "/>
+      <p>
+        See the <NuxtLink to="/examples/trial">custom trial example</NuxtLink> for the full
+        pipeline in context, and preview declared views live in the DataView panel while
+        your experiment runs in <NuxtLink to="/dev">/dev</NuxtLink>.
       </p>
       <p>
         Declare data views next to the component that owns the logged event shape, and when

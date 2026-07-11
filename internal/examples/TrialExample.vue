@@ -3,7 +3,8 @@ import StroopTrial from './StroopTrial.vue'
 
 // A block of custom trials: ERepeat provides the loop and per-trial epochs;
 // StroopTrial.vue is the component to read for the trial anatomy itself
-// (params, typed events, data view, phases, done()).
+// (params, typed events, data view, phases, done()). Preview the exported rows
+// in the DataView panel (view: stroop) as you respond.
 
 const words = ['red', 'blue'] as const
 const trials = random.shuffle(
@@ -28,8 +29,7 @@ const trials = random.shuffle(
       </ERepeat>
 
       <EPage name="end" text-center>
-        Done. Open the DataView panel in <NuxtLink to="/dev">/dev</NuxtLink> (view:
-        <code>stroop</code>) to see the exported rows.
+        Done.
       </EPage>
 
     </ESequence>
