@@ -26,6 +26,7 @@ export type SessionMeta = {
   completionTime?: number
   lastUpdateTime: number
   inactiveTime?: number
+  excluded?: boolean
   bonus: number
   assignment: number
   conditions?: SafeDataObject

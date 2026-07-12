@@ -156,6 +156,7 @@ const assignmentsToReplace = computed(() => {
       return { submission: sub, session }
     })
     .filter(({ session, submission }) => (
+      session.excluded ||
       sessionStatus(session) !== 'completed' ||
       getDataStatus(submission).text !== 'full'
     ))
