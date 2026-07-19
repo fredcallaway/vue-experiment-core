@@ -38,6 +38,10 @@ import DocsPage from './DocsPage.vue'
         tree, and jump around it, in the outline panel beside this page — the same panel
         shows your experiment's tree in <NuxtLink to="/dev">/dev</NuxtLink>.
       </p>
+      <p>
+        These docs are themselves an epoch tree: the outline on the right is the table of
+        contents — click any entry to jump to it, or use the Next buttons to read in order.
+      </p>
     </DocsPage>
 
     <DocsPage name="components">
