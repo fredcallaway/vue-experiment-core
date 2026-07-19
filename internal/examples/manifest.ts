@@ -27,6 +27,11 @@ export const examples: Record<string, ExampleEntry> = {
     summary: 'A short end-to-end study: consent, instructions, trials, survey, completion.',
     component: () => import('./ExperimentExample.vue'),
   },
+  study: {
+    title: 'Complete study',
+    summary: 'The complete pattern: interactive instructions (scripted demos, practice, quiz), conditions, block structure, survey, completion.',
+    component: () => import('./StudyExample.vue'),
+  },
   trial: {
     title: 'Custom trial',
     summary: 'The canonical trial component: params, typed events, data view, phases, done().',

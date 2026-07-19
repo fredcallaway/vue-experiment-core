@@ -47,6 +47,12 @@ Structure:
 - `ExperimentExample.vue` (`/examples/experiment`) — the full-study skeleton: `EConsent`,
   instructions, `ENoReturn`, trial block with persistent header, survey, `ECompletion`.
   Mirror of a real `components/Experiment.vue`.
+- `StudyExample.vue` + `PeekGame.vue` + `PeekGameInstructions.vue` (`/examples/study`) —
+  **the complete pattern**: interactive instructions (scripted demonstration rounds,
+  embedded practice, comprehension quiz), conditions feeding params, two-level block
+  structure (blocks × trials as data, per-trial rigs) with a persistent header, typed
+  events + data view, survey, bonus reveal, completion. Start here when building a whole
+  experiment.
 
 Trials:
 
@@ -87,18 +93,26 @@ Configuration:
 Instructions:
 
 - `InstructionsExample.vue` (`/examples/instructions`) — `ENavigableSequence` with
-  `enableNext` gating; per-page `state` scratch object.
+  `enableNext` gating; per-page `state` scratch object. Use for read-and-page
+  instructions with no live task (participants can re-read).
 - Interactive instructions (the participant interacts with the real task while learning
-  it) — three strategies, all built on `CoinGame.vue`, in increasing order of control:
-  - `InstructionsEmbeddedExample.vue` (`/examples/instructions-embedded`) — embed the
-    task as a short unscored practice block (practice params). Simplest; use when
-    unassisted play teaches the task.
-  - `InstructionsHooksExample.vue` (`/examples/instructions-hooks`) — the task runs
-    continuously (mounted `disabled`); instruction pages synchronize via `defineHook`
-    hooks: pause mid-round, react to behavior, rig outcomes by mutating hook state.
-  - `InstructionsRefExample.vue` (`/examples/instructions-ref`) — the task is mounted
-    `manual no-epoch`; pages drive it imperatively through an exposed async method
-    (`playRound()`), awaiting each demonstration.
+  it). Decision rule:
+  - If playing a round or two unassisted teaches the task → embed it as a short unscored
+    practice block: `InstructionsEmbeddedExample.vue` (`/examples/instructions-embedded`).
+  - Anything more (scripted demonstrations, rigged rounds, reacting to what the
+    participant does) → **the exposed-surface pattern**: `PeekGameInstructions.vue`
+    (part of `/examples/study`). The task defines an "instructable surface"
+    (`defineExpose`: async round methods with rig arguments, reactive state, input
+    flags) and is mounted once, `manual no-epoch`; each page scripts it in `@mounted`
+    (await methods, `until()` on exposed state). Combine with embedded practice epochs
+    and a comprehension quiz. Use a plain `ESequence` for pages that drive the task
+    (back-navigation would re-run their scripts); `ENavigableSequence` only for
+    read-only pages.
+  - `InstructionsHooksExample.vue` (`/examples/instructions-hooks`) — `defineHook`
+    synchronization for a task that must run its own epoch-driven loop while
+    instructions observe/pause it. Rarely needed; prefer the exposed-surface pattern.
+  - `InstructionsRefExample.vue` (`/examples/instructions-ref`) — minimal form of the
+    exposed-surface pattern on `CoinGame.vue`.
 
 Other:
 
