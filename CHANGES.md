@@ -4,6 +4,7 @@ This branch simplifies the template by removing playback-specific infrastructure
 
 ## Summary
 
+- Added `docs/guide/README.md` as the canonical project-development guide. Project-level `AGENTS.md` files should point there instead of copying project-agnostic rules; the examples README remains the implementation index.
 - Removed the playback page and playback controller UI from `core`.
 - Removed `useParticipant.ts` and its event-bus / pid / input-blocking abstraction.
 - Kept `PButton`, `PButtons`, and `PKey`; they (and `usePButton`, `EContinue`, and

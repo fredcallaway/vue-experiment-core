@@ -6,37 +6,7 @@ directory is a live, minimal, type-checked component mounted at `/examples/<slug
 below and copy its patterns — they encode the template's current conventions. Human-facing
 concept docs are at `/docs` (source: `core/internal/docs/`).
 
-## Core rules
-
-These apply to all experiment code:
-
-- **The epoch model.** An experiment is a tree of *epochs* (periods of time). Branch
-  epochs (`ESequence`, `ERepeat`) compose; leaf epochs (`EContinue`, `EPage`, custom
-  components) run one at a time. A leaf ends itself by calling `done()`, which hands
-  control back to its parent.
-- **Composition rules.** Every direct child of an `ESequence`/`ERepeat` must be an epoch
-  component, and an epoch component must sit inside an epoch. Presentational markup may
-  surround the epochs inside a branch (it stays mounted across steps). Violations throw
-  informative errors.
-- **A trial is a component.** Anything beyond "show this, then continue" is a custom
-  component: module-level `defineParams` + `declareEventLogger` + `declareDataView`,
-  per-instance `useEpoch`/`usePhaseEpoch` and control flow. See `StroopTrial.vue`.
-- **Call `useEpoch(...)` before composables that depend on epoch context.** Epoch names
-  must not contain hyphens.
-- **Log semantic events explicitly** with declared (typed) loggers. Automatic
-  `participant.*` events are for debugging, not your data record.
-- **Use `useLocalAsync()`'s `sleep`/`registerAsync`** (never bare `setTimeout`) in epoch
-  logic, so pending delays can't fire into an unmounted component.
-- **Gate input yourself** during transitions (an `animating`/phase flag + `:disabled`);
-  the template does not block input.
-- **Randomize data, not control flow**: build and shuffle a trial array up front
-  (`random.shuffle`), index it with `ERepeat`'s `step`. Static stimuli are plain imports
-  from `~/assets/*.json`. To branch structure on a condition, use ordinary `v-if`/order
-  logic around epochs; the assignment comes from `useConditions`.
-- **Naming**: `E*` = epoch components, `P*` = participant-input components. Project code
-  lives at the project root (`components/Experiment.vue` etc.), not in `core/`.
-
-Run `bun run typecheck` after edits.
+Read [`docs/guide/README.md`](../../docs/guide/README.md) first for the project-wide rules. This file is the routing table for their canonical implementations.
 
 ## Examples by task
 
