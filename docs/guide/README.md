@@ -22,4 +22,15 @@ This is the canonical starting point for agents working on experiment projects b
 - **Randomize data, not control flow.** Build and shuffle data arrays up front, then index them with `ERepeat.step`. Use ordinary conditional rendering only when experimental structure genuinely branches on a condition.
 - **Naming.** `E*` names epoch components and `P*` names participant-input components.
 
+## Code and data conventions
+
+- Keep code simple, concise, and modular. Prefer existing project and template conventions over new abstractions.
+- Use Vue single-file components with `<script lang="ts" setup>` for per-instance component logic when practical. Keep module-level parameter definitions, event loggers, and data views in a normal `<script lang="ts">` block.
+- Rely on Nuxt autoimports unless an explicit import is required.
+- Define experiment parameters with `defineParams` and pass per-instance overrides through `params` props.
+- Keep declared event payloads typed and place `declareDataView(...)` transforms near the component or module that owns the event shape.
+- Preserve compatibility with existing raw and session data when changing event schemas or exported columns.
+- Preserve existing UnoCSS utility conventions. Use scoped CSS when it makes a component clearer.
+- Do not change Prolific, Firebase, PostHog, or other deployment configuration unless the task explicitly requires it.
+
 Run `bun run typecheck` after edits and use the project's prescribed build or browser checks when relevant.
