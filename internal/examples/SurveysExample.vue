@@ -10,6 +10,8 @@ declareDataView('survey', (session: SessionData) =>
     .map(e => e.data as { question: string; response: string; rt: number })
 )
 
+export default {}
+
 </script>
 
 <template>
