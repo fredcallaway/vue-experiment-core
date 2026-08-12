@@ -12,6 +12,7 @@ import stringify from "json-stringify-pretty-compact";
 
 const views = useDataViews()
 const viewNames = computed(() => Object.keys(views))
+const meta = useCurrentSession()
 
 const currentEpoch = useCurrentEpoch()
 const epochPath = computed(() => {
@@ -44,7 +45,7 @@ const result = computed(() => {
   const v = view.value
   if (!v) return null
   try {
-    return { ok: true as const, data: v.fn({ meta: {} as any, events: [...events] }) }
+    return { ok: true as const, data: v.fn({ meta, events: [...events] }) }
   } catch (error) {
     return { ok: false as const, error: String((error as Error)?.message ?? error) }
   }
