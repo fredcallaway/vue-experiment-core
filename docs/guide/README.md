@@ -31,6 +31,7 @@ This is the canonical starting point for agents working on experiment projects b
 - Define experiment parameters with `defineParams` and pass per-instance overrides through `params` props.
 - Keep declared event payloads typed and place `declareDataView(...)` transforms near the component or module that owns the event shape.
 - Preserve compatibility with existing raw and session data when changing event schemas or exported columns.
+- Treat the experiment version as a participant-cohort identifier, not a development revision. During development, keep the version planned for the next cohort; after collecting any participant data under that version, increment it before collecting data from a behaviorally or analytically different procedure.
 - Preserve existing UnoCSS utility conventions. Use scoped CSS when it makes a component clearer.
 - Do not change Prolific, Firebase, PostHog, or other deployment configuration unless the task explicitly requires it.
 
