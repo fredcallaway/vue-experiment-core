@@ -64,9 +64,10 @@ import DocsPage from './DocsPage.vue'
 
     <h3>Computed defaults</h3>
     <p>
-      A default can be a function instead of a value, in which case it's evaluated each time
-      params are resolved. Use this when a default depends on something that isn't known at
-      module scope — a condition, a window size, another param:
+      A default can be a function instead of a value, in which case it's called each time
+      params are resolved rather than once when the module loads. Use this when a default
+      depends on something that isn't known at module scope — a condition, the window size,
+      whether fast mode is on:
     </p>
     <DemoCode code="
       export const [provideTrialParams, useTrialParams] = defineParams({
@@ -74,10 +75,27 @@ import DocsPage from './DocsPage.vue'
         feedbackMs: () => replaceFast(800, 0),  // 0 when fast mode is on
       })
     "/>
+
+    <h3>Params are resolved once</h3>
     <p>
-      Params shape <em>this render</em> and are resolved fresh on each call, so they're the
-      right tool for anything that varies within a session. For a value that must stay fixed
-      for a participant across the whole session — and be balanced across participants — use a
+      <code>useParams()</code> returns plain values, not a reactive object. It resolves the
+      three layers at the moment you call it — normally in <code>setup</code> — and the result
+      does not update if the <code>params</code> prop later changes.
+    </p>
+    <p>
+      This is deliberate: a trial's settings shouldn't shift underneath it mid-trial. Give
+      each configuration its own component instance instead, which is what
+      <code>ERepeat</code> already does — every iteration is a fresh instance that resolves
+      its own params.
+    </p>
+    <div card-info>
+      If you genuinely need a value to change while a component stays mounted, don't reach for
+      params: pass a <code>computed</code> or a ref as an ordinary prop. Mixing the two mental
+      models is a reliable source of confusion.
+    </div>
+    <p>
+      So: params shape <em>this instance</em>. For a value that must stay fixed for a
+      participant across the whole session — and be balanced across participants — use a
       condition instead, and let it feed the params.
     </p>
   </DocsPage>
