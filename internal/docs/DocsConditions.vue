@@ -34,12 +34,8 @@ const assignments = Array.from({ length: getConditionAssignmentCount(design) }, 
     responseSide: ['left', 'right'],
   },
 })</code></pre>
-    <p>
-      The assignment iterates through every main-condition combination before selecting another counterbalance
-      combination. The counterbalance order minimizes marginal imbalance within the counterbalance variables, while a
-      complete cycle still contains their full Cartesian product.
-    </p>
     <div
+      mt-1
       h-56
       max-w-full
       overflow-auto
@@ -67,14 +63,16 @@ const assignments = Array.from({ length: getConditionAssignmentCount(design) }, 
         </tbody>
       </table>
     </div>
-    <p>
+    <!-- <p>
       This table is generated with <code>getConditionsForAssignment()</code>, the same pure helper used by
       <code>useConditions().assign()</code>. The table therefore changes with the implementation instead of duplicating
       its expected output.
-    </p>
+    </p> -->
     <p>
-      After every complete pass through the main design, main and counterbalance conditions are uncorrelated. If a run
-      stops partway through a pass, the unfinished block can contain the usual one-participant main-condition imbalance.
+      We iterate through all "main" conditions before selecting another counterbalance
+      combination. We iterate through "counterbalance" combinations to minimize marginal imbalance in case
+      you don't run enough participants to cover all possible combinations.
+      The assignment index is taken from a URL parameter; this is handled automatically by our prolific interface.
     </p>
   </DocsPage>
 </template>
