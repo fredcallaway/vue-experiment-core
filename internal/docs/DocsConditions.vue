@@ -19,7 +19,7 @@ const assignments = Array.from({ length: getConditionAssignmentCount(design) }, 
 </script>
 
 <template>
-  <DocsPage name="condition-assignment">
+  <DocsPage name="conditionAssignment">
     <h2>Condition assignment</h2>
     <p>
       Declare experimental manipulations as <code>main</code> conditions and nuisance variables such as task order or
