@@ -1,6 +1,6 @@
 # ADR 0003: Run outline traversal in a hidden iframe worker (no participant-tab reload)
 
-- **Status:** Accepted (direction chosen; implementation pending)
+- **Status:** Accepted and implemented
 - **Date:** 2026-06-02
 - **Scope:** `core/` template layer, `simplified` branch
 - **Related:** [0001-remove-pseudo-leaf.md](./0001-remove-pseudo-leaf.md), [0002-epoch-id-not-unique-over-time.md](./0002-epoch-id-not-unique-over-time.md)
@@ -60,6 +60,12 @@ Decided parameters:
 - **Worker isolation: force debug/dummy mode.** The worker boots with `mode: 'debug'` (the path
   `pages/dev.vue:7-18` already uses) so its `DataWriter` never writes the real session — rather
   than introducing a separate worker boot mode.
+- **Failures are worker results, not iframe-only logs.** The first traversal error is persisted in
+  route-keyed `localStorage` and broadcast to the consumer. The consumer listens to both the
+  broadcast and the browser's `storage` event, then displays the message and traversal context in
+  the Epochs panel. Keeping the first error avoids replacing the root cause with a cascade error
+  from a half-mounted component. A retry clears the previous failure; a successful traversal
+  clears its durable record and publishes the new outline.
 
 ## Options considered
 
@@ -123,6 +129,8 @@ Replace runtime discovery with a static/derived description, eliminating travers
 - A new "worker" responsibility exists: a hidden iframe that boots in debug mode, traverses, and
   publishes the outline; plus consumer-side logic to hot-swap `root` on a broadcast/storage
   signal instead of reloading.
+- A failed traversal leaves the live-path outline usable and shows an actionable error in the
+  developer's Epochs panel instead of silently leaving a plausible partial tree.
 - `useMultipleTabDetection` must learn to ignore the worker iframe.
 - The in-tab `traverseTimeline` reload path (`useEpochTree.ts:481-488`) is removed from the
   developer/consumer path; traversal logic moves into the worker context.

@@ -19,6 +19,19 @@ type CachedEpochOutline = {
   root: SerializedEpochNode
 }
 
+export type OutlineTraversalError = {
+  message: string
+  epochId?: string
+  componentName?: string
+  componentPath?: string
+  info?: string
+}
+
+type StoredOutlineTraversalError = {
+  savedAt: number
+  error: OutlineTraversalError
+}
+
 // The outline is cached per page, keyed by the page's route path. We key on the route rather
 // than the root epoch id because two pages can legitimately share a root epoch name (e.g. an
 // unnamed <ESequence> defaults to "ESequence"), which would collide in the cache and leak one
@@ -27,6 +40,7 @@ const OUTLINE_CACHE_PREFIX = 'epoch-outline'
 const OUTLINE_CACHE_MAX_AGE_MS = 60_000
 const outlineCacheKey = (pageKey: string) => `${OUTLINE_CACHE_PREFIX}:${pageKey}`
 const outlineScanAttemptKey = (pageKey: string) => `${outlineCacheKey(pageKey)}:scan-attempted`
+const outlineTraversalErrorKey = (pageKey: string) => `${outlineCacheKey(pageKey)}:traversal-error`
 
 // Traversal steps the live experiment forward, which leaves page-level state we cannot restore
 // (see ADR 0003). So the developer's tab never traverses: a hidden iframe loaded with this flag
@@ -37,10 +51,12 @@ const OUTLINE_WORKER_CHANNEL = 'epoch-outline-worker'
 const isOutlineWorker = () => import.meta.client && getUrlFlag(OUTLINE_WORKER_FLAG)
 // Messages over the worker channel. The consumer asks the worker to (re)traverse a route
 // ('request-traversal', e.g. on Reindex or when its cache is missing/diverged); the worker
-// announces a freshly saved cache ('outline-updated') so consumers can swap it into place.
+// announces either a freshly saved cache ('outline-updated') or a traversal failure so consumers
+// can swap the outline into place or show the root error.
 type OutlineWorkerMessage =
   | { type: 'request-traversal'; pageKey: string }
   | { type: 'outline-updated'; pageKey: string }
+  | { type: 'traversal-failed'; pageKey: string; error: OutlineTraversalError }
 
 const getStepIndex = (parentId: string, childId: string) => {
   const escapedParentId = parentId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -291,6 +307,7 @@ export const useEpochTree = createGlobalState(() => {
   const cacheSavedAt = ref<number | null>(null)
   const isOutlineStale = ref(false)
   const outlineStaleReason = ref<string | null>(null)
+  const traversalError = ref<OutlineTraversalError | null>(null)
   const errorsById = ref<Record<string, string>>({})
   const hasInitializedOutline = ref(false)
   // The page key the current outline belongs to. Used to detect page switches.
@@ -299,13 +316,51 @@ export const useEpochTree = createGlobalState(() => {
 
   const canUseLocalStorage = () => import.meta.client && typeof localStorage !== 'undefined'
 
+  const loadStoredTraversalError = (key: string) => {
+    if (!canUseLocalStorage()) return null
+    const storageKey = outlineTraversalErrorKey(key)
+    const raw = localStorage.getItem(storageKey)
+    if (!raw) return null
+
+    try {
+      const stored = JSON.parse(raw) as StoredOutlineTraversalError
+      if (!stored || typeof stored.savedAt !== 'number' || !stored.error?.message) {
+        localStorage.removeItem(storageKey)
+        return null
+      }
+      if (Date.now() - stored.savedAt >= OUTLINE_CACHE_MAX_AGE_MS) {
+        localStorage.removeItem(storageKey)
+        return null
+      }
+      return stored.error
+    } catch (error) {
+      console.warn('Failed to parse stored outline traversal error:', error)
+      localStorage.removeItem(storageKey)
+      return null
+    }
+  }
+
+  const clearTraversalError = (key = pageKey()) => {
+    traversalError.value = null
+    if (canUseLocalStorage()) localStorage.removeItem(outlineTraversalErrorKey(key))
+  }
+
+  const storeTraversalError = (key: string, error: OutlineTraversalError) => {
+    traversalError.value = error
+    if (!canUseLocalStorage()) return
+    const stored: StoredOutlineTraversalError = { savedAt: Date.now(), error }
+    localStorage.setItem(outlineTraversalErrorKey(key), JSON.stringify(stored))
+  }
+
   const clearCachedOutline = (key = loadedPageKey.value) => {
     if (!canUseLocalStorage() || !key) return
     localStorage.removeItem(outlineCacheKey(key))
     localStorage.removeItem(outlineScanAttemptKey(key))
+    localStorage.removeItem(outlineTraversalErrorKey(key))
     cacheSavedAt.value = null
     isOutlineStale.value = false
     outlineStaleReason.value = null
+    traversalError.value = null
   }
 
   const loadCachedOutline = (key: string) => {
@@ -333,6 +388,7 @@ export const useEpochTree = createGlobalState(() => {
       root: serializeEpochNode(node),
     }
     localStorage.setItem(outlineCacheKey(pageKey()), JSON.stringify(cached))
+    clearTraversalError(pageKey())
     cacheSavedAt.value = cached.savedAt
     isOutlineStale.value = false
     outlineStaleReason.value = null
@@ -394,6 +450,39 @@ export const useEpochTree = createGlobalState(() => {
     channel?.postMessage({ type: 'outline-updated', pageKey: key } satisfies OutlineWorkerMessage)
   }
 
+  const reportTraversalError = (
+    error: unknown,
+    details: Pick<OutlineTraversalError, 'componentName' | 'componentPath' | 'info'> = {},
+  ) => {
+    // Vue setup failures often cause secondary render/guard failures. Keep and publish the first
+    // error because it is the actionable root cause.
+    if (traversalError.value) return traversalError.value
+
+    const currentId = currentEpoch.value.id
+    const failure: OutlineTraversalError = {
+      message: formatEpochError(error),
+      epochId: currentId === '__TOP_EPOCH__' ? undefined : currentId,
+      ...details,
+    }
+    const key = pageKey()
+    storeTraversalError(key, failure)
+    if (isOutlineWorker()) {
+      channel?.postMessage({ type: 'traversal-failed', pageKey: key, error: failure } satisfies OutlineWorkerMessage)
+    }
+    return failure
+  }
+
+  const applyWorkerTraversalError = (key: string, error: OutlineTraversalError) => {
+    if (key !== pageKey()) return
+    traversalError.value = error
+    console.error(`Outline traversal failed for ${key}:`, error)
+  }
+
+  const syncTraversalErrorFromStorage = (key: string) => {
+    if (key !== pageKey()) return
+    traversalError.value = loadStoredTraversalError(key)
+  }
+
   // The consumer can't traverse (ADR 0003), so it asks the iframe worker to do it and applies the
   // result when the worker broadcasts 'outline-updated'. Sent on Reindex and when the cache is
   // missing or diverged.
@@ -412,6 +501,7 @@ export const useEpochTree = createGlobalState(() => {
     const cached = loadCachedOutline(key)
     if (!cached) return
     root.value = hydrateEpochNode(cached.root)
+    traversalError.value = null
     isLoadedFromCache.value = true
     cacheSavedAt.value = cached.savedAt
     hasTraversed.value = true
@@ -453,6 +543,7 @@ export const useEpochTree = createGlobalState(() => {
     if (isTraversing.value) return
     console.groupCollapsed('traverseTimeline')
     console.time('traverseTimeline')
+    clearTraversalError(pageKey())
 
     if (isJumping.value) {
       console.log('waiting for existing jump to complete')
@@ -464,8 +555,9 @@ export const useEpochTree = createGlobalState(() => {
     const previous = currentEpoch.value // restored at end
     isJumping.value = true
 
+    let rejectTraversal: ((error: unknown) => void) | null = null
     const { pushHandler } = useErrorHandler()
-    const popHandler = pushHandler(err => {
+    const popHandler = pushHandler((err, instance, info) => {
       const epochId = currentEpoch.value.id
       if (epochId !== '__TOP_EPOCH__') {
         errorsById.value = {
@@ -473,7 +565,13 @@ export const useEpochTree = createGlobalState(() => {
           [epochId]: formatEpochError(err),
         }
       }
+      reportTraversalError(err, {
+        componentName: instance?.$options?.__name,
+        componentPath: instance?.$options?.__file,
+        info,
+      })
       console.error('Error traversing timeline:', err)
+      rejectTraversal?.(err)
     }, 100)
 
     let unwatch = null as (() => void) | null
@@ -481,7 +579,8 @@ export const useEpochTree = createGlobalState(() => {
     // Track which step-less leaves we've visited so a phase epoch that revisits a
     // phase (a possible loop) ends its parent rather than spinning forever.
     const visited = new Set<string>()
-    const doTraversal = () => new Promise((resolve) => {
+    const doTraversal = () => new Promise((resolve, reject) => {
+      rejectTraversal = reject
       unwatch = watchImmediate(currentEpoch, async (epoch) => {
         console.log(`[${performance.now().toFixed(2)}] traversing`, epoch.id)
         if (epoch.id === '__TOP_EPOCH__') {
@@ -517,8 +616,10 @@ export const useEpochTree = createGlobalState(() => {
       traversalSucceeded = true
       console.log('traversal succeeded')
     } catch (error) {
+      reportTraversalError(error)
       console.error('Error traversing timeline:', error)
     } finally {
+      rejectTraversal = null
       popHandler()
       unwatch?.()
       isJumping.value = false
@@ -608,6 +709,7 @@ export const useEpochTree = createGlobalState(() => {
 
     // Consumer tab, no usable cache. Show a partial outline from the live path immediately so the
     // panel isn't empty, then ask the worker to produce the full one (it broadcasts when ready).
+    traversalError.value = loadStoredTraversalError(key)
     refreshTree()
     if (autoTraverse.value) requestWorkerTraversal()
   }
@@ -621,6 +723,7 @@ export const useEpochTree = createGlobalState(() => {
     cacheSavedAt.value = null
     isOutlineStale.value = false
     outlineStaleReason.value = null
+    traversalError.value = null
     loadedPageKey.value = null
   }
 
@@ -671,6 +774,14 @@ export const useEpochTree = createGlobalState(() => {
   // React both to epoch changes (tree updates within a page) and route changes (page switches).
   watch([currentEpoch, () => route.path], () => { void syncOutlineForCurrentPage() })
 
+  if (import.meta.client) {
+    useEventListener(window, 'storage', (event) => {
+      if (event.key === outlineTraversalErrorKey(pageKey())) {
+        syncTraversalErrorFromStorage(pageKey())
+      }
+    })
+  }
+
   // We step through the full experiment to discover epochs (nodes)
   // NOTE: this will miss epochs that are not always created (e.g. because condition or randomness)
   onMounted(async () => {
@@ -685,6 +796,7 @@ export const useEpochTree = createGlobalState(() => {
         } else {
           // Consumer applies worker-produced outlines in place, without reloading.
           if (msg.type === 'outline-updated') reloadOutlineFromCache(msg.pageKey)
+          if (msg.type === 'traversal-failed') applyWorkerTraversalError(msg.pageKey, msg.error)
         }
       }
     }
@@ -701,6 +813,7 @@ export const useEpochTree = createGlobalState(() => {
     cacheSavedAt,
     isOutlineStale,
     outlineStaleReason,
+    traversalError,
     markCachedOutlineStale,
     traverseTimeline,
     reindexTimeline,

@@ -9,10 +9,17 @@ const {
   hasTraversed,
   isOutlineStale,
   outlineStaleReason,
+  traversalError,
   markCachedOutlineStale,
   reindexTimeline,
   autoTraverse,
 } = useEpochTree()
+
+const reindexTitle = computed(() => {
+  if (traversalError.value) return 'Retry outline traversal'
+  if (isOutlineStale.value) return outlineStaleReason.value ?? 'Epoch outline is stale. Reindex Timeline.'
+  return 'Reindex Timeline'
+})
 
 const collapsed = ref<Record<string, boolean>>({})
 
@@ -436,14 +443,39 @@ const indentBase = 8
       />
       <IconButton
         icon="i-mdi-refresh"
-        :title="isOutlineStale ? (outlineStaleReason ?? 'Epoch outline is stale. Reindex Timeline.') : 'Reindex Timeline'"
-        :tone="isOutlineStale ? 'danger' : 'default'"
+        :title="reindexTitle"
+        :tone="isOutlineStale || traversalError ? 'danger' : 'default'"
         :disabled="isTraversing || isJumping"
         @click="reindexTimeline"
       />
     </div>
 
     <!-- <EpochControls w-fit class="py0! ml2"  /> -->
+
+    <div
+      v-if="traversalError"
+      role="alert"
+      mx2
+      mb2
+      w-72
+      shrink-0
+      rounded
+      border="~ red-400"
+      bg-red-50
+      p2
+      text-xs
+      text-red-800
+    >
+      <div font-bold mb1>Outline traversal failed</div>
+      <div break-words>{{ traversalError.message }}</div>
+      <div v-if="traversalError.epochId" mt1 text-red-700 break-all>
+        After epoch: <code>{{ traversalError.epochId }}</code>
+      </div>
+      <div v-if="traversalError.componentPath" mt1 text-red-700 break-all>
+        Component: <code>{{ traversalError.componentPath }}</code>
+      </div>
+      <div mt1>Fix the error, then reindex.</div>
+    </div>
 
     <div v-if="!root" text-sm text-gray-500>
       Waiting for first epoch...
