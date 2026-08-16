@@ -11,6 +11,7 @@ import DocsComposition from './DocsComposition.vue'
 import DocsData from './DocsData.vue'
 import DocsConfig from './DocsConfig.vue'
 import DocsDevtools from './DocsDevtools.vue'
+import DocsFiles from './DocsFiles.vue'
 import DocsProlific from './DocsProlific.vue'
 import DocsExamples from './DocsExamples.vue'
 
@@ -25,6 +26,7 @@ import DocsExamples from './DocsExamples.vue'
       <DocsData />
       <DocsConfig />
       <DocsDevtools />
+      <DocsFiles />
       <DocsProlific />
       <DocsExamples />
     </ESequence>
