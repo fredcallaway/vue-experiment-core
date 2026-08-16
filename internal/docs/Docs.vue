@@ -10,7 +10,6 @@ import DocsEpochs from './DocsEpochs.vue'
 import DocsComposition from './DocsComposition.vue'
 import DocsData from './DocsData.vue'
 import DocsConfig from './DocsConfig.vue'
-import DocsConditions from './DocsConditions.vue'
 import DocsDevtools from './DocsDevtools.vue'
 import DocsExamples from './DocsExamples.vue'
 
@@ -24,7 +23,6 @@ import DocsExamples from './DocsExamples.vue'
       <DocsComposition />
       <DocsData />
       <DocsConfig />
-      <DocsConditions />
       <DocsDevtools />
       <DocsExamples />
     </ESequence>
