@@ -14,10 +14,10 @@ import DocsPage from './DocsPage.vue'
         (<NuxtLink to="/examples/params">example</NuxtLink>)
       </li>
       <li>
-        <b><code>useConditions</code></b> — between-subject assignment: which variant a
-        participant gets. Assignment cycles across sessions so variants stay balanced, and
-        conditions can be pinned from the dev UI for testing. Conditions typically feed
-        into params. (<NuxtLink to="/examples/conditions">example</NuxtLink>)
+        <b><code>useConditions</code></b> — between-subject assignment: which variant a participant gets.
+        <code>assign()</code> distinguishes main conditions from counterbalances, and conditions can be pinned from the
+        dev UI for testing. Conditions typically feed into params. See the next page for the assignment order and the
+        <NuxtLink to="/examples/conditions">live example</NuxtLink> for usage.
       </li>
     </ul>
     <p>
