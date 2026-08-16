@@ -2,9 +2,12 @@
 
 // NOTE: this page has only been tested with config.completion.mode == 'prolific'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   error?: boolean
-}>()
+  showBonus?: boolean | 'auto'
+}>(), {
+  showBonus: 'auto',
+})
 
 if (!props.error) {
   useEpoch('Completion') // we never call done from here
@@ -12,6 +15,11 @@ if (!props.error) {
 
 const config = useConfig()
 const dataWriter = useDataWriter()
+const bonus = useBonus()
+
+const showBonus = computed(() => {
+  return props.showBonus === true || (props.showBonus === 'auto' && bonus.hasAddedPoints)
+})
 
 const online = useOnline()
 const longWait = useTimeout(30_000)
@@ -74,7 +82,10 @@ const initialized = computed(() => {
       </template>
       <template v-else>
         <h1>Thanks!</h1>
-        <p>You have completed the study. Your final bonus is ${{ useBonus().dollars.toFixed(2) }}.</p>
+        <p>
+          You have completed the study.
+          <template v-if="showBonus">Your final bonus is {{ bonus.dollarsString }}.</template>
+        </p>
       </template>
       
       <!-- screen shown in dev/debug mode when data writing was never initialized -->

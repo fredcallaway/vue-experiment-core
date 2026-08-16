@@ -6,6 +6,7 @@ export const useBonus = createGlobalState(() => {
     points: 0,
     centsPerPoint: 1,
     disabled: false,
+    hasAddedPoints: false,
     // get pointsPerCent() {
     //   return 1 / config.centsPerPoint
     // },
@@ -38,6 +39,7 @@ export const useBonus = createGlobalState(() => {
     // },
     addPoints(n: number) {
       if (this.disabled) return
+      this.hasAddedPoints = true
       this.points += n
     },
     toCents(points: number) {
