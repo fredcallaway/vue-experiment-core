@@ -39,24 +39,34 @@ const assignments = Array.from({ length: getConditionAssignmentCount(design) }, 
       combination. The counterbalance order minimizes marginal imbalance within the counterbalance variables, while a
       complete cycle still contains their full Cartesian product.
     </p>
-    <table text-sm b="1 gray-200" rounded w-full>
-      <thead bg-gray-50>
-        <tr>
-          <th p2 text-left>Assignment</th>
-          <th p2 text-left>Treatment</th>
-          <th p2 text-left>Task order</th>
-          <th p2 text-left>Response side</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="row in assignments" :key="row.assignment" b-t="1 gray-100">
-          <td p2>{{ row.assignment }}</td>
-          <td p2>{{ row.treatment }}</td>
-          <td p2>{{ row.taskOrder }}</td>
-          <td p2>{{ row.responseSide }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div
+      h-56
+      max-w-full
+      overflow-auto
+      b="1 gray-200"
+      rounded
+      tabindex="0"
+      aria-label="Generated condition assignments"
+    >
+      <table text-sm min-w-120 w-full>
+        <thead sticky top-0 z-1 bg-gray-50>
+          <tr>
+            <th p2 text-left>Assignment</th>
+            <th p2 text-left>Treatment</th>
+            <th p2 text-left>Task order</th>
+            <th p2 text-left>Response side</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in assignments" :key="row.assignment" b-t="1 gray-100">
+            <td p2>{{ row.assignment }}</td>
+            <td p2>{{ row.treatment }}</td>
+            <td p2>{{ row.taskOrder }}</td>
+            <td p2>{{ row.responseSide }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <p>
       This table is generated with <code>getConditionsForAssignment()</code>, the same pure helper used by
       <code>useConditions().assign()</code>. The table therefore changes with the implementation instead of duplicating
