@@ -14,6 +14,78 @@ export function useDataWriter(): DataWriter {
 
 const storageKey = (sessionId: string) => `dataWriter-${sessionId}`
 
+// Recovery queues that were never flushed accumulate in localStorage and can eventually exhaust
+// the origin's quota, which breaks unrelated features (see core/CHANGES.md). A queue is only
+// reclaimable once it can no longer be flushed by the session that owns it, so we require both:
+// it belongs to some *other* session, and it is old enough that the session is certainly gone.
+const STALE_QUEUE_MAX_AGE_MS = 8 * 60 * 60 * 1000  // 8 hours
+
+// A stored queue is `Record<dbPath, value>` with no timestamp of its own, so age is derived from
+// the queued data. Every flush writes `<mode>/meta/<sessionId>/lastUpdateTime = <now>` into the
+// queue, and event paths are keyed `<timestamp>—<index>—…`, so any non-trivial queue carries at
+// least one timestamp. Returns null when none is found — callers must not treat that as old.
+const queueTimestamp = (updates: Record<string, unknown>): number | null => {
+  let latest: number | null = null
+  const consider = (value: unknown) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) return
+    latest = latest === null ? value : Math.max(latest, value)
+  }
+
+  for (const [path, value] of Object.entries(updates)) {
+    if (path.endsWith('/lastUpdateTime')) consider(value)
+    const eventKey = path.split('/').pop() ?? ''
+    const [maybeTimestamp] = eventKey.split('—')
+    if (maybeTimestamp && /^\d+$/.test(maybeTimestamp)) consider(Number(maybeTimestamp))
+  }
+  return latest
+}
+
+// Drop other sessions' recovery queues once they are older than STALE_QUEUE_MAX_AGE_MS. Deliberately
+// conservative: a queue whose age cannot be established is kept, because deleting it would discard
+// participant data that never reached the database.
+const sweepStaleQueues = (currentSessionId: string) => {
+  if (typeof localStorage === 'undefined') return
+
+  const keep = storageKey(currentSessionId)
+  const now = Date.now()
+
+  for (const key of Object.keys(localStorage)) {
+    if (!key.startsWith('dataWriter-') || key === keep) continue
+
+    const raw = localStorage.getItem(key)
+    if (!raw) continue
+
+    let updates: Record<string, unknown>
+    try {
+      updates = JSON.parse(raw)
+    } catch {
+      // Unparseable: it cannot be flushed or dated, but it is also not recoverable data. Leave it
+      // rather than guess; it is a single key and does not grow.
+      console.warn(`DataWriter: could not parse stored queue ${key}; leaving it in place.`)
+      continue
+    }
+
+    if (Object.keys(updates).length === 0) {
+      localStorage.removeItem(key)
+      continue
+    }
+
+    const timestamp = queueTimestamp(updates)
+    if (timestamp === null) {
+      console.warn(`DataWriter: stored queue ${key} has no timestamp; keeping it (cannot confirm it is stale).`)
+      continue
+    }
+    if (now - timestamp < STALE_QUEUE_MAX_AGE_MS) continue
+
+    const hours = ((now - timestamp) / 3_600_000).toFixed(1)
+    console.warn(
+      `DataWriter: discarding stale recovery queue ${key} `
+      + `(${Object.keys(updates).length} updates, last activity ${hours}h ago).`,
+    )
+    localStorage.removeItem(key)
+  }
+}
+
 type WriteMode = DataMode | 'dummy'
 
 const normalizeDatabaseShape = (value: unknown): unknown => {
@@ -92,6 +164,9 @@ export class DataWriter {
 
     // in live mode, the queue is held in local storage so it can be recovered after a refresh
     if (meta.mode === 'live') {
+      // Reclaim quota from queues abandoned by earlier sessions. Runs before we open this
+      // session's queue so it can never touch the one we are about to use.
+      sweepStaleQueues(meta.sessionId)
       this.updates = useStorage(storageKey(meta.sessionId), {}, localStorage, {
         serializer: {
           read: (v: string) => v ? JSON.parse(v) : {},
