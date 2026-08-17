@@ -53,9 +53,13 @@ const isOutlineWorker = () => import.meta.client && getUrlFlag(OUTLINE_WORKER_FL
 // ('request-traversal', e.g. on Reindex or when its cache is missing/diverged); the worker
 // announces either a freshly saved cache ('outline-updated') or a traversal failure so consumers
 // can swap the outline into place or show the root error.
+//
+// 'outline-updated' normally carries no payload — the consumer reads the cache the worker just
+// wrote. `root` is the fallback for when that write failed (a full localStorage): the outline
+// travels over the channel instead, so caching degrades without taking the outline with it.
 type OutlineWorkerMessage =
   | { type: 'request-traversal'; pageKey: string }
-  | { type: 'outline-updated'; pageKey: string }
+  | { type: 'outline-updated'; pageKey: string; root?: SerializedEpochNode }
   | { type: 'traversal-failed'; pageKey: string; error: OutlineTraversalError }
 
 const getStepIndex = (parentId: string, childId: string) => {
@@ -349,7 +353,13 @@ export const useEpochTree = createGlobalState(() => {
     traversalError.value = error
     if (!canUseLocalStorage()) return
     const stored: StoredOutlineTraversalError = { savedAt: Date.now(), error }
-    localStorage.setItem(outlineTraversalErrorKey(key), JSON.stringify(stored))
+    // Persisting the error is a convenience for the consumer tab. It must never throw here and
+    // mask the traversal error it is trying to report.
+    try {
+      localStorage.setItem(outlineTraversalErrorKey(key), JSON.stringify(stored))
+    } catch (writeError) {
+      console.warn('Could not persist the outline traversal error:', writeError)
+    }
   }
 
   const clearCachedOutline = (key = loadedPageKey.value) => {
@@ -381,14 +391,47 @@ export const useEpochTree = createGlobalState(() => {
     }
   }
 
+  // Evict this app's other cached outlines to make room, then retry. localStorage is shared with
+  // everything else on the origin, so a full quota is not necessarily our doing — but our own stale
+  // per-page outlines are the one part we can safely reclaim.
+  const evictOtherCachedOutlines = (keepKey: string) => {
+    const doomed = Object.keys(localStorage).filter(key =>
+      key.startsWith(`${OUTLINE_CACHE_PREFIX}:`) && !key.startsWith(outlineCacheKey(keepKey))
+    )
+    doomed.forEach(key => localStorage.removeItem(key))
+    return doomed.length
+  }
+
   const saveCachedOutline = (node: EpochNode) => {
     if (!canUseLocalStorage()) return null
+    const key = pageKey()
     const cached: CachedEpochOutline = {
       savedAt: Date.now(),
       root: serializeEpochNode(node),
     }
-    localStorage.setItem(outlineCacheKey(pageKey()), JSON.stringify(cached))
-    clearTraversalError(pageKey())
+    const payload = JSON.stringify(cached)
+
+    // A full localStorage must not abort traversal: the outline we just built is still usable
+    // in memory, and the worker still needs to broadcast it. Losing the cache only costs a
+    // re-traversal on the next load.
+    try {
+      localStorage.setItem(outlineCacheKey(key), payload)
+    } catch (error) {
+      const evicted = evictOtherCachedOutlines(key)
+      try {
+        localStorage.setItem(outlineCacheKey(key), payload)
+        console.warn(`Outline cache was full; evicted ${evicted} other cached outline(s) to save this one.`)
+      } catch {
+        console.warn(
+          `Could not cache the epoch outline for ${key}: localStorage is full (${formatEpochError(error)}). `
+          + 'The outline still works this session but will be rebuilt on the next load. '
+          + 'Clear unused localStorage keys for this origin to restore caching.',
+        )
+        return null
+      }
+    }
+
+    clearTraversalError(key)
     cacheSavedAt.value = cached.savedAt
     isOutlineStale.value = false
     outlineStaleReason.value = null
@@ -446,8 +489,8 @@ export const useEpochTree = createGlobalState(() => {
   // only on the client (it does not exist during SSR).
   const channel = import.meta.client ? new BroadcastChannel(OUTLINE_WORKER_CHANNEL) : null
 
-  const broadcastOutlineUpdated = (key: string) => {
-    channel?.postMessage({ type: 'outline-updated', pageKey: key } satisfies OutlineWorkerMessage)
+  const broadcastOutlineUpdated = (key: string, root?: SerializedEpochNode) => {
+    channel?.postMessage({ type: 'outline-updated', pageKey: key, root } satisfies OutlineWorkerMessage)
   }
 
   const reportTraversalError = (
@@ -496,14 +539,17 @@ export const useEpochTree = createGlobalState(() => {
   // finished a clean traversal, so its tree is authoritative — we do not re-validate it against the
   // consumer's live path here. (After an in-place HMR the consumer's live path can still reference
   // stale epoch instances, which would wrongly fail livePathMatchesCache and drop a valid update.)
-  const reloadOutlineFromCache = (key: string) => {
+  const reloadOutlineFromCache = (key: string, broadcastRoot?: SerializedEpochNode) => {
     if (key !== pageKey()) return
+    // Prefer the cache; fall back to an outline sent over the channel when the worker could not
+    // write one (a full localStorage).
     const cached = loadCachedOutline(key)
-    if (!cached) return
-    root.value = hydrateEpochNode(cached.root)
+    const serialized = cached?.root ?? broadcastRoot
+    if (!serialized) return
+    root.value = hydrateEpochNode(serialized)
     traversalError.value = null
     isLoadedFromCache.value = true
-    cacheSavedAt.value = cached.savedAt
+    cacheSavedAt.value = cached?.savedAt ?? null
     hasTraversed.value = true
     loadedPageKey.value = key
     syncCachedOutlineForCurrentEpoch(root.value, currentEpoch.value)
@@ -639,12 +685,14 @@ export const useEpochTree = createGlobalState(() => {
       }
       refreshTree()
       if (traversalSucceeded && options.save && root.value) {
-        saveCachedOutline(root.value)
+        const saved = saveCachedOutline(root.value)
         if (canUseLocalStorage()) {
           localStorage.removeItem(outlineScanAttemptKey(pageKey()))
         }
         // The consumer tab listens for this and swaps the fresh outline into place — no reload.
-        broadcastOutlineUpdated(pageKey())
+        // When the cache write failed (a full localStorage) we send the outline in the message
+        // itself, so a full disk costs caching but never the outline.
+        broadcastOutlineUpdated(pageKey(), saved ? undefined : serializeEpochNode(root.value))
       }
       console.groupEnd()
       console.timeEnd('traverseTimeline')
@@ -795,7 +843,7 @@ export const useEpochTree = createGlobalState(() => {
           if (msg.type === 'request-traversal') handleWorkerRequest(msg.pageKey)
         } else {
           // Consumer applies worker-produced outlines in place, without reloading.
-          if (msg.type === 'outline-updated') reloadOutlineFromCache(msg.pageKey)
+          if (msg.type === 'outline-updated') reloadOutlineFromCache(msg.pageKey, msg.root)
           if (msg.type === 'traversal-failed') applyWorkerTraversalError(msg.pageKey, msg.error)
         }
       }
