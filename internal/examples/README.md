@@ -12,11 +12,6 @@ Read [`docs/guide/README.md`](../../docs/guide/README.md) first for the project-
 
 Structure:
 
-- `SequencesExample.vue` (`/examples/sequences`) — compose screens/blocks with
-  `EContinue`, `ESequence`, `ERepeat`; nesting; terminal page.
-- `ExperimentExample.vue` (`/examples/experiment`) — the full-study skeleton: `EConsent`,
-  instructions, `ENoReturn`, trial block with persistent header, survey, `ECompletion`.
-  Mirror of a real `components/Experiment.vue`.
 - `StudyExample.vue` + `PeekGame.vue` + `PeekGameInstructions.vue` (`/examples/study`) —
   **the complete pattern**: interactive instructions (scripted demonstration rounds,
   embedded practice, comprehension quiz), conditions feeding params, two-level block
@@ -28,13 +23,13 @@ Trials:
 
 - `TrialExample.vue` + `StroopTrial.vue` (`/examples/trial`) — **the canonical custom
   trial**: params, typed events, data view, phase flow, `done()`. Start here for any new
-  trial component. `ColorTrial.vue` is a smaller variant used by the experiment example.
+  phase-based trial component.
 - `PhasesExample.vue` (`/examples/phases`) — `usePhaseEpoch` + `useDisplayPhases`:
   one epoch, several visual states sharing component state; `<Phase>` modifiers
   (`constant`/`persist`/`static`), `next`/`goTo`/`done`.
-- `CoinGame.vue` — a loop-driven task: an async main loop in `onMounted` that awaits
-  key presses and sleeps, rather than a phase state machine. Also the host task for the
-  interactive-instruction examples below.
+- `PeekGame.vue` (part of `/examples/study`) — the canonical async-loop trial: an async
+  main loop in `onMounted` that awaits task actions and sleeps rather than using a phase
+  state machine.
 
 Input:
 
@@ -55,39 +50,26 @@ Data:
 
 Configuration:
 
-- `ParamsExample.vue` + `ProbeTrial.vue` (`/examples/params`) — `defineParams`
-  defaults, subtree-wide `provideXParams()`, per-instance `:params` overrides.
-- `ConditionsExample.vue` (`/examples/conditions`) — `useConditions().choice/permute`
-  between-subject assignment; dev-UI pinning via `condition.<key>` URL params.
+- `ConfigurationExample.vue` + `ProbeTrial.vue` (`/examples/configuration`) —
+  between-subject assignment with `useConditions().assign`, dev-UI pinning via
+  `condition.<key>` URL params, and assigned values feeding `defineParams` subtree
+  defaults with per-instance `:params` overrides.
 
 Instructions:
 
 - `InstructionsExample.vue` (`/examples/instructions`) — `ENavigableSequence` with
   `enableNext` gating; per-page `state` scratch object. Use for read-and-page
   instructions with no live task (participants can re-read).
-- Interactive instructions (the participant interacts with the real task while learning
-  it). Decision rule:
-  - If playing a round or two unassisted teaches the task → embed it as a short unscored
-    practice block: `InstructionsEmbeddedExample.vue` (`/examples/instructions-embedded`).
-  - Anything more (scripted demonstrations, rigged rounds, reacting to what the
-    participant does) → **the exposed-surface pattern**: `PeekGameInstructions.vue`
-    (part of `/examples/study`). The task defines an "instructable surface"
-    (`defineExpose`: async round methods with rig arguments, reactive state, input
-    flags) and is mounted once, `manual no-epoch`; each page scripts it in `@mounted`
-    (await methods, `until()` on exposed state). Combine with embedded practice epochs
-    and a comprehension quiz. Use a plain `ESequence` for pages that drive the task
-    (back-navigation would re-run their scripts); `ENavigableSequence` only for
-    read-only pages.
-  - `InstructionsHooksExample.vue` (`/examples/instructions-hooks`) — `defineHook`
-    synchronization for a task that must run its own epoch-driven loop while
-    instructions observe/pause it. Rarely needed; prefer the exposed-surface pattern.
-  - `InstructionsRefExample.vue` (`/examples/instructions-ref`) — minimal form of the
-    exposed-surface pattern on `CoinGame.vue`.
+- `PeekGameInstructions.vue` (part of `/examples/study`) — **the interactive-instructions
+  pattern** for scripted demonstrations, rigged rounds, embedded practice, and a
+  comprehension quiz. The task defines an instructable surface with `defineExpose`
+  (async round methods with rig arguments, reactive state, and input flags) and is
+  mounted once, `manual no-epoch`; each page scripts it in `@mounted`. Use a plain
+  `ESequence` for pages that drive the task because back-navigation would rerun their
+  scripts; reserve `ENavigableSequence` for read-only pages.
 
 Other:
 
-- `BonusExample.vue` (`/examples/bonus`) — `useBonus`: `centsPerPoint`, `addPoints`,
-  formatted display, end-of-study reveal.
 - `MouseTrackingExample.vue` (`/examples/mouse-tracking`) — `<MouseTracker />` per trial
   epoch; saved to the session's `other/mouse` data.
 - `SurveysExample.vue` (`/examples/surveys`) — `ESurveyWrapper` + `ESurveyButtons` /
@@ -102,6 +84,6 @@ Other:
   `Experiment.vue`.
 - **Other core epochs**: `EClickTest` (a motor/attention check block, see
   `core/components/epochs/EClickTest.vue`), `EConnectionCheck`, and the
-  consent/no-return/completion epochs shown in the experiment example.
+  consent/no-return/completion epochs shown in the study example.
 - **Prolific / deployment / data dashboard**: template-managed; do not modify from
   project code.

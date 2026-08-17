@@ -58,8 +58,8 @@ import DocsPage from './DocsPage.vue'
     <p>
       Overrides are merged per key, not wholesale: overriding <code>color</code> leaves
       <code>size</code> at whatever the layer above it decided. See the
-      <NuxtLink to="/examples/params">params example</NuxtLink>, which renders exactly the
-      three instances above.
+      <NuxtLink to="/examples/configuration">configuration example</NuxtLink>, which also
+      shows assigned conditions feeding subtree params.
     </p>
 
     <h3>Computed defaults</h3>

@@ -1,6 +1,6 @@
 <script lang="ts">
 
-// Minimal params-driven component for the params example. The module-level
+// Minimal params-driven component for the configuration example. The module-level
 // defineParams is shared by every instance; each instance resolves its own
 // params from defaults + provided overrides + its `params` prop.
 

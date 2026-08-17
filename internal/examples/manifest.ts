@@ -17,16 +17,6 @@ export type ExampleEntry = {
 }
 
 export const examples: Record<string, ExampleEntry> = {
-  sequences: {
-    title: 'Sequences',
-    summary: 'Composing structure from EContinue, ESequence, and ERepeat.',
-    component: () => import('./SequencesExample.vue'),
-  },
-  experiment: {
-    title: 'Full experiment',
-    summary: 'A short end-to-end study: consent, instructions, trials, survey, completion.',
-    component: () => import('./ExperimentExample.vue'),
-  },
   study: {
     title: 'Complete study',
     summary: 'The complete pattern: interactive instructions (scripted demos, practice, quiz), conditions, block structure, survey, completion.',
@@ -52,15 +42,10 @@ export const examples: Record<string, ExampleEntry> = {
     summary: 'useTimer countdowns, fixed-duration pages, and awaitable sleeps.',
     component: () => import('./TimingExample.vue'),
   },
-  params: {
-    title: 'Params',
-    summary: 'defineParams defaults, subtree provides, and per-instance overrides.',
-    component: () => import('./ParamsExample.vue'),
-  },
-  conditions: {
-    title: 'Conditions',
-    summary: 'Between-subject assignment with useConditions (and dev-UI pinning).',
-    component: () => import('./ConditionsExample.vue'),
+  configuration: {
+    title: 'Configuration',
+    summary: 'Between-subject conditions feeding params, with subtree and per-instance overrides.',
+    component: () => import('./ConfigurationExample.vue'),
   },
   surveys: {
     title: 'Surveys',
@@ -71,26 +56,6 @@ export const examples: Record<string, ExampleEntry> = {
     title: 'Instructions',
     summary: 'ENavigableSequence pages, gating Next until each page is completed.',
     component: () => import('./InstructionsExample.vue'),
-  },
-  'instructions-embedded': {
-    title: 'Interactive instructions: embedded practice',
-    summary: 'Teach the task by embedding it as a short unscored practice block.',
-    component: () => import('./InstructionsEmbeddedExample.vue'),
-  },
-  'instructions-hooks': {
-    title: 'Interactive instructions: hooks',
-    summary: 'Narrate a live task, pausing and rigging it through defineHook hooks.',
-    component: () => import('./InstructionsHooksExample.vue'),
-  },
-  'instructions-ref': {
-    title: 'Interactive instructions: template ref',
-    summary: 'Drive the task imperatively from instruction pages via an exposed method.',
-    component: () => import('./InstructionsRefExample.vue'),
-  },
-  bonus: {
-    title: 'Bonus',
-    summary: 'useBonus: points, formatted display, and the end-of-study reveal.',
-    component: () => import('./BonusExample.vue'),
   },
   'mouse-tracking': {
     title: 'Mouse tracking',

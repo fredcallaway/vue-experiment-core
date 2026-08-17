@@ -55,7 +55,7 @@ import DocsPage from './DocsPage.vue'
         Because a child is just an epoch, a child can itself be an <code>ESequence</code> —
         the inner sequence must finish before the outer one advances. This is how a
         self-contained section becomes part of a larger structure
-        (<NuxtLink to="/examples/sequences">live example</NuxtLink>).
+        (<NuxtLink to="/examples/study">live example</NuxtLink>).
       </p>
     </DocsPage>
 

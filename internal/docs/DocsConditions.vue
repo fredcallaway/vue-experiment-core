@@ -96,8 +96,8 @@ const assignments = Array.from({ length: getConditionAssignmentCount(design) }, 
     </p>
     <p>
       Conditions typically feed into params — see the
-      <NuxtLink to="/examples/conditions">conditions example</NuxtLink>, which assigns a design
-      and derives values from it.
+      <NuxtLink to="/examples/configuration">configuration example</NuxtLink>, which assigns a
+      design and feeds the resulting values into component params.
     </p>
   </DocsPage>
 </template>
