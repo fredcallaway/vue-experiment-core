@@ -393,6 +393,17 @@ export const jumpToEpoch = async (epochId: string, isFallback: boolean = false):
   isJumping.value = true
   const parts = epochId.split('-')
   try {
+    // URL jumps run from app onMounted, before the experiment tree has mounted.
+    if (_currentEpoch._name === '__TOP_EPOCH__') {
+      try {
+        await until(currentEpoch).toMatch(
+          e => e._name !== '__TOP_EPOCH__',
+          { timeout: 5000, throwOnTimeout: true },
+        )
+      } catch {
+        throw new Error(`jumpToEpoch: no epoch mounted after 5s (target '${epochId}')`)
+      }
+    }
     const result = await jumpToEpochImpl(parts)
     if (!isFallback) {
       logDebug('jump.success', { epochId }) // sending a signal to EventView

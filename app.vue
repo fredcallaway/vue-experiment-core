@@ -20,7 +20,6 @@ onMounted(async () => {
   const route = useRoute()
   if (route.query.jump && typeof route.query.jump === 'string') {
     console.log('Jumping to epoch from URL param:', route.query.jump)
-    await timeoutPromise(0)
     await jumpToEpoch(route.query.jump)
   }
 })
