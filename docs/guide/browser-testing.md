@@ -81,7 +81,7 @@ The Data panel beside it renders declared data views against the running session
 | `fast=1` | Fast mode: collapse delays so long trials do not cost real time. Persists in `sessionStorage`, so it stays on for the rest of the tab once set. |
 | `condition.<key>=<value>` | Pin a condition instead of taking the next cyclic assignment. |
 
-**Flags need an explicit value.** `getUrlFlag` accepts only `1`, `true`, or `yes`. A bare `?noDev` or `?fast` parses as empty and is silently false, so you get dev chrome when you expected the clean view. Always write `?noDev=1`.
+Flags follow the usual query-string convention: **presence means true**. `?noDev`, `?noDev=`, and `?noDev=1` are all on. Turn one off by omitting it or negating it explicitly with `=0`, `=false`, or `=no` — useful when a flag persists, as `fast` does.
 
 Combine them to test the real participant experience at an arbitrary point:
 
