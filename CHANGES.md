@@ -4,6 +4,7 @@ This branch simplifies the template by removing playback-specific infrastructure
 
 ## Summary
 
+- Added `docs/guide/browser-testing.md`, covering how to drive a running experiment from a browser agent: `?jump=<epochId>` to load straight into any epoch, `data-epoch-id` on outline rows (and the `epoch-outline:<route>` localStorage cache) to discover ids, and the event log as the verification surface. Note that `getUrlFlag` accepts only `1`/`true`/`yes`, so a bare `?noDev` or `?fast` is silently false.
 - Added `docs/guide/README.md` as the canonical project-development guide. Project-level `AGENTS.md` files should point there instead of copying project-agnostic rules; the examples README remains the implementation index.
 - Removed the playback page and playback controller UI from `core`.
 - Removed `useParticipant.ts` and its event-bus / pid / input-blocking abstraction.

@@ -8,6 +8,7 @@ This is the canonical starting point for agents working on experiment projects b
 - Keep experiment code at the project root. Do not edit `core/` unless the task explicitly calls for a template-layer change.
 - Find the closest implementation in [`internal/examples/README.md`](../../internal/examples/README.md) and copy its structure. The examples are live and type-checked.
 - Use the human-facing concept docs at `/docs` when you need explanation rather than an implementation pattern.
+- When you need to confirm that something actually runs, drive `/dev` in a browser: see [`browser-testing.md`](browser-testing.md) for jumping straight to an epoch by URL and verifying against the event log.
 
 ## Core rules
 
@@ -33,4 +34,4 @@ This is the canonical starting point for agents working on experiment projects b
 - Preserve existing UnoCSS utility conventions. Use scoped CSS when it makes a component clearer.
 - Do not change Prolific, Firebase, PostHog, or other deployment configuration unless the task explicitly requires it.
 
-Run `bun run typecheck` after edits and use the project's prescribed build or browser checks when relevant.
+Run `bun run typecheck` after edits. When a change needs to be seen running rather than just type-checked, verify it in the browser following [`browser-testing.md`](browser-testing.md).
