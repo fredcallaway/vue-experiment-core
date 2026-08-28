@@ -114,20 +114,24 @@ export class DataWriter {
   private debounceFlush: () => void
   private disabled: boolean = false
   private _events: LogEvent[] = []
+  // each page load gets a unique client id; the database records the single active
+  // client for each session, and any other client (e.g. an older tab) stops writing
+  private clientId = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
+  readonly superseded = ref(false)
 
   constructor() {
     // this.sessionId = '__PREINIT__'  // until initialized
     this.mode = 'dummy' // until initialized
     this.delay = 1000 // ms
     this.maxWait = 5000 // ms
-    
-    this.updates = ref({})    
+
+    this.updates = ref({})
     this.debounceFlush = useDebounceFn(() => this._flush(), this.delay, { maxWait: this.maxWait })
 
     // Watch for network restoration and retry flush
     whenever(online, () => {
       this.debounceFlush()
-    })    
+    })
   }
 
   get initialized() {
@@ -223,23 +227,12 @@ export class DataWriter {
         await db.set(this.dbPath('meta'), meta)
       }
 
-      // watch for changes to the meta object and update the database
-      let prevMeta = R.clone(toRaw(meta))
-      watchDeep(meta, () => {
-        const changes: Record<string, any> = {}
-        for (const key in meta) {
-          const typedKey = key as keyof SessionMeta
-          // these are handled separately because they are updated in _flush
-          if (typedKey === 'lastUpdateTime' || typedKey === 'inactiveTime') continue
-          if (!R.isDeepEqual(meta[typedKey], prevMeta[typedKey])) {
-            changes[typedKey] = meta[typedKey]
-          }
-        }
-        prevMeta = R.clone(toRaw(meta))
+      // claim the session for this client; any previously active client stops writing
+      await this.claimClient()
 
-        if (Object.keys(changes).length > 0) {
-          this.updateMeta(changes as Partial<SessionMeta>)
-        }
+      // any change to meta schedules a flush; _flush always writes the full meta object
+      watchDeep(meta, () => {
+        this.debounceFlush()
       })
 
       // double check that meta has been saved correctly
@@ -268,15 +261,6 @@ export class DataWriter {
     this.queueUpdate(path, toRaw(data))
   }
 
-  updateMeta(updates: Partial<SessionMeta>) {
-    // logDebug('updateMeta', updates)
-    // const updates = this.updates.value[path] || {}
-    for (const [key, value] of Object.entries(updates)) {
-      const path = this.dbPath('meta', key)
-      this.queueUpdate(path, toRaw(value))
-    }
-  }
-
   updateOther(path: string, value: any) {
     const fullPath = this.dbPath('other', path)
     this.queueUpdate(fullPath, toSafeData(value))
@@ -302,31 +286,25 @@ export class DataWriter {
       console.warn('DataWriter.flush() called while disabled; possible mistake?')
       return
     }
-    // ensure meta is fully up to date
-    this.syncIdleTime()
-    const db = useDatabase()
-    await db.set(this.dbPath('meta'), this.meta)
-
-    // TODO: also flush other (when we support that)
-
     await this._flush()
   }
 
   private async _flush() {
     if (!online.value) return
-    if (this.disabled) return
+    if (this.disabled || this.superseded.value) return
     if (!this.meta) return
 
     const now = Date.now()
 
     this.syncIdleTime()
+    this.meta.lastUpdateTime = now
 
     // pull out current updates
-    const toFlush = toRaw(this.updates.value)    
+    const toFlush = toRaw(this.updates.value)
     this.updates.value = {}
-    // update lastUpdateTime
-    this.meta.lastUpdateTime = now
-    toFlush[this.dbPath('meta', 'lastUpdateTime')] = now
+    // every flush writes the full meta object, so the database copy always
+    // exactly mirrors the client's copy (modulo the debounce delay)
+    toFlush[this.dbPath('meta')] = normalizeDatabaseShape(toRaw(this.meta))
 
     if (this.mode === 'dummy') {
       console.debug(`fake-flushed ${Object.keys(toFlush).length} updates`, toFlush)
@@ -368,14 +346,33 @@ export class DataWriter {
   private syncIdleTime() {
     if (!this.meta) return
     if (this.meta.completionTime) return  // because active time uses completionTime
-    const inactiveTime = useInactivityTracker().getTotalInactiveTime()
-    this.meta.inactiveTime = inactiveTime
-    if (typeof inactiveTime !== 'number' || !Number.isFinite(inactiveTime)) return
-    this.updates.value[this.dbPath('meta', 'inactiveTime')] = inactiveTime
+    this.meta.inactiveTime = useInactivityTracker().getTotalInactiveTime()
+  }
+
+  private clientPath(): string {
+    return `${this.mode}/client/${this.sessionId}`
+  }
+
+  // record this client as the single active client for the session and stop
+  // writing if another client (e.g. a newer tab) claims it later
+  private async claimClient() {
+    const db = useDatabase()
+    await db.set(this.clientPath(), this.clientId)
+    db.onValue(this.clientPath(), (snap) => {
+      if (snap.val() !== this.clientId) {
+        this.supersede()
+      }
+    })
+  }
+
+  private supersede() {
+    if (this.superseded.value) return
+    this.superseded.value = true
+    console.warn('DataWriter: session claimed by another client; this tab will no longer save data')
   }
 
   private queueUpdate(fullPath: string, value: SafeData) {
-    if (this.disabled) return
+    if (this.disabled || this.superseded.value) return
     console.debug('queueUpdate', {fullPath, value})
     this.updates.value[fullPath] = value
     this.debounceFlush()

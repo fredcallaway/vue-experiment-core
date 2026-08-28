@@ -25,11 +25,14 @@ watchImmediate(violated, (isViolated) => {
   }
 })
 
-const { isPrimary } = useMultipleTabDetection()
+const superseded = useDataWriter().superseded
 
-watchImmediate(isPrimary, (primary) => {
-  if (!primary) {
-    logEvent('experiment.multipleTab.detected')
+watchImmediate(superseded, (isSuperseded) => {
+  if (isSuperseded) {
+    // note: this event is not saved to the database (the writer is inactive);
+    // the takeover is recorded by the new client's DataWriter.repeatSession event
+    logEvent('experiment.superseded')
+    useUnload().disable()
   }
 })
 
@@ -211,12 +214,13 @@ const initLoading = computed(() => {
       </div>
     </div>
 
-    <div v-if="!isPrimary" fixed inset-0 bg-white flex-center z-100>
+    <div v-if="superseded" fixed inset-0 bg-white flex-center z-100>
       <div shrink-0 w600px mx-auto p-3 text-center>
         <h1>Multiple Tabs Detected</h1>
         <p>
-          You have opened this experiment in multiple tabs or windows.
-          Please close this tab and continue in your original tab.
+          You have opened this experiment in another tab or window,
+          so this one has been deactivated.
+          Please close this tab and continue in the most recently opened one.
         </p>
       </div>
     </div>

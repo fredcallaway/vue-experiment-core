@@ -85,9 +85,11 @@ export type SessionData = {
 * ├── events/
 * │   └── {sessionId}/
 * │       └── {DBEventKey}: DBEventData
-* └── other/
-*     └── {sessionId}: SafeDataObject ... // optional unstructured data
-* 
+* ├── other/
+* │   └── {sessionId}: SafeDataObject ... // optional unstructured data
+* └── client/
+*     └── {sessionId}: string // id of the single active client (tab); not session data
+*
 * NOTE: we invert the keys of the Session type to allow efficient
 * processing of the different kinds of data (meta, events, other)
 * 
