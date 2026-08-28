@@ -116,7 +116,7 @@ export class DataWriter {
   private _events: LogEvent[] = []
   // each page load gets a unique client id; the database records the single active
   // client for each session, and any other client (e.g. an older tab) stops writing
-  private clientId = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
+  private clientId = `${Date.now()}-${trueRandom().toString(36).substring(2, 11)}`
   readonly superseded = ref(false)
 
   constructor() {
