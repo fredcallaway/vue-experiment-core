@@ -54,11 +54,6 @@ const validateSession = () => {
 const minWait = timeoutPromise(2000)
 
 initialized.then(async (result) => {
-  if (import.meta.dev) {
-    console.log('dev mode, skipping validation')
-    initStatus.value = 'confirmed'
-    return
-  }
   const isDebug = meta.sessionId.startsWith('debug') && meta.mode == 'debug'
   if (result !== true && !isDebug) {
     if (result instanceof Error) {
