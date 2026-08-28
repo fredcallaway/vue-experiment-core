@@ -32,6 +32,12 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@unocss/nuxt',
     '@vueuse/nuxt',
+    (_options, nuxt) => {
+      const sourcemaps = nuxt.options.posthogConfig?.sourcemaps
+      if (sourcemaps && !sourcemaps.personalApiKey?.startsWith('phx_')) {
+        sourcemaps.enabled = false
+      }
+    },
     '@posthog/nuxt',
   ],
 
