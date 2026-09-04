@@ -11,7 +11,7 @@ const { deploy, localSha, deployedSha, status, error: deploymentError, gitStatus
 const MIN_WAGE = 8
 
 const config = useConfig()
-const { config: formData } = useProlificConfig()
+const { config: formData, isLoading: formDataLoading } = useProlificConfig()
 
 // Persist deployment error to localStorage
 const persistedDeploymentError = useLocalStorage('prolific-deployment-error', '')
@@ -52,6 +52,7 @@ const isValidWage = computed(() => {
 const totalCost = computed(() => formData.value.total_available_places * formData.value.reward * PROLIFIC_FEE / 100)
 
 const cannotSubmitReason = computed(() => {
+  if (formDataLoading.value) return 'Loading study draft...'
   if (!isValidWage.value) return 'Wage is too low'
   if (status.value == 'loading') return 'Deploying...'
   if (status.value != 'deployed' && !bypassDeployedCheck.value && !bypassGitCheck.value) return 'Not deployed'
@@ -113,7 +114,7 @@ const onDeploy = async () => {
 
     <Error :error="create.error.value || deploymentError" />
 
-    <div class="grid grid-cols-2 gap-6">
+    <fieldset :disabled="formDataLoading" class="grid grid-cols-2 gap-6 border-0 m-0 p-0">
       <!-- Reward/Time/Wage/Places/Cost Card -->
       <div card-gray>
         <div class="flex flex-row gap-4 mb-4">
@@ -337,7 +338,7 @@ const onDeploy = async () => {
           :disabled="status !== 'ready'"
         />
       </div>
-    </div>
+    </fieldset>
 
     <div class="mt-6 flex gap-4">
       <ActionButton

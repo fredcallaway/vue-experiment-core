@@ -15,10 +15,11 @@ export const useProlificConfig = createGlobalState(() => {
   }, 1000)
 
   watch(config, () => {
+    if (isApplyingRemote.value) return
     saveConfig()
   }, { deep: true })
 
-  const unsubscribe = onValue(STUDY_DRAFT_PATH, (snapshot) => {
+  onValue(STUDY_DRAFT_PATH, (snapshot) => {
     isLoading.value = false
     if (!snapshot.exists()) {
       saveConfig()
@@ -32,10 +33,6 @@ export const useProlificConfig = createGlobalState(() => {
     nextTick(() => {
       isApplyingRemote.value = false
     })
-  })
-
-  tryOnUnmounted(() => {
-    unsubscribe()
   })
 
   return {

@@ -21,10 +21,10 @@ export const useDeployment = () => {
 
   const status = computed<DeploymentStatus>(() => {
     if (unconfigured.value) return 'unconfigured'
-    if (isLoading.value) return 'loading'
+    if (isLoading.value || !localSha.value || deployedSha.value === 'loading...') return 'loading'
     if (isDirty.value) return 'dirty'
     if (error.value) return 'error'
-    if (deployedSha.value == localSha.value) return 'deployed'
+    if (deployedSha.value && deployedSha.value === localSha.value) return 'deployed'
     return 'ready'
   })
 

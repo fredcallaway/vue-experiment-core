@@ -197,9 +197,10 @@ const replaceInvalidAssignments = wrap(async () => {
 const bonusCsv = ref('')
 const showImportModal = ref(false)
 
-const applyCsvBonuses = () => {
+const applyCsvBonuses = async () => {
   if (!bonusCsv.value.trim()) return
 
+  const overrides: Record<string, number> = {}
   const lines = bonusCsv.value.trim().split('\n')
   for (const line of lines) {
     const [id, bonus] = line.split(',')
@@ -215,9 +216,10 @@ const applyCsvBonuses = () => {
         alert(`Problem with line ${line}: bonus is not a whole number (cents)`)
         return
       }
-      bonusOverrides.value[participantId] = val
+      overrides[participantId] = val
     }
   }
+  await setBonusOverrides(overrides)
   bonusCsv.value = ''
   showImportModal.value = false
 }
@@ -266,10 +268,17 @@ const getCodeType = (studyCode: string | null | undefined) => {
 
 // ===== actions column ======================================================
 
-type SubmissionAction = 'none' | 'approve' | 'return' | 'reject' | null
+type SubmissionAction = ProlificReviewAction | null
 
 const selectedActions = ref<Record<string, SubmissionAction>>({})
-const actionOverrides = useLocalStorage<Record<string, SubmissionAction>>(`actionOverrides.${studyId}`, {})
+const {
+  actionOverrides,
+  bonusOverrides,
+  isLoading: reviewDraftLoading,
+  setActionOverride,
+  setBonusOverride,
+  setBonusOverrides,
+} = useProlificReviewDraft(studyId)
 
 const getPossibleActions = (sub: Submission) => {
   switch (sub.status) {
@@ -307,26 +316,24 @@ watch([submissions, sessions, actionOverrides], () => {
   }
 })
 
-const onActionChange = (submissionId: string) => {
+const onActionChange = async (submissionId: string) => {
   const sub = submissions.value.find(item => item.id === submissionId)
   if (!sub) throw new Error(`Unknown submission ID: ${submissionId}`)
   
   const selected = selectedActions.value[submissionId]
   const defaultAction = getDefaultAction(sub)
-  if (selected === defaultAction) {
-    const { [submissionId]: _ignored, ...rest } = actionOverrides.value
-    actionOverrides.value = rest
+  if (selected === null || selected === defaultAction) {
+    await setActionOverride(submissionId, null)
     return
   }
-  actionOverrides.value = { ...actionOverrides.value, [submissionId]: selected }
+  await setActionOverride(submissionId, selected)
 }
 
-const clearActionOverride = (submissionId: string) => {
+const clearActionOverride = async (submissionId: string) => {
   const sub = submissions.value.find(item => item.id === submissionId)
   if (!sub) throw new Error(`Unknown submission ID: ${submissionId}`)
   
-  const { [submissionId]: _ignored, ...rest } = actionOverrides.value
-  actionOverrides.value = rest
+  await setActionOverride(submissionId, null)
   selectedActions.value[submissionId] = getDefaultAction(sub)
 }
 
@@ -361,19 +368,26 @@ const getActionsSummary = () => {
     .join(', ')
 }
 
-const getActionsPromises = () => {
+type ReviewActions = Record<'approve' | 'return' | 'reject', string[]>
+
+const getReviewActions = (): ReviewActions => ({
+  approve: groupedByAction.value.approve?.map(item => item.id) ?? [],
+  return: groupedByAction.value.return?.map(item => item.id) ?? [],
+  reject: groupedByAction.value.reject?.map(item => item.id) ?? [],
+})
+
+const getActionsPromises = (toExecute: ReviewActions) => {
   const promises: Promise<any>[] = []
-  const toExecute = R.mapValues(groupedByAction.value, subs => subs.map(sub => sub.id))
   
-  if (toExecute.approve) {
+  if (toExecute.approve.length > 0) {
     promises.push(prolific.approveSubmissions(studyId, toExecute.approve))
   }
-  if (toExecute.return) {
+  if (toExecute.return.length > 0) {
     for (const id of toExecute.return) {
       promises.push(prolific.requestReturn(studyId, id))
     }
   }
-  if (toExecute.reject) {
+  if (toExecute.reject.length > 0) {
     for (const id of toExecute.reject) {
       promises.push(prolific.rejectSubmission(studyId, id))
     }
@@ -384,13 +398,16 @@ const getActionsPromises = () => {
 const showExecuteModal = ref(false)
 const executeModalData = ref<{
   actionsSummary: string
+  actions: ReviewActions
   bonusesAmount: number
+  bonuses: Record<string, number>
 } | null>(null)
 const executeStatus = ref<{ actions?: 'pending' | 'success' | 'error', bonuses?: 'pending' | 'success' | 'error', error?: string }>({})
 
 const unpaidBonus = computed(() => totalIntendedBonus.value - totalPaidBonus.value)
 
 const canExecute = computed(() => {
+  if (reviewDraftLoading.value) return false
   const actions = actionCounts.value
   return actions.approve > 0 || actions.return > 0 || actions.reject > 0 || unpaidBonus.value > 0
 })
@@ -399,7 +416,9 @@ const executeAll = () => {
   const actionsSummary = getActionsSummary()
   executeModalData.value = {
     actionsSummary,
+    actions: getReviewActions(),
     bonusesAmount: unpaidBonus.value,
+    bonuses: R.clone(intendedBonuses.value),
   }
   executeStatus.value = {}
   showExecuteModal.value = true
@@ -411,7 +430,7 @@ const confirmExecute = wrap(async () => {
   executeStatus.value = { actions: 'pending', bonuses: 'pending' }
   
   try {
-    const actionsPromises = getActionsPromises()
+    const actionsPromises = getActionsPromises(executeModalData.value.actions)
     await Promise.all(actionsPromises)
     executeStatus.value.actions = 'success'
   } catch (error) {
@@ -421,7 +440,7 @@ const confirmExecute = wrap(async () => {
 
   if (executeModalData.value.bonusesAmount > 0) {
     try {
-      await prolific.assignBonuses(studyId, intendedBonuses.value, executeModalData.value.bonusesAmount)
+      await prolific.assignBonuses(studyId, executeModalData.value.bonuses, executeModalData.value.bonusesAmount)
       executeStatus.value.bonuses = 'success'
     } catch (error) {
       executeStatus.value.bonuses = 'error'
@@ -447,8 +466,6 @@ const databaseBonuses = computed(() => {
   }
   return result
 })
-
-const bonusOverrides = useLocalStorage<Record<string, number | undefined>>(`bonusOverrides.${studyId}`, {})
 
 const currentBonuses = computed(() => {
   return R.pullObject(submissions.value, R.prop("participant_id"), sub => sum(sub.bonus_payments))
@@ -578,12 +595,12 @@ const getBonusValue = (participantId: string) => {
   return override ?? (defaultBonuses.value[participantId] ?? 0)
 }
 
-const setBonusValue = (participantId: string, value: number) => {
+const setBonusValue = async (participantId: string, value: number) => {
   const defaultVal = defaultBonuses.value[participantId] ?? 0
   if (value === defaultVal) {
-    delete bonusOverrides.value[participantId]
+    await setBonusOverride(participantId, null)
   } else {
-    bonusOverrides.value[participantId] = value
+    await setBonusOverride(participantId, value)
   }
 }
 
@@ -954,6 +971,7 @@ const versions = computed(() => {
                       px-1
                       py-0.5
                       text-xs
+                      :disabled="reviewDraftLoading"
                       :class="getActionColorClass(selectedActions[sub.id])"
                     >
                       <option v-if="selectedActions[sub.id] === null" :value="null"></option>
@@ -985,6 +1003,7 @@ const versions = computed(() => {
                     @update:modelValue="(val) => setBonusValue(sub.participant_id, val)"
                     :scroll-step="5"
                     :min="currentBonuses[sub.participant_id] ?? 0"
+                    :disabled="reviewDraftLoading"
                     step="25"
                     input
                     font-mono
@@ -1045,7 +1064,7 @@ const versions = computed(() => {
           <button
             @click="applyCsvBonuses"
             btn-blue
-            :disabled="loading || !bonusCsv.trim()"
+            :disabled="loading || reviewDraftLoading || !bonusCsv.trim()"
           >
             Apply Bonuses
           </button>
