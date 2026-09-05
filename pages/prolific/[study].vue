@@ -1,5 +1,5 @@
 <script setup lang="ts">
-
+import { getCompletionCodeType, getDefaultReviewAction, getReviewDataStatus } from '~/core/operations/review'
 
 definePageMeta({
   layout: 'dashboard',
@@ -246,23 +246,17 @@ const getActiveTimeText = (sub: Submission) => {
 
 const getDataStatus = (sub: Submission) => {
   const session = sessionsBySessionId.value[sub.id]
-  if (!session) return { text: 'missing', color: 'text-gray-400' }
-  if (!session.noReturnTime) {
-    if (session.completionTime && getCodeType(sub.study_code) === 'COMPLETED') {
-      return { text: 'full', color: 'text-green-600' }
-    }
-    if (sub.status === 'RETURNED') return { text: 'minimal', color: 'text-gray-400' }
-    return { text: 'minimal', color: 'text-red-600' }
+  const text = getReviewDataStatus(sub, session, study.value?.completion_codes ?? [])
+  if (text === 'full') return { text, color: 'text-green-600' }
+  if (text === 'partial') return { text, color: 'text-amber' }
+  if (text === 'minimal' && sub.status !== 'RETURNED') {
+    return { text, color: 'text-red-600' }
   }
-  if (!session.completionTime) return { text: 'partial', color: 'text-amber' }
-  return { text: 'full', color: 'text-green-600' }
+  return { text, color: 'text-gray-400' }
 }
 
 const getCodeType = (studyCode: string | null | undefined) => {
-  if (!studyCode) return 'NOCODE'
-  if (studyCode == "Manual Completion") return 'MANUAL'
-  if (!study.value) return studyCode
-  return study.value.completion_codes.find(cc => cc.code === studyCode)?.code_type || studyCode
+  return getCompletionCodeType(studyCode, study.value?.completion_codes ?? [])
 }
 
 
@@ -302,11 +296,7 @@ const getActionColorClass = (action: SubmissionAction) => {
 }
 
 const getDefaultAction = (sub: Submission): SubmissionAction => {
-  const codeType = getCodeType(sub.study_code)
-  const dataStatus = getDataStatus(sub).text
-  if (codeType === 'COMPLETED' && dataStatus === 'full') return 'approve'
-  if (sub.status === 'RETURNED' && dataStatus !== 'full') return 'none'
-  return null
+  return getDefaultReviewAction(sub, getDataStatus(sub).text, study.value?.completion_codes ?? [])
 }
 
 watch([submissions, sessions, actionOverrides], () => {

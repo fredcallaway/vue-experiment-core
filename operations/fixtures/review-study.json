@@ -1,0 +1,38 @@
+{
+  "id": "a9e170000000000000000001",
+  "name": "Agent operations fixture",
+  "internal_name": "agentops-fixture-v1",
+  "status": "AWAITING REVIEW",
+  "date_created": "2026-09-04T12:00:00Z",
+  "total_available_places": 2,
+  "places_taken": 2,
+  "reward": 200,
+  "total_cost": 400,
+  "estimated_completion_time": 10,
+  "completion_codes": [
+    {
+      "code": "C0DONE",
+      "code_type": "COMPLETED",
+      "actions": [{ "action": "MANUALLY_REVIEW" }]
+    }
+  ],
+  "access_details": null,
+  "submissions": [
+    {
+      "id": "a9e170000000000000000011",
+      "participant_id": "a9e170000000000000000021",
+      "status": "AWAITING REVIEW",
+      "started_at": "2026-09-04T12:00:00Z",
+      "study_code": "C0DONE",
+      "bonus_payments": []
+    },
+    {
+      "id": "a9e170000000000000000012",
+      "participant_id": "a9e170000000000000000022",
+      "status": "AWAITING REVIEW",
+      "started_at": "2026-09-04T12:05:00Z",
+      "study_code": "C0DONE",
+      "bonus_payments": []
+    }
+  ]
+}

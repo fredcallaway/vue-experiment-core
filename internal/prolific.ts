@@ -216,6 +216,30 @@ export const FilterSchema = z.object({
   }).optional(),
 })
 
+export const ProlificConfigSchema: z.ZodType<ProlificConfig> = z.object({
+  baseUrl: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string(),
+  estimated_completion_time: z.number().positive(),
+  maximum_allowed_time: z.number().positive(),
+  reward: z.number().int().nonnegative(),
+  total_available_places: z.number().int().positive(),
+  device_compatibility: z.array(z.string()).optional(),
+  eligibility: z.object({
+    allowUK: z.boolean().optional(),
+    minSubmissions: z.number().int().nonnegative().optional(),
+    maxSubmissions: z.number().int().positive().optional(),
+    minApprovalRate: z.number().min(0).max(100).optional(),
+    requireEnglishFluency: z.boolean().optional(),
+    requireEnglishPrimary: z.boolean().optional(),
+  }).strict().optional(),
+  exclusions: z.object({
+    databaseParticipants: z.boolean().optional(),
+    previousStudies: z.boolean().optional(),
+  }).strict().optional(),
+  filters: z.array(FilterSchema).optional(),
+}).strict()
+
 export const SubmissionsConfigSchema = z.object({
   max_submissions_per_participant: z.number(),
   max_concurrent_submissions: z.number(),
@@ -248,6 +272,9 @@ export const ProlificStudyDetailsSchema = ProlificStudyShortSchema.extend({
   completion_codes: z.array(CompletionCodeSpecSchema),
   access_details: z.array(AccessDetailSchema).nullable(),
 })
+export const ProlificStudyFullSchema = ProlificStudyDetailsSchema.extend({
+  submissions: z.array(ProlificSubmissionSchema),
+})
 
 // TypeScript Types
 export type Submission = z.infer<typeof ProlificSubmissionSchema>
@@ -257,7 +284,7 @@ export type SubmissionsConfig = z.infer<typeof SubmissionsConfigSchema>
 export type AccessDetail = z.infer<typeof AccessDetailSchema>
 export type StudyShort = z.infer<typeof ProlificStudyShortSchema>
 export type StudyDetails = z.infer<typeof ProlificStudyDetailsSchema>
-export type StudyFull = StudyDetails & { submissions: Submission[] }
+export type StudyFull = z.infer<typeof ProlificStudyFullSchema>
 export type StudyStatus = StudyShort['status']
 export type SubmissionStatus = Submission['status']
 export type Study = StudyShort | StudyFull 
