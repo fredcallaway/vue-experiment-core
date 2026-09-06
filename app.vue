@@ -31,7 +31,7 @@ useErrorHandler() // initialize
 
 <template>
   <NuxtLayout>
-    <Toaster richColors closeButton position="top-left" />
+    <Toaster richColors closeButton position="top-right" />
     <NuxtPage />
   </NuxtLayout>
 </template>
