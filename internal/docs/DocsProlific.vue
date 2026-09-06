@@ -170,9 +170,8 @@ import DocsPage from './DocsPage.vue'
         already-paid totals, so re-running a review doesn't double-pay.
       </p>
       <p>
-        <b>Execute</b> applies every pending action and bonus payment in one confirmed batch,
-        showing a summary first. This is the only step that writes to Prolific; everything
-        before it is a draft you can revise.
+        <b>Execute</b> applies every pending action and bonus payment in one batch. This is
+        the only step that writes to Prolific; everything before it is a draft you can revise.
       </p>
     </DocsPage>
   </ESequence>

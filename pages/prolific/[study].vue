@@ -351,13 +351,6 @@ const actionCounts = computed(() => {
   }
 })
 
-const getActionsSummary = () => {
-  return Object.entries(actionCounts.value)
-    .filter(([_, count]) => count > 0)
-    .map(([action, count]) => `${action}: ${count}`)
-    .join(', ')
-}
-
 type ReviewActions = Record<'approve' | 'return' | 'reject', string[]>
 
 const getReviewActions = (): ReviewActions => ({
@@ -385,15 +378,6 @@ const getActionsPromises = (toExecute: ReviewActions) => {
   return promises
 }
 
-const showExecuteModal = ref(false)
-const executeModalData = ref<{
-  actionsSummary: string
-  actions: ReviewActions
-  bonusesAmount: number
-  bonuses: Record<string, number>
-} | null>(null)
-const executeStatus = ref<{ actions?: 'pending' | 'success' | 'error', bonuses?: 'pending' | 'success' | 'error', error?: string }>({})
-
 const unpaidBonus = computed(() => totalIntendedBonus.value - totalPaidBonus.value)
 
 const canExecute = computed(() => {
@@ -402,46 +386,47 @@ const canExecute = computed(() => {
   return actions.approve > 0 || actions.return > 0 || actions.reject > 0 || unpaidBonus.value > 0
 })
 
-const executeAll = () => {
-  const actionsSummary = getActionsSummary()
-  executeModalData.value = {
-    actionsSummary,
-    actions: getReviewActions(),
-    bonusesAmount: unpaidBonus.value,
-    bonuses: R.clone(intendedBonuses.value),
-  }
-  executeStatus.value = {}
-  showExecuteModal.value = true
+const joinAnd = (parts: string[]) => {
+  if (parts.length === 1) return parts[0]
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`
+  return `${parts.slice(0, -1).join(', ')}, and ${parts.at(-1)}`
 }
 
-const confirmExecute = wrap(async () => {
-  if (!executeModalData.value) return
+const executeAll = async () => {
+  if (!study.value) throw new Error('Study not loaded')
+  const counts = actionCounts.value
+  const actions = getReviewActions()
+  const bonusesAmount = unpaidBonus.value
+  const bonuses = R.clone(intendedBonuses.value)
+  const actionsPromises = getActionsPromises(actions)
 
-  executeStatus.value = { actions: 'pending', bonuses: 'pending' }
-  
+  const parts = [
+    counts.approve > 0 && 'approved',
+    counts.return > 0 && 'returned',
+    counts.reject > 0 && 'rejected',
+    bonusesAmount > 0 && 'bonused',
+  ].filter(Boolean) as string[]
+  if (parts.length === 0) throw new Error('Nothing to execute')
+
+  const errors: string[] = []
   try {
-    const actionsPromises = getActionsPromises(executeModalData.value.actions)
     await Promise.all(actionsPromises)
-    executeStatus.value.actions = 'success'
   } catch (error) {
-    executeStatus.value.actions = 'error'
-    executeStatus.value.error = error instanceof Error ? error.message : String(error)
+    errors.push(error instanceof Error ? error.message : String(error))
   }
-
-  if (executeModalData.value.bonusesAmount > 0) {
+  if (bonusesAmount > 0) {
     try {
-      await prolific.assignBonuses(studyId, executeModalData.value.bonuses, executeModalData.value.bonusesAmount)
-      executeStatus.value.bonuses = 'success'
+      await prolific.assignBonuses(studyId, bonuses, bonusesAmount)
     } catch (error) {
-      executeStatus.value.bonuses = 'error'
-      if (!executeStatus.value.error) {
-        executeStatus.value.error = error instanceof Error ? error.message : String(error)
-      }
+      errors.push(error instanceof Error ? error.message : String(error))
     }
-  } else {
-    executeStatus.value.bonuses = 'success'
   }
-})
+  if (errors.length) throw new Error(errors.join('; '))
+
+  return `${study.value.internal_name} ${joinAnd(parts)}`
+}
+
+const executeSuccess = (message: string) => message
 
 const databaseBonuses = computed(() => {
   if (!sessions.value) return {}
@@ -833,7 +818,8 @@ const versions = computed(() => {
                 </div>
               </div>
               <ActionButton
-                name="Execute" :action="executeAll" 
+                name="Execute" :action="executeAll"
+                :success="executeSuccess"
                 btn-blue
                 :disabled="!canExecute"
               />
@@ -1057,97 +1043,6 @@ const versions = computed(() => {
             :disabled="loading || reviewDraftLoading || !bonusCsv.trim()"
           >
             Apply Bonuses
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Execute Actions Modal -->
-    <div
-      v-if="showExecuteModal && executeModalData"
-      fixed
-      inset-0
-      z-50
-      flex
-      items-center
-      justify-center
-      bg-black
-      bg-opacity-50
-      @click.self="showExecuteModal = false"
-    >
-      <div bg-white rounded-lg p-6 max-w-lg w-full mx-4>
-        <div flex justify-between items-center mb-4>
-          <h3 class="text-xl font-semibold">Execute Actions</h3>
-          <button
-            v-if="executeStatus.actions === undefined && executeStatus.bonuses === undefined"
-            @click="showExecuteModal = false"
-            class="text-gray-500 hover:text-gray-700"
-          >
-            <span i-mdi-close text-2xl />
-          </button>
-        </div>
-        
-        <div v-if="executeStatus.actions === undefined && executeStatus.bonuses === undefined" mb-4>
-          <div mb-2>
-            <div font-bold mb-1>Actions:</div>
-            <div v-if="executeModalData.actionsSummary">{{ executeModalData.actionsSummary }}</div>
-            <div v-else class="text-gray-400">No actions</div>
-          </div>
-          <div mb-2>
-            <div font-bold mb-1>Bonuses:</div>
-            <div v-if="executeModalData.bonusesAmount > 0">
-              {{ formatCents(executeModalData.bonusesAmount) }}
-            </div>
-            <div v-else class="text-gray-400">
-              No bonuses to assign
-            </div>
-          </div>
-        </div>
-
-        <div v-else mb-4>
-          <div mb-2>
-            <div font-bold mb-1>Actions:</div>
-            <div flex items-center gap-2>
-              <span v-if="executeStatus.actions === 'pending'" class="text-gray-500">Processing...</span>
-              <span v-else-if="executeStatus.actions === 'success' && executeModalData.actionsSummary" class="text-green-600">✓ Success</span>
-              <span v-else-if="executeStatus.actions === 'success'" class="text-gray-400">Skipped</span>
-              <span v-else-if="executeStatus.actions === 'error'" class="text-red-600">✗ Error</span>
-            </div>
-          </div>
-          <div mb-2>
-            <div font-bold mb-1>Bonuses:</div>
-            <div flex items-center gap-2>
-              <span v-if="executeStatus.bonuses === 'pending'" class="text-gray-500">Processing...</span>
-              <span v-else-if="executeStatus.bonuses === 'success' && executeModalData.bonusesAmount > 0" class="text-green-600">✓ Success</span>
-              <span v-else-if="executeStatus.bonuses === 'success'" class="text-gray-400">Skipped</span>
-              <span v-else-if="executeStatus.bonuses === 'error'" class="text-red-600">✗ Error</span>
-            </div>
-          </div>
-          <div v-if="executeStatus.error" class="text-red-600 text-sm mt-2">
-            {{ executeStatus.error }}
-          </div>
-        </div>
-
-        <div flex gap-4 justify-end>
-          <button
-            v-if="executeStatus.actions === undefined && executeStatus.bonuses === undefined"
-            @click="showExecuteModal = false"
-            btn-gray
-          >
-            Cancel
-          </button>
-          <ActionButton
-            v-if="executeStatus.actions === undefined && executeStatus.bonuses === undefined"
-            name="Confirm" :action="confirmExecute" 
-            btn-blue
-            :disabled="loading"
-          />
-          <button
-            v-if="executeStatus.actions !== undefined && (executeStatus.bonuses !== undefined || executeModalData.bonusesAmount === 0)"
-            @click="showExecuteModal = false"
-            btn-blue
-          >
-            Close
           </button>
         </div>
       </div>
