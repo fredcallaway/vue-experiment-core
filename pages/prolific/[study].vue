@@ -392,6 +392,15 @@ const joinAnd = (parts: string[]) => {
   return `${parts.slice(0, -1).join(', ')}, and ${parts.at(-1)}`
 }
 
+const executeHandlesAllReviewableSessions = () => {
+  return submissions.value.every(sub => {
+    if (getDefaultAction(sub) === 'none') return true
+    if (isActionLocked(sub)) return true
+    const action = selectedActions.value[sub.id]
+    return action === 'approve' || action === 'return' || action === 'reject'
+  })
+}
+
 const executeAll = async () => {
   if (!study.value) throw new Error('Study not loaded')
   const counts = actionCounts.value
@@ -399,6 +408,8 @@ const executeAll = async () => {
   const bonusesAmount = unpaidBonus.value
   const bonuses = R.clone(intendedBonuses.value)
   const actionsPromises = getActionsPromises(actions)
+  const willComplete = executeHandlesAllReviewableSessions()
+    && (counts.approve + counts.return + counts.reject > 0)
 
   const parts = [
     counts.approve > 0 && 'approved',
@@ -407,6 +418,8 @@ const executeAll = async () => {
     bonusesAmount > 0 && 'bonused',
   ].filter(Boolean) as string[]
   if (parts.length === 0) throw new Error('Nothing to execute')
+
+  if (willComplete) prolific.markPendingComplete(studyId)
 
   const errors: string[] = []
   try {
@@ -421,7 +434,10 @@ const executeAll = async () => {
       errors.push(error instanceof Error ? error.message : String(error))
     }
   }
-  if (errors.length) throw new Error(errors.join('; '))
+  if (errors.length) {
+    if (willComplete) prolific.clearPendingComplete(studyId)
+    throw new Error(errors.join('; '))
+  }
 
   return `${study.value.internal_name} ${joinAnd(parts)}`
 }
@@ -682,7 +698,7 @@ const versions = computed(() => {
                 </NuxtLink>
               </div>
             </div>
-            <div><b>Status:</b> {{ study.status }}</div>
+            <div><b>Status:</b> {{ prolific.displayStudyStatus(study) }}</div>
             <div><b>Study ID:</b> {{ study.id }}</div>
             <div><b>Reward:</b> ${{ (study.reward / 100).toFixed(2) }}</div>
             <div><b>Places:</b> {{ study.places_taken ?? 0 }} / {{ study.total_available_places }}</div>

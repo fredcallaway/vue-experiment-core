@@ -42,7 +42,7 @@ const filteredStudies = computed(() => {
           study.id,
           study.internal_name,
           study.name,
-          study.status,
+          prolific.displayStudyStatus(study),
           study.published_at || '',
           formatDateTime(study.published_at ?? 'N/A')
         ].join(' ')
@@ -391,7 +391,7 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
             >
               <td px-2 py-2 font-mono text-xs whitespace-nowrap>{{ study.id }}</td>
               <td px-2 py-2 whitespace-nowrap>{{ study.internal_name }}</td>
-              <td px-2 py-2 text-sm whitespace-nowrap>{{ study.status }}</td>
+              <td px-2 py-2 text-sm whitespace-nowrap>{{ prolific.displayStudyStatus(study) }}</td>
               <td px-2 py-2 whitespace-nowrap>{{ formatDateTime(study.published_at ?? 'N/A') }}</td>
               <td px-2 py-2 text-right whitespace-nowrap>${{ (study.reward / 100).toFixed(2) }}</td>
               <td px-2 py-2 text-right whitespace-nowrap>{{ study.places_taken ?? 0 }} / {{ study.total_available_places }}</td>

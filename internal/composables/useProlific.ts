@@ -847,6 +847,42 @@ export const useProlific = createGlobalState(() => {
     return `https://app.prolific.com/researcher/workspaces/studies/${studyId}/submissions`
   }
 
+  const PENDING_COMPLETE_MS = 2 * 60 * 1000
+  const pendingCompleteIds = ref<Record<string, true>>({})
+  const pendingCompleteTimers: Record<string, ReturnType<typeof setTimeout>> = {}
+  const pendingCompleteStops: Record<string, () => void> = {}
+
+  const clearPendingComplete = (studyId: string) => {
+    const timer = pendingCompleteTimers[studyId]
+    if (timer) {
+      clearTimeout(timer)
+      delete pendingCompleteTimers[studyId]
+    }
+    pendingCompleteStops[studyId]?.()
+    delete pendingCompleteStops[studyId]
+    if (!pendingCompleteIds.value[studyId]) return
+    const { [studyId]: _ignored, ...rest } = pendingCompleteIds.value
+    pendingCompleteIds.value = rest
+  }
+
+  const markPendingComplete = (studyId: string) => {
+    clearPendingComplete(studyId)
+    pendingCompleteIds.value = { ...pendingCompleteIds.value, [studyId]: true }
+    pendingCompleteTimers[studyId] = setTimeout(() => clearPendingComplete(studyId), PENDING_COMPLETE_MS)
+    const studyCache = getStudyCache(studyId)
+    pendingCompleteStops[studyId] = watch(
+      () => studyCache.fullItem.value?.status,
+      (status) => {
+        if (status === 'COMPLETED') clearPendingComplete(studyId)
+      },
+    )
+  }
+
+  const displayStudyStatus = (study: { id: string, status: string }) => {
+    if (pendingCompleteIds.value[study.id] && study.status === 'AWAITING REVIEW') return 'PENDING'
+    return study.status
+  }
+
   return {
     token,
     projectId,
@@ -873,5 +909,8 @@ export const useProlific = createGlobalState(() => {
     assignBonuses,
     getStudyLink,
     useBonusStore,
+    markPendingComplete,
+    clearPendingComplete,
+    displayStudyStatus,
   }
 })
