@@ -819,6 +819,7 @@ const versions = computed(() => {
               </div>
               <ActionButton
                 name="Execute" :action="executeAll"
+                loading
                 :success="executeSuccess"
                 btn-blue
                 :disabled="!canExecute"
