@@ -230,9 +230,16 @@ export class DataWriter {
       // claim the session for this client; any previously active client stops writing
       await this.claimClient()
 
-      // any change to meta schedules a flush; _flush always writes the full meta object
+      // _flush writes the full meta object, so only participant-driven metadata changes
+      // should schedule another flush. Ignore fields maintained by _flush itself.
+      let previousMeta = R.clone(toRaw(meta))
       watchDeep(meta, () => {
-        this.debounceFlush()
+        const changed = (Object.keys(meta) as (keyof SessionMeta)[]).some(key => {
+          if (key === 'lastUpdateTime' || key === 'inactiveTime') return false
+          return !R.isDeepEqual(meta[key], previousMeta[key])
+        })
+        previousMeta = R.clone(toRaw(meta))
+        if (changed) this.debounceFlush()
       })
 
       // double check that meta has been saved correctly
