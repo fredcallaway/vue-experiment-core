@@ -5,7 +5,7 @@
   "type": "module",
   "dependencies": {
     "@nuxt/eslint": "1.4.1",
-    "@posthog/nuxt": "^1.5.32",
+    "@posthog/nuxt": "^1.7.79",
     "@unocss/nuxt": "^66.3.2",
     "@vueuse/nuxt": "13.4.0",
     "eslint": "^9.0.0",

@@ -4,6 +4,7 @@ This branch simplifies the template by removing playback-specific infrastructure
 
 ## Summary
 
+- Bumped `@posthog/nuxt` to `^1.7.79`. Earlier releases tried to process `.output/server` after a successful static SPA generation even though that directory does not exist, producing a false server-sourcemap error. Refresh the project lockfile after updating core.
 - Added a local `core/operations/cli.ts` JSON interface for agent-safe study-draft reads/updates, review-draft reads/updates, and read-only submission investigation. The CLI intentionally cannot create/publish studies or execute participant actions/bonuses; those final Prolific actions remain in the web UI. Add `"ops": "bun core/operations/cli.ts"` and `"test": "bun test core"` to the top-level `package.json` scripts. See `core/operations/README.md`.
 - `nuxt generate` no longer runs PostHog sourcemap inject/upload unless `posthogConfig.sourcemaps.personalApiKey` starts with `phx_`. Placeholder keys such as `NULL` used to fail the generate. Set `sourcemaps.enabled` the same way in project `nuxt.config.ts` (`enabled: posthog.personalApiKey.startsWith('phx_')`); core also disables upload when the key is invalid.
 - Added `docs/guide/browser-testing.md`, covering how to drive a running experiment from a browser agent: `?jump=<epochId>` to load straight into any epoch, `data-epoch-id` on outline rows (and the `epoch-outline:<route>` localStorage cache) to discover ids, and the event log as the verification surface.
