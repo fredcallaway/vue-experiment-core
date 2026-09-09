@@ -341,11 +341,19 @@ export const useProlific = createGlobalState(() => {
     minRefreshInterval: 60_000,  // 60s
   })
 
-  watch(projectId, (newProjectId, oldProjectId) => {
-    if (newProjectId === oldProjectId) return
+  let initializedProjectId: string | null = null
+  watch([projectId, () => projectId.ready], ([newProjectId, ready]) => {
+    if (!ready) return
+    if (initializedProjectId === null) {
+      initializedProjectId = newProjectId
+      return
+    }
+    if (newProjectId === initializedProjectId) return
+
+    initializedProjectId = newProjectId
     studiesCache.clear()
     guaranteedCompleteTime.value = null
-  })
+  }, { immediate: true })
 
   // Get list interface with sorting
   const studyList = computed(() => {
