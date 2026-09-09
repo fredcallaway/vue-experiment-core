@@ -21,14 +21,12 @@ const projectTitle = ref('Experiment project')
 const isLoadingWorkspaces = ref(false)
 const isLoadingProjects = ref(false)
 const isCreatingProject = ref(false)
+const showConnectionModal = ref(false)
 
 const searchQuery = ref('')
 const isReady = computed(() => status.value === 'ok')
-const setupPanel = computed<'token' | 'project' | null>(() => {
-  if (status.value === 'invalidToken') return 'token'
-  if (status.value === 'invalidProjectId') return 'project'
-  return null
-})
+const showConnectionForm = computed(() => !isReady.value || showConnectionModal.value)
+const tokenIsValid = computed(() => R.isIncludedIn(status.value, ['ok', 'invalidProjectId']))
 const activeStudyList = computed(() => isReady.value ? studyList.value : null)
 const studies = computed(() => activeStudyList.value?.items.value ?? [])
 const studiesTimestamp = computed(() => activeStudyList.value?.timestamp.value ?? null)
@@ -126,6 +124,14 @@ const studySummaries = computed(() => ({
   ...cachedStudySummaries.value,
   ...derivedStudySummaries.value,
 }))
+
+const totalParticipants = computed(() => sum(studies.value.map(study => study.places_taken ?? 0)))
+const totalCost = computed(() => {
+  const summaries = studies.value.map(study => studySummaries.value[study.id])
+  if (summaries.some(summary => !summary)) return null
+  return sum(summaries.map(summary => summary?.totalCost ?? 0))
+})
+const nextStudy = computed(() => studies.value.find(study => study.status !== 'COMPLETED') ?? null)
 
 const getAverageBonusText = (study: StudyShort) => {
   const summary = studySummaries.value[study.id]
@@ -259,6 +265,19 @@ const useExistingProject = () => {
   projectId.value = selectedExistingProjectId.value
 }
 
+const openConnectionModal = () => {
+  setupError.value = ''
+  showConnectionModal.value = true
+}
+
+const closeConnectionModal = () => {
+  showConnectionModal.value = false
+}
+
+onKeyStroke('Escape', () => {
+  if (showConnectionModal.value) closeConnectionModal()
+})
+
 const createProject = async () => {
   if (!selectedWorkspaceId.value) return
 
@@ -295,8 +314,8 @@ onMounted(() => {
   }
 })
 
-watch(() => setupPanel.value, (panel) => {
-  if (panel === 'project' && workspaceOptions.value.length === 0 && !isLoadingWorkspaces.value) {
+watch([showConnectionForm, tokenIsValid], ([showForm, validToken]) => {
+  if (showForm && validToken && workspaceOptions.value.length === 0 && !isLoadingWorkspaces.value) {
     loadWorkspaces()
   }
 }, { immediate: true })
@@ -310,168 +329,191 @@ watch(selectedWorkspaceId, () => {
 <template>
   <div class="p-8 max-w-7xl min-w-2xl mx-auto">
 
-    <!-- Token & Project Form -->
-    <div class="bg-gray-100 p-4 rounded mb-6">
-      <div class="flex gap-4 items-end">
-        <div flex-1>
-          <div flex="~ row gap-2">
-            <label class="block mb-2 font-semibold text-sm">Prolific API Token</label>
-            <span v-if="status == 'unknown'" class="text-sm text-gray-600">
-              Validating...
-            </span>
-            <span v-else-if="R.isIncludedIn(status, ['ok', 'invalidProjectId'])" class="text-sm text-green-600">
-              ✓ Valid
-            </span>
-            <span v-else-if="status == 'invalidToken'" class="text-sm text-red-600">
-              ✗ Invalid
-            </span>
+    <section class="bg-gray-100 rounded-lg p-5 mb-6">
+      <div flex="~ wrap gap-6 items-stretch">
+        <div flex="~ gap-8 items-center">
+          <div min-w-24>
+            <div text-3xl font-semibold>{{ isReady ? totalParticipants.toLocaleString() : '—' }}</div>
+            <div text-sm text-gray-600>Participants</div>
           </div>
-          <input
-            v-model="token"
-            type="text"
-            input-mono
-            w-full
-            placeholder="Enter your Prolific API token"
-          />
+          <div min-w-28>
+            <div text-3xl font-semibold>{{ !isReady ? '—' : totalCost === null ? '…' : formatCents(totalCost) }}</div>
+            <div text-sm text-gray-600>Total cost</div>
+          </div>
+          <div min-w-20>
+            <div text-3xl font-semibold>{{ isReady ? studies.length : '—' }}</div>
+            <div text-sm text-gray-600>Studies</div>
+          </div>
         </div>
 
-        <div>
-          <div flex="~ row gap-2">
-            <label class="block mb-2 font-semibold text-sm">Project ID</label>
-            <span v-if="status == 'unknown'" class="text-sm text-gray-600">
-              Validating...
+        <button
+          v-if="isReady && nextStudy"
+          class="flex-1 min-w-64 text-left border-l border-gray-300 pl-6 pr-3 py-1 group"
+          @click="navigateTo(`/prolific/${nextStudy.id}`)"
+        >
+          <div flex="~ justify-between gap-3 items-center" mb-1>
+            <span text-xs font-semibold uppercase tracking-wide text-amber-700>
+              {{ prolific.displayStudyStatus(nextStudy) }}
             </span>
-            <span v-else-if="status == 'ok'" class="text-sm text-green-600">
-              ✓ Valid
-            </span>
-            <span v-else-if="status == 'invalidProjectId'" class="text-sm text-red-600">
-              ✗ Invalid
-            </span>
+            <span text-sm text-gray-500 group-hover:text-gray-900>Open study →</span>
           </div>
-          <input 
-            v-model="projectId" 
-            type="text" 
-            input-mono
-            w-55
-            placeholder="Enter project ID"
-          />
+          <div font-semibold truncate>{{ nextStudy.internal_name }}</div>
+          <div text-sm text-gray-600 mt-1>
+            {{ nextStudy.places_taken ?? 0 }} / {{ nextStudy.total_available_places }} places filled
+          </div>
+        </button>
+        <div v-else-if="isReady" flex-1 min-w-64 border-l border-gray-300 pl-6 flex="~ col justify-center">
+          <div font-semibold>All studies completed</div>
+          <div text-sm text-gray-600>No study currently needs attention.</div>
+        </div>
+        <div v-else flex-1 min-w-64 border-l border-gray-300 pl-6 flex="~ col justify-center">
+          <div font-semibold>Connect Prolific</div>
+          <div text-sm text-gray-600>Enter an API token and project below to load study activity.</div>
         </div>
 
-        <div class="flex gap-2">
-          <button 
-            v-if="studies?.some(s => s.status === 'UNPUBLISHED')"
-            @click="deleteAllDrafts" 
-            btn-red
-            :disabled="!isReady || loading"
-          >
-            Delete All Drafts
+        <div flex="~ col gap-2 justify-center items-stretch">
+          <button v-if="isReady" btn-gray @click="openConnectionModal">
+            Prolific Connection
           </button>
-          <button
-            btn-green
-            :disabled="!isReady"
-            @click="goToCreateStudy"
-          >
+          <button btn-green :disabled="!isReady" @click="goToCreateStudy">
             Create New Study
           </button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div v-if="setupPanel === 'token'" class="bg-gray-100 p-4 rounded mb-4">
-      <h2 mb-2>Connect Prolific</h2>
-      <p text-red-700 mb-3>
-        The current Prolific API token is missing or invalid.
-      </p>
-      <ol pl-5 list-decimal>
-        <li>Log in to your Prolific account.</li>
-        <li>Click "API Tokens" in the left sidebar.</li>
-        <li>Click "Create API Token" on the top right.</li>
-        <li>Copy the new token and paste it in the box below.</li>
-      </ol>
-      <input
-        v-model="token"
-        type="text"
-        input-mono
-        w-full
-        mt-3
-        placeholder="Enter your Prolific API token"
-      />
-    </div>
+    <div
+      v-if="showConnectionForm"
+      :class="showConnectionModal
+        ? 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4'
+        : 'mb-6'"
+      @click.self="showConnectionModal && closeConnectionModal()"
+    >
+      <section
+        class="bg-white border border-gray-200 rounded-lg p-6 w-full"
+        :class="showConnectionModal ? 'max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl' : ''"
+        :role="showConnectionModal ? 'dialog' : undefined"
+        :aria-modal="showConnectionModal || undefined"
+        aria-labelledby="prolific-connection-title"
+      >
+        <div flex="~ justify-between gap-4 items-start" mb-6>
+          <div>
+            <h2 id="prolific-connection-title">Prolific Connection</h2>
+            <p text-gray-600 mt-1>Enter a token and choose, create, or directly identify a project.</p>
+          </div>
+          <button
+            v-if="showConnectionModal"
+            class="text-gray-500 hover:text-gray-900"
+            aria-label="Close Prolific connection"
+            @click="closeConnectionModal"
+          >
+            <span i-mdi-close text-2xl />
+          </button>
+        </div>
 
-    <div v-else-if="setupPanel === 'project'" class="bg-gray-100 p-4 rounded mb-4">
-      <h2 mb-2>Choose Prolific Project</h2>
-      <p text-red-700 mb-3>
-        The current project ID is missing or invalid.
-      </p>
-      <p mb-3>
-        Select an existing project or create a new one.
-      </p>
-
-      <div v-if="isLoadingWorkspaces" text-gray-700>
-        Loading workspaces...
-      </div>
-      <div v-else-if="workspaceOptions.length === 0" text-red-700>
-        No Prolific workspaces were found for this API token.
-      </div>
-      <div v-else>
-        <label block mb-3 m3>
-          <span block mb-1 font-semibold >Workspace</span>
-          <select v-model="selectedWorkspaceId" input w-full>
-            <option v-for="workspace in workspaceOptions" :key="workspace.id" :value="workspace.id">
-              {{ workspace.label }}
-            </option>
-          </select>
-        </label>
-
-        <div grid="~ cols-2 gap-3">
-          <div p-3>
-            <div font-semibold mb-2>Use an existing project</div>
-            <div v-if="isLoadingProjects" text-gray-700>
-              Loading projects...
+        <div grid="~ cols-2 gap-8" class="max-lg:grid-cols-1">
+          <div>
+            <div flex="~ justify-between gap-3 items-center" mb-2>
+              <label for="prolific-token" font-semibold>API token</label>
+              <span v-if="status === 'unknown'" text-sm text-gray-500>Validating…</span>
+              <span v-else-if="tokenIsValid" text-sm text-green-700>✓ Valid</span>
+              <span v-else text-sm text-red-700>✗ Missing or invalid</span>
             </div>
-            <div v-else-if="projectOptions.length === 0" text-gray-700>
-              This workspace has no projects yet.
+            <input
+              id="prolific-token"
+              v-model="token"
+              type="text"
+              input-mono
+              w-full
+              placeholder="Enter your Prolific API token"
+            />
+            <p text-sm text-gray-600 mt-2>
+              Create or copy a token from <strong>API Tokens</strong> in your Prolific account.
+            </p>
+          </div>
+
+          <div>
+            <div flex="~ justify-between gap-3 items-center" mb-2>
+              <label for="prolific-project-id" font-semibold>Project ID</label>
+              <span v-if="status === 'unknown'" text-sm text-gray-500>Validating…</span>
+              <span v-else-if="status === 'ok'" text-sm text-green-700>✓ Connected</span>
+              <span v-else text-sm text-red-700>✗ Missing or invalid</span>
             </div>
-            <template v-else>
-              <select v-model="selectedExistingProjectId" input w-full>
+            <input
+              id="prolific-project-id"
+              v-model="projectId"
+              type="text"
+              input-mono
+              w-full
+              placeholder="Enter a Prolific project ID"
+            />
+            <p text-sm text-gray-600 mt-2>Paste an ID directly, or use the workspace tools below.</p>
+          </div>
+        </div>
+
+        <div border-t border-gray-200 mt-6 pt-6>
+          <div flex="~ justify-between gap-4 items-end" mb-4>
+            <label flex-1>
+              <span block font-semibold mb-2>Workspace</span>
+              <select
+                v-model="selectedWorkspaceId"
+                input
+                w-full
+                :disabled="!tokenIsValid || isLoadingWorkspaces || workspaceOptions.length === 0"
+              >
+                <option v-if="workspaceOptions.length === 0" value="">
+                  {{ tokenIsValid ? 'No workspaces found' : 'Enter a valid API token first' }}
+                </option>
+                <option v-for="workspace in workspaceOptions" :key="workspace.id" :value="workspace.id">
+                  {{ workspace.label }}
+                </option>
+              </select>
+            </label>
+            <button btn-gray :disabled="!tokenIsValid || isLoadingWorkspaces" @click="loadWorkspaces">
+              {{ isLoadingWorkspaces ? 'Loading…' : 'Reload Workspaces' }}
+            </button>
+          </div>
+
+          <div grid="~ cols-2 gap-8" class="max-lg:grid-cols-1">
+            <div>
+              <div font-semibold mb-2>Use an existing project</div>
+              <select
+                v-model="selectedExistingProjectId"
+                input
+                w-full
+                :disabled="!selectedWorkspaceId || isLoadingProjects || projectOptions.length === 0"
+              >
+                <option v-if="projectOptions.length === 0" value="">
+                  {{ isLoadingProjects ? 'Loading projects…' : 'No projects found' }}
+                </option>
                 <option v-for="project in projectOptions" :key="project.id" :value="project.id">
                   {{ project.label }}
                 </option>
               </select>
-            </template>
+              <button btn-green mt-3 :disabled="!selectedExistingProjectId" @click="useExistingProject">
+                Use Project
+              </button>
+            </div>
 
-            <button
-              btn-green
-              mt-3
-              :disabled="!selectedExistingProjectId"
-              @click="useExistingProject"
-            >
-              Use Project
-            </button>
-          </div>
-
-          <div p-3>
-            <div font-semibold mb-2>Create a new project</div>
-            <input v-model="projectTitle" input w-full aria-label="Project name" />
-
-            <button
-              btn-green
-              mt-3
-              :disabled="!selectedWorkspaceId || isCreatingProject"
-              @click="createProject"
-            >
-              {{ isCreatingProject ? 'Creating...' : 'Create Project' }}
-            </button>
+            <div>
+              <div font-semibold mb-2>Create a new project</div>
+              <input v-model="projectTitle" input w-full aria-label="Project name" />
+              <button
+                btn-green
+                mt-3
+                :disabled="!selectedWorkspaceId || isCreatingProject"
+                @click="createProject"
+              >
+                {{ isCreatingProject ? 'Creating…' : 'Create Project' }}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <div
-      v-if="setupError"
-      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 whitespace-pre-wrap"
-    >
-      {{ setupError }}
+        <div v-if="setupError" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mt-5">
+          {{ setupError }}
+        </div>
+      </section>
     </div>
 
     <!-- Error Display -->
@@ -494,7 +536,17 @@ watch(selectedWorkspaceId, () => {
             label="Last updated:"
           />
         </div>
-        <TextFilter v-model="searchQuery" placeholder="e.g. active,complete 11/5" />
+        <div flex="~ gap-2 items-center">
+          <button
+            v-if="studies.some(study => study.status === 'UNPUBLISHED')"
+            btn-red
+            :disabled="loading"
+            @click="deleteAllDrafts"
+          >
+            Delete All Drafts
+          </button>
+          <TextFilter v-model="searchQuery" placeholder="e.g. active,complete 11/5" />
+        </div>
       </div>
 
       <div class="overflow-x-auto">
