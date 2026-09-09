@@ -34,7 +34,11 @@ const studies = computed(() => activeStudyList.value?.items.value ?? [])
 const studiesTimestamp = computed(() => activeStudyList.value?.timestamp.value ?? null)
 const loading = computed(() => activeStudyList.value?.isLoading.value ?? false)
 const allData = useAllData('live')
+type StudySummary = { averageBonus: number | null, totalCost: number }
+
+const cachedStudySummaries = useLocalStorage<Partial<Record<string, StudySummary>>>('prolificStudySummaries:v1', {})
 const bonusOverridesByStudy = new Map<string, Ref<Record<string, number | undefined>>>()
+const studyDetailsById = new Map<string, ReturnType<typeof prolific.getStudyCache>>()
 const loadedStudyIds = new Set<string>()
 let preloadingStudyDetails = false
 
@@ -47,22 +51,30 @@ const getBonusOverrides = (studyId: string) => {
   return overrides.value
 }
 
+const getStudyDetails = (studyId: string) => {
+  let details = studyDetailsById.get(studyId)
+  if (!details) {
+    details = prolific.getStudyCache(studyId, { autoRefresh: false })
+    studyDetailsById.set(studyId, details)
+  }
+  return details
+}
+
 const getCodeType = (study: StudyFull, submission: Submission) => {
   if (!submission.study_code) return 'NOCODE'
   if (submission.study_code === 'Manual Completion') return 'MANUAL'
   return study.completion_codes.find(code => code.code === submission.study_code)?.code_type ?? submission.study_code
 }
 
-const studySummaries = computed(() => {
-  const summaries: Record<string, { averageBonus: number | null, totalCost: number } | null> = {}
+const derivedStudySummaries = computed(() => {
+  const summaries: Partial<Record<string, StudySummary>> = {}
+  if (allData.isLoading.value) return summaries
+
   const sessions = allData.sessions.value ? Object.values(allData.sessions.value) : []
 
   for (const study of studies.value) {
-    const fullStudy = prolific.getStudyCache(study.id).fullItem.value
-    if (!fullStudy) {
-      summaries[study.id] = null
-      continue
-    }
+    const fullStudy = getStudyDetails(study.id).fullItem.value
+    if (!fullStudy) continue
 
     const studySessions = sessions.filter(session => session.studyId === study.id)
     const sessionsBySubmissionId = R.pullObject(
@@ -103,6 +115,17 @@ const studySummaries = computed(() => {
 
   return summaries
 })
+
+watch(derivedStudySummaries, (summaries) => {
+  for (const [studyId, summary] of Object.entries(summaries)) {
+    if (summary) cachedStudySummaries.value[studyId] = summary
+  }
+}, { immediate: true })
+
+const studySummaries = computed(() => ({
+  ...cachedStudySummaries.value,
+  ...derivedStudySummaries.value,
+}))
 
 const getAverageBonusText = (study: StudyShort) => {
   const summary = studySummaries.value[study.id]
@@ -145,7 +168,10 @@ const preloadStudyDetails = async () => {
 
       loadedStudyIds.add(study.id)
       try {
-        await prolific.getStudyCache(study.id).refresh()
+        const details = getStudyDetails(study.id)
+        if (study.status !== 'COMPLETED' || !cachedStudySummaries.value[study.id]) {
+          await details.refresh()
+        }
       } catch (error) {
         console.error(`Could not load study details for ${study.id}`, error)
       }

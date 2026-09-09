@@ -18,7 +18,7 @@ export interface AsyncListCache<TShort extends object, TFull extends TShort> {
   getListAsync: () => Promise<TShort[]>
 
   // Individual item interface
-  getItemCache: (id: string) => {
+  getItemCache: (id: string, options?: { autoRefresh?: boolean }) => {
     item: Ref<TFull | TShort | null>          // Reactive item 
     fullItem: Ref<TFull | null>          // Reactive full item 
     timestamp: Ref<number | null>    // Last refresh time
@@ -225,7 +225,7 @@ export function useAsyncListCache<TShort extends object, TFull extends TShort>(
   })
 
   // Get individual item interface
-  const getItemCache = (id: string) => {
+  const getItemCache = (id: string, { autoRefresh = true }: { autoRefresh?: boolean } = {}) => {
 
     const itemCache = _getItemCache(id)
     
@@ -234,7 +234,7 @@ export function useAsyncListCache<TShort extends object, TFull extends TShort>(
       !cache.value[id].isFull ||
       Date.now() - (cache.value[id].timestamp ?? 0) >= minRefreshInterval
 
-    if (shouldAutoRefresh) {
+    if (autoRefresh && shouldAutoRefresh) {
       itemCache.refresh().catch(e => {
         console.error(`Problem refreshing item ${id}: ${e}`)
       })

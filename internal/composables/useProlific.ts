@@ -378,8 +378,8 @@ export const useProlific = createGlobalState(() => {
   })
 
   // Get individual study
-  const getStudyCache = (studyId: string) => {
-    return studiesCache.getItemCache(studyId)
+  const getStudyCache = (studyId: string, options?: { autoRefresh?: boolean }) => {
+    return studiesCache.getItemCache(studyId, options)
   }
 
   interface WatchStudyOptions {
