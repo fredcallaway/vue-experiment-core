@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import { PROLIFIC_FEE, type StudyFull, type StudyShort, type Submission } from '#imports'
+
 // import { useProlific } from '~/local/useProlific'
 // import { createTextFilter } from '~/utils/textFilter'
 
 definePageMeta({
   layout: 'dashboard',
 })
-
-const N_PRELOAD_STUDIES = 0
 
 const prolific = useProlific()
 const { token, projectId, status, studyList, deleteStudy } = prolific
@@ -33,6 +33,89 @@ const activeStudyList = computed(() => isReady.value ? studyList.value : null)
 const studies = computed(() => activeStudyList.value?.items.value ?? [])
 const studiesTimestamp = computed(() => activeStudyList.value?.timestamp.value ?? null)
 const loading = computed(() => activeStudyList.value?.isLoading.value ?? false)
+const allData = useAllData('live')
+const bonusOverridesByStudy = new Map<string, Ref<Record<string, number | undefined>>>()
+const loadedStudyIds = new Set<string>()
+let preloadingStudyDetails = false
+
+const getBonusOverrides = (studyId: string) => {
+  let overrides = bonusOverridesByStudy.get(studyId)
+  if (!overrides) {
+    overrides = useLocalStorage<Record<string, number | undefined>>(`bonusOverrides.${studyId}`, {})
+    bonusOverridesByStudy.set(studyId, overrides)
+  }
+  return overrides.value
+}
+
+const getCodeType = (study: StudyFull, submission: Submission) => {
+  if (!submission.study_code) return 'NOCODE'
+  if (submission.study_code === 'Manual Completion') return 'MANUAL'
+  return study.completion_codes.find(code => code.code === submission.study_code)?.code_type ?? submission.study_code
+}
+
+const studySummaries = computed(() => {
+  const summaries: Record<string, { averageBonus: number | null, totalCost: number } | null> = {}
+  const sessions = allData.sessions.value ? Object.values(allData.sessions.value) : []
+
+  for (const study of studies.value) {
+    const fullStudy = prolific.getStudyCache(study.id).fullItem.value
+    if (!fullStudy) {
+      summaries[study.id] = null
+      continue
+    }
+
+    const studySessions = sessions.filter(session => session.studyId === study.id)
+    const sessionsBySubmissionId = R.pullObject(
+      studySessions,
+      R.prop('sessionId'),
+      R.identity(),
+    )
+    const databaseBonuses: Record<string, number> = {}
+    for (const session of studySessions) {
+      if (session.participantId === 'UNKNOWN' || session.bonus === undefined) continue
+      if (databaseBonuses[session.participantId] !== undefined) {
+        throw new Error(`Duplicate participant ID: ${session.participantId}`)
+      }
+      databaseBonuses[session.participantId] = round(session.bonus * 100)
+    }
+    const overrides = getBonusOverrides(study.id)
+    const isComplete = (submission: Submission) => {
+      const session = sessionsBySubmissionId[submission.id]
+      return !!session?.completionTime && getCodeType(fullStudy, submission) === 'COMPLETED'
+    }
+    const intendedBonuses = R.pullObject(fullStudy.submissions, R.prop('participant_id'), submission => {
+      const currentBonus = sum(submission.bonus_payments)
+      const databaseBonus = isComplete(submission) || submission.status === 'APPROVED'
+        ? (databaseBonuses[submission.participant_id] ?? 0)
+        : 0
+      return overrides[submission.participant_id] ?? Math.max(currentBonus, databaseBonus)
+    })
+    const eligible = fullStudy.submissions.filter(submission => (
+      isComplete(submission) && overrides[submission.participant_id] === undefined
+    ))
+    const averageBonus = eligible.length === 0
+      ? null
+      : sum(eligible.map(submission => intendedBonuses[submission.participant_id] ?? 0)) / eligible.length
+    const totalCost = PROLIFIC_FEE * (fullStudy.reward * fullStudy.places_taken + sum(R.values(intendedBonuses)))
+
+    summaries[study.id] = { averageBonus, totalCost }
+  }
+
+  return summaries
+})
+
+const getAverageBonusText = (study: StudyShort) => {
+  const summary = studySummaries.value[study.id]
+  if (!summary) return '…'
+  return summary.averageBonus === null ? 'N/A' : formatCents(summary.averageBonus)
+}
+
+const getTotalCostText = (study: StudyShort) => {
+  if (study.status !== 'COMPLETED') return '???'
+  const summary = studySummaries.value[study.id]
+  return summary ? formatCents(summary.totalCost) : '…'
+}
+
 const filteredStudies = computed(() => {
   if (!studies.value) return []
   const base = searchQuery.value.trim()
@@ -51,6 +134,32 @@ const filteredStudies = computed(() => {
     : studies.value
   return R.sortBy(base, [s => s.published_at ?? '', 'desc'])
 })
+
+const preloadStudyDetails = async () => {
+  if (preloadingStudyDetails) return
+  preloadingStudyDetails = true
+  try {
+    while (true) {
+      const study = studies.value.find(item => !loadedStudyIds.has(item.id))
+      if (!study) return
+
+      loadedStudyIds.add(study.id)
+      try {
+        await prolific.getStudyCache(study.id).refresh()
+      } catch (error) {
+        console.error(`Could not load study details for ${study.id}`, error)
+      }
+      await timeoutPromise(1000)
+    }
+  } finally {
+    preloadingStudyDetails = false
+  }
+}
+
+watch(studies, () => {
+  for (const study of studies.value) getBonusOverrides(study.id)
+  void preloadStudyDetails()
+}, { immediate: true })
 
 const error = computed(() => {
   if (cacheError.value) {
@@ -168,14 +277,6 @@ watch(() => setupPanel.value, (panel) => {
 
 watch(selectedWorkspaceId, () => {
   loadProjects()
-})
-
-whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
-  // preload the first few studies
-  for (const study of studies.value.slice(0, N_PRELOAD_STUDIES)) {
-    prolific.getStudyCache(study.id)
-    await timeoutPromise(1000) // rate limit
-  }
 })
 
 </script>
@@ -379,6 +480,8 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
               <th px-2 py-2 text-left whitespace-nowrap>Status</th>
               <th px-2 py-2 text-left whitespace-nowrap>Published At</th>
               <th px-2 py-2 text-right whitespace-nowrap>Reward</th>
+              <th px-2 py-2 text-right whitespace-nowrap>Avg Bonus</th>
+              <th px-2 py-2 text-right whitespace-nowrap>Total Cost</th>
               <th px-2 py-2 text-right whitespace-nowrap>Places</th>
             </tr>
           </thead>
@@ -394,6 +497,8 @@ whenever(() => status.value === 'ok' && studies.value.length > 0, async () => {
               <td px-2 py-2 text-sm whitespace-nowrap>{{ prolific.displayStudyStatus(study) }}</td>
               <td px-2 py-2 whitespace-nowrap>{{ formatDateTime(study.published_at ?? 'N/A') }}</td>
               <td px-2 py-2 text-right whitespace-nowrap>${{ (study.reward / 100).toFixed(2) }}</td>
+              <td px-2 py-2 text-right whitespace-nowrap>{{ getAverageBonusText(study) }}</td>
+              <td px-2 py-2 text-right whitespace-nowrap>{{ getTotalCostText(study) }}</td>
               <td px-2 py-2 text-right whitespace-nowrap>{{ study.places_taken ?? 0 }} / {{ study.total_available_places }}</td>
             </tr>
           </tbody>
