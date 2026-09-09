@@ -332,17 +332,17 @@ watch(selectedWorkspaceId, () => {
     <section class="bg-gray-100 rounded-lg p-5 mb-6">
       <div flex="~ wrap gap-6 items-stretch">
         <div flex="~ gap-8 items-center">
+          <div min-w-20>
+            <div text-3xl font-semibold>{{ isReady ? studies.length : '—' }}</div>
+            <div text-sm text-gray-600>Studies</div>
+          </div>
           <div min-w-24>
             <div text-3xl font-semibold>{{ isReady ? totalParticipants.toLocaleString() : '—' }}</div>
             <div text-sm text-gray-600>Participants</div>
           </div>
           <div min-w-28>
             <div text-3xl font-semibold>{{ !isReady ? '—' : totalCost === null ? '…' : formatCents(totalCost) }}</div>
-            <div text-sm text-gray-600>Total cost</div>
-          </div>
-          <div min-w-20>
-            <div text-3xl font-semibold>{{ isReady ? studies.length : '—' }}</div>
-            <div text-sm text-gray-600>Studies</div>
+            <div text-sm text-gray-600>Dollars spent</div>
           </div>
         </div>
 
