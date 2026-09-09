@@ -65,6 +65,7 @@ const getNavTarget = (linkPath: string) => {
 <template>
   <nav h6 px1>
     <div class="flex items-center gap-6">
+      <span font-bold>{{ config.title }}</span>
       <NuxtLink
         v-for="link in topNavLinks"
         :key="link.path"
@@ -76,4 +77,3 @@ const getNavTarget = (linkPath: string) => {
     </div>
   </nav>
 </template>
-
