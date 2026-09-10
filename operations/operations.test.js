@@ -1,7 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { DraftOperations } from './drafts'
 import { MockProlificReader } from './prolific-reader'
-import { getOutstandingBonusCents, getStudyDisplayStatus, ReviewOperations } from './review'
+import {
+  getOutstandingBonusCents,
+  getStudyDisplayStatus,
+  partitionApprovedSubmissionsBySession,
+  ReviewOperations,
+} from './review'
 
 const STUDY_ID = 'aaaaaaaaaaaaaaaaaaaaaaaa'
 const SUBMISSION_1 = '111111111111111111111111'
@@ -114,6 +119,19 @@ describe('review helpers', () => {
       [PARTICIPANT_1]: 100,
       [PARTICIPANT_2]: 0,
     })).toBe(0)
+  })
+
+  test('separates approved submissions that have no session metadata', () => {
+    const submissions = studyFixture().submissions
+    submissions[0].status = 'APPROVED'
+    submissions[1].status = 'APPROVED'
+
+    const result = partitionApprovedSubmissionsBySession(submissions, {
+      [SUBMISSION_1]: session({}),
+    })
+
+    expect(result.matched.map(item => item.submission.id)).toEqual([SUBMISSION_1])
+    expect(result.missing.map(item => item.id)).toEqual([SUBMISSION_2])
   })
 })
 

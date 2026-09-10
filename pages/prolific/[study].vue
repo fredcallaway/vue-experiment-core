@@ -4,6 +4,7 @@ import {
   getDefaultReviewAction,
   getOutstandingBonusCents,
   getReviewDataStatus,
+  partitionApprovedSubmissionsBySession,
 } from '~/core/operations/review'
 
 definePageMeta({
@@ -145,6 +146,13 @@ const addPlaces = wrap(async () => {
   return `Added ${toAdd} places`
 })
 
+const approvedSubmissionSessions = computed(() => {
+  if (!sessions.value) return { matched: [], missing: [] }
+  return partitionApprovedSubmissionsBySession(submissions.value, sessionsBySessionId.value)
+})
+
+const approvedSubmissionsMissingSessionMeta = computed(() => approvedSubmissionSessions.value.missing)
+
 const assignmentsToReplace = computed(() => {
   if (!sessions.value) return {}
   if (!study.value?.access_details) return {}
@@ -153,13 +161,7 @@ const assignmentsToReplace = computed(() => {
   const replacementsPosted = accessDetails.map(detail => detail.total_allocation - 1)
   assert(replacementsPosted.every(n => Number.isInteger(n) && n >= 0), 'Invalid access_details total_allocation')
 
-  const invalidCounts = submissions.value
-    .filter(sub => sub.status === 'APPROVED')
-    .map(sub => {
-      const session = sessionsBySessionId.value[sub.id]
-      if (!session) throw new Error(`Missing session meta for submission ${sub.id}`)
-      return { submission: sub, session }
-    })
+  const invalidCounts = approvedSubmissionSessions.value.matched
     .filter(({ session, submission }) => (
       session.excluded ||
       sessionStatus(session) !== 'completed' ||
@@ -784,6 +786,35 @@ const versions = computed(() => {
                 w-20
                 step="10"
               />
+            </div>
+
+            <div
+              v-if="approvedSubmissionsMissingSessionMeta.length > 0"
+              role="alert"
+              border="~ amber-300"
+              bg-amber-50
+              text-amber-900
+              rounded
+              p-3
+              mb-4
+            >
+              <div flex items-center gap-2 font-bold>
+                <span i-mdi-alert />
+                Manual review required
+              </div>
+              <div text-sm mt-1>
+                {{ approvedSubmissionsMissingSessionMeta.length }} approved
+                {{ approvedSubmissionsMissingSessionMeta.length === 1 ? 'submission has' : 'submissions have' }}
+                no matching session metadata and cannot be included in automatic assignment replacement.
+              </div>
+              <div
+                v-for="submission in approvedSubmissionsMissingSessionMeta"
+                :key="submission.id"
+                font-mono
+                text-sm
+              >
+                {{ submission.id }}
+              </div>
             </div>
 
             <!-- invalid assignment replacement -->

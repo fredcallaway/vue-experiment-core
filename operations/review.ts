@@ -50,6 +50,23 @@ export const getOutstandingBonusCents = (
   return total + Math.max(intended - paid, 0)
 }, 0)
 
+export const partitionApprovedSubmissionsBySession = (
+  submissions: Submission[],
+  sessionsBySessionId: Record<string, SessionMeta>,
+) => {
+  const matched: Array<{ submission: Submission, session: SessionMeta }> = []
+  const missing: Submission[] = []
+
+  for (const submission of submissions) {
+    if (submission.status !== 'APPROVED') continue
+    const session = sessionsBySessionId[submission.id]
+    if (session) matched.push({ submission, session })
+    else missing.push(submission)
+  }
+
+  return { matched, missing }
+}
+
 export const getStudyDisplayStatus = (
   status: string,
   pendingComplete: boolean,
