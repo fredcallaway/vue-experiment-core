@@ -2,6 +2,7 @@
 import {
   getCompletionCodeType,
   getDefaultReviewAction,
+  getMissingApprovedAssignmentCounts,
   getOutstandingBonusCents,
   getReviewDataStatus,
   partitionApprovedSubmissionsBySession,
@@ -151,8 +152,6 @@ const approvedSubmissionSessions = computed(() => {
   return partitionApprovedSubmissionsBySession(submissions.value, sessionsBySessionId.value)
 })
 
-const approvedSubmissionsMissingSessionMeta = computed(() => approvedSubmissionSessions.value.missing)
-
 const assignmentsToReplace = computed(() => {
   if (!sessions.value) return {}
   if (!study.value?.access_details) return {}
@@ -161,6 +160,11 @@ const assignmentsToReplace = computed(() => {
   const replacementsPosted = accessDetails.map(detail => detail.total_allocation - 1)
   assert(replacementsPosted.every(n => Number.isInteger(n) && n >= 0), 'Invalid access_details total_allocation')
 
+  const missingCounts = getMissingApprovedAssignmentCounts(
+    submissions.value,
+    sessionsBySessionId.value,
+    accessDetails,
+  )
   const invalidCounts = approvedSubmissionSessions.value.matched
     .filter(({ session, submission }) => (
       session.excluded ||
@@ -172,7 +176,7 @@ const assignmentsToReplace = computed(() => {
       assert(assignment >= 0 && assignment < accessDetails.length, `Invalid assignment ${assignment}`)
       acc[assignment] = (acc[assignment] ?? 0) + 1
       return acc
-    }, {})
+    }, { ...missingCounts })
 
   return accessDetails.reduce<Record<number, number>>((acc, _, index) => {
     const remaining = (invalidCounts[index] ?? 0) - (replacementsPosted[index] ?? 0)
@@ -786,35 +790,6 @@ const versions = computed(() => {
                 w-20
                 step="10"
               />
-            </div>
-
-            <div
-              v-if="approvedSubmissionsMissingSessionMeta.length > 0"
-              role="alert"
-              border="~ amber-300"
-              bg-amber-50
-              text-amber-900
-              rounded
-              p-3
-              mb-4
-            >
-              <div flex items-center gap-2 font-bold>
-                <span i-mdi-alert />
-                Manual review required
-              </div>
-              <div text-sm mt-1>
-                {{ approvedSubmissionsMissingSessionMeta.length }} approved
-                {{ approvedSubmissionsMissingSessionMeta.length === 1 ? 'submission has' : 'submissions have' }}
-                no matching session metadata and cannot be included in automatic assignment replacement.
-              </div>
-              <div
-                v-for="submission in approvedSubmissionsMissingSessionMeta"
-                :key="submission.id"
-                font-mono
-                text-sm
-              >
-                {{ submission.id }}
-              </div>
             </div>
 
             <!-- invalid assignment replacement -->

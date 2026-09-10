@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { DraftOperations } from './drafts'
 import { MockProlificReader } from './prolific-reader'
 import {
+  getMissingApprovedAssignmentCounts,
   getOutstandingBonusCents,
   getStudyDisplayStatus,
   partitionApprovedSubmissionsBySession,
@@ -132,6 +133,41 @@ describe('review helpers', () => {
 
     expect(result.matched.map(item => item.submission.id)).toEqual([SUBMISSION_1])
     expect(result.missing.map(item => item.id)).toEqual([SUBMISSION_2])
+  })
+
+  test('infers the assignment of an approved submission with missing metadata', () => {
+    const submissions = studyFixture().submissions
+    submissions[0].status = 'APPROVED'
+    submissions[1].status = 'APPROVED'
+
+    const result = getMissingApprovedAssignmentCounts(
+      submissions,
+      { [SUBMISSION_1]: session({ assignment: 0 }) },
+      [
+        { external_url: 'https://example.com?assignment=0', total_allocation: 1, allocated: 1 },
+        { external_url: 'https://example.com?assignment=1', total_allocation: 1, allocated: 1 },
+      ],
+    )
+
+    expect(result).toEqual({ 1: 1 })
+  })
+
+  test('does not infer missing approved assignments when allocation data is ambiguous', () => {
+    const submissions = studyFixture().submissions
+    submissions[0].status = 'APPROVED'
+    submissions[1].status = 'APPROVED'
+
+    const result = getMissingApprovedAssignmentCounts(
+      submissions,
+      { [SUBMISSION_1]: session({ assignment: 0 }) },
+      [
+        { external_url: 'https://example.com?assignment=0', total_allocation: 1, allocated: 1 },
+        { external_url: 'https://example.com?assignment=1', total_allocation: 1, allocated: 1 },
+        { external_url: 'https://example.com?assignment=2', total_allocation: 1, allocated: 1 },
+      ],
+    )
+
+    expect(result).toEqual({})
   })
 })
 

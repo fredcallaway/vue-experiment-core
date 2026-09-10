@@ -1,4 +1,4 @@
-import type { CompletionCodeSpec, Submission } from '../internal/prolific'
+import type { AccessDetail, CompletionCodeSpec, Submission } from '../internal/prolific'
 import type { SessionMeta } from '../internal/data'
 import type { OperationsDatabase } from './database'
 import type { ProlificReader } from './prolific-reader'
@@ -65,6 +65,36 @@ export const partitionApprovedSubmissionsBySession = (
   }
 
   return { matched, missing }
+}
+
+export const getMissingApprovedAssignmentCounts = (
+  submissions: Submission[],
+  sessionsBySessionId: Record<string, SessionMeta>,
+  accessDetails: AccessDetail[],
+) => {
+  const { missing } = partitionApprovedSubmissionsBySession(submissions, sessionsBySessionId)
+  if (missing.length === 0 || accessDetails.some(detail => detail.allocated === undefined)) return {}
+
+  const submissionsById = Object.fromEntries(submissions.map(submission => [submission.id, submission]))
+  const releasedStatuses = new Set<Submission['status']>(['REJECTED', 'RETURNED', 'SCREENED OUT', 'TIMED-OUT'])
+  const knownAllocationCounts = Object.values(sessionsBySessionId).reduce<Record<number, number>>((counts, session) => {
+    const submission = submissionsById[session.sessionId]
+    if (!submission || releasedStatuses.has(submission.status)) return counts
+    if (!Number.isInteger(session.assignment) || session.assignment < 0 || session.assignment >= accessDetails.length) {
+      return counts
+    }
+    counts[session.assignment] = (counts[session.assignment] ?? 0) + 1
+    return counts
+  }, {})
+
+  const missingCounts = accessDetails.reduce<Record<number, number>>((counts, detail, assignment) => {
+    const missingCount = detail.allocated! - (knownAllocationCounts[assignment] ?? 0)
+    if (missingCount > 0) counts[assignment] = missingCount
+    return counts
+  }, {})
+
+  const totalMissingAllocations = Object.values(missingCounts).reduce((total, count) => total + count, 0)
+  return totalMissingAllocations === missing.length ? missingCounts : {}
 }
 
 export const getStudyDisplayStatus = (
