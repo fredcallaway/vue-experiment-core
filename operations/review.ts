@@ -50,6 +50,19 @@ export const getOutstandingBonusCents = (
   return total + Math.max(intended - paid, 0)
 }, 0)
 
+export const getStudyDisplayStatus = (
+  status: string,
+  pendingComplete: boolean,
+  hasOutstandingBonuses: boolean,
+) => {
+  if (pendingComplete && (
+    status === 'AWAITING REVIEW' ||
+    (status === 'COMPLETED' && hasOutstandingBonuses)
+  )) return 'PENDING'
+  if (status === 'COMPLETED' && hasOutstandingBonuses) return 'AWAITING REVIEW'
+  return status
+}
+
 const getSessionStatus = (session: SessionMeta, now: number) => {
   if (session.error) return 'error'
   if (session.completionTime) return 'completed'

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { DraftOperations } from './drafts'
 import { MockProlificReader } from './prolific-reader'
-import { getOutstandingBonusCents, ReviewOperations } from './review'
+import { getOutstandingBonusCents, getStudyDisplayStatus, ReviewOperations } from './review'
 
 const STUDY_ID = 'aaaaaaaaaaaaaaaaaaaaaaaa'
 const SUBMISSION_1 = '111111111111111111111111'
@@ -89,6 +89,12 @@ const session = overrides => ({
 })
 
 describe('review helpers', () => {
+  test('shows pending while unpaid bonuses are being executed', () => {
+    expect(getStudyDisplayStatus('COMPLETED', false, true)).toBe('AWAITING REVIEW')
+    expect(getStudyDisplayStatus('COMPLETED', true, true)).toBe('PENDING')
+    expect(getStudyDisplayStatus('COMPLETED', true, false)).toBe('COMPLETED')
+  })
+
   test('counts outstanding bonuses per participant', () => {
     const submissions = studyFixture().submissions
     submissions[0].bonus_payments = [150]

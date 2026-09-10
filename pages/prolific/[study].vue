@@ -415,6 +415,8 @@ const executeAll = async () => {
   const actionsPromises = getActionsPromises(actions)
   const willComplete = executeHandlesAllReviewableSessions()
     && (counts.approve + counts.return + counts.reject > 0)
+  const willCompleteBonuses = study.value.status === 'COMPLETED' && bonusesAmount > 0
+  const shouldShowPending = willComplete || willCompleteBonuses
 
   const parts = [
     counts.approve > 0 && 'approved',
@@ -424,7 +426,7 @@ const executeAll = async () => {
   ].filter(Boolean) as string[]
   if (parts.length === 0) throw new Error('Nothing to execute')
 
-  if (willComplete) prolific.markPendingComplete(studyId)
+  if (shouldShowPending) prolific.markPendingComplete(studyId)
 
   const errors: string[] = []
   try {
@@ -440,7 +442,7 @@ const executeAll = async () => {
     }
   }
   if (errors.length) {
-    if (willComplete) prolific.clearPendingComplete(studyId)
+    if (shouldShowPending) prolific.clearPendingComplete(studyId)
     throw new Error(errors.join('; '))
   }
 

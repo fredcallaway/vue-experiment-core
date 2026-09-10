@@ -1,3 +1,5 @@
+import { getStudyDisplayStatus } from '~/core/operations/review'
+
 const PAGE_SIZE = 5
 const API_INTERVAL = 1000
 const API_CONCURRENCY_LIMIT = 3
@@ -887,9 +889,7 @@ export const useProlific = createGlobalState(() => {
   }
 
   const displayStudyStatus = (study: { id: string, status: string }, hasOutstandingBonuses = false) => {
-    if (pendingCompleteIds.value[study.id] && study.status === 'AWAITING REVIEW') return 'PENDING'
-    if (study.status === 'COMPLETED' && hasOutstandingBonuses) return 'AWAITING REVIEW'
-    return study.status
+    return getStudyDisplayStatus(study.status, !!pendingCompleteIds.value[study.id], hasOutstandingBonuses)
   }
 
   return {
