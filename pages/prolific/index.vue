@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { PROLIFIC_FEE, type StudyFull, type StudyShort, type Submission } from '#imports'
+import { getOutstandingBonusCents } from '~/core/operations/review'
 
 // import { useProlific } from '~/local/useProlific'
 // import { createTextFilter } from '~/utils/textFilter'
@@ -32,9 +33,9 @@ const studies = computed(() => activeStudyList.value?.items.value ?? [])
 const studiesTimestamp = computed(() => activeStudyList.value?.timestamp.value ?? null)
 const loading = computed(() => activeStudyList.value?.isLoading.value ?? false)
 const allData = useAllData('live')
-type StudySummary = { averageBonus: number | null, totalCost: number }
+type StudySummary = { averageBonus: number | null, totalCost: number, outstandingBonus: number }
 
-const cachedStudySummaries = useLocalStorage<Partial<Record<string, StudySummary>>>('prolificStudySummaries:v1', {})
+const cachedStudySummaries = useLocalStorage<Partial<Record<string, StudySummary>>>('prolificStudySummaries:v2', {})
 const bonusOverridesByStudy = new Map<string, Ref<Record<string, number | undefined>>>()
 const studyDetailsById = new Map<string, ReturnType<typeof prolific.getStudyCache>>()
 const loadedStudyIds = new Set<string>()
@@ -107,8 +108,9 @@ const derivedStudySummaries = computed(() => {
       ? null
       : sum(eligible.map(submission => intendedBonuses[submission.participant_id] ?? 0)) / eligible.length
     const totalCost = PROLIFIC_FEE * (fullStudy.reward * fullStudy.places_taken + sum(R.values(intendedBonuses)))
+    const outstandingBonus = getOutstandingBonusCents(fullStudy.submissions, intendedBonuses)
 
-    summaries[study.id] = { averageBonus, totalCost }
+    summaries[study.id] = { averageBonus, totalCost, outstandingBonus }
   }
 
   return summaries
@@ -131,7 +133,13 @@ const totalCost = computed(() => {
   if (summaries.some(summary => !summary)) return null
   return sum(summaries.map(summary => summary?.totalCost ?? 0))
 })
-const nextStudy = computed(() => studies.value.find(study => study.status !== 'COMPLETED') ?? null)
+
+const getStudyStatus = (study: StudyShort) => {
+  const summary = studySummaries.value[study.id]
+  return prolific.displayStudyStatus(study, (summary?.outstandingBonus ?? 0) > 0)
+}
+
+const nextStudy = computed(() => studies.value.find(study => getStudyStatus(study) !== 'COMPLETED') ?? null)
 
 const getAverageBonusText = (study: StudyShort) => {
   const summary = studySummaries.value[study.id]
@@ -154,7 +162,7 @@ const filteredStudies = computed(() => {
           study.id,
           study.internal_name,
           study.name,
-          prolific.displayStudyStatus(study),
+          getStudyStatus(study),
           study.published_at || '',
           formatDateTime(study.published_at ?? 'N/A')
         ].join(' ')
@@ -353,7 +361,7 @@ watch(selectedWorkspaceId, () => {
         >
           <div flex="~ justify-between gap-3 items-center" mb-1>
             <span text-xs font-semibold uppercase tracking-wide text-amber-700>
-              {{ prolific.displayStudyStatus(nextStudy) }}
+              {{ getStudyStatus(nextStudy) }}
             </span>
             <span text-sm text-gray-500 group-hover:text-gray-900>Open study →</span>
           </div>
@@ -572,7 +580,7 @@ watch(selectedWorkspaceId, () => {
             >
               <td px-2 py-2 font-mono text-xs whitespace-nowrap>{{ study.id }}</td>
               <td px-2 py-2 whitespace-nowrap>{{ study.internal_name }}</td>
-              <td px-2 py-2 text-sm whitespace-nowrap>{{ prolific.displayStudyStatus(study) }}</td>
+              <td px-2 py-2 text-sm whitespace-nowrap>{{ getStudyStatus(study) }}</td>
               <td px-2 py-2 whitespace-nowrap>{{ formatDateTime(study.published_at ?? 'N/A') }}</td>
               <td px-2 py-2 text-right whitespace-nowrap>${{ (study.reward / 100).toFixed(2) }}</td>
               <td px-2 py-2 text-right whitespace-nowrap>{{ getAverageBonusText(study) }}</td>

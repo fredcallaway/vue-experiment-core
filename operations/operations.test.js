@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { DraftOperations } from './drafts'
 import { MockProlificReader } from './prolific-reader'
-import { ReviewOperations } from './review'
+import { getOutstandingBonusCents, ReviewOperations } from './review'
 
 const STUDY_ID = 'aaaaaaaaaaaaaaaaaaaaaaaa'
 const SUBMISSION_1 = '111111111111111111111111'
@@ -86,6 +86,29 @@ const session = overrides => ({
   bonus: 1.25,
   assignment: 0,
   ...overrides,
+})
+
+describe('review helpers', () => {
+  test('counts outstanding bonuses per participant', () => {
+    const submissions = studyFixture().submissions
+    submissions[0].bonus_payments = [150]
+    submissions[1].bonus_payments = [25]
+
+    expect(getOutstandingBonusCents(submissions, {
+      [PARTICIPANT_1]: 100,
+      [PARTICIPANT_2]: 100,
+    })).toBe(75)
+  })
+
+  test('ignores zero and fully paid bonuses', () => {
+    const submissions = studyFixture().submissions
+    submissions[0].bonus_payments = [100]
+
+    expect(getOutstandingBonusCents(submissions, {
+      [PARTICIPANT_1]: 100,
+      [PARTICIPANT_2]: 0,
+    })).toBe(0)
+  })
 })
 
 describe('draft operations', () => {

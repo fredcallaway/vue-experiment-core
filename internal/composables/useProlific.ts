@@ -886,8 +886,9 @@ export const useProlific = createGlobalState(() => {
     )
   }
 
-  const displayStudyStatus = (study: { id: string, status: string }) => {
+  const displayStudyStatus = (study: { id: string, status: string }, hasOutstandingBonuses = false) => {
     if (pendingCompleteIds.value[study.id] && study.status === 'AWAITING REVIEW') return 'PENDING'
+    if (study.status === 'COMPLETED' && hasOutstandingBonuses) return 'AWAITING REVIEW'
     return study.status
   }
 

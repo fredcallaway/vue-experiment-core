@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { getCompletionCodeType, getDefaultReviewAction, getReviewDataStatus } from '~/core/operations/review'
+import {
+  getCompletionCodeType,
+  getDefaultReviewAction,
+  getOutstandingBonusCents,
+  getReviewDataStatus,
+} from '~/core/operations/review'
 
 definePageMeta({
   layout: 'dashboard',
@@ -497,6 +502,10 @@ const totalPaidBonus = computed(() => {
   return R.sum(Object.values(currentBonuses.value))
 })
 
+const totalOutstandingBonus = computed(() => {
+  return getOutstandingBonusCents(submissions.value, intendedBonuses.value)
+})
+
 const overrideStats = computed(() => {
   let count = 0
   let totalAdjustment = 0
@@ -514,11 +523,10 @@ const overrideStats = computed(() => {
 
 const bonusPaidStatus = computed(() => {
   if (submissions.value.length === 0) return { text: 'UNPAID', color: 'text-amber-500' }
-  
-  const unpaidAmount = totalIntendedBonus.value - totalPaidBonus.value
-  if (unpaidAmount === 0) return { text: 'PAID', color: 'text-green-600' }
+
+  if (totalOutstandingBonus.value === 0) return { text: 'PAID', color: 'text-green-600' }
   if (totalPaidBonus.value === 0) return { text: 'UNPAID', color: 'text-red-600' }
-  return { text: `UNPAID: ${formatCents(unpaidAmount)}`, color: 'text-amber-500' }
+  return { text: `UNPAID: ${formatCents(totalOutstandingBonus.value)}`, color: 'text-amber-500' }
 })
 
 // ===== template helpers ===================================================
@@ -698,7 +706,7 @@ const versions = computed(() => {
                 </NuxtLink>
               </div>
             </div>
-            <div><b>Status:</b> {{ prolific.displayStudyStatus(study) }}</div>
+            <div><b>Status:</b> {{ prolific.displayStudyStatus(study, totalOutstandingBonus > 0) }}</div>
             <div><b>Study ID:</b> {{ study.id }}</div>
             <div><b>Reward:</b> ${{ (study.reward / 100).toFixed(2) }}</div>
             <div><b>Places:</b> {{ study.places_taken ?? 0 }} / {{ study.total_available_places }}</div>

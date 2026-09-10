@@ -41,6 +41,15 @@ export const getDefaultReviewAction = (
   return null
 }
 
+export const getOutstandingBonusCents = (
+  submissions: Pick<Submission, 'participant_id' | 'bonus_payments'>[],
+  intendedBonuses: Record<string, number>,
+) => submissions.reduce((total, submission) => {
+  const paid = submission.bonus_payments.reduce((sum, amount) => sum + amount, 0)
+  const intended = intendedBonuses[submission.participant_id] ?? 0
+  return total + Math.max(intended - paid, 0)
+}, 0)
+
 const getSessionStatus = (session: SessionMeta, now: number) => {
   if (session.error) return 'error'
   if (session.completionTime) return 'completed'
