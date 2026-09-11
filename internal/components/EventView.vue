@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 
 type FormattedEvent = {
+  uid: number
   eventType: string
   timestamp: number
   caption?: string
@@ -11,6 +12,10 @@ type FormattedEvent = {
 const props = defineProps<{
   initialFilter?: string
 }>()
+
+// v-for key. Timestamps are NOT unique (same-ms event bursts are common) and duplicate keys crash
+// Vue's keyed diff ("Cannot destructure property 'type' of 'vnode' as it is null" on unmount).
+let eventUid = 0
 
 const events = reactive<FormattedEvent[]>([])
 const whitelistFilter = ref(props.initialFilter ?? '')
@@ -26,14 +31,16 @@ useLogEventBus().on((event) => {
     const caption = typeof id === 'string' ? id : undefined
     events.unshift({
       ...event,
+      uid: eventUid++,
       caption,
       data: R.isEmpty(rest) ? undefined : rest,
     })
-  } 
+  }
   else if (isParticipantEvent(event)) {
     const { pid, info } = event.data
     events.unshift({
       ...event,
+      uid: eventUid++,
       caption: pid,
       data: R.isEmpty(info) ? undefined : info,
       cardClass: 'card-primary',
@@ -43,6 +50,7 @@ useLogEventBus().on((event) => {
     const { message, ...rest } = event.data
     events.unshift({
       ...event,
+      uid: eventUid++,
       caption: message,
       data: rest,
       cardClass: 'card-red',
@@ -51,6 +59,7 @@ useLogEventBus().on((event) => {
   else {
     events.unshift({
       ...event,
+      uid: eventUid++,
       data: R.isEmpty(data) ? undefined : data,
     })
   }
@@ -58,6 +67,7 @@ useLogEventBus().on((event) => {
 
 useDebugBus().on(({message, info}) => {
   events.unshift({
+    uid: eventUid++,
     eventType: message,
     timestamp: Date.now(),
     data: info,
@@ -94,15 +104,16 @@ const eventViewHeight = computed(() => {
 </script>
 
 <template>
-  <div bg-gray-100 p-2 text-sm rounded-lg min-w="300px" flex="~ col" relative 
-    :style="{ height: `${eventViewHeight}px` }" 
+  <div bg-gray-100 p-2 text-sm rounded-lg min-w="300px" flex="~ col" relative
+    :style="{ height: `${eventViewHeight}px` }"
+    class="max-h-[600px] min-h-[200px]"
     ref="top-div"
   >
     <h2>Events</h2>
     <button absolute right-2 top-2 btn-gray btn-xs @click="events.length = 0">clear</button>
     <TextFilter v-model="whitelistFilter" placeholder="e.g. !epoch" mb-2 />
-    <div flex="~ col gap-2" overflow-y-auto class="subtle-scrollbar">
-      <template v-for="{eventType, timestamp, caption, data, cardClass} in filteredEvents" :key="timestamp">
+    <div flex="~ col gap-2" overflow-y-auto class="subtle-scrollbar flex-1 min-h-0">
+      <template v-for="{uid, eventType, timestamp, caption, data, cardClass} in filteredEvents" :key="uid">
         <div :class="cardClass ?? 'card-gray'" p-2 mr-1 rounded-md relative>
           <span font-bold>{{ eventType }}</span>
           <div text-right absolute top-2 right-2>
