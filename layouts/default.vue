@@ -7,8 +7,15 @@ const { violated } = useWindowEnforcer()
 useLatestCondition()
 
 // The dev tool overlay (Navigation + Parameters) floats bottom-right so it never displaces
-// MainContent or the event log. Collapsible so it can be tucked away.
+// MainContent or the event log. Collapsible so it can be tucked away. Fixed size (not resizable —
+// the resize/persist machinery caused more trouble than it was worth).
 const devToolsOpen = useLocalStorage('devToolsOpen', true)
+
+// One-time cleanup of size keys persisted by earlier resizable builds.
+if (import.meta.client) {
+  localStorage.removeItem('devToolsSize')
+  localStorage.removeItem('devtools-size-v2')
+}
 </script>
 
 <template>
@@ -26,20 +33,21 @@ const devToolsOpen = useLocalStorage('devToolsOpen', true)
       <!-- Event log fills the remaining horizontal space; scrolls internally. -->
       <div flex="1 ~ col gap-2" min-w-0 min-h-0 v-if="!violated">
         <Inspector />
-        <EventView flex-1 min-h-0 />
+        <EventView flex-1 min-h-0 ref="eventViewRef" />
       </div>
     </div>
 
-    <!-- Floating dev-tool overlay: Navigation + Parameters, bottom-right. -->
+    <!-- Floating dev-tool overlay: Navigation + Parameters, anchored bottom-right. Positioning is
+         INLINE (not UnoCSS utilities): `fixed bottom-0 right-0` utilities aren't reliably generated
+         by this project's Uno build, so the element would fall back to its static top-left. -->
     <div
       v-if="!violated"
-      fixed bottom-2 right-2 z-50
-      flex="~ col items-end gap-2"
-      class="max-h-[calc(100vh-1rem)]"
-      style="pointer-events: none"
+      z-50
+      flex="~ col items-end gap-1"
+      style="position: fixed; bottom: 0; right: 0; max-height: 100vh; pointer-events: none"
     >
       <button
-        btn-gray btn-xs shrink-0
+        btn-gray btn-xs shrink-0 whitespace-nowrap
         style="pointer-events: auto"
         class="shadow-lg"
         @click="devToolsOpen = !devToolsOpen"
@@ -49,9 +57,8 @@ const devToolsOpen = useLocalStorage('devToolsOpen', true)
       <div
         v-show="devToolsOpen"
         flex="~ col gap-2 items-stretch"
-        min-h-0
-        class="w-[380px] max-h-[calc(100vh-4rem)]"
-        style="pointer-events: auto"
+        min-h-0 overflow-hidden
+        style="pointer-events: auto; width: 380px; max-height: calc(100vh - 2.5rem)"
       >
         <div shrink-0 rounded-lg class="shadow-xl">
           <EpochView />
