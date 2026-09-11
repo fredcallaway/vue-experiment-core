@@ -778,6 +778,7 @@ const versions = computed(() => {
               <!-- add places -->
               <ActionButton 
                 name="Add Places" :action="addPlaces" success="result"
+                loading
                 btn-blue
                 :disabled="loading || newPlaces <= 0"
               />
