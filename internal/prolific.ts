@@ -290,7 +290,7 @@ export type SubmissionStatus = Submission['status']
 export type Study = StudyShort | StudyFull 
 
 export class ProlificError extends Error {
-  constructor(message: string) {
+  constructor(message: string, readonly userMessage: string | null = null) {
     super(message)
     this.name = 'ProlificError'
   }

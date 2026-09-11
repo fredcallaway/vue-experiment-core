@@ -85,7 +85,7 @@ const handleClick = async () => {
       shouldShake.value = false
     }, 500)
   })
-  promise.finally(() => {
+  .finally(() => {
     isLoading.value = false
   })
 }

@@ -14,7 +14,7 @@ definePageMeta({
 const route = useRoute()
 const studyId = route.params.study as string
 const prolific = useProlific()
-const { loading, error, wrap} = useAsyncRunner()
+const { loading, error, wrap } = useAsyncRunner(err => err instanceof ProlificError ? err.userMessage : null)
 const prolificMessages = useProlificMessages()
 
 // ===== messaging ===========================================================

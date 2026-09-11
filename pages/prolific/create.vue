@@ -67,7 +67,7 @@ const previewUrl = computed(() => {
   return `${baseUrl}/exp?PROLIFIC_PID=debug&STUDY_ID=debug&SESSION_ID=debug&assignment=0`
 })
 
-const create = useAsyncRunner()
+const create = useAsyncRunner(err => err instanceof ProlificError ? err.userMessage : null)
 const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
   await create.run(async () => {
     const study = await prolific.createStudy({

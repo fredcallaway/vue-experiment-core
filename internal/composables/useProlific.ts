@@ -82,7 +82,8 @@ export const useProlific = createGlobalState(() => {
 
     if (!response.ok) {
       throw new ProlificError(
-        `API Error: ${method} ${path}\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`
+        `API Error: ${method} ${path}\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`,
+        getProlificErrorMessage(response.status, data),
       )
     }
 
@@ -184,7 +185,7 @@ export const useProlific = createGlobalState(() => {
 
       if (!response.ok) {
         const msg = `API Error: ${queued.method} ${queued.path}\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`
-        throw new ProlificError(msg)
+        throw new ProlificError(msg, getProlificErrorMessage(response.status, data))
       }
 
       queued.resolve(data)
