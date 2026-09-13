@@ -648,6 +648,81 @@ const averageBonus = computed(() => {
 })
 
 const searchQuery = ref('')
+
+type SortColumn = 'sessionId' | 'participantId' | 'started' | 'status' | 'code' | 'data' | 'action' | 'time' | 'bonus'
+type SortDirection = 'ascending' | 'descending'
+type SortValue = string | number | null
+
+const tableColumns: Array<{ key: SortColumn, label: string }> = [
+  { key: 'sessionId', label: 'Session ID' },
+  { key: 'participantId', label: 'Participant ID' },
+  { key: 'started', label: 'Started' },
+  { key: 'status', label: 'Status' },
+  { key: 'code', label: 'Code' },
+  { key: 'data', label: 'Data' },
+  { key: 'action', label: 'Action' },
+  { key: 'time', label: 'Time' },
+  { key: 'bonus', label: 'Bonus' },
+]
+
+const statusPriority: SubmissionStatus[] = [
+  'AWAITING REVIEW',
+  'ACTIVE',
+  'PARTIALLY APPROVED',
+  'UNKNOWN',
+  'REJECTED',
+  'RETURNED',
+  'TIMED-OUT',
+  'SCREENED OUT',
+  'APPROVED',
+]
+const codePriority = ['NOCODE', 'ERROR', 'DISCONNECTED', 'TIMEOUT', 'ABORTED', 'MANUAL', 'COMPLETED']
+const dataPriority = ['missing', 'minimal', 'partial', 'full']
+const actionPriority: SubmissionAction[] = [null, 'reject', 'return', 'approve', 'none']
+
+const sortColumn = ref<SortColumn>('action')
+const sortDirection = ref<SortDirection>('ascending')
+
+const getPriority = <T,>(priority: T[], value: T) => {
+  const index = priority.indexOf(value)
+  return index === -1 ? priority.length : index
+}
+
+const getSortValue = (sub: Submission, column: SortColumn): SortValue => {
+  switch (column) {
+    case 'sessionId': return sub.id.toLowerCase()
+    case 'participantId': return sub.participant_id.toLowerCase()
+    case 'started': return sub.started_at ? Date.parse(sub.started_at) : null
+    case 'status': return getPriority(statusPriority, sub.status)
+    case 'code': return getPriority(codePriority, getCodeType(sub.study_code))
+    case 'data': return getPriority(dataPriority, getDataStatus(sub).text)
+    case 'action': return getPriority(actionPriority, selectedActions.value[sub.id] ?? null)
+    case 'time': return sub.time_taken ?? null
+    case 'bonus': return getBonusValue(sub.participant_id)
+  }
+}
+
+const compareSortValues = (a: string | number, b: string | number) => {
+  if (typeof a === 'number' && typeof b === 'number') return a - b
+  return String(a).localeCompare(String(b), undefined, { numeric: true })
+}
+
+const setSortColumn = (column: SortColumn) => {
+  if (sortColumn.value === column) {
+    sortDirection.value = sortDirection.value === 'ascending' ? 'descending' : 'ascending'
+    return
+  }
+  sortColumn.value = column
+  sortDirection.value = 'ascending'
+}
+
+const getSortIconClass = (column: SortColumn) => {
+  if (sortColumn.value !== column) return 'i-mdi-unfold-more-vertical text-gray-400'
+  return sortDirection.value === 'ascending' ? 'i-mdi-chevron-up' : 'i-mdi-chevron-down'
+}
+
+const getAriaSort = (column: SortColumn) => sortColumn.value === column ? sortDirection.value : 'none'
+
 const filteredSubmissions = computed(() => {
   if (submissions.value.length === 0) return []
   
@@ -677,10 +752,15 @@ const filteredSubmissions = computed(() => {
       return filter(searchText)
     })
   }
-  return R.sortBy(result, 
-  (sub) => Number(getDefaultAction(sub) !== null),
-  (sub) => sub.id,
-  )
+  const direction = sortDirection.value === 'ascending' ? 1 : -1
+  return [...result].sort((a, b) => {
+    const aValue = getSortValue(a, sortColumn.value)
+    const bValue = getSortValue(b, sortColumn.value)
+    if (aValue === null) return bValue === null ? a.id.localeCompare(b.id) : 1
+    if (bValue === null) return -1
+    const comparison = compareSortValues(aValue, bValue)
+    return direction * comparison || a.id.localeCompare(b.id)
+  })
 })
 
 const versions = computed(() => {
@@ -894,18 +974,23 @@ const versions = computed(() => {
           <table class="w-full text-sm">
             <thead>
               <tr class="bg-gray-200">
-                <th class="px-2 py-2 text-left whitespace-nowrap">Session ID</th>
-                <th class="px-2 py-2 text-left whitespace-nowrap">Participant ID</th>
-                <th class="px-2 py-2 text-left whitespace-nowrap">Started</th>
-                <th class="px-2 py-2 text-left whitespace-nowrap">Status</th>
-                <th class="px-2 py-2 text-left whitespace-nowrap">Code</th>
-                <th class="px-2 py-2 text-left whitespace-nowrap">Data</th>
-                <th class="px-2 py-2 text-left whitespace-nowrap">Action</th>
-                <th class="px-2 py-2 text-left whitespace-nowrap">Time (total/active)</th>
-                <th class="px-2 py-2 text-left whitespace-nowrap">
+                <th
+                  v-for="column in tableColumns"
+                  :key="column.key"
+                  class="px-2 py-2 text-left whitespace-nowrap"
+                  :aria-sort="getAriaSort(column.key)"
+                >
                   <div class="flex items-center gap-2">
-                    <span>Bonus</span>
-                    <button @click="showImportModal = true" class="font-400 btn-xs" :disabled="loading">
+                    <button class="flex items-center gap-1 font-bold cursor-pointer" @click="setSortColumn(column.key)">
+                      <span>{{ column.label }}</span>
+                      <span class="w-4 h-4" :class="getSortIconClass(column.key)" />
+                    </button>
+                    <button
+                      v-if="column.key === 'bonus'"
+                      @click="showImportModal = true"
+                      class="font-400 btn-xs"
+                      :disabled="loading"
+                    >
                       import
                     </button>
                   </div>
