@@ -2,21 +2,42 @@ export type ProlificReviewAction = 'approve' | 'return' | 'reject' | 'none'
 
 export const getProlificReviewDraftPath = (studyId: string) => `studies/${studyId}/reviewDraft`
 
-export const useProlificReviewDraft = (studyId: string) => {
+const useProlificReviewDraftStore = createGlobalState(() => {
   const database = useDatabase()
+  const states = new Map<string, {
+    actionOverrides: Ref<Record<string, ProlificReviewAction>>
+    bonusOverrides: Ref<Record<string, number>>
+    isLoading: Ref<boolean>
+  }>()
+
+  const getState = (studyId: string) => {
+    const existing = states.get(studyId)
+    if (existing) return existing
+
+    const state = {
+      actionOverrides: ref<Record<string, ProlificReviewAction>>({}),
+      bonusOverrides: ref<Record<string, number>>({}),
+      isLoading: ref(true),
+    }
+    states.set(studyId, state)
+
+    database.onValue(getProlificReviewDraftPath(studyId), (snapshot) => {
+      const draft = snapshot.val() ?? {}
+      state.actionOverrides.value = draft.actionOverrides ?? {}
+      state.bonusOverrides.value = draft.bonusOverrides ?? {}
+      state.isLoading.value = false
+    })
+
+    return state
+  }
+
+  return { database, getState }
+})
+
+export const useProlificReviewDraft = (studyId: string) => {
+  const { database, getState } = useProlificReviewDraftStore()
+  const { actionOverrides, bonusOverrides, isLoading } = getState(studyId)
   const path = getProlificReviewDraftPath(studyId)
-  const actionOverrides = ref<Record<string, ProlificReviewAction>>({})
-  const bonusOverrides = ref<Record<string, number>>({})
-  const isLoading = ref(true)
-
-  const unsubscribe = database.onValue(path, (snapshot) => {
-    const draft = snapshot.val() ?? {}
-    actionOverrides.value = draft.actionOverrides ?? {}
-    bonusOverrides.value = draft.bonusOverrides ?? {}
-    isLoading.value = false
-  })
-
-  tryOnUnmounted(unsubscribe)
 
   const setActionOverride = (submissionId: string, action: ProlificReviewAction | null) => {
     return database.update(path, { [`actionOverrides/${submissionId}`]: action })

@@ -57,8 +57,14 @@ const messageModalCorrespondence = computed(() => {
 })
 
 // Reactive cache
-const studyCache = prolific.getStudyCache(studyId)
+const studyCache = prolific.getStudyCache(studyId, { autoRefresh: false })
 const { fullItem: study, error: studyError } = studyCache
+
+onMounted(() => {
+  studyCache.refresh().catch(error => {
+    console.error(`Could not refresh study ${studyId}`, error)
+  })
+})
 
 // ===== auto-refresh study cache =============================================
 

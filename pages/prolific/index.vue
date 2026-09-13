@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { PROLIFIC_FEE, type StudyFull, type StudyShort, type Submission } from '#imports'
-import { getOutstandingBonusCents } from '~/core/operations/review'
+import { getCompletionCodeType, getOutstandingBonusCents } from '~/core/operations/review'
 
 // import { useProlific } from '~/local/useProlific'
 // import { createTextFilter } from '~/utils/textFilter'
@@ -36,18 +36,18 @@ const allData = useAllData('live')
 type StudySummary = { averageBonus: number | null, totalCost: number, outstandingBonus: number }
 
 const cachedStudySummaries = useLocalStorage<Partial<Record<string, StudySummary>>>('prolificStudySummaries:v2', {})
-const bonusOverridesByStudy = new Map<string, Ref<Record<string, number | undefined>>>()
+const reviewDraftsByStudy = new Map<string, ReturnType<typeof useProlificReviewDraft>>()
 const studyDetailsById = new Map<string, ReturnType<typeof prolific.getStudyCache>>()
 const loadedStudyIds = new Set<string>()
 let preloadingStudyDetails = false
 
-const getBonusOverrides = (studyId: string) => {
-  let overrides = bonusOverridesByStudy.get(studyId)
-  if (!overrides) {
-    overrides = useLocalStorage<Record<string, number | undefined>>(`bonusOverrides.${studyId}`, {})
-    bonusOverridesByStudy.set(studyId, overrides)
+const getReviewDraft = (studyId: string) => {
+  let draft = reviewDraftsByStudy.get(studyId)
+  if (!draft) {
+    draft = useProlificReviewDraft(studyId)
+    reviewDraftsByStudy.set(studyId, draft)
   }
-  return overrides.value
+  return draft
 }
 
 const getStudyDetails = (studyId: string) => {
@@ -60,9 +60,7 @@ const getStudyDetails = (studyId: string) => {
 }
 
 const getCodeType = (study: StudyFull, submission: Submission) => {
-  if (!submission.study_code) return 'NOCODE'
-  if (submission.study_code === 'Manual Completion') return 'MANUAL'
-  return study.completion_codes.find(code => code.code === submission.study_code)?.code_type ?? submission.study_code
+  return getCompletionCodeType(submission.study_code, study.completion_codes)
 }
 
 const derivedStudySummaries = computed(() => {
@@ -74,6 +72,8 @@ const derivedStudySummaries = computed(() => {
   for (const study of studies.value) {
     const fullStudy = getStudyDetails(study.id).fullItem.value
     if (!fullStudy) continue
+    const reviewDraft = getReviewDraft(study.id)
+    if (reviewDraft.isLoading.value) continue
 
     const studySessions = sessions.filter(session => session.studyId === study.id)
     const sessionsBySubmissionId = R.pullObject(
@@ -89,7 +89,7 @@ const derivedStudySummaries = computed(() => {
       }
       databaseBonuses[session.participantId] = round(session.bonus * 100)
     }
-    const overrides = getBonusOverrides(study.id)
+    const overrides = reviewDraft.bonusOverrides.value
     const isComplete = (submission: Submission) => {
       const session = sessionsBySubmissionId[submission.id]
       return !!session?.completionTime && getCodeType(fullStudy, submission) === 'COMPLETED'
@@ -148,7 +148,7 @@ const getAverageBonusText = (study: StudyShort) => {
 }
 
 const getTotalCostText = (study: StudyShort) => {
-  if (study.status !== 'COMPLETED') return '???'
+  if (getStudyStatus(study) !== 'COMPLETED') return '???'
   const summary = studySummaries.value[study.id]
   return summary ? formatCents(summary.totalCost) : '…'
 }
@@ -183,7 +183,7 @@ const preloadStudyDetails = async () => {
       loadedStudyIds.add(study.id)
       try {
         const details = getStudyDetails(study.id)
-        if (study.status !== 'COMPLETED' || !cachedStudySummaries.value[study.id]) {
+        if (getStudyStatus(study) !== 'COMPLETED' || !cachedStudySummaries.value[study.id]) {
           await details.refresh()
         }
       } catch (error) {
@@ -197,7 +197,7 @@ const preloadStudyDetails = async () => {
 }
 
 watch(studies, () => {
-  for (const study of studies.value) getBonusOverrides(study.id)
+  for (const study of studies.value) getReviewDraft(study.id)
   void preloadStudyDetails()
 }, { immediate: true })
 
