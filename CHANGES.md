@@ -4,6 +4,7 @@ This branch simplifies the template by removing playback-specific infrastructure
 
 ## Summary
 
+- The agent CLI now supports `deploy inspect|run|reconcile` for tracked static Firebase Hosting deployments. It verifies a hosted build marker, preserves the existing `deployStatus`/`deploys` SHA and version fields, and supports retrying tracking after a successful upload. No experiment/client code or configuration migration is required for existing single-site static Hosting projects. Invoke `bun core/operations/cli.ts deploy run` directly, or use the existing `bun run ops -- deploy run` shortcut. See `operations/README.md`.
 - Prolific study actions and creation now show structured HTTP 400 errors marked `interactive: true` as toasts using Prolific's detail message, including insufficient account funds. Full errors and stack traces remain in the console; unexpected errors retain the on-page error display.
 - Actions wrapped with `useAsyncRunner().wrap()` now reject on failure so `ActionButton` displays failure instead of success. Direct `run()` calls still return `null` on failure. `ActionButton` also handles rejection before resetting its loading state, avoiding an unhandled promise rejection during cleanup.
 - Bumped `@posthog/nuxt` to `^1.7.79`. Earlier releases tried to process `.output/server` after a successful static SPA generation even though that directory does not exist, producing a false server-sourcemap error. Refresh the project lockfile after updating core.
