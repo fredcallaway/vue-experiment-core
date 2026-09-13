@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { DeploymentOperations } from './deployment'
-import { command, readJson, writeJson, withOperationLock } from './project'
+import { command, gitSnapshot, readJson, writeJson, withOperationLock } from './project'
 
 const roots = []
 afterEach(async () => {
@@ -71,6 +71,23 @@ async function deploymentFixture(options = {}) {
 }
 
 describe('tracked static Hosting deployment', () => {
+  test('accepts initialized submodules whose SHA starts with a digit and rejects uninitialized submodules', async () => {
+    const source = await project()
+    let sha = await command(source, 'git', ['rev-parse', 'HEAD'])
+    // Exercise a numeric hash prefix, which must not be mistaken for a Git status character.
+    for (let i = 0; !/^\d/.test(sha) && i < 100; i++) {
+      await command(source, 'git', ['commit', '--allow-empty', '-qm', `fixture ${i}`])
+      sha = await command(source, 'git', ['rev-parse', 'HEAD'])
+    }
+    expect(sha).toMatch(/^\d/)
+    const root = await project()
+    await command(root, 'git', ['-c', 'protocol.file.allow=always', 'submodule', 'add', '-q', source, 'core'])
+    await command(root, 'git', ['commit', '-qm', 'add submodule'])
+    expect((await gitSnapshot(root)).submodules).toContain(sha)
+    await command(root, 'git', ['submodule', 'deinit', '--force', '--all'])
+    await expect(gitSnapshot(root)).rejects.toThrow('initialized matching submodules')
+  })
+
   test('verifies the deployed marker and writes UI status and history atomically', async () => {
     const fixture = await deploymentFixture()
     const result = await fixture.operations.deploy()

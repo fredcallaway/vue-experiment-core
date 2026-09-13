@@ -31,7 +31,7 @@ export async function gitSnapshot(root: string) {
   const sha = await command(root, 'git', ['rev-parse', 'HEAD'])
   const status = await command(root, 'git', ['status', '--porcelain', '--untracked-files=all', '--ignore-submodules=none'])
   const submodules = await command(root, 'git', ['submodule', 'status', '--recursive'])
-  if (status || submodules.split('\n').some(line => /^[+-U]/.test(line))) {
+  if (status || submodules.split('\n').some(line => /^[-+U]/.test(line))) {
     throw new Error(`A clean, committed checkout and initialized matching submodules are required.\n${status}\n${submodules}`)
   }
   return { sha, submodules }
