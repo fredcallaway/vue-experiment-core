@@ -78,15 +78,16 @@ The Data panel beside it renders declared data views against the running session
 | --- | --- |
 | `jump=<epochId>` | Run to that epoch on load. |
 | `noDev=1` | Hide the dev chrome and render the bare participant view. Jumping still works. |
-| `fast=1` | Fast mode: collapse delays so long trials do not cost real time. Persists in `sessionStorage`, so it stays on for the rest of the tab once set. |
 | `condition.<key>=<value>` | Pin a condition instead of taking the next cyclic assignment. |
 
-Flags follow the usual query-string convention: **presence means true**. `?noDev`, `?noDev=`, and `?noDev=1` are all on. Turn one off by omitting it or negating it explicitly with `=0`, `=false`, or `=no` — useful when a flag persists, as `fast` does.
+Boolean flags follow the usual query-string convention: **presence means true**. `?noDev`, `?noDev=`, and `?noDev=1` are all on. Turn one off by omitting it or negating it explicitly with `=0`, `=false`, or `=no`.
+
+Enable fast mode with the developer toolbar toggle. It persists in session storage for the tab. Delays and newly created or reset countdown timers use fast-mode scaling; an active countdown keeps its current duration.
 
 Combine them to test the real participant experience at an arbitrary point:
 
 ```
-http://localhost:<port>/dev?jump=experiment[5]-clicktest[play]-play&noDev=1&fast=1
+http://localhost:<port>/dev?jump=experiment[5]-clicktest[play]-play&noDev=1
 ```
 
 ## Notes and gotchas

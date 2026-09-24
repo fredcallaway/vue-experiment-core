@@ -1,9 +1,5 @@
 export const useFastMode = () => {
-  const fast = useSessionStorage('fast', false)
-  if (getUrlFlag('fast')) {
-    fast.value = true
-  }
-  return fast
+  return useSessionStorage('fast', false)
 }
 
 

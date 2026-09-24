@@ -43,9 +43,10 @@ export const useTimer = (timeMs: number, { immediate = true }: TimerOptions = {}
   }
 
   const reset = () => {
+    const duration = replaceFast(timeMs, Math.max(200, timeMs / 5))
     status.value = 'paused'
-    secondsLeft.value = Math.ceil(timeMs / 1000)
-    lastPauseTimeLeft = timeMs
+    secondsLeft.value = Math.ceil(duration / 1000)
+    lastPauseTimeLeft = duration
     lastResumeTime = null
     if (timeoutId) {
       clearTimeout(timeoutId)

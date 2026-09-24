@@ -52,7 +52,8 @@ export const useLocalAsync = () => {
     return promise
   }
 
-  // accepts an async function or a promise
+  // Rejects the returned promise on unmount; the underlying operation keeps running.
+  // Await tracked operations inside an async function to stop its continuation on unmount.
   function registerAsync<A extends any[], T>(fn: (...args: A) => Promise<T>): (...args: A) => Promise<T>
   function registerAsync<T>(promise: Promise<T>): Promise<T>
   function registerAsync(arg: any): any {

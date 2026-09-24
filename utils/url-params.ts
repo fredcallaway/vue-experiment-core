@@ -9,7 +9,7 @@ export function getUrlParam<T = string>(key: string, converter?: (value: string)
 }
 
 // Presence means true, per the usual query-string convention: `?noDev`, `?noDev=`, and `?noDev=1`
-// are all on. Only an explicit negation turns it off, so `?fast=0` still disables fast mode.
+// are all on. Only an explicit negation, such as `?noDev=0`, turns the flag off.
 export function getUrlFlag(key: string): boolean {
   return getUrlParam(key, (v) => !['0', 'false', 'no'].includes(v.toLowerCase())) ?? false
 }
