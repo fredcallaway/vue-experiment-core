@@ -1,6 +1,6 @@
 # Utility ownership and startup
 
-- Import Remeda directly with `import * as R from 'remeda'`; the `R` re-export is removed. Keep importing `chunkBy` from `core/utils/remeda-extensions`.
+- Import Remeda directly with `import * as R from 'remeda'`; the `R` re-export is removed. Import `chunkBy` from `core/utils/dataProcessing`.
 - Core client plugins now install the global random override and compatibility polyfills. Keep project configuration initialization in `plugins/00.config.ts`; remove old app-side polyfill imports if overriding the app. The public random API and session seed remain unchanged.
 
 # Prolific message refresh

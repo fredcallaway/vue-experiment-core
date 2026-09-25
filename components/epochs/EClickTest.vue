@@ -10,7 +10,7 @@ import { usePButton } from '../../composables/usePButton'
 import { useTimer } from '../../composables/useTimer'
 import { type SessionData } from '../../internal/data'
 import { random } from '../../utils/random'
-import { chunkBy } from '../../utils/remeda-extensions'
+import { chunkBy } from '../../utils/dataProcessing'
 import { watchImmediate } from '@vueuse/core'
 
 
