@@ -25,6 +25,8 @@ This branch simplifies the template by removing playback-specific infrastructure
 
 ## Summary
 
+- Prolific submission bonus fields now keep enough width for three-digit cent amounts, including on small laptop screens.
+
 - `useTimer(ms)` now applies the same fast-mode duration scaling as `useLocalAsync().sleep(ms)` when created or reset. Toggling fast mode does not rescale an active or paused countdown until reset. Fast mode is controlled by the developer toggle and session storage; the `fast` URL parameter is no longer read. Remove it from development links and use the toggle instead.
 - The Prolific study list and detail page now share RTDB-backed review-draft state and cached full-study data. Opening a study always refreshes its Prolific data, and returning to the list reuses that refresh. The list also refreshes studies whose displayed status is not `COMPLETED` and uses displayed status consistently for cost visibility, preventing stale unpaid-bonus summaries from leaving a paid study marked `AWAITING REVIEW`.
 - The agent CLI now supports `deploy inspect|run|reconcile` for tracked static Firebase Hosting deployments. It verifies a hosted build marker, preserves the existing `deployStatus`/`deploys` SHA and version fields, and supports retrying tracking after a successful upload. No experiment/client code or configuration migration is required for existing single-site static Hosting projects. Invoke `bun core/operations/cli.ts deploy run` directly, or use the existing `bun run ops -- deploy run` shortcut. See `operations/README.md`.

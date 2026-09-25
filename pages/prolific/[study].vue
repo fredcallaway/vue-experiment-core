@@ -1105,7 +1105,7 @@ const versions = computed(() => {
                 <!-- Bonus -->
                 <td class="px-2 py-2 whitespace-nowrap font-mono text-sm flex items-center">
                   <NumberInput
-                    class="border border-2 px-3 py-1 box-border bg-white font-mono w-10 px-1"
+                    class="border-2 px-1 py-1 box-border bg-white font-mono w-14 shrink-0"
                     :modelValue="getBonusValue(sub.participant_id)"
                     :default="defaultBonuses[sub.participant_id]"
                     @update:modelValue="(val) => setBonusValue(sub.participant_id, val)"
