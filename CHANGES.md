@@ -1,3 +1,8 @@
+# Prolific message refresh
+
+- Message refresh now limits stale or missing cursors to a 29-day lookback within Prolific's 30-day API limit. Recent valid cursors remain incremental. Cached conversation history is merged rather than replaced, and the UI explains that older uncached conversations may be missing.
+- The refresh timestamp advances to the request start only after all message reads and cache writes succeed, so failures retain the prior cursor and in-flight arrivals remain eligible for the next refresh. No consumer migration is required.
+
 # Explicit helper imports
 
 - Keep Vue/Nuxt framework API autoimports, compiler macros, and file-based component autoimports. Import all other functions and types explicitly from their owning modules, including VueUse and named exports from SFCs.

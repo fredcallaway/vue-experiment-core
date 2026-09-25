@@ -3,6 +3,7 @@ import { R } from '../../utils/remeda-extensions'
 import { isProlificIdentifier } from '../prolific'
 import { useProlific } from './useProlific'
 import { createGlobalState } from '@vueuse/core'
+import { ref, readonly } from 'vue'
 
 interface Message {
   body: string
@@ -31,6 +32,8 @@ interface ProlificMessage {
 const RESEARCHER_ID_KEY = 'prolific_researcher_id'
 const REFRESH_TIME_PATH = '/messagesRefreshTime'
 const MESSAGES_PATH = '/messages'
+// Stay inside Prolific's 30-day limit, allowing for clock skew and request delays.
+const MESSAGE_LOOKBACK_MS = 29 * 24 * 60 * 60 * 1000
 
 export const useProlificMessages = createGlobalState(() => {
   const prolific = useProlific()
@@ -82,30 +85,47 @@ export const useProlificMessages = createGlobalState(() => {
     return response.results
   }
 
-  const buildCorrespondence = (
+  const buildCorrespondence = async (
     studyId: string,
     participantId: string,
     messages: ProlificMessage[],
     researcherId: string,
     existingResolved?: boolean
-  ): Correspondence => {
-    const sortedMessages = R.sortBy(messages, m => new Date(m.datetime_created).getTime())
+  ): Promise<Correspondence> => {
+    const snap = await db.get(`${MESSAGES_PATH}/${studyId}-${participantId}`)
+    const existing: Correspondence | null = snap.val()
+    const merged = [...(existing?.messages ?? [])]
+    // Cached messages do not store API IDs. Match occurrences by their stored fields
+    // so overlapping refreshes neither duplicate history nor erase identical messages.
+    const remaining = new Map<string, number>()
+    const messageKey = (m: Message) => JSON.stringify([m.timestamp, m.isResearcher, m.body])
+    for (const message of merged) {
+      const key = messageKey(message)
+      remaining.set(key, (remaining.get(key) ?? 0) + 1)
+    }
+    for (const message of messages) {
+      const cached: Message = {
+        body: message.body,
+        timestamp: new Date(message.datetime_created).getTime(),
+        isResearcher: message.sender_id === researcherId,
+      }
+      const key = messageKey(cached)
+      const count = remaining.get(key) ?? 0
+      if (count > 0) remaining.set(key, count - 1)
+      else merged.push(cached)
+    }
+    const sortedMessages = R.sortBy(merged, m => m.timestamp)
     return {
       studyId,
       participantId,
       resolved: existingResolved ?? false,
-      timestamp: sortedMessages.length > 0 
-        ? new Date(sortedMessages[sortedMessages.length - 1].datetime_created).getTime()
-        : Date.now(),
-      messages: sortedMessages.map(m => ({
-        body: m.body,
-        timestamp: new Date(m.datetime_created).getTime(),
-        isResearcher: m.sender_id === researcherId
-      }))
+      timestamp: sortedMessages.at(-1)?.timestamp ?? existing?.timestamp ?? 0,
+      messages: sortedMessages,
     }
   }
 
   const refresh = async () => {
+    if (isLoading.value) return
     isLoading.value = true
     try {
       const [researcherId, lastRefresh] = await Promise.all([
@@ -114,7 +134,11 @@ export const useProlificMessages = createGlobalState(() => {
       ])
 
       const studyIds = getStudyIds()
-      const createdAfter = lastRefresh ?? new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString()
+      const refreshStartedAt = Date.now()
+      const earliest = refreshStartedAt - MESSAGE_LOOKBACK_MS
+      const previous = lastRefresh ? Date.parse(lastRefresh) : NaN
+      const cursor = Number.isFinite(previous) && previous <= refreshStartedAt ? Math.max(previous, earliest) : earliest
+      const createdAfter = new Date(cursor).toISOString()
       const response = await prolific.request<{ results: ProlificMessage[] }>(
         'GET',
         `/messages?created_after=${createdAfter}`
@@ -146,12 +170,12 @@ export const useProlificMessages = createGlobalState(() => {
           continue
         }
         
-        // Fetch complete message history for this user
+        // Merge available history for this user with messages already cached.
         const allUserMessages = await fetchUserMessages(participantId)
         const studyMessages = allUserMessages.filter(m => m.data.study_id === studyId)
         
         const hasParticipantMessages = studyMessages.some(m => m.sender_id === participantId)
-        const correspondence = buildCorrespondence(
+        const correspondence = await buildCorrespondence(
           studyId,
           participantId,
           studyMessages,
@@ -162,8 +186,9 @@ export const useProlificMessages = createGlobalState(() => {
         await db.set(`${MESSAGES_PATH}/${key}`, correspondence)
       }
 
-      // Update refresh time
-      await setLastRefreshTime(new Date().toISOString())
+      // Advance only after all reads and writes succeed. Using the request start
+      // avoids skipping messages that arrived while the refresh was in flight.
+      await setLastRefreshTime(new Date(refreshStartedAt).toISOString())
     } finally {
       isLoading.value = false
     }
@@ -179,7 +204,7 @@ export const useProlificMessages = createGlobalState(() => {
     const key = `${studyId}-${participantId}`
     const existing = correspondences.value[key]
     const hasParticipantMessages = studyMessages.some(m => m.sender_id === participantId)
-    const correspondence = buildCorrespondence(
+    const correspondence = await buildCorrespondence(
       studyId,
       participantId,
       studyMessages,
@@ -243,4 +268,3 @@ export const useProlificMessages = createGlobalState(() => {
     getOrCreateCorrespondence
   }
 })
-

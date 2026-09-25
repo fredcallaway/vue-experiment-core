@@ -30,6 +30,9 @@ onMounted(() => {
       :timestamp="messages.lastRefreshTimestamp.value"
       label="Last updated:"
     />
+    <p class="text-sm text-gray-600 mt-1">
+      Refresh checks up to the last 29 days. Cached history is kept; older uncached conversations may be missing.
+    </p>
 
     <div v-if="sortedCorrespondences.length === 0" class="text-gray-500">
     </div>
