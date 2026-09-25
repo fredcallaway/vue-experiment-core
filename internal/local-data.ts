@@ -1,6 +1,6 @@
 import { useDatabase } from '../composables/useDatabase'
 import { assertOneOf, assertString } from '../utils/asserts'
-import { R } from '../utils/remeda-extensions'
+import * as R from 'remeda'
 import {
   type DBSessionEvents,
   type DataMode,

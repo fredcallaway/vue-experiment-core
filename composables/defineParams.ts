@@ -1,5 +1,5 @@
 import { stripUndefined } from '../utils/misc'
-import { R } from '../utils/remeda-extensions'
+import * as R from 'remeda'
 import { injectLocal, provideLocal } from '@vueuse/core'
 
 type MaybeGetter<T> = T | (() => T)

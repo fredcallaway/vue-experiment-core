@@ -1,5 +1,5 @@
 import { trueRandom } from '../utils/trueRandom'
-import { R } from '../utils/remeda-extensions'
+import * as R from 'remeda'
 import { useCurrentSession } from './useCurrentSession'
 import { useLocalStorage, useMemoize } from '@vueuse/core'
 

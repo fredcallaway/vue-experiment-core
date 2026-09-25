@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useInspector } from '../../composables/useInspector'
-import { R } from '../../utils/remeda-extensions'
+import * as R from 'remeda'
 
 import stringify from "json-stringify-pretty-compact";
 

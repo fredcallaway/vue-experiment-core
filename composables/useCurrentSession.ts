@@ -1,6 +1,6 @@
 import { type DataMode, type SessionMeta } from '../internal/data'
 import { assertOneOf } from '../utils/asserts'
-import { START_TIME } from '../utils/globals'
+import { START_TIME } from '../internal/state'
 import { getUrlNumber } from '../utils/url-params'
 import { useConfig } from './useConfig'
 import { createGlobalState } from '@vueuse/core'

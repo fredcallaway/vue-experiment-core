@@ -1,4 +1,4 @@
-import { R } from './remeda-extensions'
+import * as R from 'remeda'
 
 
 function assertNumeric(x: unknown): asserts x is number {

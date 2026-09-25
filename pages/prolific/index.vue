@@ -6,7 +6,7 @@ import { createTextFilter } from '../../utils/createTextFilter'
 import { formatCents, formatDateTime } from '../../utils/formatting'
 import { round, sum } from '../../utils/math'
 import { timeoutPromise } from '../../utils/misc'
-import { R } from '../../utils/remeda-extensions'
+import * as R from 'remeda'
 import { onKeyStroke, useLocalStorage } from '@vueuse/core'
 
 import { PROLIFIC_FEE, type StudyFull, type StudyShort, type Submission } from '../../internal/prolific'

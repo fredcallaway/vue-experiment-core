@@ -1,4 +1,4 @@
-import { toast } from '../../utils/globals'
+import { toast } from 'vue-sonner'
 
 export const useAsyncRunner = (getErrorMessage?: (error: unknown) => string | null) => {
   const loading = ref(false)

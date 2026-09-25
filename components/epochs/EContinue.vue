@@ -4,7 +4,7 @@ import { replaceFast } from '../../composables/fastMode'
 import { type Epoch, useEpoch } from '../../composables/useEpoch'
 import { clamp } from '../../utils/math'
 import { type NumberLike, ensureNumber } from '../../utils/misc'
-import { R } from '../../utils/remeda-extensions'
+import * as R from 'remeda'
 import { useTimeout } from '@vueuse/core'
 
 // EContinue is the standard leaf epoch: it shows some content and advances when the

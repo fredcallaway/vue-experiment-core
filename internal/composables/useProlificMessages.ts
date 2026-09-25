@@ -1,5 +1,5 @@
 import { useDatabase } from '../../composables/useDatabase'
-import { R } from '../../utils/remeda-extensions'
+import * as R from 'remeda'
 import { isProlificIdentifier } from '../prolific'
 import { useProlific } from './useProlific'
 import { createGlobalState } from '@vueuse/core'

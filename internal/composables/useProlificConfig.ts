@@ -1,5 +1,5 @@
 import { useDatabase } from '../../composables/useDatabase'
-import { R } from '../../utils/remeda-extensions'
+import * as R from 'remeda'
 import { createGlobalState, useDebounceFn } from '@vueuse/core'
 
 import { DEFAULT_PROLIFIC_CONFIG } from '../prolific'

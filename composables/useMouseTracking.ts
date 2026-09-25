@@ -1,4 +1,4 @@
-import { mainContentRef } from '../utils/globals'
+import { mainContentRef } from '../internal/state'
 import { logEvent } from './logEvent'
 import { useDataWriter } from './useDataWriter'
 import { useCurrentEpoch } from './useEpoch'

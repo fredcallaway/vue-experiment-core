@@ -12,7 +12,7 @@ import {
 } from '../../../internal/local-data'
 import { assertDefined, assertNumber } from '../../../utils/asserts'
 import { formatDateTime, formatDollars, formatTime } from '../../../utils/formatting'
-import { R } from '../../../utils/remeda-extensions'
+import * as R from 'remeda'
 import { until, useAsyncState, useLocalStorage } from '@vueuse/core'
 
 import '~/preprocessing'

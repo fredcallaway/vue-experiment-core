@@ -3,9 +3,7 @@
 import { useConfig } from './composables/useConfig'
 import { jumpToEpoch } from './composables/useEpoch'
 import { useErrorHandler } from './composables/useErrorHandler'
-import './utils/random'
 import 'vue-sonner/style.css'
-import './utils/polyfills'
 import { Toaster } from 'vue-sonner'
 
 const config = useConfig()

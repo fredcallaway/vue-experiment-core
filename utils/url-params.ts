@@ -1,5 +1,5 @@
 import { assertString } from './asserts'
-import { R } from './remeda-extensions'
+import * as R from 'remeda'
 import { useUrlSearchParams } from '@vueuse/core'
 
 

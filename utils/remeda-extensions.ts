@@ -1,5 +1,4 @@
 import * as R from 'remeda'
-export { R }
 
 // chunks the list into sublists, breaking whenever predicate is true
 function _chunkBy<T>(list: T[], predicate: (x: T) => boolean): T[][] {

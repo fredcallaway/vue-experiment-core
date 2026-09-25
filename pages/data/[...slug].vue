@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { makeSessionList, makeVersionInfo, useAllData } from '../../internal/local-data'
-import { R } from '../../utils/remeda-extensions'
+import * as R from 'remeda'
 import { useTimeout } from '@vueuse/core'
 
 import firebaseConfig from '~/firebase.config.json'

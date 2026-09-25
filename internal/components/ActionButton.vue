@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { logDebug } from '../../composables/logEvent'
-import { toast } from '../../utils/globals'
+import { toast } from 'vue-sonner'
 
 type Handler = string | ((data: any) => string) | ((data: any) => {message: string, description: string}) | boolean
 

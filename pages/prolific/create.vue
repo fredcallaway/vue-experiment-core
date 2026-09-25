@@ -6,7 +6,7 @@ import { useProlific } from '../../internal/composables/useProlific'
 import { useProlificConfig } from '../../internal/composables/useProlificConfig'
 import { useStudies } from '../../internal/composables/useStudies'
 import { ProlificError, getProlificBaseUrl } from '../../internal/prolific'
-import { R } from '../../utils/remeda-extensions'
+import * as R from 'remeda'
 import { useLocalStorage } from '@vueuse/core'
 
 import { PROLIFIC_FEE } from '../../internal/prolific'

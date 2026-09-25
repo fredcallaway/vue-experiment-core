@@ -1,3 +1,8 @@
+# Utility ownership and startup
+
+- Import Remeda directly with `import * as R from 'remeda'`; the `R` re-export is removed. Keep importing `chunkBy` from `core/utils/remeda-extensions`.
+- Core client plugins now install the global random override and compatibility polyfills. Keep project configuration initialization in `plugins/00.config.ts`; remove old app-side polyfill imports if overriding the app. The public random API and session seed remain unchanged.
+
 # Prolific message refresh
 
 - Message refresh now limits stale or missing cursors to a 29-day lookback within Prolific's 30-day API limit. Recent valid cursors remain incremental. Cached conversation history is merged rather than replaced, and the UI explains that older uncached conversations may be missing.
@@ -8,7 +13,7 @@
 - Keep Vue/Nuxt framework API autoimports, compiler macros, and file-based component autoimports. Import all other functions and types explicitly from their owning modules, including VueUse and named exports from SFCs.
 - Core now sets `imports.scan: false` and no longer enables `@vueuse/nuxt`. Remove project-level helper autoimport configuration and import VueUse APIs from `@vueuse/core`. Refresh dependencies with `bun install`.
 - Replace helper imports from `#imports` with their source paths, for example `import { useEpoch } from '~/core/composables/useEpoch'`. Use `import type` for types. Component autoimports and component overrides continue to work; helper selection is now explicit at each import rather than determined by Nuxt layer scanning.
-- Keep `plugins/00.config.ts` importing `epoch.config.ts` before the app loads. The app explicitly loads the global seeded RNG; preserve that side-effect import if overriding `core/app.vue`.
+- Keep `plugins/00.config.ts` importing `epoch.config.ts` before the app loads. Core client plugins install the global seeded RNG and compatibility polyfills before experiment setup, including for custom app shells.
 - See [the import guide](docs/guide/imports.md) for authoring examples and migration checks.
 
 # Simplified Template Migration Notes

@@ -1,7 +1,7 @@
 import { useDataWriter } from '../../composables/useDataWriter'
 import { TOP_EPOCH, isMultistepEpoch, jumpToEpoch, setCurrentEpoch, useCurrentEpoch } from '../../composables/useEpoch'
 import { useErrorHandler } from '../../composables/useErrorHandler'
-import { isJumping } from '../../utils/globals'
+import { isJumping } from '../state'
 import { getUrlFlag } from '../../utils/url-params'
 import {
   createGlobalState,

@@ -1,4 +1,4 @@
-import { R } from '../utils/remeda-extensions'
+import * as R from 'remeda'
 import { replaceFast } from './fastMode'
 import { useErrorHandler } from './useErrorHandler'
 

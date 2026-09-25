@@ -16,7 +16,7 @@ import { assert } from '../../utils/asserts'
 import { createTextFilter } from '../../utils/createTextFilter'
 import { formatCents, formatDateTime, formatTime } from '../../utils/formatting'
 import { abs, round, sum } from '../../utils/math'
-import { R } from '../../utils/remeda-extensions'
+import * as R from 'remeda'
 import { useClipboard, useIdle, useIntervalFn, useWindowFocus, watchOnce } from '@vueuse/core'
 
 import {

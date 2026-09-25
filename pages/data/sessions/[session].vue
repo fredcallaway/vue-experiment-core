@@ -4,7 +4,7 @@ import { useProlificMessages } from '../../../internal/composables/useProlificMe
 import { getSessionTimeInfo, makeEventList, useSessionData } from '../../../internal/local-data'
 import { assertDefined } from '../../../utils/asserts'
 import { formatDateTime, formatTime } from '../../../utils/formatting'
-import { R } from '../../../utils/remeda-extensions'
+import * as R from 'remeda'
 
 import '~/preprocessing'
 import stringify from "json-stringify-pretty-compact";

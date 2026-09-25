@@ -1,5 +1,5 @@
 import { assert, assertOneOf } from '../utils/asserts'
-import { isJumping } from '../utils/globals'
+import { isJumping } from '../internal/state'
 import { useLocalAsync } from './useLocalAsync'
 
 import { defineComponent, h, type SetupContext, type SlotsType } from 'vue'

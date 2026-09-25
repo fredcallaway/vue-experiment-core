@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import { useDebugBus, useLogEventBus } from '../../composables/logEvent'
 import { createTextFilter } from '../../utils/createTextFilter'
-import { START_TIME, mainContentRef } from '../../utils/globals'
-import { R } from '../../utils/remeda-extensions'
+import { START_TIME, mainContentRef } from '../state'
+import * as R from 'remeda'
 import { useSizeScale } from '../composables/useSizeScale'
 import { isEpochEvent, isErrorEvent, isParticipantEvent } from '../data'
 import { useElementBounding, useElementSize, useLocalStorage, useWindowSize } from '@vueuse/core'

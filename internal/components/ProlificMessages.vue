@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { R } from '../../utils/remeda-extensions'
+import * as R from 'remeda'
 import { useProlificMessages } from '../composables/useProlificMessages'
 
 const messages = useProlificMessages()

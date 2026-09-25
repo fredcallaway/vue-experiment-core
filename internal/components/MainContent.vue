@@ -4,7 +4,7 @@ import { useCurrentSession } from '../../composables/useCurrentSession'
 import { useCurrentEpoch } from '../../composables/useEpoch'
 import { useErrorHandler } from '../../composables/useErrorHandler'
 import { useWindowEnforcer } from '../../composables/windowEnforcer'
-import { isJumping, mainContentRef } from '../../utils/globals'
+import { isJumping, mainContentRef } from '../state'
 import { useResizeObserver, whenever } from '@vueuse/core'
 
 

@@ -3,7 +3,7 @@ import { type ParseError } from '../../composables/dataViews'
 import { assertDefined } from '../../utils/asserts'
 import { createTextFilter } from '../../utils/createTextFilter'
 import { formatDateTime } from '../../utils/formatting'
-import { R } from '../../utils/remeda-extensions'
+import * as R from 'remeda'
 import { tryOnScopeDispose, useElementVisibility, useVirtualList } from '@vueuse/core'
 
 

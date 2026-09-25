@@ -10,7 +10,7 @@ import {
 } from '../internal/data'
 import { assert } from '../utils/asserts'
 import { trueRandom } from '../utils/trueRandom'
-import { R } from '../utils/remeda-extensions'
+import * as R from 'remeda'
 import { useDatabase } from './useDatabase'
 import { useDebounceFn, useOnline, watchDeep, whenever } from '@vueuse/core'
 

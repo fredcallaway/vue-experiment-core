@@ -3,7 +3,7 @@ import { range } from '../../utils/array'
 import { assert, assertDefined } from '../../utils/asserts'
 import { round, round2, sum } from '../../utils/math'
 import { timeoutPromise } from '../../utils/misc'
-import { R } from '../../utils/remeda-extensions'
+import * as R from 'remeda'
 import { type SessionMeta } from '../data'
 import {
   type Filter,
