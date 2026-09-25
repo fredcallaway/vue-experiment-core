@@ -92,7 +92,7 @@ http://localhost:<port>/dev?jump=experiment[5]-clicktest[play]-play&noDev=1
 
 ## Notes and gotchas
 
-- **Find the dev server, do not start one.** The port is set by the `dev` script in `package.json`. If nothing is serving, ask rather than launching your own.
+- **Reuse or start the dev server.** The port is set by the `dev` script in `package.json`. Reuse an existing server; if nothing is serving, start it for browser verification. Never stop a server you did not start.
 - **`/dev` never writes live data.** It refuses to initialize a session in `mode=live`, and jump traversal runs with the data writer disabled, so jumping around is safe.
 - **The window-size enforcer applies.** Below the minimum viewport (800×600 by default, and projects may change it via `defineWindowSize`) the experiment replaces itself with a "window isn't large enough" message. Resize the browser before concluding a page is broken.
 - **The outline worker iframe is expected.** A hidden same-origin iframe with `?outlineWorker=1&noDev=1` appears in snapshots and duplicates the nav landmarks. Ignore it.
