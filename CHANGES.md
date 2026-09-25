@@ -1,5 +1,13 @@
 # Simplified Template Migration Notes
 
+## Class-based styling
+
+- Replace project `uno.config.ts` with `export { default } from './core/uno.config'` (retain deliberate project extensions). Core now owns the shared Wind4/icon presets, theme, safelist, and button variants.
+- Styling attributes are replaced by standard `class` utilities; attributify is disabled. Convert both bare attributes (`mt-4`) and valued attributes (`flex="~ col"`) in project-owned components. Keep actual component props and HTML attributes.
+- Removed non-button shortcuts and custom rules: expand `flex-center` with explicit flex direction/wrapping and alignment, `circle-N`/`square-N` with dimensions, `card-*` and `input`/`input-mono` with their utilities, and `tN`/`bN`/`rN`/`lN` with absolute positioning in pixels (N × 10). Expand scrollbar styling into standard arbitrary-property utilities. Check local configuration definitions before conversion because older projects used different flex directions and input spacing.
+- Shared `btn-*` classes and `PButton` color/unstyled props remain supported. Button overrides must be passed through `class`, not styling attributes.
+- Use complete class maps for finite dynamic colors; see `docs/guide/styling.md`.
+
 This branch simplifies the template by removing playback-specific infrastructure and the generic participant event abstraction. The goal is to make experiment code easier to understand and maintain while keeping the common `PButton`, `PButtons`, and `PKey` component names available for compatibility.
 
 ## Summary

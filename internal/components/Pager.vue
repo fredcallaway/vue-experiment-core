@@ -28,22 +28,20 @@ const currentItem = computed(() => props.items[currentPage.value])
 
 <template>
   <div>
-    <div v-if="totalPages > 1" flex="~ row gap-2 items-center" >
+    <div class="flex flex-row flex-gap-2 flex-items-center" v-if="totalPages > 1">
       <button
         @click="prevPage"
         :disabled="currentPage === 0"
-        
         :class="currentPage === 0 ? 'opacity-50 cursor-not-allowed' : ''"
       >
         ←
       </button>
-      <div text-sm text-gray-600>
+      <div class="text-sm text-gray-600">
         {{ currentPage + 1 }} / {{ totalPages }}
       </div>
       <button
         @click="nextPage"
         :disabled="currentPage === totalPages - 1"
-        
         :class="currentPage === totalPages - 1 ? 'opacity-50 cursor-not-allowed' : ''"
       >
          →

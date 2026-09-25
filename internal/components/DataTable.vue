@@ -297,20 +297,19 @@ const slots = useSlots()
 
 <template>
   <div>
-    <div v-if="errors.length" mb-4>
-      <div text-xl font-bold text-red-600>{{ errors.length }} errors</div>
-      <Pager :items="errors" >
+    <div class="mb-4" v-if="errors.length">
+      <div class="text-xl font-bold text-red-600">{{ errors.length }} errors</div>
+      <Pager :items="errors">
         <template #default="{ item }">
-          <Error
-            :error="item.error"
-            :info="item.info"
-            no-header
-          />
+          <Error :error="item.error" :info="item.info" no-header />
         </template>
       </Pager>
     </div>
 
-    <div flex="~ row gap-2 justify-between items-end" mb-2 :class="{ 'opacity-0': columns.length == 0 }">
+    <div
+      class="flex flex-row flex-gap-2 flex-justify-between flex-items-end mb-2"
+      :class="{ 'opacity-0': columns.length == 0 }"
+    >
       <div v-if="slots.default">
         <slot />
       </div>
@@ -321,23 +320,23 @@ const slots = useSlots()
     </div>
     
     <div v-if="columns.length == 0" style="height: 640px;">
-      <div flex-center>
-        <div italic text-gray-400>just imagine all the data that might be here one day</div>
+      <div class="flex flex-wrap justify-center items-center">
+        <div class="italic text-gray-400">just imagine all the data that might be here one day</div>
       </div>
     </div>
     <div v-else>
-      <div 
-        ref="headerWrapperRef" 
-        class="overflow-x-auto header-scrollbar-hide" 
+      <div
+        ref="headerWrapperRef"
+        class="overflow-x-auto header-scrollbar-hide"
         style="scrollbar-width: none; -ms-overflow-style: none;"
       >
         <table class="text-sm" style="table-layout: fixed; width: 100%;">
           <thead>
             <tr class="bg-gray-200">
-              <th 
-                v-for="col in columns" 
+              <th
+                class="px-2 py-2 text-left whitespace-nowrap"
+                v-for="col in columns"
                 :key="col"
-                px-2 py-2 text-left whitespace-nowrap
                 :style="columnWidths[col] ? { width: `${columnWidths[col]}px` } : {}"
               >
                 {{ col }}
@@ -346,8 +345,8 @@ const slots = useSlots()
           </thead>
         </table>
       </div>
-      <div 
-        class="overflow-auto subtle-scrollbar"
+      <div
+        class="overflow-auto [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.2)_transparent]"
         style="height: 600px;"
         v-bind="containerProps"
         :style="{
@@ -356,30 +355,30 @@ const slots = useSlots()
           overflowX: 'auto',
         }"
       >
-        <div v-bind="wrapperProps" >
-          <table class="text-sm" border-white style="table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0;">
+        <div v-bind="wrapperProps">
+          <table
+            class="text-sm border-white"
+            style="table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0;"
+          >
             <tbody>
-              <tr 
-                v-for="{ data: row, index: idx } in virtualList" 
-                :key="idx" 
+              <tr
+                v-for="{ data: row, index: idx } in virtualList"
+                :key="idx"
                 class="hover:bg-gray-100 transition-colors"
                 :class="{
                   'animate-[fadeIn_0.5s_ease-out]': newRowIndices.has(idx)
                 }"
                 style="height: 35px;"
               >
-                <td 
-                  v-for="col in columns" 
+                <td
+                  class="px-2 py-2"
+                  v-for="col in columns"
                   :key="col"
-                  px-2 py-2
                   style="white-space: nowrap; overflow: hidden;"
                   :style="columnWidths[col] ? { width: `${columnWidths[col]+2}px` } : {}"
                 >
                   <template v-if="getCellLinkRoute(col, row.original)">
-                    <NuxtLink
-                      :to="getCellLinkRoute(col, row.original)"
-                      class="cursor-pointer"
-                    >
+                    <NuxtLink :to="getCellLinkRoute(col, row.original)" class="cursor-pointer">
                       {{ row.formatted[col] }}
                     </NuxtLink>
                   </template>

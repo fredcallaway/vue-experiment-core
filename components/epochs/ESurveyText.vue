@@ -40,19 +40,17 @@ function submitResponse() {
 
 <template>
   <ESurveyPage :question="prompt">
-    <div flex flex-col gap-4 items-center>
+    <div class="flex flex-col gap-4 items-center">
       <textarea
+        class="border border-2 px-3 py-1 box-border bg-white w-full max-w-620px"
         v-model="response"
-        input
         rows="4"
-        w-full
-        max-w-620px
         :placeholder="placeholder"
       />
       <PButton value="Submit" :disabled="!canSubmit" @click="submitResponse" />
     </div>
-    <div v-if="!required" flex justify-center mt-4>
-      <PButton value="Skip" btn-gray @click="finish('SKIP')" />
+    <div class="flex justify-center mt-4" v-if="!required">
+      <PButton class="btn-gray" value="Skip" @click="finish('SKIP')" />
     </div>
   </ESurveyPage>
 </template>

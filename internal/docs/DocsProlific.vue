@@ -18,7 +18,7 @@ import DocsPage from './DocsPage.vue'
         is shown next to the session it produced, so approval and payment decisions are made
         against the data rather than against a completion code alone.
       </p>
-      <div card-info>
+      <div class="p-4 rounded-lg bg-info-200 text-info-600 [&>h3]:text-info-700">
         You'll need a Prolific API token; <NuxtLink to="/prolific">/prolific</NuxtLink> prompts
         for one and walks you through selecting a workspace and project the first time. The
         token is stored server-side, not in your repo.

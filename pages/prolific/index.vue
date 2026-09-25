@@ -338,19 +338,19 @@ watch(selectedWorkspaceId, () => {
   <div class="p-8 max-w-7xl min-w-2xl mx-auto">
 
     <section class="bg-gray-100 rounded-lg p-5 mb-6">
-      <div flex="~ wrap gap-6 items-stretch">
-        <div flex="~ gap-8 items-center">
-          <div min-w-20>
-            <div text-3xl font-semibold>{{ isReady ? studies.length : '—' }}</div>
-            <div text-sm text-gray-600>Studies</div>
+      <div class="flex flex-wrap flex-gap-6 flex-items-stretch">
+        <div class="flex flex-gap-8 flex-items-center">
+          <div class="min-w-20">
+            <div class="text-3xl font-semibold">{{ isReady ? studies.length : '—' }}</div>
+            <div class="text-sm text-gray-600">Studies</div>
           </div>
-          <div min-w-24>
-            <div text-3xl font-semibold>{{ isReady ? totalParticipants.toLocaleString() : '—' }}</div>
-            <div text-sm text-gray-600>Participants</div>
+          <div class="min-w-24">
+            <div class="text-3xl font-semibold">{{ isReady ? totalParticipants.toLocaleString() : '—' }}</div>
+            <div class="text-sm text-gray-600">Participants</div>
           </div>
-          <div min-w-28>
-            <div text-3xl font-semibold>{{ !isReady ? '—' : totalCost === null ? '…' : formatCents(totalCost) }}</div>
-            <div text-sm text-gray-600>Dollars spent</div>
+          <div class="min-w-28">
+            <div class="text-3xl font-semibold">{{ !isReady ? '—' : totalCost === null ? '…' : formatCents(totalCost) }}</div>
+            <div class="text-sm text-gray-600">Dollars spent</div>
           </div>
         </div>
 
@@ -359,31 +359,34 @@ watch(selectedWorkspaceId, () => {
           class="flex-1 min-w-64 text-left border-l border-gray-300 pl-6 pr-3 py-1 group"
           @click="navigateTo(`/prolific/${nextStudy.id}`)"
         >
-          <div flex="~ justify-between gap-3 items-center" mb-1>
-            <span text-xs font-semibold uppercase tracking-wide text-amber-700>
+          <div class="flex flex-justify-between flex-gap-3 flex-items-center mb-1">
+            <span class="text-xs font-semibold uppercase tracking-wide text-amber-700">
               {{ getStudyStatus(nextStudy) }}
             </span>
-            <span text-sm text-gray-500 group-hover:text-gray-900>Open study →</span>
+            <span class="text-sm text-gray-500 group-hover:text-gray-900">Open study →</span>
           </div>
-          <div font-semibold truncate>{{ nextStudy.internal_name }}</div>
-          <div text-sm text-gray-600 mt-1>
+          <div class="font-semibold truncate">{{ nextStudy.internal_name }}</div>
+          <div class="text-sm text-gray-600 mt-1">
             {{ nextStudy.places_taken ?? 0 }} / {{ nextStudy.total_available_places }} places filled
           </div>
         </button>
-        <div v-else-if="isReady" flex-1 min-w-64 border-l border-gray-300 pl-6 flex="~ col justify-center">
-          <div font-semibold>All studies completed</div>
-          <div text-sm text-gray-600>No study currently needs attention.</div>
+        <div
+          class="flex-1 min-w-64 border-l border-gray-300 pl-6 flex flex-col flex-justify-center"
+          v-else-if="isReady"
+        >
+          <div class="font-semibold">All studies completed</div>
+          <div class="text-sm text-gray-600">No study currently needs attention.</div>
         </div>
-        <div v-else flex-1 min-w-64 border-l border-gray-300 pl-6 flex="~ col justify-center">
-          <div font-semibold>Connect Prolific</div>
-          <div text-sm text-gray-600>Enter an API token and project below to load study activity.</div>
+        <div class="flex-1 min-w-64 border-l border-gray-300 pl-6 flex flex-col flex-justify-center" v-else>
+          <div class="font-semibold">Connect Prolific</div>
+          <div class="text-sm text-gray-600">Enter an API token and project below to load study activity.</div>
         </div>
 
-        <div flex="~ col gap-2 justify-center items-stretch">
-          <button v-if="isReady" btn-gray @click="openConnectionModal">
+        <div class="flex flex-col flex-gap-2 flex-justify-center flex-items-stretch">
+          <button class="btn-gray" v-if="isReady" @click="openConnectionModal">
             Prolific Connection
           </button>
-          <button btn-green :disabled="!isReady" @click="goToCreateStudy">
+          <button class="btn-green" :disabled="!isReady" @click="goToCreateStudy">
             Create New Study
           </button>
         </div>
@@ -404,10 +407,10 @@ watch(selectedWorkspaceId, () => {
         :aria-modal="showConnectionModal || undefined"
         aria-labelledby="prolific-connection-title"
       >
-        <div flex="~ justify-between gap-4 items-start" mb-6>
+        <div class="flex flex-justify-between flex-gap-4 flex-items-start mb-6">
           <div>
             <h2 id="prolific-connection-title">Prolific Connection</h2>
-            <p text-gray-600 mt-1>Enter a token and choose, create, or directly identify a project.</p>
+            <p class="text-gray-600 mt-1">Enter a token and choose, create, or directly identify a project.</p>
           </div>
           <button
             v-if="showConnectionModal"
@@ -415,58 +418,55 @@ watch(selectedWorkspaceId, () => {
             aria-label="Close Prolific connection"
             @click="closeConnectionModal"
           >
-            <span i-mdi-close text-2xl />
+            <span class="i-mdi-close text-2xl" />
           </button>
         </div>
 
-        <div grid="~ cols-2 gap-8" class="max-lg:grid-cols-1">
+        <div class="max-lg:grid-cols-1 grid grid-cols-2 grid-gap-8">
           <div>
-            <div flex="~ justify-between gap-3 items-center" mb-2>
-              <label for="prolific-token" font-semibold>API token</label>
-              <span v-if="status === 'unknown'" text-sm text-gray-500>Validating…</span>
-              <span v-else-if="tokenIsValid" text-sm text-green-700>✓ Valid</span>
-              <span v-else text-sm text-red-700>✗ Missing or invalid</span>
+            <div class="flex flex-justify-between flex-gap-3 flex-items-center mb-2">
+              <label class="font-semibold" for="prolific-token">API token</label>
+              <span class="text-sm text-gray-500" v-if="status === 'unknown'">Validating…</span>
+              <span class="text-sm text-green-700" v-else-if="tokenIsValid">✓ Valid</span>
+              <span class="text-sm text-red-700" v-else>✗ Missing or invalid</span>
             </div>
             <input
+              class="border-2 px-3 py-2 box-border font-mono text-xs w-full"
               id="prolific-token"
               v-model="token"
               type="text"
-              input-mono
-              w-full
               placeholder="Enter your Prolific API token"
             />
-            <p text-sm text-gray-600 mt-2>
+            <p class="text-sm text-gray-600 mt-2">
               Create or copy a token from <strong>API Tokens</strong> in your Prolific account.
             </p>
           </div>
 
           <div>
-            <div flex="~ justify-between gap-3 items-center" mb-2>
-              <label for="prolific-project-id" font-semibold>Project ID</label>
-              <span v-if="status === 'unknown'" text-sm text-gray-500>Validating…</span>
-              <span v-else-if="status === 'ok'" text-sm text-green-700>✓ Connected</span>
-              <span v-else text-sm text-red-700>✗ Missing or invalid</span>
+            <div class="flex flex-justify-between flex-gap-3 flex-items-center mb-2">
+              <label class="font-semibold" for="prolific-project-id">Project ID</label>
+              <span class="text-sm text-gray-500" v-if="status === 'unknown'">Validating…</span>
+              <span class="text-sm text-green-700" v-else-if="status === 'ok'">✓ Connected</span>
+              <span class="text-sm text-red-700" v-else>✗ Missing or invalid</span>
             </div>
             <input
+              class="border-2 px-3 py-2 box-border font-mono text-xs w-full"
               id="prolific-project-id"
               v-model="projectId"
               type="text"
-              input-mono
-              w-full
               placeholder="Enter a Prolific project ID"
             />
-            <p text-sm text-gray-600 mt-2>Paste an ID directly, or use the workspace tools below.</p>
+            <p class="text-sm text-gray-600 mt-2">Paste an ID directly, or use the workspace tools below.</p>
           </div>
         </div>
 
-        <div border-t border-gray-200 mt-6 pt-6>
-          <div flex="~ justify-between gap-4 items-end" mb-4>
-            <label flex-1>
-              <span block font-semibold mb-2>Workspace</span>
+        <div class="border-t border-gray-200 mt-6 pt-6">
+          <div class="flex flex-justify-between flex-gap-4 flex-items-end mb-4">
+            <label class="flex-1">
+              <span class="block font-semibold mb-2">Workspace</span>
               <select
+                class="border border-2 px-3 py-1 box-border bg-white w-full"
                 v-model="selectedWorkspaceId"
-                input
-                w-full
                 :disabled="!tokenIsValid || isLoadingWorkspaces || workspaceOptions.length === 0"
               >
                 <option v-if="workspaceOptions.length === 0" value="">
@@ -477,18 +477,17 @@ watch(selectedWorkspaceId, () => {
                 </option>
               </select>
             </label>
-            <button btn-gray :disabled="!tokenIsValid || isLoadingWorkspaces" @click="loadWorkspaces">
+            <button class="btn-gray" :disabled="!tokenIsValid || isLoadingWorkspaces" @click="loadWorkspaces">
               {{ isLoadingWorkspaces ? 'Loading…' : 'Reload Workspaces' }}
             </button>
           </div>
 
-          <div grid="~ cols-2 gap-8" class="max-lg:grid-cols-1">
+          <div class="max-lg:grid-cols-1 grid grid-cols-2 grid-gap-8">
             <div>
-              <div font-semibold mb-2>Use an existing project</div>
+              <div class="font-semibold mb-2">Use an existing project</div>
               <select
+                class="border border-2 px-3 py-1 box-border bg-white w-full"
                 v-model="selectedExistingProjectId"
-                input
-                w-full
                 :disabled="!selectedWorkspaceId || isLoadingProjects || projectOptions.length === 0"
               >
                 <option v-if="projectOptions.length === 0" value="">
@@ -498,17 +497,20 @@ watch(selectedWorkspaceId, () => {
                   {{ project.label }}
                 </option>
               </select>
-              <button btn-green mt-3 :disabled="!selectedExistingProjectId" @click="useExistingProject">
+              <button class="btn-green mt-3" :disabled="!selectedExistingProjectId" @click="useExistingProject">
                 Use Project
               </button>
             </div>
 
             <div>
-              <div font-semibold mb-2>Create a new project</div>
-              <input v-model="projectTitle" input w-full aria-label="Project name" />
+              <div class="font-semibold mb-2">Create a new project</div>
+              <input
+                class="border border-2 px-3 py-1 box-border bg-white w-full"
+                v-model="projectTitle"
+                aria-label="Project name"
+              />
               <button
-                btn-green
-                mt-3
+                class="btn-green mt-3"
                 :disabled="!selectedWorkspaceId || isCreatingProject"
                 @click="createProject"
               >
@@ -529,12 +531,12 @@ watch(selectedWorkspaceId, () => {
       {{ error }}
     </div>
 
-    <ProlificMessages v-if="isReady" mb3 rounded mb-4 />
+    <ProlificMessages class="mb3 rounded mb-4" v-if="isReady" />
 
     <!-- Study List View -->
     <div v-if="prolific && isReady">
 
-      <div flex="~ row gap-2 justify-between items-end" mb-2>
+      <div class="flex flex-row flex-gap-2 flex-justify-between flex-items-end mb-2">
         <div>
           <h2>Studies ({{ filteredStudies.length }})</h2>
           <RefreshButton
@@ -544,10 +546,10 @@ watch(selectedWorkspaceId, () => {
             label="Last updated:"
           />
         </div>
-        <div flex="~ gap-2 items-center">
+        <div class="flex flex-gap-2 flex-items-center">
           <button
+            class="btn-red"
             v-if="studies.some(study => study.status === 'UNPUBLISHED')"
-            btn-red
             :disabled="loading"
             @click="deleteAllDrafts"
           >
@@ -561,31 +563,31 @@ watch(selectedWorkspaceId, () => {
         <table class="w-full text-sm">
           <thead>
             <tr class="bg-gray-200">
-              <th px-2 py-2 text-left whitespace-nowrap>Study ID</th>
-              <th px-2 py-2 text-left whitespace-nowrap>Internal Name</th>
-              <th px-2 py-2 text-left whitespace-nowrap>Status</th>
-              <th px-2 py-2 text-left whitespace-nowrap>Published At</th>
-              <th px-2 py-2 text-right whitespace-nowrap>Reward</th>
-              <th px-2 py-2 text-right whitespace-nowrap>Avg Bonus</th>
-              <th px-2 py-2 text-right whitespace-nowrap>Total Cost</th>
-              <th px-2 py-2 text-right whitespace-nowrap>Places</th>
+              <th class="px-2 py-2 text-left whitespace-nowrap">Study ID</th>
+              <th class="px-2 py-2 text-left whitespace-nowrap">Internal Name</th>
+              <th class="px-2 py-2 text-left whitespace-nowrap">Status</th>
+              <th class="px-2 py-2 text-left whitespace-nowrap">Published At</th>
+              <th class="px-2 py-2 text-right whitespace-nowrap">Reward</th>
+              <th class="px-2 py-2 text-right whitespace-nowrap">Avg Bonus</th>
+              <th class="px-2 py-2 text-right whitespace-nowrap">Total Cost</th>
+              <th class="px-2 py-2 text-right whitespace-nowrap">Places</th>
             </tr>
           </thead>
           <tbody>
-            <tr 
-              v-for="study in filteredStudies" 
+            <tr
+              v-for="study in filteredStudies"
               :key="study.id"
               @click="navigateTo(`/prolific/${study.id}`)"
               class="cursor-pointer hover:bg-gray-100"
             >
-              <td px-2 py-2 font-mono text-xs whitespace-nowrap>{{ study.id }}</td>
-              <td px-2 py-2 whitespace-nowrap>{{ study.internal_name }}</td>
-              <td px-2 py-2 text-sm whitespace-nowrap>{{ getStudyStatus(study) }}</td>
-              <td px-2 py-2 whitespace-nowrap>{{ formatDateTime(study.published_at ?? 'N/A') }}</td>
-              <td px-2 py-2 text-right whitespace-nowrap>${{ (study.reward / 100).toFixed(2) }}</td>
-              <td px-2 py-2 text-right whitespace-nowrap>{{ getAverageBonusText(study) }}</td>
-              <td px-2 py-2 text-right whitespace-nowrap>{{ getTotalCostText(study) }}</td>
-              <td px-2 py-2 text-right whitespace-nowrap>{{ study.places_taken ?? 0 }} / {{ study.total_available_places }}</td>
+              <td class="px-2 py-2 font-mono text-xs whitespace-nowrap">{{ study.id }}</td>
+              <td class="px-2 py-2 whitespace-nowrap">{{ study.internal_name }}</td>
+              <td class="px-2 py-2 text-sm whitespace-nowrap">{{ getStudyStatus(study) }}</td>
+              <td class="px-2 py-2 whitespace-nowrap">{{ formatDateTime(study.published_at ?? 'N/A') }}</td>
+              <td class="px-2 py-2 text-right whitespace-nowrap">${{ (study.reward / 100).toFixed(2) }}</td>
+              <td class="px-2 py-2 text-right whitespace-nowrap">{{ getAverageBonusText(study) }}</td>
+              <td class="px-2 py-2 text-right whitespace-nowrap">{{ getTotalCostText(study) }}</td>
+              <td class="px-2 py-2 text-right whitespace-nowrap">{{ study.places_taken ?? 0 }} / {{ study.total_available_places }}</td>
             </tr>
           </tbody>
         </table>

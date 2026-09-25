@@ -21,9 +21,9 @@ defineWindowSize({ width: 700, height: 800 })
   <div class="example-page">
     <!-- key on slug so the epoch tree fully remounts when switching examples -->
     <component :is="component" v-if="component" :key="slug" />
-    <div v-else p10>
-      <h2 text-xl font-bold>Unknown example</h2>
-      <p mt-2>
+    <div class="p10" v-else>
+      <h2 class="text-xl font-bold">Unknown example</h2>
+      <p class="mt-2">
         No example named <code>{{ slug }}</code>. See the
         <NuxtLink to="/examples">examples index</NuxtLink>.
       </p>

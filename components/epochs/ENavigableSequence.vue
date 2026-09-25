@@ -29,29 +29,36 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="navigable-sequence" relative>
+  <div class="navigable-sequence relative">
     <!-- HEADER -->
-    <div flex="~ row gap-4 justify-between items-center" mx-10 w-120 mx-auto>
-      <PButton btn-gray-sm text-2xl :disabled="!allowPrev" @click="E.prev" value="prev" 
-        transition-all transition-duration-300 
+    <div class="flex flex-row flex-gap-4 flex-justify-between flex-items-center mx-10 w-120 mx-auto">
+      <PButton
+        class="btn-gray-sm text-2xl transition-all transition-duration-300"
+        :disabled="!allowPrev"
+        @click="E.prev"
+        value="prev"
       >
         <span class="i-mdi-arrow-left-bold" />
         <PKey v-if="allowPrev" keys="LEFT" @press="E.prev" />
       </PButton>
       
-      <div text-3xl font-bold >
+      <div class="text-3xl font-bold">
         {{ header ?? 'Page' }} {{ E.step.value + 1 }} of {{ nSteps }}
       </div>
 
-      <PButton :class="allowNext ? 'btn-primary-sm' : 'btn-gray-sm'" text-2xl :disabled="!allowNext" @click="E.next" value="next"
-        transition-all transition-duration-300 
+      <PButton
+        class="text-2xl transition-all transition-duration-300"
+        :class="allowNext ? 'btn-primary-sm' : 'btn-gray-sm'"
+        :disabled="!allowNext"
+        @click="E.next"
+        value="next"
       >
         <div class="i-mdi-arrow-right-bold" />
         <PKey v-if="allowNext" keys="RIGHT" @press="E.next" />
       </PButton>
     </div>
 
-    <div flex-center>
+    <div class="flex flex-wrap justify-center items-center">
       <Sequence>
         <slot :enableNext="enableNext" :goNext="E.next" :goPrev="E.prev" :epoch="E" />
       </Sequence>

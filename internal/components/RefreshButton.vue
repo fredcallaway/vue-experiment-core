@@ -24,15 +24,14 @@ const formatTimestamp = (timestamp: NumberLike | null | undefined) => {
 
 <template>
   <span class="inline-flex items-center">
-    <span mr-1 text-base text-gray-600 v-if="label">{{ label }} </span>
-    <span text-base text-gray-600>{{ formatTimestamp(timestamp) }}</span>
+    <span class="mr-1 text-base text-gray-600" v-if="label">{{ label }} </span>
+    <span class="text-base text-gray-600">{{ formatTimestamp(timestamp) }}</span>
     <button
-      class=" text-blue-500 hover:text-blue-400 italic display-inline-block p-0 "
-      ml-3
+      class="text-blue-500 hover:text-blue-400 italic display-inline-block p-0 ml-3"
       @click="refresh"
       :disabled="isLoading"
     >
-      <span text-lg inline-block mt--1 ml--1.5 class="i-mdi-refresh" :class="{ 'animate-spin': isLoading }" />
+      <span class="i-mdi-refresh text-lg inline-block mt--1 ml--1.5" :class="{ 'animate-spin': isLoading }" />
     </button>
   </span>
 </template>

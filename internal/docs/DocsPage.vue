@@ -15,8 +15,8 @@ const epoch = useEpoch(props.name)
 <template>
   <div>
     <slot />
-    <div v-if="!last" mt-8>
-      <PButton once value="Next" btn-primary @click="epoch.done" />
+    <div class="mt-8" v-if="!last">
+      <PButton class="btn-primary" once value="Next" @click="epoch.done" />
     </div>
   </div>
 </template>

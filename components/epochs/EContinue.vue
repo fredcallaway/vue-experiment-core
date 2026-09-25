@@ -51,13 +51,18 @@ const buttonText = computed(() => typeof button === 'string' ? button : 'Continu
 </script>
 
 <template>
-  <div flex-center flex-col>
+  <div class="flex flex-wrap justify-center items-center flex-col">
     <div :class="{ 'prompt': prompt }">
       <slot :epoch="epoch" />
     </div>
 
-    <PButton v-if="button" once :disabled="!ready" :value="buttonText" @click="epoch.done"
-      btn-primary
+    <PButton
+      class="btn-primary"
+      v-if="button"
+      once
+      :disabled="!ready"
+      :value="buttonText"
+      @click="epoch.done"
       :class="[
         delay > 0 && 'transition-opacity-300',
         small && 'btn-sm',
@@ -65,7 +70,8 @@ const buttonText = computed(() => typeof button === 'string' ? button : 'Continu
       ]"
     />
     <PKey v-else-if="ready" keys="SPACE" @press="epoch.done">
-      <div text-primary-300 font-italic text-center
+      <div
+        class="text-primary-300 font-italic text-center"
         :class="[
           delay > 0 && 'animate-fade-in ease-in-out',
           small ? 'text-sm' : 'text-base',

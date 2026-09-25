@@ -12,6 +12,7 @@ export type StroopParams = ReturnType<typeof useStroopParams>
 
 const INKS = { F: 'red', J: 'blue' } as const
 type Ink = (typeof INKS)[keyof typeof INKS]
+const inkClasses: Record<Ink, string> = { red: 'text-red', blue: 'text-blue' }
 
 // One typed event per response; `isResponse` is the guard used to filter the
 // event stream in the data view.
@@ -71,19 +72,19 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div flex-center flex-col gap-6 min-h-40>
-    <Phase which="fixation" text-4xl>+</Phase>
+  <div class="flex flex-wrap justify-center items-center flex-col gap-6 min-h-40">
+    <Phase class="text-4xl" which="fixation">+</Phase>
 
-    <Phase which="stimulus" flex-center flex-col gap-6>
-      <div text-5xl font-bold :class="`text-${ink}`">{{ word.toUpperCase() }}</div>
-      <div text-sm text-gray-500>
+    <Phase class="flex flex-wrap justify-center items-center flex-col gap-6" which="stimulus">
+      <div class="text-5xl font-bold" :class="inkClasses[ink]">{{ word.toUpperCase() }}</div>
+      <div class="text-sm text-gray-500">
         Ink color: <kbd>F</kbd> = red, <kbd>J</kbd> = blue
       </div>
     </Phase>
 
-    <Phase which="feedback" text-3xl>
-      <div v-if="correct" text-green>correct!</div>
-      <div v-else text-red>incorrect</div>
+    <Phase class="text-3xl" which="feedback">
+      <div class="text-green" v-if="correct">correct!</div>
+      <div class="text-red" v-else>incorrect</div>
     </Phase>
   </div>
 </template>

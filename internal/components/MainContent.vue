@@ -70,7 +70,8 @@ const currentEpoch = useCurrentEpoch()
 
 <template>
   <!-- wrapper div to allow outer v-show -->
-  <div relative class="main-content"
+  <div
+    class="main-content relative"
     :class="{
       'main-outline': props.showOutline,
       'overflowing': hasOverflow,
@@ -80,47 +81,50 @@ const currentEpoch = useCurrentEpoch()
       minHeight: `${minHeight - padding}px`,
       width: props.fixedWidth ? `${minWidth - padding}px` : 'auto',
       height: props.fixedHeight ? `${minHeight - padding}px` : 'auto',
-  }">
+  }"
+  >
     <!-- error page -->
-    <div v-if="error" wfull hfull >
-      <div w-full h-fit p-3 gap-2 v-if="devTools">
+    <div class="wfull hfull" v-if="error">
+      <div class="w-full h-fit p-3 gap-2" v-if="devTools">
         <h1>Error</h1>
         <div>
           The experiment encountered an error in dev mode. This would have
           led to a completion screen in live mode.
         </div>
-        <div my-3>
+        <div class="my-3">
           <div><b>Error:</b> {{ error.message }}</div>
           <div><b>Current Epoch:</b> {{ currentEpoch.id }}</div>
           <div><b>Component:</b> {{ errorDetails.componentName }}</div>
           <div><b>Component Path:</b> {{ errorDetails.componentPath }}</div>
           <div><b>Vue Info:</b> {{ errorDetails.info }}</div>
         </div>
-        <div text-lg font-bold>Stack trace</div>
-        <div font-italic mb-1>See the browser console for a better stack trace.</div>
-        <pre text-xs overflow-auto mx-5 subtle-scrollbar >{{ error.stack ?? String(error) }}</pre>
+        <div class="text-lg font-bold">Stack trace</div>
+        <div class="font-italic mb-1">See the browser console for a better stack trace.</div>
+        <pre
+          class="text-xs overflow-auto mx-5 [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.2)_transparent]"
+        >{{ error.stack ?? String(error) }}</pre>
         <!-- <Error :error="error" /> -->
         
-        <div flex-center gap-3 mt-3>
-          <button btn-red  @click="error = false">Clear Error</button>
-          <button btn-blue  @click="error = false; currentEpoch.done()">Next Epoch</button>
+        <div class="flex flex-wrap justify-center items-center gap-3 mt-3">
+          <button class="btn-red" @click="error = false">Clear Error</button>
+          <button class="btn-blue" @click="error = false; currentEpoch.done()">Next Epoch</button>
         </div>
       </div>
       <template v-else>
-        <ECompletion error h-500px  />
+        <ECompletion class="h-500px" error />
       </template>
     </div>
     <!-- main content -->
-    <div v-show="!violated && !error" ref="content" wfull hfull >
+    <div class="wfull hfull" v-show="!violated && !error" ref="content">
       <slot />
-      <div id="main-content-overlay" absolute inset-0 wfull hfull pointer-events-none />
+      <div class="absolute inset-0 wfull hfull pointer-events-none" id="main-content-overlay" />
     </div>
     <!-- screen size violated -->
-    <div v-if="violated"
-      inset-0 top-0 left-0 w-screen h-screen flex-center
-    bg-black text-center text-white text-xl
+    <div
+      class="inset-0 top-0 left-0 w-screen h-screen flex flex-wrap justify-center items-center bg-black text-center text-white text-xl"
+      v-if="violated"
     >
-      <div p-5>
+      <div class="p-5">
         You're browser window isn't large enough.<br>
         It needs to be
           <span :class="width < minWidth ? 'text-red-500' : ''">{{ minWidth }}px wide</span> and
@@ -128,10 +132,10 @@ const currentEpoch = useCurrentEpoch()
         It's currently
           <span :class="width < minWidth ? 'text-red-500' : ''">{{ width }}px wide</span> and
           <span :class="height < minHeight ? 'text-red-500' : ''">{{ height }}px tall</span>.
-          <p mt-3 text-base w-80 mx-auto>
+          <p class="mt-3 text-base w-80 mx-auto">
             If you can't make it bigger, you can't participate in this experiment. Sorry!
           </p>
-          <p mt-30 font-italic text-base w-100 mx-auto opacity-30 text-xs>
+          <p class="mt-30 font-italic text-base w-100 mx-auto opacity-30 text-xs">
             Tip: you can try zooming out in your browser
             (usually cmd/ctrl and +/-). Make sure you can still read the text though!
           </p>

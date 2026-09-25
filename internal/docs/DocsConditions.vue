@@ -30,7 +30,7 @@ const assignments = Array.from({ length: getConditionAssignmentCount(design) }, 
       Declare experimental manipulations as <code>main</code> conditions and nuisance variables such as task order or
       response mapping as <code>counterbalance</code> conditions.
     </p>
-    <pre bg-gray-50 b="1 gray-200" rounded p3 text-sm overflow-x-auto><code>const conditions = useConditions().assign({
+    <pre class="bg-gray-50 b-1 b-gray-200 rounded p3 text-sm overflow-x-auto"><code>const conditions = useConditions().assign({
   main: {
     treatment: ['control', 'treatment'],
   },
@@ -40,30 +40,25 @@ const assignments = Array.from({ length: getConditionAssignmentCount(design) }, 
   },
 })</code></pre>
     <div
-      mt-1
-      h-56
-      max-w-full
-      overflow-auto
-      b="1 gray-200"
-      rounded
+      class="mt-1 h-56 max-w-full overflow-auto b-1 b-gray-200 rounded"
       tabindex="0"
       aria-label="Generated condition assignments"
     >
-      <table text-sm min-w-120 w-full>
-        <thead sticky top-0 z-1 bg-gray-50>
+      <table class="text-sm min-w-120 w-full">
+        <thead class="sticky top-0 z-1 bg-gray-50">
           <tr>
-            <th p2 text-left>Assignment</th>
-            <th p2 text-left>Treatment</th>
-            <th p2 text-left>Task order</th>
-            <th p2 text-left>Response side</th>
+            <th class="p2 text-left">Assignment</th>
+            <th class="p2 text-left">Treatment</th>
+            <th class="p2 text-left">Task order</th>
+            <th class="p2 text-left">Response side</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="row in assignments" :key="row.assignment" b-t="1 gray-100">
-            <td p2>{{ row.assignment }}</td>
-            <td p2>{{ row.treatment }}</td>
-            <td p2>{{ row.taskOrder }}</td>
-            <td p2>{{ row.responseSide }}</td>
+          <tr class="b-t-1 b-t-gray-100" v-for="row in assignments" :key="row.assignment">
+            <td class="p2">{{ row.assignment }}</td>
+            <td class="p2">{{ row.treatment }}</td>
+            <td class="p2">{{ row.taskOrder }}</td>
+            <td class="p2">{{ row.responseSide }}</td>
           </tr>
         </tbody>
       </table>

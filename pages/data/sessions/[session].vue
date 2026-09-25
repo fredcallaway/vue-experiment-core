@@ -66,13 +66,13 @@ const timeInfo = computed(() => {
 </script>
 
 <template>
-  <div class="p-8 max-w-7xl mx-auto" >
+  <div class="p-8 max-w-7xl mx-auto">
     <!-- <Error :error="metaError || sessionError" /> -->
 
     <NuxtLink :to="`/data/sessions?mode=${mode}`" class="absolute translate-y--5 translate-x-1"> ← All Sessions </NuxtLink>
     
-    <div v-if="meta" class="mb-6" >
-      <div flex="~ row gap-4 justify-between" w-full h-100 >
+    <div v-if="meta" class="mb-6">
+      <div class="flex flex-row flex-gap-4 flex-justify-between w-full h-100">
         <div class="bg-gray-100 p-6 rounded-lg relative flex-1">
           <span
             v-if="status !== null"
@@ -92,7 +92,9 @@ const timeInfo = computed(() => {
             <!-- <div><b>Study ID:</b> <span class="font-mono text-xs">{{ meta.studyId || 'N/A' }}</span></div> -->
             <div>
               <b>Version: </b>
-              <NuxtLink :to="`/data/versions/${assertDefined(meta.version, `Missing version for session ${sessionId}`)}?mode=${mode}`">
+              <NuxtLink
+                :to="`/data/versions/${assertDefined(meta.version, `Missing version for session ${sessionId}`)}?mode=${mode}`"
+              >
                 {{ assertDefined(meta.version, `Missing version for session ${sessionId}`) }}
               </NuxtLink>
             </div>
@@ -107,12 +109,8 @@ const timeInfo = computed(() => {
             <NuxtLink v-if="posthogLink" :to="posthogLink" target="_blank">view replay on posthog</NuxtLink>
           </div>
         </div>
-        <div v-if="correspondence" flex-shrink-0 >
-          <ProlificMessageBox
-            :correspondence="correspondence"
-            :show-study-link="true"
-            :show-session-link="false"
-          />
+        <div class="flex-shrink-0" v-if="correspondence">
+          <ProlificMessageBox :correspondence="correspondence" :show-study-link="true" :show-session-link="false" />
         </div>
       </div>
 
@@ -131,7 +129,10 @@ const timeInfo = computed(() => {
         <Tab v-for="(val, name) in processedData" :key="String(name)" :title="String(name)">
           <Error v-if="val && !val.success" :error="val.error" />
           <DataTable v-else-if="val && val.success && val.format === 'csv'" :data="(val.data as any)" />
-          <pre v-else-if="val && val.success && val.format === 'json'" class="bg-gray-100 p-4 rounded overflow-auto max-h-96 text-xs">{{ stringify(val.data, { indent: 2 }) }}</pre>
+          <pre
+            v-else-if="val && val.success && val.format === 'json'"
+            class="bg-gray-100 p-4 rounded overflow-auto max-h-96 text-xs"
+          >{{ stringify(val.data, { indent: 2 }) }}</pre>
         </Tab>
 
         <Tab title="meta">

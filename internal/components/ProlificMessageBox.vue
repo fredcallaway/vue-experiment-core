@@ -132,8 +132,10 @@ const handleResolve = async () => {
     </div>
 
     <!-- Messages -->
-    <div ref="messagesContainer" 
-      class="px-2 py-4 flex-1 overflow-y-auto max-h-60 flex flex-col gap-2 subtle-scrollbar bg-gray-200">
+    <div
+      ref="messagesContainer"
+      class="px-2 py-4 flex-1 overflow-y-auto max-h-60 flex flex-col gap-2 [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.2)_transparent] bg-gray-200"
+    >
       <div
         v-for="(msg, idx) in messageList"
         :key="idx"
@@ -165,13 +167,13 @@ const handleResolve = async () => {
       <textarea
         v-model="replyText"
         placeholder="Reply..."
-        class="w-full text-sm input resize-none"
+        class="w-full text-sm border border-2 px-3 py-1 box-border bg-white resize-none"
         rows="2"
       />
       <div class="flex items-center gap-2">
-        <div w-13>
+        <div class="w-13">
           <div class="text-sm fw-600 text-gray-700">Bonus</div>
-          <div text-xs :class="[hasBonus ? 'text-green-600' : 'text-gray-500']">
+          <div class="text-xs" :class="[hasBonus ? 'text-green-600' : 'text-gray-500']">
             add {{ intendedBonus - currentBonus }}¢
           </div>
         </div>
@@ -181,7 +183,7 @@ const handleResolve = async () => {
           :min="currentBonus"
           :scroll-step="5"
           :max="2000"
-          class="w-11 text-sm input mr-5 px-2 py-1 "
+          class="w-11 text-sm border border-2 px-3 py-1 box-border bg-white mr-5 px-2"
           :class="[hasBonus && 'border-green-600']"
         />
         <ActionButton
@@ -191,14 +193,16 @@ const handleResolve = async () => {
           :disabled="isLoading || !hasInput"
           class="h9 btn-blue-sm flex-1"
         />
-        <ActionButton v-if="hasInput && !correspondence.resolved"
+        <ActionButton
+          v-if="hasInput && !correspondence.resolved"
           name="Send & Resolve"
           :action="handleSendAndResolve"
           success="result"
           :disabled="isLoading || !hasInput"
           class="h9 btn-green-sm text-sm flex-1"
         />
-        <ActionButton v-else
+        <ActionButton
+          v-else
           :name="correspondence.resolved ? 'Unresolve' : 'Resolve'"
           :action="handleResolve"
           :disabled="isLoading"

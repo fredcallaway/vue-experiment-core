@@ -51,7 +51,7 @@ const onChoice = (choice: string) => {
 </script>
 
 <template>
-  <div flex-col flex-center gap-4>
+  <div class="flex flex-col flex-wrap justify-center items-center gap-4">
     <div text-xl>Pick one</div>
     <PButtons values="left right" @click="onChoice" />
   </div>

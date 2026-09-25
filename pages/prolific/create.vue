@@ -110,38 +110,42 @@ const onDeploy = async () => {
 
     <NuxtLink to="/prolific" class="absolute translate-y--5 translate-x-1"> ← All Studies </NuxtLink>
 
-    <h2 mb2 mt4>Create New Study</h2>
+    <h2 class="mb2 mt4">Create New Study</h2>
 
     <Error :error="create.error.value || deploymentError" />
 
     <fieldset :disabled="formDataLoading" class="grid grid-cols-2 gap-6 border-0 m-0 p-0">
       <!-- Reward/Time/Wage/Places/Cost Card -->
-      <div card-gray>
+      <div class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700">
         <div class="flex flex-row gap-4 mb-4">
-          <div flex-1>
+          <div class="flex-1">
             <label class="block mb-2 font-semibold">Reward (cents)</label>
-            <NumberInput :scroll-step="25" text-base v-model="formData.reward" input w-35 />
-          </div>
-
-          <div flex-1>
-            <label class="block mb-2 font-semibold">Est. Time (mins)</label>
-            <NumberInput text-base 
-              v-model="formData.estimated_completion_time" 
-              input w-35
+            <NumberInput
+              class="text-base border border-2 px-3 py-1 box-border bg-white w-35"
+              :scroll-step="25"
+              v-model="formData.reward"
             />
           </div>
 
-          <div flex-1>
+          <div class="flex-1">
+            <label class="block mb-2 font-semibold">Est. Time (mins)</label>
+            <NumberInput
+              class="text-base border border-2 px-3 py-1 box-border bg-white w-35"
+              v-model="formData.estimated_completion_time"
+            />
+          </div>
+
+          <div class="flex-1">
             <label class="block mb-2 font-semibold">Max Time (mins)</label>
-            <NumberInput text-base 
-              v-model="formData.maximum_allowed_time" 
-              input w-35
+            <NumberInput
+              class="text-base border border-2 px-3 py-1 box-border bg-white w-35"
+              v-model="formData.maximum_allowed_time"
             />
           </div>
         </div>
 
-        <div font-bold text-xl mb-4>
-          <span i-mdi-cash-clock text-2xl/>
+        <div class="font-bold text-xl mb-4">
+          <span class="i-mdi-cash-clock text-2xl" />
           Hourly wage: ${{ hourlyWage.toFixed(2) }}/hr
           <span v-if="!isValidWage" class="text-error font-semibold">
             (minimum: ${{ MIN_WAGE }}/hr)
@@ -150,81 +154,60 @@ const onDeploy = async () => {
 
         <div class="mb-4">
           <label class="block mb-2 font-semibold">Total Places</label>
-          <NumberInput text-base 
-            v-model="formData.total_available_places" 
-            input w-full
+          <NumberInput
+            class="text-base border border-2 px-3 py-1 box-border bg-white w-full"
+            v-model="formData.total_available_places"
           />
         </div>
 
-        <div font-bold text-xl>
-          <span i-mdi-cash-multiple text-2xl/>
+        <div class="font-bold text-xl">
+          <span class="i-mdi-cash-multiple text-2xl" />
           Total cost: ${{ totalCost.toFixed(2) }}
         </div>
       </div>
 
       <!-- Public Name/Description Card -->
-      <div card-gray space-y-4>
+      <div class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700 space-y-4">
         <div>
           <label class="block mb-2 font-semibold">Public Name</label>
-          <input
-            v-model="formData.name"
-            type="text"
-            input w-full
-          />
+          <input class="border border-2 px-3 py-1 box-border bg-white w-full" v-model="formData.name" type="text" />
         </div>
         <div>
           <label class="block mb-2 font-semibold">Description (HTML)</label>
-          <textarea 
-            v-model="formData.description" 
-            input w-full
-            font-mono text-sm
+          <textarea
+            class="border border-2 px-3 py-1 box-border bg-white w-full font-mono text-sm resize-y"
+            v-model="formData.description"
             rows="5"
-            resize-y
           ></textarea>
         </div>
       </div>
 
       <!-- Eligibility Card -->
-      <div card-gray>
+      <div class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700">
         <div class="grid grid-cols-[1fr_auto] gap-6 items-start">
           <div class="space-y-4">
             <label class="flex items-center gap-2">
-              <input 
-                v-model="formData.eligibility!.allowUK" 
-                type="checkbox"
-              />
+              <input v-model="formData.eligibility!.allowUK" type="checkbox" />
               <span>Allow UK participants</span>
             </label>
             
             <label class="flex items-center gap-2">
-              <input 
-                v-model="formData.eligibility!.requireEnglishFluency" 
-                type="checkbox"
-              />
+              <input v-model="formData.eligibility!.requireEnglishFluency" type="checkbox" />
               <span>Require English fluency</span>
             </label>
             
             <label class="flex items-center gap-2">
-              <input 
-                v-model="formData.eligibility!.requireEnglishPrimary" 
-                type="checkbox"
-              />
+              <input v-model="formData.eligibility!.requireEnglishPrimary" type="checkbox" />
               <span>Require English as primary language</span>
             </label>
 
             <label class="flex items-center gap-2">
-              <input
-                v-model="formData.exclusions!.databaseParticipants"
-                type="checkbox"
-              />
+              <input v-model="formData.exclusions!.databaseParticipants" type="checkbox" />
               <span>Exclude participants in database</span>
             </label>
 
             <label class="flex items-center gap-2">
-              <input
-                v-model="formData.exclusions!.previousStudies"
-                type="checkbox"
-              />
+              <input v-model="formData.exclusions!.previousStudies" type="checkbox" />
               <span>Exclude participants from previous Prolific studies</span>
             </label>
           </div>
@@ -232,25 +215,25 @@ const onDeploy = async () => {
           <div class="space-y-4 w-45">
             <div>
               <label class="block mb-2 font-semibold">Min Submissions</label>
-              <NumberInput text-base 
-                v-model="formData.eligibility!.minSubmissions!" 
-                input w-full
+              <NumberInput
+                class="text-base border border-2 px-3 py-1 box-border bg-white w-full"
+                v-model="formData.eligibility!.minSubmissions!"
               />
             </div>
             
             <div>
               <label class="block mb-2 font-semibold">Max Submissions</label>
-              <NumberInput text-base 
-                v-model="formData.eligibility!.maxSubmissions!" 
-                input w-full
+              <NumberInput
+                class="text-base border border-2 px-3 py-1 box-border bg-white w-full"
+                v-model="formData.eligibility!.maxSubmissions!"
               />
             </div>
             
             <div>
               <label class="block mb-2 font-semibold">Min Approval Rate (%)</label>
-              <NumberInput text-base 
-                v-model="formData.eligibility!.minApprovalRate!" 
-                input w-full
+              <NumberInput
+                class="text-base border border-2 px-3 py-1 box-border bg-white w-full"
+                v-model="formData.eligibility!.minApprovalRate!"
               />
             </div>
           </div>
@@ -258,83 +241,79 @@ const onDeploy = async () => {
       </div>
 
       <!-- Status Card -->
-      <div card-gray space-y-4>
-        <div v-if="status === 'deployed'" card-success>
+      <div class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700 space-y-4">
+        <div
+          class="p-4 rounded-lg bg-success-200 text-success-600 [&>h3]:text-success-700"
+          v-if="status === 'deployed'"
+        >
           <b>✓ Deployed and ready to publish</b>
           <br>
           <div>commit: <span class="font-mono">{{ localSha }}</span></div>
         </div>
-        <div v-else-if="status === 'unconfigured'" card-error>
+        <div
+          class="p-4 rounded-lg bg-error-200 text-error-600 [&>h3]:text-error-700"
+          v-else-if="status === 'unconfigured'"
+        >
           <b>⚠ epoch.config.ts has not been configured</b>
           <br>
           Update the contact email (at least) in epoch.config.ts
         </div>
-        <div v-else-if="status === 'dirty'" card-warn>
-          <span i-mdi-alert ml--2 translate-y--1 text-2xl/>
+        <div class="p-4 rounded-lg bg-warn-200 text-warn-600 [&>h3]:text-warn-700" v-else-if="status === 'dirty'">
+          <span class="i-mdi-alert ml--2 translate-y--1 text-2xl" />
           <b>Git worktree is not clean</b>
           <br>
           <pre>{{ gitStatus }}</pre>
-          <div mt3>Commit or stash your changes before deploying.</div>
+          <div class="mt3">Commit or stash your changes before deploying.</div>
           <label class="flex items-center gap-2 mt-2">
-            <input 
-              v-model="bypassGitCheck" 
-              type="checkbox" 
-            />
+            <input v-model="bypassGitCheck" type="checkbox" />
             Bypass git status check
           </label>
-          <div v-if="bypassGitCheck && localSha != deployedSha" mt-2>
+          <div class="mt-2" v-if="bypassGitCheck && localSha != deployedSha">
             <b>Warning: current code is not deployed</b>
             <div>current commit: <span class="font-mono">{{ localSha }}</span></div>
             <div>deployed commit: <span class="font-mono">{{ deployedSha }}</span></div>
           </div>
         </div>
-        <div v-else-if="status === 'ready'" card-info>
+        <div class="p-4 rounded-lg bg-info-200 text-info-600 [&>h3]:text-info-700" v-else-if="status === 'ready'">
           <b>Ready to deploy! </b>
           <div>current commit: <span class="font-mono">{{ localSha }}</span></div>
           <div>deployed commit: <span class="font-mono">{{ deployedSha }}</span></div>
           <label class="flex items-center gap-2 mt-2">
-            <input 
-              v-model="bypassDeployedCheck" 
-              type="checkbox" 
-            />
+            <input v-model="bypassDeployedCheck" type="checkbox" />
             Bypass deployment check
           </label>
         </div>
-        <div v-else-if="status === 'loading'" card-info>
+        <div class="p-4 rounded-lg bg-info-200 text-info-600 [&>h3]:text-info-700" v-else-if="status === 'loading'">
           <b>Deploying...</b>
           <div>current commit: <span class="font-mono">{{ localSha }}</span></div>
           <div>deployed commit: <span class="font-mono">{{ deployedSha }}</span></div>
         </div>
 
-        <div v-else-if="status === 'error'" card-error>
+        <div class="p-4 rounded-lg bg-error-200 text-error-600 [&>h3]:text-error-700" v-else-if="status === 'error'">
           <b>⚠ Error building/deploying site</b>
           <br>
           <pre>{{ deploymentError }}</pre>
         </div>
-        <div v-else-if="cannotSubmitReason" card-error>
+        <div class="p-4 rounded-lg bg-error-200 text-error-600 [&>h3]:text-error-700" v-else-if="cannotSubmitReason">
           <b>⚠ {{ cannotSubmitReason }}</b>
         </div>
 
-        <div mt-2>
+        <div class="mt-2">
           <a :href="previewUrl" target="_blank" class="text-blue-600 hover:underline">
             Preview deployment →
           </a>
         </div>
 
-        <button
-          v-if="status === 'error'"
-          @click="dismissDeploymentError"
-          btn-gray
-        >
+        <button class="btn-gray" v-if="status === 'error'" @click="dismissDeploymentError">
           Dismiss Error
         </button>
 
         <ActionButton
+          class="btn-blue"
           v-else
           loading
           :name="status == 'loading' ? 'Deploying...' : 'Deploy Website'"
           :action="onDeploy"
-          btn-blue
           :disabled="status !== 'ready'"
         />
       </div>
@@ -342,17 +321,17 @@ const onDeploy = async () => {
 
     <div class="mt-6 flex gap-4">
       <ActionButton
+        class="btn-gray"
         loading
         :name="create.loading.value ? 'Creating...' : 'Create Draft'"
         :action="() => createStudy({publish: false})"
-        btn-gray
         :disabled="!canSubmit || create.loading.value"
       />
       <ActionButton
+        class="btn-green"
         loading
         :name="create.loading.value ? 'Creating...' : 'Create & Publish Study'"
         :action="() => createStudy({publish: true})"
-        btn-green
         success
         :disabled="!canSubmit || create.loading.value"
       />

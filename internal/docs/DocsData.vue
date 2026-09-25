@@ -31,7 +31,7 @@ import DocsPage from './DocsPage.vue'
         is a change to a pure function you can re-run over data you already collected. If you
         recorded one flat object per trial, it's a new data collection.
       </p>
-      <div card-info>
+      <div class="p-4 rounded-lg bg-info-200 text-info-600 [&>h3]:text-info-700">
         The rule of thumb: <b>log what happened, not what you plan to analyze.</b> If you find
         yourself computing something before logging it — accuracy, an RT difference, a running
         total — that computation probably belongs in a data view instead.
@@ -51,12 +51,14 @@ import DocsPage from './DocsPage.vue'
         up your data, prefer <code>declareEventLogger</code>: it fixes the event name and
         payload type, and returns a matching type guard for filtering the stream later.
       </p>
-      <DemoCode code="
+      <DemoCode
+        code="
         const [logResponse, isResponse] =
           declareEventLogger<{ correct: boolean; rt: number }>('trial.response')
 
         logResponse({ correct: true, rt: 482 })  // typechecked
-      "/>
+      "
+      />
       <p>
         Every event carries a timestamp and the epoch it occurred in, so a lot of the
         structure you'd otherwise record by hand — which trial, which block, how long a phase
@@ -84,7 +86,8 @@ import DocsPage from './DocsPage.vue'
         onset, a response, …), so the view groups them back together with
         <code>chunkBy</code>, keyed off the event that starts each trial:
       </p>
-      <DemoCode code="
+      <DemoCode
+        code="
         declareDataView('trial', (session: SessionData) => {
           const events = session.events.filter(e => isOnset(e) || isChoice(e))
           // chunkBy starts a new group at each onset; each group becomes one row
@@ -93,7 +96,8 @@ import DocsPage from './DocsPage.vue'
             correct: chunk.find(isChoice)?.data.correct ?? null,
           }))
         })
-      "/>
+      "
+      />
       <p>
         Because the view is a pure function of stored events rather than something computed
         during the session, changing it is free: edit the transform and every session you've

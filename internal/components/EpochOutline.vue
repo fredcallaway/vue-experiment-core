@@ -421,26 +421,15 @@ const indentBase = 8
 
 <template>
   <div
-    rounded-lg
-    border="~ 2 gray-300"
-    bg-white
-    cursor-default
-    flex="~ col"
-    pr2
-    relative
+    class="rounded-lg border border-2 border-gray-300 bg-white cursor-default flex flex-col pr2 relative"
     ref="top-div"
-
     :style="{ height: `${outlineHeight}px`, minWidth: `${maxSeenWidth}px` }"
   >
     <!-- zero-height measurement anchor: see useElementBounding note in <script> -->
-    <div ref="measure-anchor" absolute left-0 right-0 top-0 h-0 pointer-events-none />
-    <h2 ml2 mb0 shrink-0>Epochs</h2>
-    <div absolute right-1 top-1 flex="~ items-center gap-1">
-      <IconToggle
-        v-model="autoTraverse"
-        label="Automatic Traversal"
-        icon="i-mdi-map-search"
-      />
+    <div class="absolute left-0 right-0 top-0 h-0 pointer-events-none" ref="measure-anchor" />
+    <h2 class="ml2 mb0 shrink-0">Epochs</h2>
+    <div class="absolute right-1 top-1 flex flex-items-center flex-gap-1">
+      <IconToggle v-model="autoTraverse" label="Automatic Traversal" icon="i-mdi-map-search" />
       <IconButton
         icon="i-mdi-refresh"
         :title="reindexTitle"
@@ -453,50 +442,39 @@ const indentBase = 8
     <!-- <EpochControls w-fit class="py0! ml2"  /> -->
 
     <div
+      class="mx2 mb2 w-72 shrink-0 rounded border border-red-400 bg-red-50 p2 text-xs text-red-800"
       v-if="traversalError"
       role="alert"
-      mx2
-      mb2
-      w-72
-      shrink-0
-      rounded
-      border="~ red-400"
-      bg-red-50
-      p2
-      text-xs
-      text-red-800
     >
-      <div font-bold mb1>Outline traversal failed</div>
-      <div break-words>{{ traversalError.message }}</div>
-      <div v-if="traversalError.epochId" mt1 text-red-700 break-all>
+      <div class="font-bold mb1">Outline traversal failed</div>
+      <div class="break-words">{{ traversalError.message }}</div>
+      <div class="mt1 text-red-700 break-all" v-if="traversalError.epochId">
         After epoch: <code>{{ traversalError.epochId }}</code>
       </div>
-      <div v-if="traversalError.componentPath" mt1 text-red-700 break-all>
+      <div class="mt1 text-red-700 break-all" v-if="traversalError.componentPath">
         Component: <code>{{ traversalError.componentPath }}</code>
       </div>
-      <div mt1>Fix the error, then reindex.</div>
+      <div class="mt1">Fix the error, then reindex.</div>
     </div>
 
-    <div v-if="!root" text-sm text-gray-500>
+    <div class="text-sm text-gray-500" v-if="!root">
       Waiting for first epoch...
     </div>
 
-    <div ref="listEl" v-else overflow-y-auto pr-1 subtle-scrollbar flex-1 min-h-0>
+    <div
+      class="overflow-y-auto pr-1 [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.2)_transparent] flex-1 min-h-0"
+      ref="listEl"
+      v-else
+    >
       <div
         v-for="row in visibleRows"
         :key="row.node.id"
         :data-epoch-id="row.node.id"
-        class="outline-row"
-        relative
-        flex="~ items-center gap-1"
-        text-sm
+        class="outline-row relative flex flex-items-center flex-gap-1 text-sm"
         :style="{ paddingLeft: `${row.depth * indentStep + indentBase}px` }"
         :class="getNodeTextClass(row.node)"
       >
-        <div 
-          v-if="row.depth > 0"
-          class="pointer-events-none absolute inset-y-0 left-0"
-        >
+        <div v-if="row.depth > 0" class="pointer-events-none absolute inset-y-0 left-0">
           <span
             v-for="level in row.depth"
             :key="`${row.node.id}-guide-${level}`"
@@ -506,21 +484,16 @@ const indentBase = 8
         </div>
 
         <div
+          class="w-4 h-4 flex flex-wrap justify-center items-center rounded"
           v-if="hasChildren(row.node) && isAncestor(row.node)"
-          w-4 h-4
-          flex-center
-          rounded
           title="Cannot collapse ancestor"
         >
-          <span i-mdi-arrow-right-bold />
+          <span class="i-mdi-arrow-right-bold" />
         </div>
         <button
+          class="w-4 h-4 flex flex-wrap justify-center items-center rounded hover:bg-gray-200"
           v-else-if="hasChildren(row.node)"
           @click.stop="handleToggleCollapse(row.node)"
-          w-4 h-4
-          flex-center
-          rounded
-          hover:bg-gray-200
           :title="isActive(row.node) ? 'Pinned ancestor' : (isExpanded(row.node) ? 'Collapse' : 'Expand')"
         >
           <span :class="isExpanded(row.node) ? 'i-mdi-chevron-down' : 'i-mdi-chevron-right'" />
@@ -528,47 +501,29 @@ const indentBase = 8
         <button
           v-else
           @click.stop="handlePinNode(row.node)"
-          w-4
-          h-4
-          flex-center
-          rounded
-          class="group"
-          hover:bg-gray-100
+          class="group w-4 h-4 flex flex-wrap justify-center items-center rounded hover:bg-gray-100"
           :title="isPinnedNode(row.node) ? 'Unpin' : 'Pin and jump'"
         >
-          <div
-            v-if="isPinnedNode(row.node)"
-            i-mdi-pin
-            text-blue-500
-          />
+          <div class="i-mdi-pin text-blue-500" v-if="isPinnedNode(row.node)" />
           <template v-else>
-            <div v-if="isCurrent(row.node)" class="group-hover:hidden" i-mdi-arrow-right-bold text-blue-500 />
-            <div v-else class="group-hover:hidden" i-mdi-circle-outline scale-60 text-gray-400 />
-            <div class="hidden group-hover:block" i-mdi-pin-outline text-gray-300 />
+            <div v-if="isCurrent(row.node)" class="group-hover:hidden i-mdi-arrow-right-bold text-blue-500" />
+            <div v-else class="group-hover:hidden i-mdi-circle-outline scale-60 text-gray-400" />
+            <div class="hidden group-hover:block i-mdi-pin-outline text-gray-300" />
           </template>
         </button>
         <span
-          truncate
+          class="truncate cursor-pointer min-w-0"
           @click="handleClickNode(row.node)"
-          cursor-pointer
-          min-w-0
           :title="row.node.error || undefined"
         >
           {{ row.node.name }}
         </span>
         <button
+          class="ml-1 px-1.5 py-0 translate-y-0.5 rounded-full text-10px cursor-pointer hover:brightness-95"
           v-if="row.identical"
           @click.stop="cycleIdenticalStep(row.node.id, 1)"
           @contextmenu.prevent.stop="cycleIdenticalStep(row.node.id, -1)"
           @wheel="handleScroll(row, $event)"
-          ml-1
-          px-1.5
-          py-0
-          translate-y-0.5
-          rounded-full
-          text-10px
-          cursor-pointer
-          hover:brightness-95
           title="left/right click or scroll to cycle through steps"
           :class="row.identical.activeStep !== null ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'"
         >

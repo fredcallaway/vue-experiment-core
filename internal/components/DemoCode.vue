@@ -35,9 +35,9 @@ const display = computed(() => {
 </script>
 
 <template>
-  <div :class="layout === 'column' ? 'flex-col' : 'flex-col md:flex-row'" gap-3 items-start>
-    <pre b-1 b-gray-200 rounded p3 text-sm overflow-x-auto flex-1 m0><code>{{ display }}</code></pre>
-    <div v-if="$slots.default" flex-1 b-1 b-gray-200 rounded p3>
+  <div class="gap-3 items-start" :class="layout === 'column' ? 'flex-col' : 'flex-col md:flex-row'">
+    <pre class="b-1 b-gray-200 rounded p3 text-sm overflow-x-auto flex-1 m0"><code>{{ display }}</code></pre>
+    <div class="flex-1 b-1 b-gray-200 rounded p3" v-if="$slots.default">
       <slot />
     </div>
   </div>

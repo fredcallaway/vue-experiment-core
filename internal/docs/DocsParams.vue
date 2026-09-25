@@ -10,22 +10,26 @@ import DocsPage from './DocsPage.vue'
       options appear, what the target color is. <code>defineParams</code> declares those knobs
       once, at module level, with defaults that double as their types.
     </p>
-    <DemoCode code="
+    <DemoCode
+      code="
       // in the component's plain <script> block (not setup)
       export const [provideProbeParams, useProbeParams] = defineParams({
         color: 'steelblue',
         size: 80,
       })
       export type ProbeParams = ReturnType<typeof useProbeParams>
-    "/>
+    "
+    />
     <p>
       The component then resolves its own params in <code>setup</code>, accepting per-instance
       overrides through a <code>params</code> prop:
     </p>
-    <DemoCode code="
+    <DemoCode
+      code="
       const props = defineProps<{ params?: Partial<ProbeParams> }>()
       const params = useProbeParams(props.params)
-    "/>
+    "
+    />
     <p>
       Two things are worth noticing here. The defaults live at <b>module level</b>, so they're
       written once and shared by every instance; and the params are read <b>inside</b> the
@@ -46,15 +50,19 @@ import DocsPage from './DocsPage.vue'
         <b>Instance</b> — the <code>params</code> prop on a single tag. Closest wins.
       </li>
     </ol>
-    <DemoCode code='
+    <DemoCode
+      code='
       // an ancestor: everything below defaults to size 60
       provideProbeParams({ size: 60 })
-    '/>
-    <DemoCode code='
+    '
+    />
+    <DemoCode
+      code='
       <ProbeTrial />                                        <!-- steelblue, 60 -->
       <ProbeTrial :params="{ color: &apos;tomato&apos; }" />          <!-- tomato, 60 -->
       <ProbeTrial :params="{ color: &apos;seagreen&apos;, size: 100 }" />  <!-- seagreen, 100 -->
-    '/>
+    '
+    />
     <p>
       Overrides are merged per key, not wholesale: overriding <code>color</code> leaves
       <code>size</code> at whatever the layer above it decided. See the
@@ -69,12 +77,14 @@ import DocsPage from './DocsPage.vue'
       depends on something that isn't known at module scope — a condition, the window size,
       whether fast mode is on:
     </p>
-    <DemoCode code="
+    <DemoCode
+      code="
       export const [provideTrialParams, useTrialParams] = defineParams({
         nOptions: 4,
         feedbackMs: () => replaceFast(800, 0),  // 0 when fast mode is on
       })
-    "/>
+    "
+    />
 
     <h3>Params are resolved once</h3>
     <p>
@@ -88,7 +98,7 @@ import DocsPage from './DocsPage.vue'
       <code>ERepeat</code> already does — every iteration is a fresh instance that resolves
       its own params.
     </p>
-    <div card-info>
+    <div class="p-4 rounded-lg bg-info-200 text-info-600 [&>h3]:text-info-700">
       If you genuinely need a value to change while a component stays mounted, don't reach for
       params: pass a <code>computed</code> or a ref as an ordinary prop. Mixing the two mental
       models is a reliable source of confusion.

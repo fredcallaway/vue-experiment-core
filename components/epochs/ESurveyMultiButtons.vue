@@ -81,18 +81,18 @@ function advanceQuestion() {
 </script>
 
 <template>
-  <div v-if="showIntro" w-140 mx-auto flex-center gap-4>
-    <p text-xl text-center leading-relaxed m-0 v-html="intro" />
+  <div class="w-140 mx-auto flex flex-wrap justify-center items-center gap-4" v-if="showIntro">
+    <p class="text-xl text-center leading-relaxed m-0" v-html="intro" />
     <PButton value="Start" @click="startSurvey" />
   </div>
 
   <ESurveyPage v-else :prompt="sharedPrompt" :question="currentPrompt.question">
     <PButtons :values="values" @click="selectResponse" />
-    <div flex justify-center mt-4>
-      <PButton value="Skip" btn-gray @click="finish('SKIP')" />
+    <div class="flex justify-center mt-4">
+      <PButton class="btn-gray" value="Skip" @click="finish('SKIP')" />
     </div>
     <template #footer>
-      <div text-center text-gray-600 text-sm pt-4>
+      <div class="text-center text-gray-600 text-sm pt-4">
         Question {{ questionIndex + 1 }} of {{ questionCount }}
       </div>
     </template>

@@ -92,7 +92,8 @@ const handleClick = async () => {
 </script>
 
 <template>
-  <button btn
+  <button
+    class="btn"
     v-bind="attrs"
     :class="[
       attrs.class,

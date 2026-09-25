@@ -40,8 +40,8 @@ function skipQuestion() {
 <template>
   <ESurveyPage :question="prompt">
     <PButtons :values="options" @click="selectResponse" />
-    <div v-if="!required" flex justify-center mt-4>
-      <PButton value="Skip" btn-gray @click="skipQuestion" />
+    <div class="flex justify-center mt-4" v-if="!required">
+      <PButton class="btn-gray" value="Skip" @click="skipQuestion" />
     </div>
   </ESurveyPage>
 </template>

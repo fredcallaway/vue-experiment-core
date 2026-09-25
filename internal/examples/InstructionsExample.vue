@@ -10,11 +10,11 @@
 </script>
 
 <template>
-  <div p4>
+  <div class="p4">
     <ENavigableSequence v-slot="{ enableNext }" header="Instructions">
 
       <!-- A pure reading page unlocks Next on mount. -->
-      <EPage @mounted="enableNext" name="welcome" flex-col gap-3>
+      <EPage class="flex-col gap-3" @mounted="enableNext" name="welcome">
         <p class="prompt">
           Welcome! Navigate with the arrow keys or the buttons above. Earlier pages
           stay available so you can re-read them.
@@ -23,12 +23,14 @@
 
       <!-- A page requiring an action calls enableNext only once it's done.
            `state` is EPage's per-page reactive scratch object. -->
-      <EPage name="choice" v-slot="{ state }" flex-col gap-3>
+      <EPage class="flex-col gap-3" name="choice" v-slot="{ state }">
         <p class="prompt">Next unlocks after you pick an option.</p>
-        <PButtons values="left right"
-                  :disabled="R.isDefined(state.choice)"
-                  @click="(val) => { state.choice = val; enableNext() }" />
-        <div v-if="state.choice" text-green>You chose {{ state.choice }}.</div>
+        <PButtons
+          values="left right"
+          :disabled="R.isDefined(state.choice)"
+          @click="(val) => { state.choice = val; enableNext() }"
+        />
+        <div class="text-green" v-if="state.choice">You chose {{ state.choice }}.</div>
       </EPage>
 
       <!-- The last child finishing finishes the whole sequence, like ESequence. -->

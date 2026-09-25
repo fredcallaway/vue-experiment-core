@@ -14,12 +14,9 @@ const enabledClass = computed(() => {
 </script>
 
 <template>
-  <button
-    @click="$emit('click')"
-    :disabled="props.disabled"
-    :class="props.disabled ? 'cursor-not-allowed' : ''"
-  >
+  <button @click="$emit('click')" :disabled="props.disabled" :class="props.disabled ? 'cursor-not-allowed' : ''">
     <div
+      class="text-2xl transition-transform duration-75"
       :title="props.title"
       :class="[
         props.icon,
@@ -27,9 +24,6 @@ const enabledClass = computed(() => {
           ? 'text-gray-300'
           : enabledClass,
       ]"
-      text-2xl
-      transition-transform
-      duration-75
     />
   </button>
 </template>

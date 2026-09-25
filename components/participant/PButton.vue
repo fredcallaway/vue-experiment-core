@@ -11,7 +11,7 @@ const props = defineProps<{
   value: string
   label?: string
   unstyled?: boolean
-  color?: 'primary' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'gray' // from uno.config.ts
+  color?: 'primary' | 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'gray' // shared variants in core/uno.config.ts
   disabled?: boolean
   delay?: NumberLike
   once?: boolean
@@ -53,7 +53,7 @@ controller.on('mousedown', (value: string) => {
 const attrs = useAttrs()
 
 const btnClass = computed(() => {
-  const hasBtn = String(attrs.class ?? '').includes('btn-') || Object.keys(attrs).some(k => k.includes('btn-'))
+  const hasBtn = String(attrs.class ?? '').split(/\s+/).some(name => name.startsWith('btn-'))
   if (hasBtn) return false
   if (props.unstyled) return false
   if (props.color) return `btn-${props.color}`

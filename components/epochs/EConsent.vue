@@ -59,9 +59,9 @@ const slots = useSlots()
   <MouseTracker :min-pixels="1" :min-rate="0" :max-rate="60" :max-frames="500" />
 
   <!-- abort screen -->
-  <div v-if="aborted" flex-center hfull>
-    <div my5 italic text-gray>the experiment has been aborted</div>
-    <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=700" alt="cat" >
+  <div class="flex flex-wrap justify-center items-center hfull" v-if="aborted">
+    <div class="my5 italic text-gray">the experiment has been aborted</div>
+    <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=700" alt="cat">
   </div>
   <!-- idle screen -->
   <!-- <div v-else-if="idle" class="w150 text-center p-8 mx-auto">
@@ -82,14 +82,14 @@ const slots = useSlots()
         Clicking the abort button will abort the experiment and send you back 
         to Prolific to return the submission.
       </p>
-      <div flex="~ row gap-4" flex-center>
-        <PButton value="agree" btn-primary @click="saidNo = false">
-          <span i-mdi-arrow-left />
+      <div class="flex flex-row flex-gap-4 flex-wrap justify-center items-center">
+        <PButton class="btn-primary" value="agree" @click="saidNo = false">
+          <span class="i-mdi-arrow-left" />
           Back to consent
         </PButton>
 
-        <PButton value="decline" btn-red @click="abortExperiment('ABORTED')" >
-          <span i-mdi-close />
+        <PButton class="btn-red" value="decline" @click="abortExperiment('ABORTED')">
+          <span class="i-mdi-close" />
           Abort Experiment
         </PButton>
       </div>
@@ -105,8 +105,8 @@ const slots = useSlots()
           for more than {{ totalTimeoutSeconds }} seconds.
         </div> -->
     
-        <div class="p-6 border-2 text-sm overflow-y-auto h-100 ">
-          <div w-110 mx-auto mt20 v-if="!slots.default">
+        <div class="p-6 border-2 text-sm overflow-y-auto h-100">
+          <div class="w-110 mx-auto mt20" v-if="!slots.default">
             If you're reading this, you should either put the correct
             consent form in Consent.vue or message the researcher telling them
             they're missing their consent form.
@@ -116,14 +116,14 @@ const slots = useSlots()
 
         <h4 class="text-lg font-semibold mt-2 mb-2">Do you understand and consent to these terms?</h4>
 
-        <div flex="~ row gap-4">
-          <PButton value="agree" btn-primary @click="done">
-            <span i-mdi-check />
+        <div class="flex flex-row flex-gap-4">
+          <PButton class="btn-primary" value="agree" @click="done">
+            <span class="i-mdi-check" />
             I agree
           </PButton>
           
-          <PButton value="decline" btn-red @click="saidNo = true" >
-            <span i-mdi-close />
+          <PButton class="btn-red" value="decline" @click="saidNo = true">
+            <span class="i-mdi-close" />
             I do not want to participate
           </PButton>
         </div>

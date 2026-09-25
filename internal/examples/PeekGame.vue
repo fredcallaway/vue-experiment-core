@@ -128,20 +128,20 @@ defineExpose({ state, allowGuess, playRound })
 </script>
 
 <template>
-  <div flex-col flex-center gap-4>
-    <div flex gap-8>
+  <div class="flex-col flex flex-wrap justify-center items-center gap-4">
+    <div class="flex gap-8">
       <div
         v-for="side in (['left', 'right'] as const)"
         :key="side"
         class="peek-box"
         :class="{ chosen: state.guess === side }"
       >
-        <span v-if="state.phase === 'feedback' && state.target === side" text-4xl>🪙</span>
-        <span v-else-if="state.phase === 'choose' && state.hint === side" text-3xl>⭐</span>
+        <span class="text-4xl" v-if="state.phase === 'feedback' && state.target === side">🪙</span>
+        <span class="text-3xl" v-else-if="state.phase === 'choose' && state.hint === side">⭐</span>
       </div>
     </div>
 
-    <div text-sm text-gray-500 h-10 text-center>
+    <div class="text-sm text-gray-500 h-10 text-center">
       <template v-if="state.active && state.phase === 'choose'">
         <div><kbd>F</kbd> = left, <kbd>J</kbd> = right</div>
         <div v-if="params.hintEnabled && !state.peeked">
@@ -157,7 +157,7 @@ defineExpose({ state, allowGuess, playRound })
 
 <style scoped>
 .peek-box {
-  @apply w-24 h-24 rounded-lg b-2 b-gray-300 bg-gray-100 flex-center;
+  @apply w-24 h-24 rounded-lg b-2 b-gray-300 bg-gray-100 flex flex-wrap justify-center items-center;
   transition: border-color 150ms ease, background-color 150ms ease;
 }
 .peek-box.chosen {

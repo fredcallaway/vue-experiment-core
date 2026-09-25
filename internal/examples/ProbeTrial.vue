@@ -20,8 +20,8 @@ const params = useProbeParams(props.params)
 </script>
 
 <template>
-  <div flex-col flex-center gap-2>
-    <div rounded :style="{ width: `${params.size}px`, height: `${params.size}px`, background: params.color }" />
-    <code text-xs>{{ params.color }} / {{ params.size }}</code>
+  <div class="flex-col flex flex-wrap justify-center items-center gap-2">
+    <div class="rounded" :style="{ width: `${params.size}px`, height: `${params.size}px`, background: params.color }" />
+    <code class="text-xs">{{ params.color }} / {{ params.size }}</code>
   </div>
 </template>

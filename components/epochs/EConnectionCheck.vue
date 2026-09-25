@@ -48,28 +48,28 @@ const showError = computed(() => {
 </script>
 
 <template>
-  <div v-if="showError" text-center>
+  <div class="text-center" v-if="showError">
     <h1>Connection Error</h1>
     <div>
       We are unable to establish a connection to the server.
       <p v-if="!online">
         It looks like your internet connection is down. Please confirm that you can visit other web pages.
       </p>
-      <p mt10>
-        <b text-lg>Do not refresh this page!</b>
+      <p class="mt10">
+        <b class="text-lg">Do not refresh this page!</b>
         <br>
         The experiment will continue automatically when the connection is restored.
       </p>
     </div>
-    <p mt10>
+    <p class="mt10">
       If the problem persists, please contact {{ contactEmail }}.
     </p>
-    <div v-if="allowCompletion && completionCode" mt-10>
+    <div class="mt-10" v-if="allowCompletion && completionCode">
       <p>
         If you cannot resolve the connection issue, you can submit with code: <b>{{ completionCode }}</b>. 
         Note that you may not receive full payment if you haven't completed the study.
       </p>
-      <button btn-primary mt-4 @click="handleSubmit">
+      <button class="btn-primary mt-4" @click="handleSubmit">
         Submit to Prolific
       </button>
     </div>

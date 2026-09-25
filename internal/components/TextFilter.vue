@@ -34,17 +34,16 @@ const searchQuery = computed({
 </script>
 
 <template>
-  <div flex="~ col gap-2" min-w-97 max-w-150>
+  <div class="flex flex-col flex-gap-2 min-w-97 max-w-150">
     <div>
-      <div v-if="!compact" text-sm text-gray-600 mb--1>
+      <div class="text-sm text-gray-600 mb--1" v-if="!compact">
         Filter (<kbd>/</kbd>): space is AND, comma is OR, ! negates, * is wildcard
       </div>
       <input
+        class="border border-2 px-3 py-1 box-border bg-white w-full"
         ref="input"
         v-model="searchQuery"
         type="text"
-        input
-        w-full
         :class="{ 'mt-2': !compact }"
         :placeholder="placeholder"
       />

@@ -32,7 +32,7 @@ const blocks = [
 </script>
 
 <template>
-  <div p4>
+  <div class="p4">
     <ESequence name="experiment">
 
       <!-- Real projects pass a <ConsentContent /> component defined at the
@@ -47,15 +47,15 @@ const blocks = [
 
       <!-- After this point the participant cannot restart the study. Place it
            after instructions, before the first real data is collected. -->
-      <ENoReturn my10 />
+      <ENoReturn class="my10" />
 
       <ERepeat name="blocks" :count="blocks.length" v-slot="{ step: block }">
-        <div flex justify-between text-lg font-bold mb-6 w-120 mx-auto>
+        <div class="flex justify-between text-lg font-bold mb-6 w-120 mx-auto">
           <div>Bonus: {{ bonus.dollarsString }}</div>
           <div>Block {{ block + 1 }} / {{ blocks.length }}</div>
         </div>
 
-        <ESequence name="block" text-center>
+        <ESequence class="text-center" name="block">
           <EContinue name="blockIntro" prompt>
             <template v-if="blocks[block].hintEnabled">
               In this block you can peek (<kbd>SPACE</kbd>) before guessing.
@@ -66,11 +66,8 @@ const blocks = [
           </EContinue>
 
           <ERepeat name="trials" :count="nTrials" v-slot="{ step, nSteps }" class="flex-col gap-2">
-            <div text-sm text-gray-500 text-center>Trial {{ step + 1 }} / {{ nSteps }}</div>
-            <PeekGame
-              :params="{ hintEnabled: blocks[block].hintEnabled }"
-              :rig="blocks[block].rigs[step]"
-            />
+            <div class="text-sm text-gray-500 text-center">Trial {{ step + 1 }} / {{ nSteps }}</div>
+            <PeekGame :params="{ hintEnabled: blocks[block].hintEnabled }" :rig="blocks[block].rigs[step]" />
           </ERepeat>
         </ESequence>
       </ERepeat>
@@ -82,11 +79,7 @@ const blocks = [
           options="never | sometimes | always"
           required
         />
-        <ESurveyText
-          name="comments"
-          prompt="Any comments for the researchers? (optional)"
-          placeholder="Type here…"
-        />
+        <ESurveyText name="comments" prompt="Any comments for the researchers? (optional)" placeholder="Type here…" />
       </ESurveyWrapper>
 
       <EContinue name="reveal" button="Finish" prompt>

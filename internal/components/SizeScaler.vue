@@ -19,26 +19,25 @@ const opacity = computed(() => {
 </script>
 
 <template>
-  <div 
-    v-if="enabled" 
+  <div
+    v-if="enabled"
     style="position: fixed; top: 2px; right: 8px; z-index: 50; transform-origin: top right;"
     :style="{ transform: `scale(${inverseScale})`, opacity: opacity }"
     class="transition-opacity"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
-    <span v-if="violated" text-xs text-red-500>
+    <span class="text-xs text-red-500" v-if="violated">
       try zooming out (dev mode only)
     </span>
     <input
-      border-white hover:border-gray-100 border-1
       v-model.number="percentage"
       type="number"
       min="50"
       max="200"
       step="10"
       style="width: 35px; font-size: 14px; padding: 2px 4px; border-radius: 4px; appearance: textfield; -moz-appearance: textfield;"
-      class="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+      class="[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none border-white hover:border-gray-100 border-1"
       title="Zoom (scroll to adjust)"
       @wheel="scrollHandler"
     />

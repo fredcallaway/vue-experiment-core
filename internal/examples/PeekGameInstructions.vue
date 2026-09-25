@@ -45,7 +45,7 @@ const answerQuiz = (option: string, done: () => void) => {
 </script>
 
 <template>
-  <div flex-col gap-8 text-center>
+  <div class="flex-col gap-8 text-center">
     <Sequence>
 
       <EContinue name="welcome" prompt>
@@ -55,10 +55,14 @@ const answerQuiz = (option: string, done: () => void) => {
 
       <!-- A demonstration round the page owns: rig the coin's side so the
            narration on the next page can refer to it. -->
-      <EPage name="firstRound" prompt @mounted="async (epoch) => {
+      <EPage
+        name="firstRound"
+        prompt
+        @mounted="async (epoch) => {
         await game!.playRound({ target: 'left' })
         epoch.done()
-      }">
+      }"
+      >
         Take a guess: press <kbd>F</kbd> (left) or <kbd>J</kbd> (right).
       </EPage>
 
@@ -74,19 +78,27 @@ const answerQuiz = (option: string, done: () => void) => {
 
       <!-- One round spanning two pages: this page starts it (not awaited) with
            guessing disabled, and advances once the participant peeks. -->
-      <EPage name="peek" prompt @mounted="(epoch) => {
+      <EPage
+        name="peek"
+        prompt
+        @mounted="(epoch) => {
         game!.allowGuess = false
         void game!.playRound({ target: 'right', hintValid: true })
         until(() => game!.state.peeked).toBe(true).then(() => epoch.done())
-      }">
+      }"
+      >
         Try it now: press <kbd>SPACE</kbd>.
       </EPage>
 
       <!-- …and this page re-enables guessing and waits for the round to end. -->
-      <EPage name="peekGuess" prompt @mounted="(epoch) => {
+      <EPage
+        name="peekGuess"
+        prompt
+        @mounted="(epoch) => {
         game!.allowGuess = true
         until(() => game!.state.phase).toBe('feedback').then(() => epoch.done())
-      }">
+      }"
+      >
         The ⭐ is a hint: it marks the box where the coin <i>usually</i> is.
         Make your guess.
       </EPage>
@@ -102,17 +114,17 @@ const answerQuiz = (option: string, done: () => void) => {
 
       <!-- Free practice: real PeekGame epochs (unscored via the provide above). -->
       <ERepeat name="practice" :count="3" v-slot="{ step, nSteps }" class="flex-col gap-2">
-        <div text-sm text-gray-500>Practice {{ step + 1 }} / {{ nSteps }}</div>
+        <div class="text-sm text-gray-500">Practice {{ step + 1 }} / {{ nSteps }}</div>
         <PeekGame />
       </ERepeat>
 
-      <EPage name="quiz" v-slot="{ done }" flex-col gap-4>
+      <EPage class="flex-col gap-4" name="quiz" v-slot="{ done }">
         <p class="prompt">
           Quick check ({{ quizStep + 1 }} / {{ quiz.length }}):
           {{ quiz[quizStep].prompt }}
         </p>
         <PButtons :values="quiz[quizStep].options" class="gap-2" @click="(v) => answerQuiz(v, done)" />
-        <div v-if="quizWrong" text-red>Not quite — think back to the practice rounds.</div>
+        <div class="text-red" v-if="quizWrong">Not quite — think back to the practice rounds.</div>
       </EPage>
 
       <EContinue name="ready" button="Start" prompt>

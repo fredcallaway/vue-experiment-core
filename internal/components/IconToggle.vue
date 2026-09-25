@@ -7,9 +7,9 @@ const model = defineModel<boolean>({ required: true })
 <template>
   <button @click="model = !model">
     <div
+      class="text-2xl"
       :title="model ? `Disable ${label}` : `Enable ${label}`"
       :class="[icon, model ? 'text-blue-500' : 'text-gray-300']"
-      text-2xl
     />
   </button>
 </template>

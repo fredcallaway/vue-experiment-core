@@ -15,7 +15,7 @@ export default {}
 </script>
 
 <template>
-  <div p4>
+  <div class="p4">
     <ESequence name="main">
 
       <!-- Option strings use `|` separators because options contain spaces. -->
@@ -38,14 +38,10 @@ export default {}
           :prompts="['The instructions were clear.', 'The task was too long.']"
         />
 
-        <ESurveyText
-          name="comments"
-          prompt="Any comments? (optional)"
-          placeholder="Type here…"
-        />
+        <ESurveyText name="comments" prompt="Any comments? (optional)" placeholder="Type here…" />
       </ESurveyWrapper>
 
-      <EPage name="end" text-center>
+      <EPage class="text-center" name="end">
         Done — see the <code>survey</code> view in the DataView panel in
         <NuxtLink to="/dev">/dev</NuxtLink>.
       </EPage>

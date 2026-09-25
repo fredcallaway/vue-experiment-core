@@ -73,57 +73,49 @@ const fmtCell = (value: unknown) => (value === null || value === undefined ? 'â€
 
 <template>
   <div
+    class="border border-2 border-gray-300 p-2 text-sm rounded-lg min-w-300px flex flex-col relative h-500px"
     v-if="viewNames.length > 0"
-    border="~ 2 gray-300"
-    p-2
-    text-sm
-    rounded-lg
-    min-w="300px"
-    flex="~ col"
-    relative
-    h="500px"
   >
-    <div flex="~ row items-center gap-2" mb-2>
-      <h2 shrink-0>Data</h2>
-      <select
-        v-model="override"
-        bg-white
-        border="~ gray-300"
-        rounded
-        px-1
-        text-xs
-        ml-auto
-      >
+    <div class="flex flex-row flex-items-center flex-gap-2 mb-2">
+      <h2 class="shrink-0">Data</h2>
+      <select class="bg-white border border-gray-300 rounded px-1 text-xs ml-auto" v-model="override">
         <option value="">auto{{ autoSelected ? ` (${autoSelected})` : '' }}</option>
         <option v-for="name in viewNames" :key="name" :value="name">{{ name }}</option>
       </select>
     </div>
 
-    <div v-if="result && !result.ok" text-xs text-red-600 font-mono whitespace-pre-wrap flex-1 min-h-0 overflow-y-auto>
+    <div
+      class="text-xs text-red-600 font-mono whitespace-pre-wrap flex-1 min-h-0 overflow-y-auto"
+      v-if="result && !result.ok"
+    >
       {{ result.error }}
     </div>
 
     <template v-else-if="view?.format === 'json'">
-      <pre text-xs class="subtle-scrollbar whitespace-pre-wrap break-words flex-1 min-h-0 overflow-y-auto">{{ jsonText }}</pre>
+      <pre
+        class="[scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.2)_transparent] whitespace-pre-wrap break-words flex-1 min-h-0 overflow-y-auto text-xs"
+      >{{ jsonText }}</pre>
     </template>
 
     <template v-else-if="rows.length">
-      <div class="subtle-scrollbar flex-1 min-h-0 overflow-y-auto">
-        <table text-xs b-1 b-gray-200 rounded w-full>
-          <thead bg-gray-50>
+      <div
+        class="[scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.2)_transparent] flex-1 min-h-0 overflow-y-auto"
+      >
+        <table class="text-xs b-1 b-gray-200 rounded w-full">
+          <thead class="bg-gray-50">
             <tr>
-              <th v-for="col in columns" :key="col" p1 text-left>{{ col }}</th>
+              <th class="p1 text-left" v-for="col in columns" :key="col">{{ col }}</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(row, i) in rows" :key="i" b-t b-gray-100>
-              <td v-for="col in columns" :key="col" p1>{{ fmtCell(row[col]) }}</td>
+            <tr class="b-t b-gray-100" v-for="(row, i) in rows" :key="i">
+              <td class="p1" v-for="col in columns" :key="col">{{ fmtCell(row[col]) }}</td>
             </tr>
           </tbody>
         </table>
       </div>
     </template>
 
-    <div v-else text-sm text-gray-400 italic>No rows yet.</div>
+    <div class="text-sm text-gray-400 italic" v-else>No rows yet.</div>
   </div>
 </template>

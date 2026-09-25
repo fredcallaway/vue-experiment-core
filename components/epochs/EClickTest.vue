@@ -123,21 +123,14 @@ const onCircleClick = () => {
 </script>
 
 <template>
-  <div
-    flex
-    flex-col
-    items-center
-    gap-1
-    :class="E.phase.value === 'done' && 'fade-out'"
-  >
-    <div flex justify-between text-xl fw-bold :style="{ width: `${params.boardWidth}px` }">
+  <div class="flex flex-col items-center gap-1" :class="E.phase.value === 'done' && 'fade-out'">
+    <div class="flex justify-between text-xl fw-bold" :style="{ width: `${params.boardWidth}px` }">
       <div>Time: {{ timer.formattedTimeLeft }}</div>
       <div>Score: {{ score }}</div>
     </div>
 
     <div
-      relative
-      class="bg-white border-4 border-black"
+      class="bg-white border-4 border-black relative"
       :style="{ width: `${params.boardWidth}px`, height: `${params.boardHeight}px` }"
     >
 
@@ -165,9 +158,9 @@ const onCircleClick = () => {
       </Phase>
 
       <Phase which="feedback" class="overlay">
-        <div flex flex-col items-center gap-3>
-          <div text-3xl fw-bold>Time's up!</div>
-          <div text-2xl>Final score: {{ score }}</div>
+        <div class="flex flex-col items-center gap-3">
+          <div class="text-3xl fw-bold">Time's up!</div>
+          <div class="text-2xl">Final score: {{ score }}</div>
           <PButton once value="Continue" @click="E.goTo('done')" />
         </div>
       </Phase>

@@ -97,22 +97,25 @@ const initLoading = computed(() => {
 
 <template>
 
-  <div fixed inset-0 bg-gray-600 relative>
-    <div flex-center h-100vh >
-      <MainContent capture-errors bg-white border-4 fixed-width fixed-height>
+  <div class="fixed inset-0 bg-gray-600 relative">
+    <div class="flex flex-wrap justify-center items-center h-100vh">
+      <MainContent class="bg-white border-4" capture-errors fixed-width fixed-height>
         <Experiment />
       </MainContent>
     </div>
 
-    <div v-if="initLoading" fixed inset-0 bg-white flex-center z-100>
+    <div class="fixed inset-0 bg-white flex flex-wrap justify-center items-center z-100" v-if="initLoading">
       <div>
         loading...
-        <div mt-3 mx-auto class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300" />
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300 mt-3 mx-auto" />
       </div>
     </div>
 
-    <div v-else-if="phStatus == 'blocked' || checked" fixed inset-0 bg-white flex-center z-100>
-      <div shrink-0 w600px mx-auto p-3 text-left h-130>
+    <div
+      class="fixed inset-0 bg-white flex flex-wrap justify-center items-center z-100"
+      v-else-if="phStatus == 'blocked' || checked"
+    >
+      <div class="shrink-0 w600px mx-auto p-3 text-left h-130">
         <h1>AdBlock Detected</h1>
         <p>
           We use an analytics tool called PostHog to collect data about how you do our experiment.
@@ -129,11 +132,11 @@ const initLoading = computed(() => {
           to disable your ad blocker while on this site. If you are not comfortable
           doing that, please return the study.
         </p>
-        <div flex="~ row gap-4 justify-center" mt-4>
+        <div class="flex flex-row flex-gap-4 flex-justify-center mt-4">
           <PButton value="phCheck" @click="handleCheckAgain">I disabled it</PButton>
         </div>
         <div v-if="phStatus == 'loading'" class="mt-4">
-          <div mt-3 mx-auto class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300" />
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300 mt-3 mx-auto" />
         </div>
         <p v-if="failedCheck" class="mt-4">
           Hmm...it looks like your ad blocker is still enabled. Please try again.
@@ -144,8 +147,11 @@ const initLoading = computed(() => {
       </div>
     </div>
 
-    <div v-else-if="initStatus === 'loading'" fixed inset-0 bg-white flex-center z-100>
-      <div shrink-0 w600px mx-auto p-3 text-center>
+    <div
+      class="fixed inset-0 bg-white flex flex-wrap justify-center items-center z-100"
+      v-else-if="initStatus === 'loading'"
+    >
+      <div class="shrink-0 w600px mx-auto p-3 text-center">
         <h1>Connecting...</h1>
         <p>
           Please wait while we establish a connection to the server.
@@ -153,8 +159,11 @@ const initLoading = computed(() => {
       </div>
     </div>
     
-    <div v-else-if="initStatus === 'error'" fixed inset-0 bg-white flex-center z-100>
-      <div shrink-0 w600px mx-auto p-3 text-center>
+    <div
+      class="fixed inset-0 bg-white flex flex-wrap justify-center items-center z-100"
+      v-else-if="initStatus === 'error'"
+    >
+      <div class="shrink-0 w600px mx-auto p-3 text-center">
         <h1>Connection Error</h1>
         <p>
           We were unable to establish a connection to the server.
@@ -166,8 +175,11 @@ const initLoading = computed(() => {
       </div>
     </div>
 
-    <div v-else-if="initStatus === 'repeat'" fixed inset-0 bg-white flex-center z-100>
-      <div shrink-0 w600px mx-auto p-3 text-center>
+    <div
+      class="fixed inset-0 bg-white flex flex-wrap justify-center items-center z-100"
+      v-else-if="initStatus === 'repeat'"
+    >
+      <div class="shrink-0 w600px mx-auto p-3 text-center">
         <h1>Repeat Session Detected</h1>
         <p>
           It looks like you've already begun this study, so you can't start again.
@@ -179,8 +191,11 @@ const initLoading = computed(() => {
       </div>
     </div>
     
-    <div v-else-if="initStatus === 'invalid-participant'" fixed inset-0 bg-white flex-center z-100>
-      <div shrink-0 w600px mx-auto p-3 text-center>
+    <div
+      class="fixed inset-0 bg-white flex flex-wrap justify-center items-center z-100"
+      v-else-if="initStatus === 'invalid-participant'"
+    >
+      <div class="shrink-0 w600px mx-auto p-3 text-center">
         <h1>Invalid Link</h1>
         <p>
           We could not identify you as a valid participant.
@@ -192,8 +207,8 @@ const initLoading = computed(() => {
       </div>
     </div>
 
-    <div v-if="unloading" fixed inset-0 bg-white flex-center z-100>
-      <div shrink-0 w600px mx-auto p-3 text-center>
+    <div class="fixed inset-0 bg-white flex flex-wrap justify-center items-center z-100" v-if="unloading">
+      <div class="shrink-0 w600px mx-auto p-3 text-center">
         <h1>Thanks for sticking around!</h1>
         <p>
           We detected that you started to close/refresh the window but canceled.
@@ -201,16 +216,16 @@ const initLoading = computed(() => {
           open and contact {{ contactEmail }}.
           Otherwise, click the button below to resume the experiment.
         </p>
-        <div flex-center>
-          <button btn-primary mx-auto @click="cancelUnload">
+        <div class="flex flex-wrap justify-center items-center">
+          <button class="btn-primary mx-auto" @click="cancelUnload">
             Resume Experiment
           </button>
         </div>
       </div>
     </div>
 
-    <div v-if="superseded" fixed inset-0 bg-white flex-center z-100>
-      <div shrink-0 w600px mx-auto p-3 text-center>
+    <div class="fixed inset-0 bg-white flex flex-wrap justify-center items-center z-100" v-if="superseded">
+      <div class="shrink-0 w600px mx-auto p-3 text-center">
         <h1>Multiple Tabs Detected</h1>
         <p>
           You have opened this experiment in another tab or window,

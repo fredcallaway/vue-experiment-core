@@ -21,12 +21,12 @@ provide('registerTab', (title: string) => {
 
 <template>
   <div class="mt-6">
-    <div flex="~ row gap-0">
+    <div class="flex flex-row flex-gap-0">
       <button
+        class="px-4 py-2"
         v-for="(title, idx) in tabTitles"
         :key="idx"
         @click="activeTabIndex = idx"
-        px-4 py-2
         :class="[
           'border-t border-l border-r border-gray-300',
           idx > 0 ? '-ml-px' : '',

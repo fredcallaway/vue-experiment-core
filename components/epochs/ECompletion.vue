@@ -72,8 +72,8 @@ const initialized = computed(() => {
 </script>
 
 <template>
-  <div w-full>
-    <div mx-auto w-150 text-center select-text >
+  <div class="w-full">
+    <div class="mx-auto w-150 text-center select-text">
 
       <!-- heading -->
       <template v-if="error">
@@ -89,17 +89,19 @@ const initialized = computed(() => {
       </template>
       
       <!-- screen shown in dev/debug mode when data writing was never initialized -->
-      <div v-if="!initialized" card-gray mt10>
+      <div class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700 mt10" v-if="!initialized">
         <p>
           The study is running in development mode. If you want to save the data to the debug database, click the button below.
         </p>
-        <pre text-left text-xs bg-white p2 border-gray-400 border-2 overflow-y-auto max-h-60 class="subtle-scrollbar" >{{ 
+        <pre
+          class="[scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.2)_transparent] text-left text-xs bg-white p2 border-gray-400 border-2 overflow-y-auto max-h-60"
+        >{{
           {
             meta: useCurrentSession(),
             events: dataWriter.events,
           }
         }}</pre>
-        <button btn-blue mt4 @click="saveDebugData">
+        <button class="btn-blue mt4" @click="saveDebugData">
           Save data to debug database
         </button>
       </div>
@@ -113,18 +115,18 @@ const initialized = computed(() => {
         </div>
         <div v-else-if="!longWait">
           <div>Please wait for your data to be saved...</div>
-          <div mt-3 mx-auto class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300" />
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300 mt-3 mx-auto" />
         </div>
         <div v-else>
           <template v-if="config.completion.mode === 'prolific'">
             <div>We're having trouble saving your data. Please submit with code: <b>{{ code }}</b></div>
-            <button btn-primary mt-10 @click="handleSubmit">
+            <button class="btn-primary mt-10" @click="handleSubmit">
               Submit to Prolific
             </button>
           </template>
           <template v-else>
             <div>We're having trouble saving your data. Please contact {{ config.contactEmail }} to make sure you are credited.</div>
-            <button btn-primary mt-10 @click="handleSubmit">
+            <button class="btn-primary mt-10" @click="handleSubmit">
               Submit Study
             </button>
           </template>
@@ -135,16 +137,16 @@ const initialized = computed(() => {
       <div v-else>
         <template v-if="config.completion.mode === 'prolific'">
           <div v-if="code">
-            <p p-2>Your completion code is: <b>{{ code }}</b></p>
+            <p class="p-2">Your completion code is: <b>{{ code }}</b></p>
             <p>Click the button below to be redirected to the Prolific completion page.</p>
           </div>
-          <button btn-primary mt-10 @click="handleSubmit">
+          <button class="btn-primary mt-10" @click="handleSubmit">
             Submit to Prolific
           </button>
         </template>
         <template v-else>
           <p>Your data has been saved. Thank you for participating!</p>
-          <button btn-primary mt-10 @click="handleSubmit">
+          <button class="btn-primary mt-10" @click="handleSubmit">
             Submit Study
           </button>
         </template>

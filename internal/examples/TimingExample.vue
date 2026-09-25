@@ -21,13 +21,13 @@ const runSleep = async () => {
 </script>
 
 <template>
-  <div p4>
+  <div class="p4">
     <ESequence name="main">
 
-      <EContinue name="timer" button="Next" flex-col gap-3>
-        <div font-bold>useTimer</div>
-        <div text-4xl font-mono text-center my-2>{{ timer.formattedTimeLeft }}</div>
-        <div flex-center gap-2>
+      <EContinue class="flex-col gap-3" name="timer" button="Next">
+        <div class="font-bold">useTimer</div>
+        <div class="text-4xl font-mono text-center my-2">{{ timer.formattedTimeLeft }}</div>
+        <div class="flex flex-wrap justify-center items-center gap-2">
           <PButton value="Start" :disabled="timer.status.value === 'running'" @click="timer.resume" />
           <PButton value="Pause" color="gray" :disabled="timer.status.value !== 'running'" @click="timer.pause" />
           <PButton value="Reset" color="gray" @click="timer.reset" />
@@ -35,15 +35,15 @@ const runSleep = async () => {
       </EContinue>
 
       <!-- No continue control; :duration advances it automatically. -->
-      <EPage name="fixation" :duration="1200" flex-col flex-center gap-3>
-        <div text-5xl>+</div>
-        <div text-sm text-gray-500>EPage :duration</div>
+      <EPage class="flex-col flex flex-wrap justify-center items-center gap-3" name="fixation" :duration="1200">
+        <div class="text-5xl">+</div>
+        <div class="text-sm text-gray-500">EPage :duration</div>
       </EPage>
 
-      <EContinue name="sleep" button="Finish" flex-col gap-3>
-        <div font-bold>useLocalAsync().sleep</div>
+      <EContinue class="flex-col gap-3" name="sleep" button="Finish">
+        <div class="font-bold">useLocalAsync().sleep</div>
         <PButton value="Reveal after 1.5 s" @click="runSleep" />
-        <div v-if="revealed" text-green text-lg>Revealed!</div>
+        <div class="text-green text-lg" v-if="revealed">Revealed!</div>
       </EContinue>
 
     </ESequence>

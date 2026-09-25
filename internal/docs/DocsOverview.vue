@@ -11,7 +11,7 @@ import DocsPage from './DocsPage.vue'
       <a href="https://vuejs.org/" target="_blank" rel="noopener">Vue</a> and running them
       on <a href="https://www.prolific.com/" target="_blank" rel="noopener">Prolific</a>.
     </p>
-    <div card-info>
+    <div class="p-4 rounded-lg bg-info-200 text-info-600 [&>h3]:text-info-700">
       New to Vue? The
       <a href="https://vuejs.org/tutorial/" target="_blank" rel="noopener">official tutorial</a>
       is a good 20-minute introduction. You only need the basics (and maybe some help from a coding agent).

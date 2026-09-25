@@ -14,7 +14,7 @@ const trials = random.shuffle(
 </script>
 
 <template>
-  <div p4>
+  <div class="p4">
     <ESequence name="main">
 
       <EContinue name="instructions">
@@ -24,11 +24,11 @@ const trials = random.shuffle(
 
       <ERepeat name="trials" :count="trials.length" v-slot="{ step, nSteps }" class="flex-col gap-2">
         <!-- Content outside the trial epoch persists across the block. -->
-        <div text-sm text-gray-500 text-center>Trial {{ step + 1 }} / {{ nSteps }}</div>
+        <div class="text-sm text-gray-500 text-center">Trial {{ step + 1 }} / {{ nSteps }}</div>
         <StroopTrial :word="trials[step].word" :ink="trials[step].ink" />
       </ERepeat>
 
-      <EPage name="end" text-center>
+      <EPage class="text-center" name="end">
         Done.
       </EPage>
 

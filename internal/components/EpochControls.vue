@@ -54,7 +54,7 @@ const handleNext = () => {
 </script>
 
 <template>
-  <div border="~ 2 gray-300" p-1 rounded-lg flex="~ items-center gap-2" >
+  <div class="border border-2 border-gray-300 p-1 rounded-lg flex flex-items-center flex-gap-2">
     <IconButton
       icon="i-mdi-arrow-left-bold-box"
       title="Previous Epoch"
@@ -69,8 +69,8 @@ const handleNext = () => {
     />
     <button @click="cycleCurrentPin">
       <div
+        class="text-2xl"
         :title="pinStatus == 'current' ? 'Unpin Current Epoch' : 'Pin Current Epoch'"
-        text-2xl
         :class="[
           pinStatus == 'other' ? 'i-mdi-pin-outline' : 'i-mdi-pin',
           pinStatus != 'none' ? 'text-blue-500' : 'text-gray-300',

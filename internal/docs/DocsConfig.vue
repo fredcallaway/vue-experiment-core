@@ -38,7 +38,8 @@ import DocsConditions from './DocsConditions.vue'
         <code>epoch.config.ts</code> at the project root holds app-level metadata, read
         anywhere via <code>useConfig()</code>:
       </p>
-      <DemoCode code="
+      <DemoCode
+        code="
         export default defineEpochConfig({
           title: 'Psychology Experiment',
           icon: '/favicon.svg',
@@ -46,13 +47,14 @@ import DocsConditions from './DocsConditions.vue'
           contactEmail: 'you@example.edu',
           completion: { mode: 'prolific' },
         })
-      "/>
+      "
+      />
       <p>
         <code>version</code> is worth setting deliberately: it's recorded with every session
         and shown in the Prolific study's internal name, so it's how you tell a pilot's data
         from the real run.
       </p>
-      <div card-info>
+      <div class="p-4 rounded-lg bg-info-200 text-info-600 [&>h3]:text-info-700">
         Experiment-wide values that aren't app metadata — stimulus sets, block counts, shared
         constants — don't belong in <code>epoch.config.ts</code>. Put them in a project
         composable (e.g. <code>composables/useExperimentConfig.ts</code>) that returns them as

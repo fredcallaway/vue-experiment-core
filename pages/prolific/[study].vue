@@ -701,14 +701,14 @@ const versions = computed(() => {
       <div class="flex gap-6 mb-6">
         <div class="bg-gray-100 p-6 rounded flex-1">
           <h2 >{{ study.internal_name }}</h2>
-          <CacheRefreshButton :cache="studyCache" mb-2 italic/>
+          <CacheRefreshButton class="mb-2 italic" :cache="studyCache" />
 
 
           <div class="grid grid-cols-1 gap-2">
             <div><b>Name:</b> {{ study.name }}</div>
             <div>
               <b>Data Version: </b>
-              <div v-for="version in versions" :key="version" flex gap-4 inline>
+              <div class="flex gap-4 inline" v-for="version in versions" :key="version">
                 <NuxtLink :to="`/data/versions/${version}`">
                   {{ version }}
                 </NuxtLink>
@@ -723,87 +723,82 @@ const versions = computed(() => {
             <div><b>Estimated Time:</b> {{ study.estimated_completion_time }} min</div>
             <div><b>Cost:</b> {{ costString }}</div>
             <div><b>Average Bonus:</b> {{ averageBonus !== null ? formatCents(averageBonus) : 'N/A' }}</div>
-            <a 
-              :href="getStudyLink(study)"
-              target="_blank"
-            >
+            <a :href="getStudyLink(study)" target="_blank">
               View on Prolific →
             </a>
           </div>
         </div>
 
         <!-- Actions -->
-        <div class="bg-gray-100 p-6 rounded min-w-100 ">
+        <div class="bg-gray-100 p-6 rounded min-w-100">
           <h2>Recruitment</h2>
 
           <!-- Draft Study Actions -->
           <div v-if="study.status === 'UNPUBLISHED'" class="flex gap-2">
-              <ActionButton 
-                name="Publish Study" :action="publishStudy" success
-                btn-green
-                :disabled="loading"
-              />
+              <ActionButton class="btn-green" name="Publish Study" :action="publishStudy" success :disabled="loading" />
 
-              <ActionButton 
-                name="Delete Study" :action="deleteStudy" success
-                btn-red
-                :disabled="loading"
-              />
+              <ActionButton class="btn-red" name="Delete Study" :action="deleteStudy" success :disabled="loading" />
           </div>
 
           <!-- Published Study Actions -->
           <div v-else>
-            <div flex gap-2 mb-4 items-center>
+            <div class="flex gap-2 mb-4 items-center">
               
               <!-- set status -->
-              <ActionButton 
-                v-if="study.status === 'ACTIVE'" 
-                name="Pause Study" :action="pauseStudy" success
-                btn-yellow
+              <ActionButton
+                class="btn-yellow"
+                v-if="study.status === 'ACTIVE'"
+                name="Pause Study"
+                :action="pauseStudy"
+                success
                 :disabled="loading"
               />
-              <ActionButton 
-                v-if="study.status === 'PAUSED'" 
-                name="Start Study" :action="startStudy" success
-                btn-green
+              <ActionButton
+                class="btn-green"
+                v-if="study.status === 'PAUSED'"
+                name="Start Study"
+                :action="startStudy"
+                success
                 :disabled="loading"
               />
-              <ActionButton 
+              <ActionButton
+                class="btn-red"
                 v-if="study.status !== 'COMPLETED'"
-                name="Stop Study" :action="stopStudy" success
-                btn-red
+                name="Stop Study"
+                :action="stopStudy"
+                success
                 :disabled="loading"
               />
 
               <!-- add places -->
-              <ActionButton 
-                name="Add Places" :action="addPlaces" success="result"
+              <ActionButton
+                class="btn-blue"
+                name="Add Places"
+                :action="addPlaces"
+                success="result"
                 loading
-                btn-blue
                 :disabled="loading || newPlaces <= 0"
               />
-              <NumberInput 
-                v-model="newPlaces" 
+              <NumberInput
+                class="text-xl border border-2 px-3 py-1 box-border bg-white w-20"
+                v-model="newPlaces"
                 :scroll-step="1"
                 :min="0"
-                text-xl
-                input
-                w-20
                 step="10"
               />
             </div>
 
             <!-- invalid assignment replacement -->
-            <div v-if="totalAssignmentsToReplace > 0" mb-4>
-              <div font-bold>Found {{ totalAssignmentsToReplace }} approved submissions with incomplete data</div>
-              <div text-sm v-for="item in assignmentsToReplaceSummary" :key="item.assignment">
+            <div class="mb-4" v-if="totalAssignmentsToReplace > 0">
+              <div class="font-bold">Found {{ totalAssignmentsToReplace }} approved submissions with incomplete data</div>
+              <div class="text-sm" v-for="item in assignmentsToReplaceSummary" :key="item.assignment">
                 {{ item.assignment }}: {{ item.count }}
               </div>
               <ActionButton
+                class="btn-blue"
                 name="Replace Incomplete Assignments"
                 :action="replaceInvalidAssignments"
                 success="result"
-                btn-blue
                 :disabled="loading || totalAssignmentsToReplace === 0"
               />
             </div>
@@ -811,35 +806,35 @@ const versions = computed(() => {
               <div font-italic text-sm mb-4 mt--2>No incomplete assignments found</div>
             </div> -->
 
-            <div mb-4>
+            <div class="mb-4">
               <h2>Review</h2>
-              <div flex gap-3 items-center mb-2>
-                <span font-bold>Approve:</span>
+              <div class="flex gap-3 items-center mb-2">
+                <span class="font-bold">Approve:</span>
                 <div>
-                  <span mb-2 mr1 text-2xl i-mdi-check-circle text-green-600 />
-                  <span text-lg >{{ actionCounts.approve }}</span>
+                  <span class="mb-2 mr1 text-2xl i-mdi-check-circle text-green-600" />
+                  <span class="text-lg">{{ actionCounts.approve }}</span>
                 </div>
                 <div>
-                  <span mb-2 mr1 text-2xl i-mdi-arrow-left-circle text-orange-500 />
-                  <span text-lg >{{ actionCounts.return }}</span>
+                  <span class="mb-2 mr1 text-2xl i-mdi-arrow-left-circle text-orange-500" />
+                  <span class="text-lg">{{ actionCounts.return }}</span>
                 </div>
                 <div>
-                  <span mb-2 mr1 text-2xl i-mdi-close-circle text-red-600 />
-                  <span text-lg >{{ actionCounts.reject }}</span>
+                  <span class="mb-2 mr1 text-2xl i-mdi-close-circle text-red-600" />
+                  <span class="text-lg">{{ actionCounts.reject }}</span>
                 </div>
                 <div>
-                  <span mb-2 mr1 text-2xl i-mdi-minus-circle text-gray-500 />
-                  <span text-lg >{{ actionCounts.none }}</span>
+                  <span class="mb-2 mr1 text-2xl i-mdi-minus-circle text-gray-500" />
+                  <span class="text-lg">{{ actionCounts.none }}</span>
                 </div>
                 <div>
-                  <span mb-2 mr1 text-2xl i-mdi-help-circle text-blue-600 />
-                  <span text-lg >{{ actionCounts.unspecified }}</span>
+                  <span class="mb-2 mr1 text-2xl i-mdi-help-circle text-blue-600" />
+                  <span class="text-lg">{{ actionCounts.unspecified }}</span>
                 </div>
               </div>
-              <div mb-2>
-                <div flex items-center gap-2>
-                  <span font-bold>Bonuses: {{ formatCents(totalIntendedBonus) }}</span>
-                  <span :class="bonusPaidStatus.color" font-bold>
+              <div class="mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold">Bonuses: {{ formatCents(totalIntendedBonus) }}</span>
+                  <span class="font-bold" :class="bonusPaidStatus.color">
                     {{ bonusPaidStatus.text }}
                   </span>
                 </div>
@@ -851,10 +846,11 @@ const versions = computed(() => {
                 </div>
               </div>
               <ActionButton
-                name="Execute" :action="executeAll"
+                class="btn-blue"
+                name="Execute"
+                :action="executeAll"
                 loading
                 :success="executeSuccess"
-                btn-blue
                 :disabled="!canExecute"
               />
             </div>
@@ -877,20 +873,18 @@ const versions = computed(() => {
         loading submissions...
       </div>
       <div v-else>
-        <div flex="~ row gap-2 justify-between items-end" mb-2 mt-8>
+        <div class="flex flex-row flex-gap-2 flex-justify-between flex-items-end mb-2 mt-8">
           <div>
             <h3 class="text-xl font-bold">Submissions ({{ filteredSubmissions.length }} / {{ submissions.length }})</h3>
           </div>
-          <div w-150>
-            <div text-sm text-gray-600 mb--1>
+          <div class="w-150">
+            <div class="text-sm text-gray-600 mb--1">
               Filter: space is AND, comma is OR, ! negates, * is wildcard
             </div>
             <input
+              class="border border-2 px-3 py-1 box-border bg-white w-full mt-2"
               v-model="searchQuery"
               type="text"
-              input
-              w-full
-              mt-2
               placeholder="e.g. compl !appr"
             />
           </div>
@@ -900,23 +894,18 @@ const versions = computed(() => {
           <table class="w-full text-sm">
             <thead>
               <tr class="bg-gray-200">
-                <th px-2 py-2 text-left whitespace-nowrap>Session ID</th>
-                <th px-2 py-2 text-left whitespace-nowrap>Participant ID</th>
-                <th px-2 py-2 text-left whitespace-nowrap>Started</th>
-                <th px-2 py-2 text-left whitespace-nowrap>Status</th>
-                <th px-2 py-2 text-left whitespace-nowrap>Code</th>
-                <th px-2 py-2 text-left whitespace-nowrap>Data</th>
-                <th px-2 py-2 text-left whitespace-nowrap>Action</th>
-                <th px-2 py-2 text-left whitespace-nowrap>Time (total/active)</th>
-                <th px-2 py-2 text-left whitespace-nowrap>
-                  <div flex items-center gap-2>
+                <th class="px-2 py-2 text-left whitespace-nowrap">Session ID</th>
+                <th class="px-2 py-2 text-left whitespace-nowrap">Participant ID</th>
+                <th class="px-2 py-2 text-left whitespace-nowrap">Started</th>
+                <th class="px-2 py-2 text-left whitespace-nowrap">Status</th>
+                <th class="px-2 py-2 text-left whitespace-nowrap">Code</th>
+                <th class="px-2 py-2 text-left whitespace-nowrap">Data</th>
+                <th class="px-2 py-2 text-left whitespace-nowrap">Action</th>
+                <th class="px-2 py-2 text-left whitespace-nowrap">Time (total/active)</th>
+                <th class="px-2 py-2 text-left whitespace-nowrap">
+                  <div class="flex items-center gap-2">
                     <span>Bonus</span>
-                    <button
-                      @click="showImportModal = true"
-                      btn-xs
-                      class="font-400"
-                      :disabled="loading"
-                    >
+                    <button @click="showImportModal = true" class="font-400 btn-xs" :disabled="loading">
                       import
                     </button>
                   </div>
@@ -926,61 +915,60 @@ const versions = computed(() => {
             <tbody>
               <tr v-for="sub in filteredSubmissions" :key="sub.id">
                 <!-- IDs -->
-                <td px-2 py-2 whitespace-nowrap font-mono text-xs text-left>
+                <td class="px-2 py-2 whitespace-nowrap font-mono text-xs text-left">
                   <NuxtLink :to="`/data/sessions/${sub.id}`">
                     {{ sub.id }}
                   </NuxtLink>
                   <button
                     @click="copy(sub.id)"
-                    class="i-mdi-clipboard-multiple ml-1 text-gray-500 hover:text-gray-700 cursor-pointer"
-                    w-4 h-4
+                    class="i-mdi-clipboard-multiple ml-1 text-gray-500 hover:text-gray-700 cursor-pointer w-4 h-4"
                   />
                 </td>
-                <td px-2 py-2 whitespace-nowrap font-mono text-xs text-left>
+                <td class="px-2 py-2 whitespace-nowrap font-mono text-xs text-left">
                   {{ sub.participant_id }}
                   <button
                     @click="copy(sub.participant_id)"
-                    class="i-mdi-clipboard-multiple ml-1 text-gray-500 hover:text-gray-700 cursor-pointer"
-                    w-4 h-4
+                    class="i-mdi-clipboard-multiple ml-1 text-gray-500 hover:text-gray-700 cursor-pointer w-4 h-4"
                   />
                   <button
                     @click="openMessageModal(sub.participant_id)"
                     :class="getMessageIconClass(sub.participant_id)"
-                    class="ml-1 cursor-pointer hover:opacity-70"
-                    w-4 h-4
+                    class="ml-1 cursor-pointer hover:opacity-70 w-4 h-4"
                   />
                 </td>
                 <!-- Start Time -->
-                <td px-2 py-2 whitespace-nowrap text-left>
+                <td class="px-2 py-2 whitespace-nowrap text-left">
                   {{ sub.started_at ? formatDateTime(sub.started_at) : 'never' }}
                 </td>
                 <!-- Submission Status -->
-                <td px-2 py-2 whitespace-nowrap text-left >
-                  <div :class="getSubmissionStatusColorClass(sub.status)" text-xs text-white rounded p-1 text-center w20>
+                <td class="px-2 py-2 whitespace-nowrap text-left">
+                  <div
+                    class="text-xs text-white rounded p-1 text-center w20"
+                    :class="getSubmissionStatusColorClass(sub.status)"
+                  >
                     {{ getSubmissionStatusLabel(sub.status) }}
                   </div>
                 </td>
                 <!-- Completion Code -->
-                <td px-2 py-2 whitespace-nowrap font-mono font-bold text-xs text-left :class="getCodeColorClass(sub.study_code)">
+                <td
+                  class="px-2 py-2 whitespace-nowrap font-mono font-bold text-xs text-left"
+                  :class="getCodeColorClass(sub.study_code)"
+                >
                   {{ getCodeType(sub.study_code) }}
                 </td>
                 <!-- Data -->
-                <td px-2 py-2 whitespace-nowrap text-left :class="getDataStatus(sub).color">
+                <td class="px-2 py-2 whitespace-nowrap text-left" :class="getDataStatus(sub).color">
                   {{ getDataStatus(sub).text }}
                 </td>
                 <!-- Action -->
-                <td px-2 py-2 whitespace-nowrap text-left>
-                  <div w-25 mr--5>
-                    <span v-if="isActionLocked(sub)" text-gray-400></span>
+                <td class="px-2 py-2 whitespace-nowrap text-left">
+                  <div class="w-25 mr--5">
+                    <span class="text-gray-400" v-if="isActionLocked(sub)"></span>
                     <select
+                      class="border border-2 px-3 py-1 box-border bg-white cursor-pointer px-1 py-0.5 text-xs"
                       v-else
                       v-model="selectedActions[sub.id]"
                       @change="onActionChange(sub.id)"
-                      input
-                      cursor-pointer
-                      px-1
-                      py-0.5
-                      text-xs
                       :disabled="reviewDraftLoading"
                       :class="getActionColorClass(selectedActions[sub.id])"
                     >
@@ -992,22 +980,21 @@ const versions = computed(() => {
                     <button
                       v-if="(actionOverrides[sub.id] !== undefined) && sub.status !== 'APPROVED'"
                       @click="clearActionOverride(sub.id)"
-                      class="i-mdi-undo-variant"
+                      class="i-mdi-undo-variant ml-1"
                       title="Clear override"
-                      ml-1
                       :class="getActionColorClass(getDefaultAction(sub))"
-                      
                     />
                   </div>
                 </td>
                 <!-- Time Taken -->
-                <td px-2 py-2 whitespace-nowrap text-right>
+                <td class="px-2 py-2 whitespace-nowrap text-right">
                   <div>{{ sub.time_taken ? formatTime(sub.time_taken * 1000) : 'N/A' }}</div>
                   <div class="text-xs text-gray-500">active: {{ getActiveTimeText(sub) }}</div>
                 </td>
                 <!-- Bonus -->
-                <td px-2 py-2 whitespace-nowrap font-mono text-sm flex items-center>
+                <td class="px-2 py-2 whitespace-nowrap font-mono text-sm flex items-center">
                   <NumberInput
+                    class="border border-2 px-3 py-1 box-border bg-white font-mono w-10 px-1"
                     :modelValue="getBonusValue(sub.participant_id)"
                     :default="defaultBonuses[sub.participant_id]"
                     @update:modelValue="(val) => setBonusValue(sub.participant_id, val)"
@@ -1015,14 +1002,9 @@ const versions = computed(() => {
                     :min="currentBonuses[sub.participant_id] ?? 0"
                     :disabled="reviewDraftLoading"
                     step="25"
-                    input
-                    font-mono
-                    w-10
-                    px-1
-                    border-2
                     :class="getBonusBorderColor(sub.participant_id)"
                   />
-                  <span :class="getBonusStatus(sub).color" font-bold ml-auto w-15>
+                  <span class="font-bold ml-auto w-15" :class="getBonusStatus(sub).color">
                     {{ getBonusStatus(sub).text }}
                   </span>
                 </td>
@@ -1035,45 +1017,31 @@ const versions = computed(() => {
 
     <!-- Import Bonuses Modal -->
     <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
       v-if="showImportModal"
-      fixed
-      inset-0
-      z-50
-      flex
-      items-center
-      justify-center
-      bg-black
-      bg-opacity-50
       @click.self="showImportModal = false"
     >
-      <div bg-white rounded-lg p-6 max-w-lg w-full mx-4>
-        <div flex justify-between items-center mb-4>
+      <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+        <div class="flex justify-between items-center mb-4">
           <h3 class="text-xl font-semibold">Import Bonuses</h3>
-          <button
-            @click="showImportModal = false"
-            class="text-gray-500 hover:text-gray-700"
-          >
-            <span i-mdi-close text-2xl />
+          <button @click="showImportModal = false" class="text-gray-500 hover:text-gray-700">
+            <span class="i-mdi-close text-2xl" />
           </button>
         </div>
         <label class="block mb-2 font-semibold">CSV: participant_id,bonus (cents)</label>
-        <textarea 
-          v-model="bonusCsv" 
-          input
-          w-full
+        <textarea
+          class="border border-2 px-3 py-1 box-border bg-white w-full"
+          v-model="bonusCsv"
           rows="6"
           placeholder="participant_id_1,50&#10;participant_id_2,100&#10;..."
         ></textarea>
-        <div flex gap-4 mt-4 justify-end>
-          <button
-            @click="showImportModal = false"
-            btn-gray
-          >
+        <div class="flex gap-4 mt-4 justify-end">
+          <button class="btn-gray" @click="showImportModal = false">
             Cancel
           </button>
           <button
+            class="btn-blue"
             @click="applyCsvBonuses"
-            btn-blue
             :disabled="loading || reviewDraftLoading || !bonusCsv.trim()"
           >
             Apply Bonuses
@@ -1084,22 +1052,12 @@ const versions = computed(() => {
 
     <!-- Message Modal -->
     <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
       v-if="messageModalParticipantId"
-      fixed
-      inset-0
-      z-50
-      flex
-      items-center
-      justify-center
-      bg-black
-      bg-opacity-50
       @click.self="closeMessageModal"
     >
-      <div v-if="messageModalCorrespondence" >
-        <ProlificMessageBox
-          :correspondence="messageModalCorrespondence"
-          show-session-link
-        />
+      <div v-if="messageModalCorrespondence">
+        <ProlificMessageBox :correspondence="messageModalCorrespondence" show-session-link />
       </div>
     </div>
   </div>

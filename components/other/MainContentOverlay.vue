@@ -8,7 +8,7 @@ const mounted = useMounted()
 
 <template>
   <Teleport v-if="mounted" to="#main-content-overlay">
-    <div absolute inset-0 pointer-events-auto :class="$props.class">
+    <div class="absolute inset-0 pointer-events-auto" :class="$props.class">
       <slot />
     </div>
   </Teleport>

@@ -30,30 +30,30 @@ const choose = (side: string) => {
 </script>
 
 <template>
-  <div p4 flex-col gap-6>
-    <div min-h-40 relative>
+  <div class="p4 flex-col gap-6">
+    <div class="min-h-40 relative">
       <!-- `which` can list several phases. Modifiers:
            constant — always mounted, hidden when inactive (keeps internal state)
            persist  — mounted from its first to its last matching phase
            static   — keeps its place in layout flow when inactive -->
-      <Phase which="ready guess" static text-center text-sm text-gray-500 mb-4>
+      <Phase class="text-center text-sm text-gray-500 mb-4" which="ready guess" static>
         A coin is hidden on one side.
       </Phase>
 
-      <Phase which="ready" flex-center>
+      <Phase class="flex flex-wrap justify-center items-center" which="ready">
         <PButton value="Start" @click="start" />
       </Phase>
 
-      <Phase which="guess" flex-center flex-col gap-4>
+      <Phase class="flex flex-wrap justify-center items-center flex-col gap-4" which="guess">
         <div>Where is it?</div>
         <PButtons values="left right" @click="choose" />
       </Phase>
 
-      <Phase which="reveal" flex-center flex-col gap-4>
-        <div text-2xl>
+      <Phase class="flex flex-wrap justify-center items-center flex-col gap-4" which="reveal">
+        <div class="text-2xl">
           {{ guess === target ? '🎉 Found it!' : `It was ${target}.` }}
         </div>
-        <div flex gap-2>
+        <div class="flex gap-2">
           <PButton value="again" color="gray" @click="epoch.goTo(0)" />
           <!-- done() finishes the whole phase epoch, advancing its parent. -->
           <PButton value="finish" @click="epoch.done()" />

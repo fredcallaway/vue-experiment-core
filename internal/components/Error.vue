@@ -21,10 +21,9 @@ const hasContent = computed(() => {
 
 <template>
 <div v-if="hasContent">
-  <div v-if="!noHeader" text-xl font-bold text-red-700>Error</div>
+  <div class="text-xl font-bold text-red-700" v-if="!noHeader">Error</div>
   <div
-  bg-red-100 border border-red-700 text-red-700 px-4 py-3 mb-4
-    font-mono text-xs max-h-120 overflow-y-auto overflow-x-auto class="subtle-scrollbar"
+    class="[scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.2)_transparent] bg-red-100 border border-red-700 text-red-700 px-4 py-3 mb-4 font-mono text-xs max-h-120 overflow-y-auto overflow-x-auto"
   >
     <span v-if="displayMsg" class="font-semibold">{{ displayMsg }}</span>
     <pre v-if="displayInfo">{{ displayInfo }}</pre>

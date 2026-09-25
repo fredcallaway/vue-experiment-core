@@ -18,7 +18,7 @@ import DocsExamples from './DocsExamples.vue'
 </script>
 
 <template>
-  <div class="docs-content" w-full p6 text-left>
+  <div class="docs-content w-full p6 text-left">
     <ESequence name="docs">
       <DocsOverview />
       <DocsEpochs />

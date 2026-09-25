@@ -1,17 +1,12 @@
   <template>
-  <div 
+  <div
     class="relative"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
     :class="{'border-red-500': invalid}"
     @wheel="scrollHandler"
   >
-    <input 
-      :value="currentRawValue"
-      @input="handleInput"
-      @change="handleChange"
-      w-full
-    />
+    <input class="w-full" :value="currentRawValue" @input="handleInput" @change="handleChange" />
     <Transition>
       <button
         v-if="isHovered"

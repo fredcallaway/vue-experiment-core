@@ -96,7 +96,7 @@ onMounted(() => {
     <br />
     <NuxtLink external :href="firebaseConfig.databaseURL">firebase console</NuxtLink>
 
-    <div min-h-6 flex items-center>
+    <div class="min-h-6 flex items-center">
       <span class="font-mono">data/{{ mode }}/raw/</span>&nbsp;
       <span v-if="optimisticIsSynced">is up to date</span>
       <span v-else>
@@ -113,13 +113,13 @@ onMounted(() => {
     <TabContainer :default-tab="defaultTab">
 
       <Tab title="versions">
-        <DataTable :data="versionList" placeholder="e.g. v1.*" >
+        <DataTable :data="versionList" placeholder="e.g. v1.*">
           <h2>Versions ({{ versionList.length }})</h2>
         </DataTable>
       </Tab>
 
       <Tab title="sessions">
-        <DataTable :data="sessionList" placeholder="e.g. active,complete 11/5" >
+        <DataTable :data="sessionList" placeholder="e.g. active,complete 11/5">
           <h2>Sessions ({{ sessionList.length }})</h2>
         </DataTable>
       </Tab>

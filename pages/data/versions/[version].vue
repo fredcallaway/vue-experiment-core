@@ -285,10 +285,7 @@ const completedByCondition = computed(() => {
           <!-- <div><b>Session Count:</b> {{ versionMeta.sessionCount }}</div> -->
           <div v-if="studyIdsForVersion">
             <b>{{ studyLabel }}: </b>
-            <span
-              v-for="(studyId, index) in studyIdsForVersion"
-              :key="studyId"
-            >
+            <span v-for="(studyId, index) in studyIdsForVersion" :key="studyId">
               <NuxtLink :to="`/prolific/${studyId}`">
                 {{ studyId }}
               </NuxtLink>
@@ -298,14 +295,14 @@ const completedByCondition = computed(() => {
           <!-- <div><b>Total Bonus:</b> ${{ versionMeta.totalBonus.toFixed(2) }}</div> -->
           <!-- <div><b>Average Bonus:</b> ${{ versionMeta.averageBonus.toFixed(2) }}</div> -->
         </div>
-        <div flex items-center gap-2 mt-4>
+        <div class="flex items-center gap-2 mt-4">
           <b>Data:</b>
           <span>
             <span class="font-mono">{{ processedDataPath }}</span>
             <span v-if="lastSyncTime"> was last updated at {{ formatDateTime(lastSyncTime) }}</span>
             <span v-else> has not been written yet</span>
           </span>
-          <button btn-blue-sm :disabled="saveDisabled" @click="syncAllViews">
+          <button class="btn-blue-sm" :disabled="saveDisabled" @click="syncAllViews">
             save
           </button>
         </div>
