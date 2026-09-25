@@ -27,7 +27,7 @@ This is the canonical starting point for agents working on experiment projects b
 
 - Keep code simple, concise, and modular. Prefer existing project and template conventions over new abstractions.
 - Use Vue single-file components with `<script lang="ts" setup>` for per-instance component logic when practical. Keep module-level parameter definitions, event loggers, and data views in a normal `<script lang="ts">` block.
-- Rely on Nuxt autoimports unless an explicit import is required.
+- Vue/Nuxt framework APIs and file-based components are autoimported; compiler macros such as `defineProps` stay unchanged. Explicitly import every other function and type from its owning module, including core helpers, project helpers, VueUse APIs, and named SFC exports. See [imports.md](imports.md).
 - Define experiment parameters with `defineParams` and pass per-instance overrides through `params` props.
 - Keep declared event payloads typed and place `declareDataView(...)` transforms near the component or module that owns the event shape.
 - Preserve compatibility with existing raw and session data when changing event schemas or exported columns.

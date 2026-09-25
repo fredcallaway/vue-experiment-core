@@ -1,4 +1,15 @@
 <script lang="ts" setup>
+import { logEvent } from '../../composables/logEvent'
+import { useBonus } from '../../composables/useBonus'
+import { useConfig } from '../../composables/useConfig'
+import { useCurrentSession } from '../../composables/useCurrentSession'
+import { useDataWriter } from '../../composables/useDataWriter'
+import { useEpoch } from '../../composables/useEpoch'
+import { useInactivityTracker } from '../../composables/useInactivityTracker'
+import { useUnload } from '../../internal/composables/useUnload'
+import { getCompletionCode } from '../../internal/prolific'
+import { useOnline, useTimeout } from '@vueuse/core'
+
 
 // NOTE: this page has only been tested with config.completion.mode == 'prolific'
 

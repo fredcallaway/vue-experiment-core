@@ -1,4 +1,12 @@
 <script lang="ts" setup>
+import { logEvent } from '../../composables/logEvent'
+import { useConfig } from '../../composables/useConfig'
+import { useCurrentSession } from '../../composables/useCurrentSession'
+import { useDataWriter } from '../../composables/useDataWriter'
+import { useEpoch } from '../../composables/useEpoch'
+import { useUnload } from '../../internal/composables/useUnload'
+import { getCompletionCode } from '../../internal/prolific'
+
 const { done } = useEpoch('consent')
 
 const saidNo = ref(false)

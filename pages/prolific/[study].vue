@@ -1,4 +1,24 @@
 <script setup lang="ts">
+import { useAsyncRunner } from '../../internal/composables/useAsyncRunner'
+import { useProlific } from '../../internal/composables/useProlific'
+import { useProlificMessages } from '../../internal/composables/useProlificMessages'
+import { type ProlificReviewAction, useProlificReviewDraft } from '../../internal/composables/useProlificReviewDraft'
+import { useStudies } from '../../internal/composables/useStudies'
+import { getSessionTimeInfo, sessionStatus, useAllData } from '../../internal/local-data'
+import {
+  PROLIFIC_FEE,
+  ProlificError,
+  type StudyShort,
+  type Submission,
+  type SubmissionStatus,
+} from '../../internal/prolific'
+import { assert } from '../../utils/asserts'
+import { createTextFilter } from '../../utils/createTextFilter'
+import { formatCents, formatDateTime, formatTime } from '../../utils/formatting'
+import { abs, round, sum } from '../../utils/math'
+import { R } from '../../utils/remeda-extensions'
+import { useClipboard, useIdle, useIntervalFn, useWindowFocus, watchOnce } from '@vueuse/core'
+
 import {
   getCompletionCodeType,
   getDefaultReviewAction,

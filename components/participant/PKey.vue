@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useLocalAsync } from '../../composables/useLocalAsync'
+import { type Key, type KeyPress, onKeyPress } from '../../utils/keyPress'
+
 
 const props = defineProps<{
   keys?: string | Key[]

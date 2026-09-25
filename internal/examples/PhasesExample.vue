@@ -1,4 +1,9 @@
 <script lang="ts" setup>
+import { useDisplayPhases } from '../../composables/useDisplayPhases'
+import { usePhaseEpoch } from '../../composables/useEpoch'
+import { assertDefined } from '../../utils/asserts'
+import { random } from '../../utils/random'
+
 
 // Phases: one epoch, several visual states that share component state and can
 // animate between each other. Reach for usePhaseEpoch when a single logical step

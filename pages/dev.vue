@@ -1,4 +1,8 @@
 <script lang="ts" setup>
+import { logError } from '../composables/logEvent'
+import { parseUrlParams, useCurrentSession } from '../composables/useCurrentSession'
+import { useDataWriter } from '../composables/useDataWriter'
+
 
 
 const meta = useCurrentSession()

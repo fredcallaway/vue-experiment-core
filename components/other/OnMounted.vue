@@ -1,4 +1,6 @@
 <script lang="ts">
+import { useLocalAsync } from '../../composables/useLocalAsync'
+
 const onceCache = new Set<string>()
 </script>
 

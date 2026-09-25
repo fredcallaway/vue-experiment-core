@@ -19,6 +19,10 @@
 </template>
 
 <script setup lang="ts">
+import { useScrollHandler } from '../../composables/useScrollHandler'
+import { assert } from '../../utils/asserts'
+import { clamp, isBetween, round } from '../../utils/math'
+
 
 const model = defineModel<number>({ required: true })
 

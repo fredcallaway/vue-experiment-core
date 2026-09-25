@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { defineWindowSize } from '../../composables/windowEnforcer'
+
 
 // Single dynamic page for all examples. The slug selects a component from the
 // manifest. Each example's epoch tree lives in its component so that editing it

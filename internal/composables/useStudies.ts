@@ -1,3 +1,5 @@
+import { useDatabase } from '../../composables/useDatabase'
+
 import type { ProlificConfig } from '../prolific'
 type StudyData = {
   sha: string

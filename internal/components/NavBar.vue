@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useConfig } from '../../composables/useConfig'
+import { useSessionStorage, watchImmediate } from '@vueuse/core'
+
 
 const router = useRouter()
 // Later: if we want to show subroutes

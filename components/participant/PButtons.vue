@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { string2array } from '../../utils/misc'
+
 const props = defineProps<{
   values: string | string[],
   classes?: string | string[],

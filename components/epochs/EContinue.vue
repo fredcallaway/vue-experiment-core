@@ -1,4 +1,12 @@
 <script lang="ts">
+import { defineParams } from '../../composables/defineParams'
+import { replaceFast } from '../../composables/fastMode'
+import { type Epoch, useEpoch } from '../../composables/useEpoch'
+import { clamp } from '../../utils/math'
+import { type NumberLike, ensureNumber } from '../../utils/misc'
+import { R } from '../../utils/remeda-extensions'
+import { useTimeout } from '@vueuse/core'
+
 // EContinue is the standard leaf epoch: it shows some content and advances when the
 // participant continues (a button, or the space key). It bundles the three things a
 // simple screen almost always needs — an epoch wrapper, a content slot, and a

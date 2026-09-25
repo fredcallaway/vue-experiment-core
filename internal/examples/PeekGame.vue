@@ -1,4 +1,15 @@
 <script lang="ts">
+import { declareDataView } from '../../composables/dataViews'
+import { defineParams } from '../../composables/defineParams'
+import { declareEventLogger } from '../../composables/logEvent'
+import { useBonus } from '../../composables/useBonus'
+import { useEpoch } from '../../composables/useEpoch'
+import { useLocalAsync } from '../../composables/useLocalAsync'
+import { assertDefined } from '../../utils/asserts'
+import { promiseKeyPress } from '../../utils/keyPress'
+import { random } from '../../utils/random'
+import { type SessionData } from '../data'
+
 
 // The task for the full-study example (/examples/study). On each round a coin is
 // hidden in one of two boxes; before guessing (F/J) the participant may peek

@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { random } from '../../utils/random'
+
 import StroopTrial from './StroopTrial.vue'
 
 // A block of custom trials: ERepeat provides the loop and per-trial epochs;

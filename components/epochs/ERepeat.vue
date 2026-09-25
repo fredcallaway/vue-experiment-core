@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { type Epoch, useIndexableEpoch } from '../../composables/useEpoch'
+import { type NumberLike, ensureNumber } from '../../utils/misc'
+
 
 const { name='ERepeat', count } = defineProps<{ name?: string, count: NumberLike }>()
 

@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { useMounted } from '@vueuse/core'
+
 defineProps<{
   class?: string
 }>()

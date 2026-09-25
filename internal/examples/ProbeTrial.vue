@@ -1,4 +1,6 @@
 <script lang="ts">
+import { defineParams } from '../../composables/defineParams'
+
 
 // Minimal params-driven component for the configuration example. The module-level
 // defineParams is shared by every instance; each instance resolves its own

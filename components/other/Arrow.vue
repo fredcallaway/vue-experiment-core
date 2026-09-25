@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { type NumberLike, ensureNumber } from '../../utils/misc'
+
 const props = defineProps<{
   x?: NumberLike
   y?: NumberLike

@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useLocalAsync } from '../../composables/useLocalAsync'
+import { useTimer } from '../../composables/useTimer'
+
 
 // The three timing primitives:
 //   useTimer(ms)              — reactive countdown with pause/resume/reset/onDone

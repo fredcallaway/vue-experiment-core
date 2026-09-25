@@ -1,3 +1,5 @@
+import { useSessionStorage, watchImmediate } from '@vueuse/core'
+
 export const useFastMode = () => {
   return useSessionStorage('fast', false)
 }

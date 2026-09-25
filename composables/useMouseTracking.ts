@@ -1,3 +1,9 @@
+import { mainContentRef } from '../utils/globals'
+import { logEvent } from './logEvent'
+import { useDataWriter } from './useDataWriter'
+import { useCurrentEpoch } from './useEpoch'
+import { useMouse, watchImmediate } from '@vueuse/core'
+
 
 interface MouseTracking {
   pause: () => void

@@ -1,3 +1,5 @@
+import { assert } from './asserts'
+
 
 export function range(...args: number[]): number[] {
   const [start, end, step] = 

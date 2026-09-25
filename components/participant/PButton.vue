@@ -1,4 +1,9 @@
 <script lang="ts" setup>
+import { replaceFast } from '../../composables/fastMode'
+import { logEvent } from '../../composables/logEvent'
+import { type NumberLike, ensureNumber } from '../../utils/misc'
+import { useTimeout } from '@vueuse/core'
+
 import { createEventController, type EventController } from '~/core/utils/eventController'
 
 type PButtonTypeMap = {

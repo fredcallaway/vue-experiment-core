@@ -1,3 +1,7 @@
+import { logEvent } from '../../composables/logEvent'
+import { useDataWriter } from '../../composables/useDataWriter'
+import { createGlobalState, useEventListener } from '@vueuse/core'
+
 export const useUnload = createGlobalState(() => {
   const enabled = ref(true)
   const unloading = ref(false)

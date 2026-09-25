@@ -1,3 +1,10 @@
+import { type LogEvent } from '../internal/data'
+import { logEvent, useLogEventBus } from './logEvent'
+import { useDataWriter } from './useDataWriter'
+import { useCurrentEpoch } from './useEpoch'
+import { useErrorHandler } from './useErrorHandler'
+import { createGlobalState } from '@vueuse/core'
+
 export const usePosthog = createGlobalState(() => {
   
   const { $posthog } = useNuxtApp()

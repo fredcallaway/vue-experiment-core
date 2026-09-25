@@ -1,4 +1,13 @@
 <script lang="ts">
+import { declareDataView } from '../../composables/dataViews'
+import { defineParams } from '../../composables/defineParams'
+import { declareEventLogger } from '../../composables/logEvent'
+import { useDisplayPhases } from '../../composables/useDisplayPhases'
+import { usePhaseEpoch } from '../../composables/useEpoch'
+import { useLocalAsync } from '../../composables/useLocalAsync'
+import { promiseKeyPress } from '../../utils/keyPress'
+import { type SessionData } from '../data'
+
 
 // The canonical custom trial component. This is the anatomy to copy for any trial
 // with real internal logic: module-level params + event logger + data view, then

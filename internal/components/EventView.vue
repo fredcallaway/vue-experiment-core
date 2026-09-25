@@ -1,4 +1,12 @@
 <script lang="ts" setup>
+import { useDebugBus, useLogEventBus } from '../../composables/logEvent'
+import { createTextFilter } from '../../utils/createTextFilter'
+import { START_TIME, mainContentRef } from '../../utils/globals'
+import { R } from '../../utils/remeda-extensions'
+import { useSizeScale } from '../composables/useSizeScale'
+import { isEpochEvent, isErrorEvent, isParticipantEvent } from '../data'
+import { useElementBounding, useElementSize, useLocalStorage, useWindowSize } from '@vueuse/core'
+
 import stringify from "json-stringify-pretty-compact";
 
 type FormattedEvent = {

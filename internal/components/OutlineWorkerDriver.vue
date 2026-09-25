@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { useEpochTree } from '../composables/useEpochTree'
+
 // Mounted only inside the hidden worker iframe (?outlineWorker=1). The outline panel does not
 // render in the worker, so nothing else instantiates useEpochTree there; this component does, which
 // kicks off the worker traversal (initializeOutline detects isOutlineWorker() and traverses, saves

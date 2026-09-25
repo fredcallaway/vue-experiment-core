@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { usePButton } from '../../composables/usePButton'
+import { type KeyPress, onKeyPress, promiseKeyPress } from '../../utils/keyPress'
+
 
 // Collecting participant input. Two modalities (buttons, keys), each usable two
 // ways: declaratively (a component + @event) or script-side (await a promise

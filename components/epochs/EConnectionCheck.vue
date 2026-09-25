@@ -1,4 +1,12 @@
 <script lang="ts" setup>
+import { logEvent } from '../../composables/logEvent'
+import { useConfig } from '../../composables/useConfig'
+import { useDatabase } from '../../composables/useDatabase'
+import { useEpoch } from '../../composables/useEpoch'
+import { useUnload } from '../../internal/composables/useUnload'
+import { getCompletionCode } from '../../internal/prolific'
+import { useOnline, useTimeout, whenever } from '@vueuse/core'
+
 
 const props = defineProps<{ 
   name?: string

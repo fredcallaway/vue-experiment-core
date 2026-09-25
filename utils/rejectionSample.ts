@@ -1,3 +1,5 @@
+import { logDebug, logEvent } from '../composables/logEvent'
+
 type RejectionSampleOptions<T> = {
   generate: () => T
   accept: (t: T) => boolean

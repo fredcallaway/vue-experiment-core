@@ -1,4 +1,10 @@
 <script lang="ts" setup>
+import { useFastMode } from '../../composables/fastMode'
+import { jumpToEpoch, useCurrentEpoch } from '../../composables/useEpoch'
+import { isJumping } from '../../utils/globals'
+import { useUrlParam } from '../../utils/url-params'
+import { useEpochTree } from '../composables/useEpochTree'
+
 import type { EpochNode } from '../composables/useEpochTree'
 
 const currentEpoch = useCurrentEpoch()

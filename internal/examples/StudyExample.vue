@@ -1,4 +1,8 @@
 <script lang="ts" setup>
+import { useBonus } from '../../composables/useBonus'
+import { useConditions } from '../../composables/useCondition'
+import { random } from '../../utils/random'
+
 import PeekGame, { providePeekGameParams, type PeekRig } from './PeekGame.vue'
 import PeekGameInstructions from './PeekGameInstructions.vue'
 

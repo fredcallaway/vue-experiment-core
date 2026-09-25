@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { useEpoch } from '../../composables/useEpoch'
+
 
 // A leaf page of documentation: declares the epoch and appends a "Next" button
 // (calling done()) so the docs can be read linearly; the outline handles random

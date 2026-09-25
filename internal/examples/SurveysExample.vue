@@ -1,4 +1,7 @@
 <script lang="ts">
+import { declareDataView } from '../../composables/dataViews'
+import { type SessionData } from '../data'
+
 
 // Surveys are epochs sequenced by ESurveyWrapper. Each survey epoch logs a
 // survey.response event: { question, response, rt }. Core does not declare a

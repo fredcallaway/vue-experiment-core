@@ -1,3 +1,7 @@
+import { useConfig } from '../composables/useConfig'
+import { assert } from '../utils/asserts'
+import { hashString } from '../utils/misc'
+
 import { z } from 'zod'
 import firebaseConfig from '~/firebase.config.json'
 

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useSessionStorage } from '@vueuse/core'
+
 const props = defineProps<{
   id?: string
   defaultTab?: number

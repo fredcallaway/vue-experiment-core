@@ -1,3 +1,6 @@
+import { useDatabase } from '../../composables/useDatabase'
+import { createGlobalState } from '@vueuse/core'
+
 export type ProlificReviewAction = 'approve' | 'return' | 'reject' | 'none'
 
 export const getProlificReviewDraftPath = (studyId: string) => `studies/${studyId}/reviewDraft`

@@ -1,3 +1,5 @@
+import { round2 } from './math'
+
 
 export function numString(n: number, noun?: string, options: { skipOne?: boolean } = {}) {
   if (n > 10 || n < 0 || n % 1 != 0) {

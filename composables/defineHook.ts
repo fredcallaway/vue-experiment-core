@@ -1,3 +1,5 @@
+import { tryOnScopeDispose } from '@vueuse/core'
+
 type HookCallback<S> = (state: S) => void | Promise<void>
 
 type Hook<S> = {

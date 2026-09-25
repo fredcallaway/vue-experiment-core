@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { isTextInputFocused } from '../../utils/misc'
+import { onKeyStroke, templateRef } from '@vueuse/core'
+
 const props = withDefaults(defineProps<{
   modelValue: string
   placeholder?: string

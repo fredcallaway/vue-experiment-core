@@ -1,3 +1,7 @@
+import { assertDefined } from '../utils/asserts'
+import { formatTime } from '../utils/formatting'
+import { replaceFast } from './fastMode'
+
 interface TimerOptions {
   immediate?: boolean
 }

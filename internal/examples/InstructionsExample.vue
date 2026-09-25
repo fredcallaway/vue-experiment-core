@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { R } from '../../utils/remeda-extensions'
+
 
 // Standard instructions: ENavigableSequence gives Back/Next controls (and arrow
 // keys) so participants can re-read pages. Finishing a page is decoupled from

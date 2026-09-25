@@ -1,4 +1,11 @@
 <script lang="ts" setup>
+import { useDataViews } from '../../composables/dataViews'
+import { useLogEventBus } from '../../composables/logEvent'
+import { useCurrentSession } from '../../composables/useCurrentSession'
+import { useCurrentEpoch } from '../../composables/useEpoch'
+import { type LogEvent } from '../data'
+import { useLocalStorage } from '@vueuse/core'
+
 import stringify from "json-stringify-pretty-compact";
 
 // Live preview of a declared data view. Accumulates events off the log bus as the

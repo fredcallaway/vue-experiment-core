@@ -1,4 +1,8 @@
 <script lang="ts">
+import { type IndexableEpoch, useIndexableEpoch } from '../../composables/useEpoch'
+import { assert } from '../../utils/asserts'
+import { R } from '../../utils/remeda-extensions'
+
 import { defineComponent, type VNode, Comment, Fragment, cloneVNode, computed } from 'vue'
 
 // Store HMR state (dev only)

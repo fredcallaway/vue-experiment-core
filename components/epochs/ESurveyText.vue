@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { logEvent } from '../../composables/logEvent'
+import { useEpoch } from '../../composables/useEpoch'
+
 const props = defineProps<{
   name: string
   prompt: string

@@ -1,4 +1,10 @@
 <script lang="ts" setup>
+import { useErrorLogging } from '../composables/logEvent'
+import { useCurrentSession } from '../composables/useCurrentSession'
+import { useWindowEnforcer } from '../composables/windowEnforcer'
+import { getUrlFlag } from '../utils/url-params'
+import { useMounted } from '@vueuse/core'
+
 
 useErrorLogging()
 const { violated } = useWindowEnforcer()

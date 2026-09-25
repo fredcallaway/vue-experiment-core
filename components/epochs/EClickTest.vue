@@ -1,4 +1,18 @@
 <script lang="ts">
+import { declareDataView } from '../../composables/dataViews'
+import { defineParams } from '../../composables/defineParams'
+import { declareEventLogger } from '../../composables/logEvent'
+import { useBonus } from '../../composables/useBonus'
+import { useDisplayPhases } from '../../composables/useDisplayPhases'
+import { usePhaseEpoch } from '../../composables/useEpoch'
+import { useLocalAsync } from '../../composables/useLocalAsync'
+import { usePButton } from '../../composables/usePButton'
+import { useTimer } from '../../composables/useTimer'
+import { type SessionData } from '../../internal/data'
+import { random } from '../../utils/random'
+import { chunkBy } from '../../utils/remeda-extensions'
+import { watchImmediate } from '@vueuse/core'
+
 
 export const [provideClickTestParams, useClickTestParams, ProvideClickTestParams] = defineParams({
   durationMs: 20_000,

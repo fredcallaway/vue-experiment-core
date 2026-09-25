@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useScrollHandler } from '../../composables/useScrollHandler'
+import { useWindowEnforcer } from '../../composables/windowEnforcer'
+import { useSizeScale } from '../composables/useSizeScale'
+
 const { enabled, percentage, scale } = useSizeScale()
 const { violated } = useWindowEnforcer()
 

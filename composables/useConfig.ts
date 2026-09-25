@@ -1,3 +1,5 @@
+import { createGlobalState } from '@vueuse/core'
+
 export type Config = {
   title: string
   icon: string

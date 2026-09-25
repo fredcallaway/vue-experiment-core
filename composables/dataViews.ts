@@ -1,3 +1,5 @@
+import { type SafeData, type SessionData } from '../internal/data'
+
 
 export type CsvDataView = {
   format: 'csv'

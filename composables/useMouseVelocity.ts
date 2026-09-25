@@ -1,3 +1,5 @@
+import { max } from '../utils/math'
+
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 type Sample = {

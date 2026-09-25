@@ -1,4 +1,8 @@
 <script lang="ts" setup>
+import { logEvent } from '../../composables/logEvent'
+import { useEpoch } from '../../composables/useEpoch'
+import { string2array } from '../../utils/misc'
+
 type SurveyMultiPrompt = string | {
   prompt: string
   flags?: string[]

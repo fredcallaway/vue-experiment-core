@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { R } from '../../utils/remeda-extensions'
+
 
 const props = defineProps<{
   error: any

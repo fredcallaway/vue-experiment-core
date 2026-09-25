@@ -1,4 +1,6 @@
 <script lang="ts">
+import { useConditions } from '../../composables/useCondition'
+
 import ProbeTrial, { provideProbeParams } from './ProbeTrial.vue'
 
 // ProbeTrial defines the module defaults. This example adds two more layers:

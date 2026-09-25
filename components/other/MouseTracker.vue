@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { useMouseTracking } from '../../composables/useMouseTracking'
+
 const props = defineProps<{
   minPixels?: number
   minRate?: number

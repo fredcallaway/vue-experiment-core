@@ -21,7 +21,7 @@ import DocsPage from './DocsPage.vue'
       </li>
       <li>
         <code>composables/</code> — shared logic and experiment-wide configuration
-        (e.g. <code>useExperimentConfig.ts</code>). Also autoimported.
+        (e.g. <code>useExperimentConfig.ts</code>). Import these helpers explicitly from their files.
       </li>
       <li>
         <code>assets/</code> and <code>public/</code> — stimuli and static files. Anything
@@ -68,10 +68,11 @@ import DocsPage from './DocsPage.vue'
       </li>
     </ul>
     <p>
-      Because <code>core/</code> is a layer, anything in it can be overridden by putting a
-      file at the same path in your project — a project <code>components/EConsent.vue</code>
+      Because <code>core/</code> is a layer, components can be overridden by putting a
+      component with the same name in your project — a project <code>components/EConsent.vue</code>
       shadows the template's. Prefer this over editing <code>core/</code>: overrides survive
-      template updates, edits don't.
+      template updates, edits don't. Functions and types use explicit imports, so importing a helper
+      from <code>core/</code> always uses that module. Import a project helper from its project file.
     </p>
     <p>
       The <NuxtLink to="/examples">examples</NuxtLink> are live, minimal reference

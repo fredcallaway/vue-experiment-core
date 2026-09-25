@@ -1,4 +1,14 @@
 <script lang="ts" setup>
+import { jumpToEpoch, useCurrentEpoch } from '../../composables/useEpoch'
+import { useScrollHandler } from '../../composables/useScrollHandler'
+import { assert, assertDefined } from '../../utils/asserts'
+import { isJumping } from '../../utils/globals'
+import { R } from '../../utils/remeda-extensions'
+import { useUrlParam } from '../../utils/url-params'
+import { useEpochTree } from '../composables/useEpochTree'
+import { useSizeScale } from '../composables/useSizeScale'
+import { useElementBounding, useMemoize, useWindowSize } from '@vueuse/core'
+
 import type { EpochNode } from '../composables/useEpochTree'
 
 const currentEpoch = useCurrentEpoch()

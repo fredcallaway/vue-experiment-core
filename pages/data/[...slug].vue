@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { makeSessionList, makeVersionInfo, useAllData } from '../../internal/local-data'
+import { R } from '../../utils/remeda-extensions'
+import { useTimeout } from '@vueuse/core'
+
 import firebaseConfig from '~/firebase.config.json'
 
 definePageMeta({

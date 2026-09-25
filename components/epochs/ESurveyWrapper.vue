@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { useESequence } from '../../composables/useESequence'
+
 const props = defineProps<{
   name: string
 }>()

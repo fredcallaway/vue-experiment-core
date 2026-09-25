@@ -1,3 +1,7 @@
+import { useSizeScale } from '../internal/composables/useSizeScale'
+import { round } from '../utils/math'
+import { useWindowSize } from '@vueuse/core'
+
 const minWidth = ref(800)
 const minHeight = ref(600)
 

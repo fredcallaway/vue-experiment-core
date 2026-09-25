@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useInspector } from '../../composables/useInspector'
+import { R } from '../../utils/remeda-extensions'
+
 import stringify from "json-stringify-pretty-compact";
 
 const { entries, global } = useInspector()

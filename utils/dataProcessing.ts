@@ -1,3 +1,7 @@
+import { type SessionData } from '../internal/data'
+import { assertDefined } from './asserts'
+import { R } from './remeda-extensions'
+
 export const toWideFormat = <T extends Record<string, any>>(items: T[], key: keyof T, value: keyof T) => {
   return R.pipe(
     items,

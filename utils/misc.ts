@@ -1,3 +1,6 @@
+import { trueRandom } from './trueRandom'
+import { R } from './remeda-extensions'
+
 export const getUnoColor = (name: string, fmt: 'oklch' | 'hex' = 'hex'): string => {
   const oklch = getComputedStyle(document.documentElement)
     .getPropertyValue(`--colors-${name}`)

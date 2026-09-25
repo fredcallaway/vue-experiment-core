@@ -1,3 +1,19 @@
+import {
+  type DataMode,
+  type LogEvent,
+  type SafeData,
+  type SessionData,
+  type SessionMeta,
+  compressEvent,
+  getDBPath,
+  toSafeData,
+} from '../internal/data'
+import { assert } from '../utils/asserts'
+import { trueRandom } from '../utils/trueRandom'
+import { R } from '../utils/remeda-extensions'
+import { useDatabase } from './useDatabase'
+import { useDebounceFn, useOnline, watchDeep, whenever } from '@vueuse/core'
+
 import { useStorage } from '@vueuse/core'
 import { logError, logEvent } from './logEvent'
 import { useInactivityTracker } from './useInactivityTracker'

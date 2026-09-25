@@ -1,3 +1,41 @@
+import { useDatabase } from '../../composables/useDatabase'
+import { range } from '../../utils/array'
+import { assert, assertDefined } from '../../utils/asserts'
+import { round, round2, sum } from '../../utils/math'
+import { timeoutPromise } from '../../utils/misc'
+import { R } from '../../utils/remeda-extensions'
+import { type SessionMeta } from '../data'
+import {
+  type Filter,
+  PROLIFIC_FEE,
+  type ProlificConfig,
+  ProlificError,
+  ProlificStudyDetailsSchema,
+  ProlificStudyShortSchema,
+  ProlificSubmissionSchema,
+  type Study,
+  type StudyFull,
+  type StudyPayload,
+  type StudyShort,
+  createCompletionCodes,
+  eligibilityToFilters,
+  getProlificBaseUrl,
+  isProlificIdentifier,
+} from '../prolific'
+import { getProlificErrorMessage } from '../prolificErrorMessage'
+import { useAsyncListCache } from './useAsyncListCache'
+import { useProlificConfig } from './useProlificConfig'
+import {
+  createGlobalState,
+  until,
+  useDebounceFn,
+  useIdle,
+  useIntervalFn,
+  useLocalStorage,
+  watchDebounced,
+  watchImmediate,
+} from '@vueuse/core'
+
 import { getStudyDisplayStatus } from '~/core/operations/review'
 
 const PAGE_SIZE = 5

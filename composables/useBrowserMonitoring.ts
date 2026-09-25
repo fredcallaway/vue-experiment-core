@@ -1,3 +1,7 @@
+import { logEvent } from './logEvent'
+import { IDLE_TIME, useInactivityTracker } from './useInactivityTracker'
+import { useMemoize, useOnline } from '@vueuse/core'
+
 
 const logTransitions = (enabled: Ref<boolean>, state: Ref<boolean>, eventPrefix: string) => {
   let startTime = NaN

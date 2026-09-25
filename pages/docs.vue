@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { defineWindowSize } from '../composables/windowEnforcer'
+
 
 // Human-facing documentation, structured as an epoch tree so the epoch outline in
 // the dev chrome is the table of contents. The tree lives in internal/docs/Docs.vue

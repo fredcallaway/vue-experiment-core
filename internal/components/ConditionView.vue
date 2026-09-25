@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { useConditions } from '../../composables/useCondition'
+
 import stringify from "json-stringify-pretty-compact";
 
 const { conditions, options, isPinned } = useConditions()

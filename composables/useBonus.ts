@@ -1,3 +1,8 @@
+import { numString } from '../utils/formatting'
+import { logEvent } from './logEvent'
+import { useCurrentSession } from './useCurrentSession'
+import { createGlobalState, usePrevious } from '@vueuse/core'
+
 
 export const useBonus = createGlobalState(() => {
   const meta = useCurrentSession()

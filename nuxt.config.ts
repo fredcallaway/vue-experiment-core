@@ -31,7 +31,6 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@unocss/nuxt',
-    '@vueuse/nuxt',
     (_options, nuxt) => {
       const sourcemaps = nuxt.options.posthogConfig?.sourcemaps
       if (sourcemaps && !sourcemaps.personalApiKey?.startsWith('phx_')) {
@@ -42,7 +41,8 @@ export default defineNuxtConfig({
   ],
 
   imports: {
-    dirs: ['composables', 'internal/composables', 'internal'],
+    // Keep Vue/Nuxt APIs; import project/core helpers and third-party APIs explicitly.
+    scan: false,
   },
   
   compatibilityDate: '2025-05-15',

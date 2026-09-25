@@ -1,5 +1,15 @@
 <script setup lang="ts">
-import { PROLIFIC_FEE } from '#imports'
+import { useConfig } from '../../composables/useConfig'
+import { useAsyncRunner } from '../../internal/composables/useAsyncRunner'
+import { useDeployment } from '../../internal/composables/useDeployment'
+import { useProlific } from '../../internal/composables/useProlific'
+import { useProlificConfig } from '../../internal/composables/useProlificConfig'
+import { useStudies } from '../../internal/composables/useStudies'
+import { ProlificError, getProlificBaseUrl } from '../../internal/prolific'
+import { R } from '../../utils/remeda-extensions'
+import { useLocalStorage } from '@vueuse/core'
+
+import { PROLIFIC_FEE } from '../../internal/prolific'
 
 definePageMeta({
   layout: 'dashboard',

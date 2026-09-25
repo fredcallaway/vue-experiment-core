@@ -1,3 +1,17 @@
+import { useDatabase } from '../composables/useDatabase'
+import { assertOneOf, assertString } from '../utils/asserts'
+import { R } from '../utils/remeda-extensions'
+import {
+  type DBSessionEvents,
+  type DataMode,
+  type SafeDataObject,
+  type SessionData,
+  type SessionMeta,
+  decompressEvents,
+  getDBPath,
+} from './data'
+import { isDefined, tryOnUnmounted, until } from '@vueuse/core'
+
 import { ref as dbRef, onValue, get } from 'firebase/database'
 
 // DATABASE 

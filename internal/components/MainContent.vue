@@ -1,4 +1,12 @@
 <script lang="ts" setup>
+import { logError } from '../../composables/logEvent'
+import { useCurrentSession } from '../../composables/useCurrentSession'
+import { useCurrentEpoch } from '../../composables/useEpoch'
+import { useErrorHandler } from '../../composables/useErrorHandler'
+import { useWindowEnforcer } from '../../composables/windowEnforcer'
+import { isJumping, mainContentRef } from '../../utils/globals'
+import { useResizeObserver, whenever } from '@vueuse/core'
+
 
 const props = defineProps<{
   showOutline?: boolean

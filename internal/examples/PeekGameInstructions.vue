@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { useESequence } from '../../composables/useESequence'
+import { until } from '@vueuse/core'
+
 import PeekGame, { providePeekGameParams } from './PeekGame.vue'
 
 // Interactive instructions, the preferred pattern: mount the task once

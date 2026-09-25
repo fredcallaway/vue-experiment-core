@@ -1,3 +1,5 @@
+import { useAsyncState } from '@vueuse/core'
+
 interface CachedData<T> {
   data: T
   timestamp: number
