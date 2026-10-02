@@ -4,7 +4,7 @@
 definePageMeta({
   layout: 'dashboard',
 })
-const PROLIFIC_FEE = 1.33
+const PROLIFIC_FEE = 1.333333 // as on the simplified branch: Prolific charges a third on top
 const route = useRoute()
 const studyId = route.params.study as string
 const prolific = useProlific()
