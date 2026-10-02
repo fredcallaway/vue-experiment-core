@@ -1,3 +1,7 @@
+# Firebase deployment project check
+
+- The Prolific dashboard deploy action now checks that the selected Firebase CLI project matches `firebase.config.json` before building or deploying, then passes that project explicitly to the CLI. For the same check in project scripts, set the top-level `deploy` command to `bun core/operations/deploy-cli.ts`. Select the intended project with `firebase use` and update `firebase.config.json` before deploying a new experiment.
+
 # Utility ownership and startup
 
 - Import Remeda directly with `import * as R from 'remeda'`; the `R` re-export is removed. Import `chunkBy` from `core/utils/dataProcessing`.

@@ -1,4 +1,5 @@
-import { execSync } from 'child_process'
+import { execFileSync, execSync } from 'child_process'
+import { assertFirebaseProjectMatchesCli } from '../../../operations/firebase-project'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -23,10 +24,13 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // Verify that Hosting and the built app use the same Firebase project.
+    const projectId = await assertFirebaseProjectMatchesCli(process.cwd())
+
     // Run deploy command
     console.log('👉 deploying...')
     execSync('bun run generate', { stdio: 'inherit' })
-    execSync('firebase deploy', { stdio: 'inherit' })
+    execFileSync('firebase', ['deploy', '--project', projectId], { stdio: 'inherit' })
     
     console.log('👉 successfully deployed!')
     return {
