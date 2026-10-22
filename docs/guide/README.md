@@ -9,6 +9,7 @@ This is the canonical starting point for agents working on experiment projects b
 - Find the closest implementation in [`internal/examples/README.md`](../../internal/examples/README.md) and copy its structure. The examples are live and type-checked.
 - Use the human-facing concept docs at `/docs` when you need explanation rather than an implementation pattern.
 - When you need to confirm that something actually runs, drive `/dev` in a browser: see [`browser-testing.md`](browser-testing.md) for jumping straight to an epoch by URL and verifying against the event log.
+- For automated exploration, visual checks, and compiled replay, use the [experiment testing tools](../../testing/README.md).
 - If Nuxt dev or build stalls during transformation, check the installed esbuild executable using [`esbuild-executable-hang.md`](../hiccups/esbuild-executable-hang.md).
 
 ## Core rules

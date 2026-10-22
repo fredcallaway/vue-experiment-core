@@ -1,6 +1,6 @@
 # ADR 0004: Automated end-to-end testing for experiments
 
-- **Status:** Proposed (no decision)
+- **Status:** Superseded by [ADR 0012](0012-agent-testing-and-compiled-replay.md)
 - **Date:** 2026-06-02
 - **Scope:** `core/` template layer + project root, `simplified` branch
 - **Related:** [0003-offscreen-outline-traversal.md](./0003-offscreen-outline-traversal.md)

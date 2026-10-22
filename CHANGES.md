@@ -1,3 +1,8 @@
+# Automated experiment testing
+
+- Added agent recording, reviewed visual baseline compilation, mechanical replay, section/full-run suites, and failure handoffs in `core/testing/`. After adopting core, run `bun install` and `bunx playwright install chromium`. Add root scripts `"test:experiments": "node core/testing/cli.mjs"` and `"test:testing": "node core/testing/verify.mjs"`; add `node --test core/testing/browser.integration.mjs core/testing/agent/session.integration.mjs` after existing unit tests to include browser integration checks. Browser tooling uses Node (tested with Node 22), while project commands still run through Bun. Ignore `.experiment-tests/` in the project `.gitignore`. See [the testing guide](testing/README.md).
+- In Nuxt development only, `/dev?testing=1&session_id=<seed>` keeps the seeded session and in-memory events without initializing database persistence. The testing harness also blocks external HTTP/WebSocket traffic and local write requests. A read-only `window.__experimentTest.snapshot()` exposes current epoch and recorded events when the testing flag is enabled; no experiment component changes are required. Older core consumers can be explored without a session seed, but deterministic seeded replay requires this core version.
+
 # Firebase deployment project check
 
 - The Prolific dashboard deploy action now checks that the selected Firebase CLI project matches `firebase.config.json` before building or deploying, then passes that project explicitly to the CLI. For the same check in project scripts, set the top-level `deploy` command to `bun core/operations/deploy-cli.ts`. Select the intended project with `firebase use` and update `firebase.config.json` before deploying a new experiment.

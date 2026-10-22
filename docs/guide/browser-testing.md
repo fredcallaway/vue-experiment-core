@@ -1,5 +1,7 @@
 # Driving the Experiment in a Browser
 
+For an isolated persistent testing-agent session and reusable regression checks, start with [`core/testing`](../../testing/README.md). It records actual participant input, captures visual and semantic evidence, compiles reviewed runs, and sends failed replays back for agent review. The manual browser loop below remains useful for quick inspection.
+
 How to exercise a running experiment from a browser-automation agent (Playwright MCP or similar). Everything here works against the `/dev` page as it already ships — there is no separate agent API to install.
 
 Only do this when the task calls for it. Most changes are verified with `bun run typecheck` and by reading the examples; drive the browser when you need to confirm that something actually *runs* — a trial renders, an event fires with the right payload, a phase advances.

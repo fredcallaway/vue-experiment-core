@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "rootSelector": ".main-content",
+  "id": "graphnav-clicktest",
+  "startUrl": "http://localhost:3040/dev?noDev=1&jump=experiment[2]-clicktest[start]-start",
+  "runtime": {
+    "fast": true
+  },
+  "scope": {
+    "kind": "section",
+    "label": "Click one custom circle and verify natural timer completion records score and count"
+  },
+  "steps": [
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "start"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "css": ".click-circle"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "css": ".click-circle"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "text": "Time's up!"
+      },
+      "state": "visible",
+      "timeoutMs": 10000
+    },
+    {
+      "action": "hover",
+      "target": {
+        "text": "Time's up!"
+      }
+    },
+    {
+      "action": "checkpoint",
+      "name": "feedback",
+      "assertions": [
+        {
+          "kind": "visible",
+          "target": {
+            "text": "Final score: 1"
+          }
+        },
+        {
+          "kind": "event",
+          "name": "clicktest.hit",
+          "count": 1
+        },
+        {
+          "kind": "event",
+          "name": "clicktest.done",
+          "count": 1,
+          "where": {
+            "score": 1,
+            "clicks": 1
+          }
+        }
+      ]
+    }
+  ],
+  "completion": [
+    {
+      "kind": "visible",
+      "target": {
+        "role": "button",
+        "name": "Continue"
+      }
+    },
+    {
+      "kind": "event",
+      "name": "clicktest.done",
+      "count": 1,
+      "where": {
+        "score": 1,
+        "clicks": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,637 @@
+{
+  "version": 1,
+  "id": "template-full-fast",
+  "startUrl": "http://localhost:3030/dev?noDev=1",
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "rootSelector": ".main-content",
+  "scope": {
+    "kind": "full",
+    "label": "Template full path: consent, 20 color trials, 3 click hits and 9 survey responses"
+  },
+  "runtime": {
+    "fast": true,
+    "seed": "template-e2e"
+  },
+  "steps": [
+    {
+      "name": "welcome",
+      "action": "checkpoint"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Continue"
+      }
+    },
+    {
+      "name": "consent",
+      "action": "checkpoint"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "I agree"
+      }
+    },
+    {
+      "action": "press",
+      "key": "ArrowRight"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Start"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "left"
+      }
+    },
+    {
+      "name": "instructions-choice",
+      "action": "checkpoint"
+    },
+    {
+      "action": "press",
+      "key": "ArrowRight"
+    },
+    {
+      "action": "press",
+      "key": "k"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Start"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "I will not refresh the page"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "name": "color-trial",
+      "action": "checkpoint"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "blue"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "blue"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "blue"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "blue"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "blue"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "blue"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "blue"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "blue"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "blue"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "orange"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "blue"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "start"
+      },
+      "state": "visible"
+    },
+    {
+      "name": "clicktest-ready",
+      "action": "checkpoint"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "start"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "css": ".click-circle:not(.popping)"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "css": ".click-circle:not(.popping)"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "css": ".click-circle:not(.popping)"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "text": "Time's up!"
+      },
+      "state": "visible"
+    },
+    {
+      "name": "clicktest-feedback",
+      "assertions": [
+        {
+          "kind": "event",
+          "name": "clicktest.done",
+          "count": 1,
+          "where": {
+            "clicks": 3
+          }
+        }
+      ],
+      "action": "checkpoint"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Continue"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Start"
+      }
+    },
+    {
+      "name": "grouped-survey",
+      "action": "checkpoint"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "agree"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "agree"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "agree"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Start"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "never"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "never"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "never"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "just right"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "typical"
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "role": "textbox"
+      },
+      "value": "Automated local test; no participant data."
+    },
+    {
+      "name": "feedback-form",
+      "action": "checkpoint"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Submit"
+      }
+    },
+    {
+      "name": "terminal",
+      "assertions": [
+        {
+          "kind": "visible",
+          "target": {
+            "role": "heading",
+            "name": "Thanks!"
+          }
+        },
+        {
+          "kind": "event",
+          "name": "experiment.complete",
+          "count": 1
+        },
+        {
+          "kind": "event",
+          "name": "survey.response",
+          "count": 9
+        },
+        {
+          "kind": "event",
+          "name": "clicktest.hit",
+          "count": 3
+        },
+        {
+          "kind": "event",
+          "name": "clicktest.done",
+          "count": 1,
+          "where": {
+            "clicks": 3
+          }
+        },
+        {
+          "kind": "event",
+          "name": "epoch.start",
+          "count": 1,
+          "where": {
+            "id": "experiment[4]-main[19]-trial[1]-feedback"
+          }
+        }
+      ],
+      "masks": [
+        {
+          "selector": ".main-content pre",
+          "reason": "Development-only debug dump contains event timestamps, reaction times and session metadata; completion text and real semantic events remain asserted."
+        }
+      ],
+      "action": "checkpoint"
+    }
+  ],
+  "completion": [
+    {
+      "kind": "visible",
+      "target": {
+        "role": "heading",
+        "name": "Thanks!"
+      }
+    },
+    {
+      "kind": "event",
+      "name": "experiment.complete",
+      "count": 1
+    },
+    {
+      "kind": "event",
+      "name": "survey.response",
+      "count": 9
+    },
+    {
+      "kind": "event",
+      "name": "clicktest.hit",
+      "count": 3
+    },
+    {
+      "kind": "event",
+      "name": "clicktest.done",
+      "count": 1,
+      "where": {
+        "clicks": 3
+      }
+    },
+    {
+      "kind": "event",
+      "name": "epoch.start",
+      "count": 1,
+      "where": {
+        "id": "experiment[4]-main[19]-trial[1]-feedback"
+      }
+    }
+  ]
+}

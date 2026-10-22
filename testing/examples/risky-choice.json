@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "rootSelector": ".main-content",
+  "id": "risky-choice-first-trial",
+  "startUrl": "http://localhost:3819/dev?noDev=1&jump=experiment[3]-main[0]-problemBlock[1]-problem[0]-trial[choice]-choice",
+  "runtime": {
+    "fast": false
+  },
+  "scope": {
+    "kind": "section",
+    "label": "First gamble choice and feedback; randomized stimuli require seed-specific visual review"
+  },
+  "steps": [
+    {
+      "action": "waitFor",
+      "target": {
+        "role": "button",
+        "name": "A"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "checkpoint",
+      "name": "choice",
+      "assertions": [
+        {
+          "kind": "visible",
+          "target": {
+            "role": "button",
+            "name": "B"
+          }
+        }
+      ]
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "A"
+      }
+    },
+    {
+      "action": "checkpoint",
+      "name": "feedback",
+      "assertions": [
+        {
+          "kind": "visible",
+          "target": {
+            "role": "button",
+            "name": "Next"
+          }
+        },
+        {
+          "kind": "event",
+          "name": "riskychoice.trial",
+          "count": 1,
+          "where": {
+            "option": "A"
+          }
+        }
+      ]
+    }
+  ],
+  "completion": [
+    {
+      "kind": "visible",
+      "target": {
+        "text": "In this trial, you chose",
+        "exact": false
+      }
+    },
+    {
+      "kind": "event",
+      "name": "riskychoice.trial",
+      "count": 1,
+      "where": {
+        "option": "A"
+      }
+    }
+  ]
+}

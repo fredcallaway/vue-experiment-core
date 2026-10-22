@@ -1,0 +1,311 @@
+{
+  "version": 1,
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "rootSelector": ".main-content",
+  "id": "bandit-full-fast",
+  "startUrl": "http://localhost:3033/dev?noDev=1",
+  "runtime": {
+    "fast": true
+  },
+  "scope": {
+    "kind": "full",
+    "label": "Consent through all blocks and survey; fast mode limits each block to two trials"
+  },
+  "steps": [
+    {
+      "action": "checkpoint",
+      "name": "consent"
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "I agree"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "I will not refresh the page"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "text": "Training game"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "press",
+      "key": "Space"
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "css": ".bandit-slot:nth-child(4) > :visible"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "press",
+      "key": "d"
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "css": ".bandit-slot:nth-child(4) > :visible"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "press",
+      "key": "j"
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "text": "Congratulations, you earned",
+        "exact": false
+      },
+      "state": "visible"
+    },
+    {
+      "action": "press",
+      "key": "Space"
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "text": "Game 2 of 3"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "press",
+      "key": "Space"
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "css": ".bandit-slot:nth-child(4) > :visible"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "press",
+      "key": "d"
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "css": ".bandit-slot:nth-child(4) > :visible"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "press",
+      "key": "j"
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "text": "Congratulations, you earned",
+        "exact": false
+      },
+      "state": "visible"
+    },
+    {
+      "action": "press",
+      "key": "Space"
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "text": "Game 3 of 3"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "press",
+      "key": "Space"
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "css": ".bandit-slot:nth-child(4) > :visible"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "press",
+      "key": "d"
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "css": ".bandit-slot:nth-child(4) > :visible"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "press",
+      "key": "j"
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "text": "Congratulations, you earned",
+        "exact": false
+      },
+      "state": "visible"
+    },
+    {
+      "action": "press",
+      "key": "Space"
+    },
+    {
+      "action": "checkpoint",
+      "name": "survey",
+      "assertions": [
+        {
+          "kind": "visible",
+          "target": {
+            "text": "How fun was the experiment?"
+          }
+        }
+      ]
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "typical"
+      }
+    },
+    {
+      "action": "fill",
+      "target": {
+        "css": "textarea"
+      },
+      "value": "The rewards changed between games."
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Submit"
+      }
+    },
+    {
+      "action": "click",
+      "target": {
+        "role": "button",
+        "name": "Skip"
+      }
+    },
+    {
+      "action": "waitFor",
+      "target": {
+        "text": "Thanks!"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "checkpoint",
+      "name": "completion",
+      "assertions": [
+        {
+          "kind": "visible",
+          "target": {
+            "text": "Thanks!"
+          }
+        },
+        {
+          "kind": "event",
+          "name": "bandit.initialize",
+          "count": 3
+        },
+        {
+          "kind": "event",
+          "name": "bandit.trial",
+          "count": 6
+        },
+        {
+          "kind": "event",
+          "name": "bandit.trial",
+          "count": 0,
+          "where": {
+            "timeout": true
+          }
+        },
+        {
+          "kind": "event",
+          "name": "bandit.summary",
+          "count": 3
+        },
+        {
+          "kind": "event",
+          "name": "survey.response",
+          "count": 3
+        },
+        {
+          "kind": "event",
+          "name": "experiment.complete",
+          "count": 1
+        }
+      ],
+      "masks": [
+        {
+          "selector": ".main-content pre",
+          "reason": "Development-only raw session dump includes variable timestamps, reaction times, and random rewards; declared semantic event counts are asserted separately."
+        }
+      ]
+    }
+  ],
+  "completion": [
+    {
+      "kind": "visible",
+      "target": {
+        "text": "Thanks!"
+      }
+    },
+    {
+      "kind": "event",
+      "name": "bandit.initialize",
+      "count": 3
+    },
+    {
+      "kind": "event",
+      "name": "bandit.trial",
+      "count": 6
+    },
+    {
+      "kind": "event",
+      "name": "bandit.trial",
+      "count": 0,
+      "where": {
+        "timeout": true
+      }
+    },
+    {
+      "kind": "event",
+      "name": "bandit.summary",
+      "count": 3
+    },
+    {
+      "kind": "event",
+      "name": "survey.response",
+      "count": 3
+    },
+    {
+      "kind": "event",
+      "name": "experiment.complete",
+      "count": 1
+    }
+  ]
+}

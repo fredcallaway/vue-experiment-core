@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "rootSelector": ".main-content",
+  "id": "prediction-keyboard",
+  "startUrl": "http://localhost:3086/dev?noDev=1&jump=experiment[4]-SequencePrediction",
+  "runtime": {
+    "fast": false
+  },
+  "scope": {
+    "kind": "section",
+    "label": "Main prediction trial accepts F and records left prediction at normal speed"
+  },
+  "steps": [
+    {
+      "action": "waitFor",
+      "target": {
+        "css": ".main-content .w-50.h-50:first-child"
+      },
+      "state": "visible"
+    },
+    {
+      "action": "checkpoint",
+      "name": "choice",
+      "assertions": [
+        {
+          "kind": "count",
+          "target": {
+            "css": ".main-content .w-50.h-50"
+          },
+          "value": 2
+        }
+      ]
+    },
+    {
+      "action": "press",
+      "key": "f"
+    },
+    {
+      "action": "checkpoint",
+      "name": "next-choice",
+      "assertions": [
+        {
+          "kind": "event",
+          "name": "SequencePrediction.trial",
+          "count": 1,
+          "where": {
+            "prediction": false
+          }
+        }
+      ],
+      "masks": [
+        {
+          "selector": ".main-content .font-bold",
+          "reason": "Bonus amount depends on the randomized hidden target; this section verifies keyboard response and return to the choice display."
+        }
+      ]
+    }
+  ],
+  "completion": [
+    {
+      "kind": "event",
+      "name": "SequencePrediction.trial",
+      "count": 1,
+      "where": {
+        "prediction": false
+      }
+    }
+  ]
+}
