@@ -12,6 +12,9 @@ try {
   url.searchParams.set('noDev', '0')
   const { page } = browser
   await page.goto(url.href)
+  await page.waitForFunction(() => window.__experimentTest?.snapshot().events
+    .some(event => event.eventType === 'epoch.start'))
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)))
   await page.locator('.main-content > .wfull').waitFor()
   await page.evaluate(() => {
     const content = document.querySelector('.main-content > .wfull')
