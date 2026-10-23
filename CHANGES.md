@@ -1,3 +1,7 @@
+# Development overflow warning
+
+- The development frame's red overflow outline now updates when experiment content grows, shrinks, or is replaced inside a fixed-size frame. Observation runs only when the development outline is enabled. No consumer migration is required.
+
 # Automated experiment testing
 
 - Added agent recording, reviewed visual baseline compilation, mechanical replay, section/full-run suites, and failure handoffs in `core/testing/`. After adopting core, run `bun install` and `bunx playwright install chromium`. Add root scripts `"test:experiments": "node core/testing/cli.mjs"` and `"test:testing": "node core/testing/verify.mjs"`; add `node --test core/testing/browser.integration.mjs core/testing/agent/session.integration.mjs` after existing unit tests to include browser integration checks. Browser tooling uses Node (tested with Node 22), while project commands still run through Bun. Ignore `.experiment-tests/` in the project `.gitignore`. See [the testing guide](testing/README.md).

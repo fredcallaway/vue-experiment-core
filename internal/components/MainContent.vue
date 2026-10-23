@@ -5,7 +5,7 @@ import { useCurrentEpoch } from '../../composables/useEpoch'
 import { useErrorHandler } from '../../composables/useErrorHandler'
 import { useWindowEnforcer } from '../../composables/windowEnforcer'
 import { isJumping, mainContentRef } from '../state'
-import { useResizeObserver, whenever } from '@vueuse/core'
+import { useMutationObserver, useResizeObserver, whenever } from '@vueuse/core'
 
 
 const props = defineProps<{
@@ -22,11 +22,32 @@ const { minWidth, minHeight, width, height, violated } = useWindowEnforcer()
 // make outline red if content overflows
 const content = ref<HTMLElement>()
 const hasOverflow = ref(false)
+const overflowElements = shallowRef<(HTMLElement | SVGElement)[]>([])
 
-useResizeObserver(content, () => {
+const checkOverflow = () => {
   if (!content.value) return
   const el = content.value
   hasOverflow.value = el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth
+}
+
+const observeOverflowElements = () => {
+  // Fixed-height experiment roots can hide size changes farther down the tree.
+  overflowElements.value = props.showOutline && content.value
+    ? [content.value, ...content.value.querySelectorAll<HTMLElement | SVGElement>('*')]
+    : []
+  if (props.showOutline) checkOverflow()
+}
+
+watch(() => [content.value, props.showOutline], observeOverflowElements, { flush: 'post' })
+useResizeObserver(overflowElements, checkOverflow)
+useMutationObserver(computed(() => props.showOutline ? content.value : undefined), (records) => {
+  if (records.some(record => record.type === 'childList')) observeOverflowElements()
+  else checkOverflow()
+}, {
+  subtree: true,
+  childList: true,
+  attributes: true,
+  characterData: true,
 })
 whenever(content, (el) => {
   if (!el) return
