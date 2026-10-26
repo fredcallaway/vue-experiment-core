@@ -6,7 +6,7 @@
   },
   "rootSelector": ".main-content",
   "id": "prediction-keyboard",
-  "startUrl": "http://localhost:3086/dev?noDev=1&jump=experiment[4]-SequencePrediction",
+  "startUrl": "http://localhost:3086/dev?preview=1&jump=experiment[4]-SequencePrediction",
   "runtime": {
     "fast": false
   },

@@ -5,61 +5,75 @@ import { useWindowEnforcer } from '../composables/windowEnforcer'
 import { getUrlFlag } from '../utils/url-params'
 import { useMounted } from '@vueuse/core'
 
-
 useErrorLogging()
 const { violated } = useWindowEnforcer()
 const mounted = useMounted()
+const route = useRoute()
 
-// The hidden outline-worker iframe loads this layout with ?outlineWorker=1 (and ?noDev). It must
-// run the bare experiment with no dev chrome, force debug mode so its DataWriter never touches the
-// real session, and mount the worker driver that runs the traversal. See ADR 0003.
+// Workers traverse a separate experiment instance, with no navigation or outline of their own.
 const isOutlineWorker = getUrlFlag('outlineWorker')
 if (isOutlineWorker) useCurrentSession().mode = 'debug'
 
-const devTools = ref(!getUrlFlag('noDev'))
-
-provide('devTools', devTools)
-
-// uncomment if you want posthog diagnostics when running the experiment through /dev (not live)
-// usePosthog()
-
+const preview = computed(() => {
+  // Keep existing shared links working; navigation always writes the Preview flag.
+  const value = route.query.preview !== undefined ? route.query.preview : route.query.noDev
+  return value === null || (typeof value === 'string' && !['0', 'false', 'no'].includes(value.toLowerCase()))
+})
+provide('devTools', computed(() => !preview.value && !isOutlineWorker))
 </script>
 
 <template>
-  <div class="h-screen p2 flex flex-col overflow-auto" v-if="devTools">
-    <NavBar class="mb-2 shrink-0" />
-    <div class="flex flex-row flex-gap-2 flex-1 min-h-0">
+  <div v-if="isOutlineWorker" class="fixed inset-0 bg-gray-600 flex justify-center items-center">
+    <MainContent class="bg-white border-4" fixed-width fixed-height>
+      <slot v-if="mounted" />
+    </MainContent>
+    <OutlineWorkerDriver />
+  </div>
+  <div v-else class="developer-layout h-screen p2 flex flex-col overflow-auto" :class="{ 'preview-mode': preview }">
+    <NavBar class="mb-2 shrink-0 relative z-50" :preview="preview" />
+    <div class="experiment-workspace flex flex-row flex-gap-2 flex-1 min-h-0">
       <div class="flex flex-col flex-gap-2">
-        <MainContent show-outline fixed-width fixed-height capture-errors>
+        <!-- Keep this instance mounted when switching modes so the experiment does not restart. -->
+        <MainContent
+          :show-outline="!preview"
+          :class="{ 'bg-white border-4': preview }"
+          fixed-width
+          fixed-height
+          capture-errors
+        >
           <slot v-if="mounted" />
         </MainContent>
-        <!-- <EventView horizontal /> -->
       </div>
 
-      <div class="flex flex-col flex-gap-2 shrink-0 min-h-0">
+      <div v-if="!preview" class="flex flex-col flex-gap-2 shrink-0 min-h-0">
         <EpochControls class="shrink-0" />
         <EpochOutline class="flex-1 min-h-0" />
       </div>
-      <div class="w-600px relative flex flex-col min-h-0" v-if="!violated">
+      <div v-if="!preview && !violated" class="w-600px relative flex flex-col min-h-0">
         <Inspector class="mb-2 shrink-0" />
         <ConditionView class="mb-2 shrink-0" />
         <DataView class="mb-2 min-h-0" />
         <EventView class="flex-1 min-h-200px" />
       </div>
     </div>
-    <!-- Produces the outline off this tab so it never has to traverse/reload (ADR 0003). -->
+    <PreviewOutline v-if="preview" />
     <OutlineWorkerFrame />
   </div>
-  <div class="fixed inset-0 bg-gray-600" v-else>
-    <NavBar class="mb-2" />
-    <div class="flex flex-wrap justify-center items-center min-h-80vh">
-      <MainContent class="bg-white border-4" fixed-width fixed-height>
-        <!-- Render the actual page content (the route's component), not a hardcoded <Experiment />:
-             the outline worker loads non-/dev routes (e.g. /examples/<slug>) here too and must traverse
-             that page's timeline. On /dev the slot is <Experiment />, so preview is unchanged. -->
-        <slot v-if="mounted" />
-      </MainContent>
-    </div>
-    <OutlineWorkerDriver v-if="isOutlineWorker" />
-  </div>
 </template>
+
+<style scoped>
+.developer-layout {
+  position: relative;
+}
+
+.preview-mode {
+  @apply bg-gray-600;
+}
+
+.preview-mode .experiment-workspace {
+  position: absolute;
+  inset: 0;
+  justify-content: center;
+  align-items: center;
+}
+</style>

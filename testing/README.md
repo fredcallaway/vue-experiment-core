@@ -83,4 +83,6 @@ With a project dev server running, `node core/testing/main-content.integration.m
 
 `node core/testing/docs.integration.mjs http://localhost:<port>` walks every Docs page using Next, audits layout, and checks scrolling and outline navigation. Screenshots and a page-by-page report go to `.experiment-tests/docs/` by default; pass an output directory as the second argument to change it.
 
+`node core/testing/preview.integration.mjs http://localhost:<port>` checks Develop/Preview switching, stable navigation and experiment state, query preservation, hover/click/keyboard outline access, cold Preview startup, reload/history, and worker isolation. Screenshots go to `.experiment-tests/preview/` by default; pass an output directory as the second argument to change it.
+
 The implementation uses Playwright [network routing](https://playwright.dev/docs/network) with service workers blocked, separate WebSocket routing, and [screenshot comparison](https://playwright.dev/docs/test-snapshots). It leaves animations running during observation and fails unstable checkpoints instead of changing the task's timing to obtain a screenshot.

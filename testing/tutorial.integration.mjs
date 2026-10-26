@@ -6,7 +6,7 @@ const browser = await safeBrowser({ url: `${process.argv[2]}/dev`, viewport: { w
 try {
   const { page } = browser
   const url = new URL(browser.url)
-  url.searchParams.set('noDev', '0')
+  url.searchParams.set('preview', '0')
   await page.goto(url.href)
   const toggle = page.getByRole('button', { name: 'Tutorial', exact: true })
   await toggle.waitFor()
@@ -47,7 +47,7 @@ try {
   await toggle.waitFor()
   assert.equal(await toggle.getAttribute('aria-pressed'), 'true')
 
-  const trial = new URL('/examples/trial?testing=1&noDev=0', url)
+  const trial = new URL('/examples/trial?testing=1&preview=0', url)
   await page.goto(trial.href)
   await page.locator('[data-epoch-id]').first().waitFor()
   assert.equal(await toggle.getAttribute('aria-pressed'), 'true', 'Session storage works without a tutorial query')

@@ -6,7 +6,7 @@
   },
   "rootSelector": ".main-content",
   "id": "graphnav-clicktest",
-  "startUrl": "http://localhost:3040/dev?noDev=1&jump=experiment[2]-clicktest[start]-start",
+  "startUrl": "http://localhost:3040/dev?preview=1&jump=experiment[2]-clicktest[start]-start",
   "runtime": {
     "fast": true
   },

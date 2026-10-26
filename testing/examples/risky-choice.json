@@ -6,7 +6,7 @@
   },
   "rootSelector": ".main-content",
   "id": "risky-choice-first-trial",
-  "startUrl": "http://localhost:3819/dev?noDev=1&jump=experiment[3]-main[0]-problemBlock[1]-problem[0]-trial[choice]-choice",
+  "startUrl": "http://localhost:3819/dev?preview=1&jump=experiment[3]-main[0]-problemBlock[1]-problem[0]-trial[choice]-choice",
   "runtime": {
     "fast": false
   },

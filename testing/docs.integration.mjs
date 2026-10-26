@@ -11,7 +11,7 @@ const browser = await safeBrowser({ url: `${process.argv[2]}/docs` })
 try {
   const { page } = browser
   const url = new URL(browser.url)
-  url.searchParams.set('noDev', '0')
+  url.searchParams.set('preview', '0')
   await page.goto(url.href)
   const content = page.locator('.docs-content')
   const heading = content.locator('h2, h3').first()

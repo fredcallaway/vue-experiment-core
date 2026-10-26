@@ -2,38 +2,29 @@
 import { useConfig } from '../../composables/useConfig'
 import { useSessionStorage, watchImmediate } from '@vueuse/core'
 import { useTutorialMode } from '../composables/useTutorialMode'
+import { useUrlParams } from '../../utils/url-params'
 
-
+const props = defineProps<{
+  preview?: boolean
+}>()
 const router = useRouter()
-// Later: if we want to show subroutes
-// const pages = router.getRoutes()
-//   // .filter(r => r.path.startsWith('/docs/'))  // or whatever subpath you want
-//   .map(r => ({
-//     path: r.path,
-//     name: r.name,
-//   }))
-
-
 const route = useRoute()
+const urlParams = useUrlParams()
 const { tutorialMode, toggleTutorialMode } = useTutorialMode()
 
 const getSectionSegment = (path: string) => {
   const [segment] = path.split('/').filter(Boolean)
-  if (!segment) return 'dev' // we will ultimately reroute to dev
-  return segment
+  return segment || 'dev'
 }
-
 const getTopPath = (path: string) => `/${getSectionSegment(path)}`
-
-const lastSubroutesBySection = useSessionStorage<Record<string, string>>(
-  'nav:last-subroute',
-  {},
-)
-
+const isExperimentView = computed(() => getSectionSegment(route.path) === 'dev')
+const lastSubroutesBySection = useSessionStorage<Record<string, string>>('nav:last-subroute', {})
 const config = useConfig()
 
-const topNavLinks = [
-  { label: 'Experiment', path: '/dev' },
+type NavLink = { label: string; path: string; preview?: boolean }
+const topNavLinks: NavLink[] = [
+  { label: 'Develop', path: '/dev', preview: false },
+  { label: 'Preview', path: '/dev', preview: true },
   { label: 'Prolific', path: '/prolific' },
   { label: 'Data', path: '/data' },
   { label: 'Docs', path: '/docs' },
@@ -41,28 +32,28 @@ const topNavLinks = [
   ...Object.entries(config.navPages ?? {}).map(([label, path]) => ({ label, path })),
 ]
 
-const isActiveLink = (linkPath: string) => {
-  const routeSegments = route.path.split('/').filter(Boolean)
-  const linkSegments = linkPath.split('/').filter(Boolean)
-  return routeSegments[0] === linkSegments[0]
+const isActiveLink = (link: NavLink) => {
+  if (link.preview !== undefined) return isExperimentView.value && Boolean(props.preview) === link.preview
+  return getSectionSegment(route.path) === getSectionSegment(link.path)
 }
 
-watchImmediate(
-  () => route.path,
-  (path) => {
-    const section = getSectionSegment(path)
-    const topPath = getTopPath(path)
-    if (path === topPath) {
-      delete lastSubroutesBySection.value[section]
-      return
-    }
-    lastSubroutesBySection.value[section] = path
-  },
-)
+watchImmediate(() => route.path, (path) => {
+  const section = getSectionSegment(path)
+  if (path === getTopPath(path)) delete lastSubroutesBySection.value[section]
+  else lastSubroutesBySection.value[section] = path
+})
 
-const getNavTarget = (linkPath: string) => {
-  const section = getSectionSegment(linkPath)
-  const path = isActiveLink(linkPath) ? linkPath : lastSubroutesBySection.value[section] ?? linkPath
+const getNavTarget = (link: NavLink) => {
+  if (link.preview !== undefined) {
+    const query = isExperimentView.value ? { ...urlParams } : {}
+    delete query.noDev
+    delete query.preview
+    if (link.preview) query.preview = '1'
+    if (tutorialMode.value) query.tutorial = '1'
+    return { path: link.path, query, hash: isExperimentView.value ? route.hash : '' }
+  }
+  const section = getSectionSegment(link.path)
+  const path = isActiveLink(link) ? link.path : lastSubroutesBySection.value[section] ?? link.path
   if (!tutorialMode.value) return path
   const target = router.resolve(path)
   return { path: target.path, query: { ...target.query, tutorial: '1' }, hash: target.hash }
@@ -70,21 +61,23 @@ const getNavTarget = (linkPath: string) => {
 </script>
 
 <template>
-  <nav class="h6 px1">
+  <nav class="developer-nav h6 px1" :class="{ 'preview-nav': preview }" aria-label="Developer navigation">
     <div class="flex items-center gap-6">
       <span class="font-bold">{{ config.title }}</span>
       <NuxtLink
         v-for="link in topNavLinks"
-        :key="link.path"
-        :to="getNavTarget(link.path)"
-        :class="isActiveLink(link.path) ? 'text-black' : 'text-gray-300'"
+        :key="link.label"
+        :to="getNavTarget(link)"
+        class="nav-link"
+        :class="{ active: isActiveLink(link) }"
+        :aria-current="isActiveLink(link) ? 'page' : undefined"
       >
         {{ link.label }}
       </NuxtLink>
       <button
         type="button"
-        class="flex items-center gap-1 text-sm transition-colors"
-        :class="tutorialMode ? 'text-pink-600' : 'text-gray-400 hover:text-gray-600'"
+        class="nav-link flex items-center gap-1 text-sm"
+        :class="{ active: tutorialMode }"
         :aria-pressed="tutorialMode"
         :title="tutorialMode ? 'Disable tutorial mode' : 'Enable tutorial mode'"
         @click="toggleTutorialMode"
@@ -95,3 +88,34 @@ const getNavTarget = (linkPath: string) => {
     </div>
   </nav>
 </template>
+
+<style scoped>
+.developer-nav {
+  color: black;
+}
+
+.preview-nav {
+  color: white;
+}
+
+.nav-link {
+  color: inherit;
+  opacity: 0.45;
+  text-decoration: none;
+  transition: opacity 150ms;
+}
+
+.nav-link:hover,
+.nav-link:focus-visible {
+  opacity: 0.75;
+}
+
+.nav-link.active {
+  opacity: 1;
+}
+
+.nav-link:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 4px;
+}
+</style>

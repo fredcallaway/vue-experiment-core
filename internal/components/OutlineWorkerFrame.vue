@@ -2,17 +2,19 @@
 // Hidden iframe that runs outline traversal off the developer's tab (ADR 0003). The developer's tab
 // can't traverse without leaving unrecoverable page state, so this iframe loads the same route in a
 // throwaway context, traverses, saves the cache, and broadcasts; the developer's tab swaps the
-// result into place without reloading. Mounted only in the dev layout (not in the worker itself).
+// result into place without reloading. Mounted in Develop and Preview, never in the worker itself.
 const route = useRoute()
 
-// Same route + params as the current page, plus the worker flag and noDev so the iframe renders the
-// bare experiment (no outline panel → no recursion). Re-points when the developer changes pages.
-const workerSrc = computed(() => {
+// The worker flag selects a bare layout with no outline panel, preventing recursive workers.
+// Re-points when the developer changes pages; mode switches keep the existing worker alive.
+const workerSrc = ref('')
+watch(() => route.path, (path) => {
   const params = new URLSearchParams(window.location.search)
   params.set('outlineWorker', '1')
-  params.set('noDev', '1')
-  return `${route.path}?${params.toString()}`
-})
+  params.delete('noDev')
+  params.set('preview', '1')
+  workerSrc.value = `${path}?${params.toString()}`
+}, { immediate: true })
 </script>
 
 <template>

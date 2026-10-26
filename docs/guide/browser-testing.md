@@ -74,22 +74,26 @@ The filter box supports `space` for AND, `,` for OR, `!` to negate, and `*` as a
 
 The Data panel beside it renders declared data views against the running session, which is the fastest way to check that a `declareDataView(...)` transform produces the columns you expect.
 
+## Develop and Preview
+
+Use the top navigation to switch between Develop (experiment tools and logs) and Preview (the participant layout). Switching preserves the running experiment. In Preview, hover over **Outline** to inspect or jump between epochs; click to keep it open, or use Enter and Tab with the keyboard. Escape or an outside click closes it. The outline overlays the page without resizing or moving the participant frame.
+
 ## Useful URL flags
 
 | Flag | Effect |
 | --- | --- |
 | `jump=<epochId>` | Run to that epoch on load. |
-| `noDev=1` | Hide the dev chrome and render the bare participant view. Jumping still works. |
+| `preview=1` | Use Preview with participant-sized, centered content and a hover/click outline. Jumping still works. |
 | `condition.<key>=<value>` | Pin a condition instead of taking the next cyclic assignment. |
 
-Boolean flags follow the usual query-string convention: **presence means true**. `?noDev`, `?noDev=`, and `?noDev=1` are all on. Turn one off by omitting it or negating it explicitly with `=0`, `=false`, or `=no`.
+Boolean flags follow the usual query-string convention: **presence means true**. `?preview`, `?preview=`, and `?preview=1` are all on. Turn one off by omitting it or negating it explicitly with `=0`, `=false`, or `=no`.
 
 Enable fast mode with the developer toolbar toggle. It persists in session storage for the tab. Delays and newly created or reset countdown timers use fast-mode scaling; an active countdown keeps its current duration.
 
 Combine them to test the real participant experience at an arbitrary point:
 
 ```
-http://localhost:<port>/dev?jump=experiment[5]-clicktest[play]-play&noDev=1
+http://localhost:<port>/dev?jump=experiment[5]-clicktest[play]-play&preview=1
 ```
 
 ## Notes and gotchas
@@ -97,6 +101,6 @@ http://localhost:<port>/dev?jump=experiment[5]-clicktest[play]-play&noDev=1
 - **Reuse or start the dev server.** The port is set by the `dev` script in `package.json`. Reuse an existing server; if nothing is serving, start it for browser verification. Never stop a server you did not start.
 - **`/dev` never writes live data.** It refuses to initialize a session in `mode=live`, and jump traversal runs with the data writer disabled, so jumping around is safe.
 - **The window-size enforcer applies.** Below the minimum viewport (800×600 by default, and projects may change it via `defineWindowSize`) the experiment replaces itself with a "window isn't large enough" message. Resize the browser before concluding a page is broken.
-- **The outline worker iframe is expected.** A hidden same-origin iframe with `?outlineWorker=1&noDev=1` appears in snapshots and duplicates the nav landmarks. Ignore it.
+- **The outline worker iframe is expected.** A hidden same-origin iframe with `?outlineWorker=1&preview=1` builds the outline in both Develop and Preview. It has no navigation or outline UI; ignore its experiment content in snapshots.
 - **PostHog 404s are benign** when no key is configured (`us-assets.i.posthog.com/array/NULL/...`). Do not chase them.
 - **Experiment content runs inside an error boundary**, so a thrown epoch shows a fallback and logs the error instead of blanking the page. Check the event log and console when a page looks wrong but not empty.

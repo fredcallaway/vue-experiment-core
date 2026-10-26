@@ -9,7 +9,7 @@ await mkdir(output, { recursive: true })
 const browser = await safeBrowser({ url: `${process.argv[2]}/dev`, seed: 'overflow-warning' })
 try {
   const url = new URL(browser.url)
-  url.searchParams.set('noDev', '0')
+  url.searchParams.set('preview', '0')
   const { page } = browser
   await page.goto(url.href)
   await page.waitForFunction(() => window.__experimentTest?.snapshot().events

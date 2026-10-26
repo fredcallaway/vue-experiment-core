@@ -6,7 +6,7 @@
   },
   "rootSelector": ".main-content",
   "id": "bandit-full-fast",
-  "startUrl": "http://localhost:3033/dev?noDev=1",
+  "startUrl": "http://localhost:3033/dev?preview=1",
   "runtime": {
     "fast": true
   },

@@ -19,7 +19,7 @@ export function testUrl(input, { seed } = {}) {
     url.searchParams.set('session_id', seed)
   }
   url.searchParams.set('testing', '1')
-  url.searchParams.set('noDev', '1')
+  url.searchParams.set('preview', '1')
   return url.href
 }
 
