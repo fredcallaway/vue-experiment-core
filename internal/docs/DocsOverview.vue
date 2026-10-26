@@ -6,28 +6,38 @@ import DocsPage from './DocsPage.vue'
   <DocsPage name="overview">
     <h2>Welcome!</h2>
     <p>
-      Run online behavioral experiments with the tools you need to recruit participants,
-      follow their progress, inspect their data, and review payments in one place.
+      This template provides everything you need to run an online experiment through
+      <a href="https://www.prolific.com/" target="_blank" rel="noopener">Prolific</a>.
+      Compared to other web experiment frameworks like
+      <a href="https://www.jspsych.org/" target="_blank" rel="noopener">jsPsych</a> and
+      <a href="https://smile.gureckislab.org/" target="_blank" rel="noopener">Smile</a>,
+      this template is broader in scope and stronger in opinion. It is an end to end system, providing:
     </p>
-    <p>Alongside your experiment, you get:</p>
     <ul>
       <li>
-        <b>An online home for your study</b>, with responses saved as participants work.
+        <b>A website and database</b> through
+        <a href="https://firebase.google.com/pricing" target="_blank" rel="noopener">Firebase</a>,
+        free within its usage limits.
       </li>
       <li>
-        <b>Prolific study management</b> to create studies, monitor recruitment, and keep
-        submissions connected to the data they produced.
+        <b>Prolific study management</b> to create studies, monitor recruitment, and pay
+        participants, with automatic bonus calculation and partial-completion detection.
       </li>
       <li>
-        <b>Data views</b> to inspect individual sessions and whole study versions, then save
-        analysis tables to your computer.
+        <b>An interactive experiment outline</b> that lets you jump to different sections in one click.
       </li>
       <li>
-        <b>Review and payment tools</b> that propose submission decisions and bring recorded
-        bonuses into your review for you to check and apply.
+        <b>Rich data recording and live data views.</b> Record participant actions in real time
+        and define preprocessing alongside your experiment. Inspect raw events and analysis
+        tables live, then save them to your computer. Refine the preprocessing later and
+        apply it to data you have already collected.
       </li>
       <li>
-        <b>Balanced condition assignment</b>, with tools to replace incomplete assignments.
+        <b>Perfectly balanced condition assignment</b>, with tools to replace incomplete assignments.
+      </li>
+      <li>
+        <b>Tools that help you and your coding agent catch mistakes:</b> reusable experiment
+        components, working examples, agent-facing documentation, type checks, and automated browser tests.
       </li>
       <li>
         <b>Optional session recordings</b> to watch how participants experienced the task.
@@ -35,9 +45,9 @@ import DocsPage from './DocsPage.vue'
     </ul>
     <p>
       Start with the researcher guide to running a study. It covers posting to Prolific,
-      viewing and saving data, and reviewing submissions without assuming you write code.
+      viewing and saving data, and reviewing submissions—without assuming you write code.
       Technical explanations and examples follow for anyone who wants to go deeper.
     </p>
-    <p>Use <b>Next</b> to read in order, or choose a page from the outline beside these docs.</p>
+    <p>Use <b>Next</b> to read in order, or choose a page from the outline on the right.</p>
   </DocsPage>
 </template>
