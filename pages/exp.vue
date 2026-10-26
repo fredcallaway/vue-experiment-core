@@ -6,7 +6,6 @@ import { useCurrentSession } from '../composables/useCurrentSession'
 import { useDataWriter } from '../composables/useDataWriter'
 import { usePosthog } from '../composables/usePosthog'
 import { useWindowEnforcer } from '../composables/windowEnforcer'
-import { useSizeScale } from '../internal/composables/useSizeScale'
 import { useUnload } from '../internal/composables/useUnload'
 import { isProlificIdentifier } from '../internal/prolific'
 import { timeoutPromise } from '../utils/misc'
@@ -48,8 +47,6 @@ watchImmediate(superseded, (isSuperseded) => {
     useUnload().disable()
   }
 })
-
-useSizeScale().enabled.value = false
 
 const initStatus = ref<'loading' | 'error' | 'repeat' | 'invalid-participant' | 'confirmed'>('loading')
 

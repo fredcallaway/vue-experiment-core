@@ -1,3 +1,8 @@
+# Native browser zoom
+
+- Removed the top-right developer preview zoom control and its saved `site-scale` setting. Use standard browser zoom shortcuts instead: `Ctrl + -` (`⌘ + -` on Mac) to zoom out. The small-window screen shows this tip in its centered message.
+- Developer panels use CSS flex sizing, and window-size enforcement reads the browser viewport directly. No consumer-code or configuration migration is required.
+
 # Acknowledged session saving
 
 - `DataWriter.flush()` now returns `Promise<boolean>`: `true` means Firebase acknowledged the queued batch and session metadata. Offline, disabled, superseded, uninitialized/dummy, invalid-session, and rejected writes return `false`. Existing callers may continue ignoring the return value; custom completion pages should check it before reporting success or redirecting. No required consumer-code migration or raw-data format change.

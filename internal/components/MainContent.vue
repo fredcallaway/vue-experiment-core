@@ -150,23 +150,23 @@ const currentEpoch = useCurrentEpoch()
     </div>
     <!-- screen size violated -->
     <div
-      class="inset-0 top-0 left-0 w-screen h-screen flex flex-wrap justify-center items-center bg-black text-center text-white text-xl"
+      class="fixed inset-0 z-40 flex justify-center items-center bg-black text-center text-white text-xl"
       v-if="violated"
     >
-      <div class="p-5">
-        You're browser window isn't large enough.<br>
+      <div class="p-5 w-full max-w-xl">
+        Your browser window isn't large enough.<br>
         It needs to be
           <span :class="width < minWidth ? 'text-red-500' : ''">{{ minWidth }}px wide</span> and
           <span :class="height < minHeight ? 'text-red-500' : ''">{{ minHeight }}px tall</span>.<br>
         It's currently
           <span :class="width < minWidth ? 'text-red-500' : ''">{{ width }}px wide</span> and
           <span :class="height < minHeight ? 'text-red-500' : ''">{{ height }}px tall</span>.
-          <p class="mt-3 text-base w-80 mx-auto">
-            If you can't make it bigger, you can't participate in this experiment. Sorry!
+          <p class="mt-4 text-base">
+            Tip: zoom out with <kbd>Ctrl + -</kbd> (<kbd>⌘ + -</kbd> on Mac).
+            Make sure you can still read the text.
           </p>
-          <p class="mt-30 font-italic text-base w-100 mx-auto opacity-30 text-xs">
-            Tip: you can try zooming out in your browser
-            (usually cmd/ctrl and +/-). Make sure you can still read the text though!
+          <p class="mt-3 text-base">
+            If you can't make it bigger, you can't participate in this experiment. Sorry!
           </p>
       </div>
     </div>

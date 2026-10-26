@@ -8,7 +8,6 @@
       <NavBar />
     </div>
     <div class="p2">
-      <SizeScaler />
       <div>
         <slot />
       </div>

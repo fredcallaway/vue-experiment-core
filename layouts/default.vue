@@ -26,10 +26,9 @@ provide('devTools', devTools)
 </script>
 
 <template>
-  <div class="p2 flex flex-col overflow-hidden" v-if="devTools">
-    <NavBar class="mb-2" />
-    <SizeScaler />
-    <div class="flex flex-row flex-gap-2">
+  <div class="h-screen p2 flex flex-col overflow-auto" v-if="devTools">
+    <NavBar class="mb-2 shrink-0" />
+    <div class="flex flex-row flex-gap-2 flex-1 min-h-0">
       <div class="flex flex-col flex-gap-2">
         <MainContent show-outline fixed-width fixed-height capture-errors>
           <slot v-if="mounted" />
@@ -37,15 +36,15 @@ provide('devTools', devTools)
         <!-- <EventView horizontal /> -->
       </div>
 
-      <div class="flex flex-col flex-gap-2 shrink-0">
-        <EpochControls />
-        <EpochOutline />
+      <div class="flex flex-col flex-gap-2 shrink-0 min-h-0">
+        <EpochControls class="shrink-0" />
+        <EpochOutline class="flex-1 min-h-0" />
       </div>
-      <div class="w-600px relative" v-if="!violated">
-        <Inspector class="mb-2" />
-        <ConditionView class="mb-2" />
-        <DataView class="mb-2" />
-        <EventView class="flex-1" ref="eventViewRef" />
+      <div class="w-600px relative flex flex-col min-h-0" v-if="!violated">
+        <Inspector class="mb-2 shrink-0" />
+        <ConditionView class="mb-2 shrink-0" />
+        <DataView class="mb-2 min-h-0" />
+        <EventView class="flex-1 min-h-200px" />
       </div>
     </div>
     <!-- Produces the outline off this tab so it never has to traverse/reload (ADR 0003). -->

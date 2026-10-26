@@ -1,5 +1,3 @@
-import { useSizeScale } from '../internal/composables/useSizeScale'
-import { round } from '../utils/math'
 import { useWindowSize } from '@vueuse/core'
 
 const minWidth = ref(800)
@@ -16,11 +14,7 @@ export const resetWindowSize = () => {
 }
 
 export const useWindowEnforcer = () => {
-  const { width: trueWidth, height: trueHeight } = useWindowSize()
-  
-  const { effectiveScale: zoomScale } = useSizeScale()
-  const width = computed(() => round(trueWidth.value / zoomScale.value))
-  const height = computed(() => round(trueHeight.value / zoomScale.value))
+  const { width, height } = useWindowSize()
   
   const violated = computed(() => {
     return width.value < minWidth.value || height.value < minHeight.value

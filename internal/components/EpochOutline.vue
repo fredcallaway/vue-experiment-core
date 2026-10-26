@@ -6,8 +6,7 @@ import { isJumping } from '../state'
 import * as R from 'remeda'
 import { useUrlParam } from '../../utils/url-params'
 import { useEpochTree } from '../composables/useEpochTree'
-import { useSizeScale } from '../composables/useSizeScale'
-import { useElementBounding, useMemoize, useWindowSize } from '@vueuse/core'
+import { useMemoize } from '@vueuse/core'
 
 import type { EpochNode } from '../composables/useEpochTree'
 
@@ -284,11 +283,10 @@ const scrollCurrentIntoView = async () => {
   const activeEl = listEl.querySelector<HTMLElement>(`[data-epoch-id="${currentEpoch.value.id}"]`)
   if (!activeEl) return null
 
-  const effectiveScale = useSizeScale().effectiveScale.value
   const containerRect = listEl.getBoundingClientRect()
   const activeRect = activeEl.getBoundingClientRect()
-  const activeTop = (activeRect.top - containerRect.top) / effectiveScale
-  const activeBottom = (activeRect.bottom - containerRect.top) / effectiveScale
+  const activeTop = activeRect.top - containerRect.top
+  const activeBottom = activeRect.bottom - containerRect.top
   const activeHeight = activeBottom - activeTop
   const topBuffer = 48
   const bottomBuffer = 48
@@ -397,33 +395,6 @@ const handleScroll = (row: OutlineRow, event: WheelEvent) => {
   handler(event)
 }
 
-// POSITIONING
-
-// calculating height (same approach as EventView)
-const { height: winHeight } = useWindowSize()
-// Measure a zero-height anchor pinned to the panel's top-left, NOT the panel
-// itself. useElementBounding installs a ResizeObserver; measuring the same
-// element we then write `height`/`minWidth` back onto is a feedback loop that
-// never settles — under effectiveScale the sub-pixel width ratchets maxSeenWidth
-// up on every frame, pegging a CPU core (and firing the "ResizeObserver loop"
-// warning that logEvent suppresses). The anchor's box doesn't change when we
-// resize the panel, so our own writes can't re-trigger the measurement.
-const { top, width } = useElementBounding(useTemplateRef('measure-anchor'))
-const { effectiveScale } = useSizeScale()
-const outlineHeight = computed(() => {
-  const usedSpace = (top.value + 10) * effectiveScale.value + 20
-  return (winHeight.value - usedSpace) / effectiveScale.value
-})
-
-// don't allow width to decrease (only increase). Quantize to integer layout
-// pixels (getBoundingClientRect bakes effectiveScale in; minWidth is applied in
-// layout space) so the value converges instead of ratcheting on sub-pixel noise.
-const maxSeenWidth = ref(170) // minimum for the header
-watchEffect(() => {
-  const layoutWidth = Math.ceil(width.value / (effectiveScale.value || 1))
-  if (layoutWidth > maxSeenWidth.value) maxSeenWidth.value = layoutWidth
-})
-
 const indentStep = 14
 const indentBase = 8
 
@@ -431,12 +402,8 @@ const indentBase = 8
 
 <template>
   <div
-    class="rounded-lg border border-2 border-gray-300 bg-white cursor-default flex flex-col pr2 relative"
-    ref="top-div"
-    :style="{ height: `${outlineHeight}px`, minWidth: `${maxSeenWidth}px` }"
+    class="rounded-lg border border-2 border-gray-300 bg-white cursor-default flex flex-col pr2 relative min-w-170px"
   >
-    <!-- zero-height measurement anchor: see useElementBounding note in <script> -->
-    <div class="absolute left-0 right-0 top-0 h-0 pointer-events-none" ref="measure-anchor" />
     <h2 class="ml2 mb0 shrink-0">Epochs</h2>
     <div class="absolute right-1 top-1 flex flex-items-center flex-gap-1">
       <IconToggle

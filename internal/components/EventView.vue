@@ -3,9 +3,8 @@ import { useDebugBus, useLogEventBus } from '../../composables/logEvent'
 import { createTextFilter } from '../../utils/createTextFilter'
 import { START_TIME, mainContentRef } from '../state'
 import * as R from 'remeda'
-import { useSizeScale } from '../composables/useSizeScale'
 import { isEpochEvent, isErrorEvent, isParticipantEvent } from '../data'
-import { useElementBounding, useElementSize, useLocalStorage, useWindowSize } from '@vueuse/core'
+import { useElementSize, useLocalStorage } from '@vueuse/core'
 
 import stringify from "json-stringify-pretty-compact";
 
@@ -213,15 +212,6 @@ const fmtTimestamp = (timestamp: number) => {
 }
 
 
-// calculating height
-const { height: winHeight } = useWindowSize()
-const { top } = useElementBounding(useTemplateRef('top-div'))
-const { scale } = useSizeScale()
-const eventViewHeight = computed(() => {
-  const usedSpace = (top.value + 10) * scale.value + 20
-  return (winHeight.value - usedSpace) / scale.value
-})
-
 const isHorizontal = computed(() => props.horizontal ?? false)
 const { width: mainContentWidth } = useElementSize(mainContentRef)
 const horizontalWidth = computed(() => {
@@ -350,7 +340,7 @@ onMounted(() => {
   })
 })
 
-watch([horizontalWidth, eventViewHeight], () => {
+watch(horizontalWidth, () => {
   previewOverflowByKey.value = {}
   queueMeasurePreviewOverflow()
 })
@@ -468,8 +458,6 @@ onUpdated(() => {
   <div
     class="border border-2 border-gray-300 p-2 text-sm rounded-lg min-w-300px flex flex-col relative"
     v-else
-    :style="{ height: `${eventViewHeight}px` }"
-    ref="top-div"
   >
     <div class="flex flex-col flex-gap-1 mb-2">
       <h2 class="shrink-0">Events</h2>
