@@ -23,6 +23,7 @@
 # Contextual developer tutorial
 
 - The top navigation includes an icon-only Tutorial toggle at the far right, colored pink when enabled. Navigation links, developer controls, and Prolific panels have pink highlights with explanations on hover or keyboard focus. The setting persists across navigation and reloads in the same tab; `?tutorial=1` also enables it. Repeated controls share one highlight. No consumer migration is required.
+- Dashboard navigation fits the viewport independently of the page content's minimum width, keeping the Tutorial toggle visible on narrower panes such as Prolific and Examples.
 
 # Development overflow warning
 
