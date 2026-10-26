@@ -52,8 +52,7 @@ provide('devTools', computed(() => !preview.value && !isOutlineWorker))
       <div v-if="!preview && !violated" class="w-600px relative flex flex-col min-h-0">
         <Inspector class="mb-2 shrink-0" />
         <ConditionView class="mb-2 shrink-0" />
-        <DataView class="mb-2 min-h-0" />
-        <EventView class="flex-1 min-h-200px" />
+        <DataEventPanels class="flex-1 min-h-0" />
       </div>
     </div>
     <PreviewOutline v-if="preview" />

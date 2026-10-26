@@ -1,3 +1,7 @@
+# Resizable developer panels
+
+- Drag the divider between Data and Events to adjust their vertical split. Both panels retain a usable minimum height, and the split adapts when the browser window changes size. With the divider focused, use Up/Down to adjust it or Home/End to reach its limits. No consumer-code or configuration migration is required.
+
 # Develop and Preview
 
 - Replaced the Experiment navigation link with Develop and Preview. Both modes keep the navigation in the same position; Develop uses black text and Preview uses white text, with opacity indicating active and inactive links.
