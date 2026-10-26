@@ -85,26 +85,45 @@ const fmtCell = (value: unknown) => (value === null || value === undefined ? 'â€
   >
     <div class="flex flex-row flex-items-center flex-gap-2 mb-2">
       <h2 class="shrink-0">Data</h2>
-      <select class="bg-white border border-gray-300 rounded px-1 text-xs ml-auto" v-model="override">
-        <option value="">auto{{ autoSelected ? ` (${autoSelected})` : '' }}</option>
-        <option v-for="name in viewNames" :key="name" :value="name">{{ name }}</option>
-      </select>
+      <TutorialTarget
+        class="ml-auto"
+        title="Data view selector"
+        help="Chooses which declared data view to preview. Auto follows the current epoch when a matching view exists."
+        placement="left"
+      >
+        <select class="bg-white border border-gray-300 rounded px-1 text-xs" v-model="override">
+          <option value="">auto{{ autoSelected ? ` (${autoSelected})` : '' }}</option>
+          <option v-for="name in viewNames" :key="name" :value="name">{{ name }}</option>
+        </select>
+      </TutorialTarget>
     </div>
 
-    <div
+    <TutorialTarget
       class="text-xs text-red-600 font-mono whitespace-pre-wrap flex-1 min-h-0 overflow-y-auto"
       v-if="result && !result.ok"
+      title="Data view error"
+      help="Shows errors thrown while running the selected data view against the live event stream."
     >
       {{ result.error }}
-    </div>
+    </TutorialTarget>
 
-    <template v-else-if="view?.format === 'json'">
+    <TutorialTarget
+      v-else-if="view?.format === 'json'"
+      class="flex flex-col flex-1 min-h-0"
+      title="JSON preview"
+      help="Shows the selected JSON data view output for events recorded during this debug session."
+    >
       <pre
         class="[scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.2)_transparent] whitespace-pre-wrap break-words flex-1 min-h-0 overflow-y-auto text-xs"
       >{{ jsonText }}</pre>
-    </template>
+    </TutorialTarget>
 
-    <template v-else-if="rows.length">
+    <TutorialTarget
+      v-else-if="rows.length"
+      class="flex flex-col flex-1 min-h-0"
+      title="CSV preview"
+      help="Shows CSV rows produced by the selected data view from the live debug-session events."
+    >
       <div
         class="[scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.2)_transparent] flex-1 min-h-0 overflow-y-auto"
       >
@@ -121,8 +140,13 @@ const fmtCell = (value: unknown) => (value === null || value === undefined ? 'â€
           </tbody>
         </table>
       </div>
-    </template>
+    </TutorialTarget>
 
-    <div class="text-sm text-gray-400 italic" v-else>No rows yet.</div>
+    <TutorialTarget
+      class="text-sm text-gray-400 italic"
+      v-else
+      title="Empty data preview"
+      help="The selected data view has no output yet. Run through epochs that log its source events."
+    >No rows yet.</TutorialTarget>
   </div>
 </template>

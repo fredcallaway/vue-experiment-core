@@ -9,6 +9,12 @@ import DocsPage from './DocsPage.vue'
       The <NuxtLink to="/dev">/dev</NuxtLink> page runs your experiment inside the developer
       panel — the same one wrapped around these docs:
     </p>
+    <p>
+      Turn on <b>Tutorial</b> in the top navigation to highlight controls in pink. Hover or
+      focus a highlighted control to read its explanation. Tutorial mode stays on as you
+      navigate and reload in the same tab; click Tutorial again to turn it off. You can
+      also enable it with <code>?tutorial=1</code>.
+    </p>
     <ul>
       <li>
         <b>Controls</b> — arrows step to the previous/next leaf epoch; the pin marks the

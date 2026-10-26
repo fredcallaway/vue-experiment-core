@@ -439,12 +439,22 @@ const indentBase = 8
     <div class="absolute left-0 right-0 top-0 h-0 pointer-events-none" ref="measure-anchor" />
     <h2 class="ml2 mb0 shrink-0">Epochs</h2>
     <div class="absolute right-1 top-1 flex flex-items-center flex-gap-1">
-      <IconToggle v-model="autoTraverse" label="Automatic Traversal" icon="i-mdi-map-search" />
+      <IconToggle
+        v-model="autoTraverse"
+        label="Automatic Traversal"
+        icon="i-mdi-map-search"
+        tutorial-title="Automatic traversal"
+        tutorial-help="Keeps the epoch outline indexed automatically as the experiment changes during development."
+        tutorial-placement="left"
+      />
       <IconButton
         icon="i-mdi-refresh"
         :title="reindexTitle"
         :tone="isOutlineStale || traversalError ? 'danger' : 'default'"
         :disabled="isTraversing || isJumping"
+        tutorial-title="Reindex timeline"
+        tutorial-help="Rebuilds the cached epoch outline by traversing the experiment timeline."
+        tutorial-placement="left"
         @click="reindexTimeline"
       />
     </div>
@@ -493,26 +503,31 @@ const indentBase = 8
           />
         </div>
 
-        <div
+        <TutorialTarget
           class="w-4 h-4 flex flex-wrap justify-center items-center rounded"
           v-if="hasChildren(row.node) && isAncestor(row.node)"
-          title="Cannot collapse ancestor"
+          title="Active ancestor"
+          help="This branch contains the current epoch, so it stays expanded and cannot be collapsed."
         >
           <span class="i-mdi-arrow-right-bold" />
-        </div>
-        <button
+        </TutorialTarget>
+        <TutorialTarget
+          as="button"
           class="w-4 h-4 flex flex-wrap justify-center items-center rounded hover:bg-gray-200"
           v-else-if="hasChildren(row.node)"
           @click.stop="handleToggleCollapse(row.node)"
           :title="isActive(row.node) ? 'Pinned ancestor' : (isExpanded(row.node) ? 'Collapse' : 'Expand')"
+          help="Shows or hides this epoch's child epochs in the outline."
         >
           <span :class="isExpanded(row.node) ? 'i-mdi-chevron-down' : 'i-mdi-chevron-right'" />
-        </button>
-        <button
+        </TutorialTarget>
+        <TutorialTarget
+          as="button"
           v-else
           @click.stop="handlePinNode(row.node)"
           class="group w-4 h-4 flex flex-wrap justify-center items-center rounded hover:bg-gray-100"
           :title="isPinnedNode(row.node) ? 'Unpin' : 'Pin and jump'"
+          help="Jumps to this leaf epoch and stores it in the URL as the current jump target."
         >
           <div class="i-mdi-pin text-blue-500" v-if="isPinnedNode(row.node)" />
           <template v-else>
@@ -520,25 +535,29 @@ const indentBase = 8
             <div v-else class="group-hover:hidden i-mdi-circle-outline scale-60 text-gray-400" />
             <div class="hidden group-hover:block i-mdi-pin-outline text-gray-300" />
           </template>
-        </button>
-        <span
+        </TutorialTarget>
+        <TutorialTarget
+          as="span"
           class="truncate cursor-pointer min-w-0"
           @click="handleClickNode(row.node)"
-          :title="row.node.error || undefined"
+          :title="row.node.error || 'Epoch name'"
+          help="Shows the epoch name. Click it to jump to that epoch in debug mode."
         >
           {{ row.node.name }}
-        </span>
-        <button
+        </TutorialTarget>
+        <TutorialTarget
+          as="button"
           class="ml-1 px-1.5 py-0 translate-y-0.5 rounded-full text-10px cursor-pointer hover:brightness-95"
           v-if="row.identical"
           @click.stop="cycleIdenticalStep(row.node.id, 1)"
           @contextmenu.prevent.stop="cycleIdenticalStep(row.node.id, -1)"
           @wheel="handleScroll(row, $event)"
           title="left/right click or scroll to cycle through steps"
+          help="Represents repeated identical child epochs. Click, right-click, or scroll to inspect another step."
           :class="row.identical.activeStep !== null ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600'"
         >
           {{ row.identical.activeStep !== null ? `${row.identical.activeStep} / ${row.identical.total}` : row.identical.total }}
-        </button>
+        </TutorialTarget>
       </div>
     </div>
   </div>

@@ -126,7 +126,11 @@ const onDeploy = async () => {
 
     <fieldset :disabled="formDataLoading" class="grid grid-cols-2 gap-6 border-0 m-0 p-0">
       <!-- Reward/Time/Wage/Places/Cost Card -->
-      <div class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700">
+      <TutorialTarget
+        class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700"
+        title="Compensation"
+        help="Sets reward, completion time, places, wage, and expected study cost before creating a Prolific study."
+      >
         <div class="flex flex-row gap-4 mb-4">
           <div class="flex-1">
             <label class="block mb-2 font-semibold">Reward (cents)</label>
@@ -174,10 +178,14 @@ const onDeploy = async () => {
           <span class="i-mdi-cash-multiple text-2xl" />
           Total cost: ${{ totalCost.toFixed(2) }}
         </div>
-      </div>
+      </TutorialTarget>
 
       <!-- Public Name/Description Card -->
-      <div class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700 space-y-4">
+      <TutorialTarget
+        class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700 space-y-4"
+        title="Public listing"
+        help="Controls the participant-facing study name and HTML description shown on Prolific."
+      >
         <div>
           <label class="block mb-2 font-semibold">Public Name</label>
           <input class="border border-2 px-3 py-1 box-border bg-white w-full" v-model="formData.name" type="text" />
@@ -190,10 +198,14 @@ const onDeploy = async () => {
             rows="5"
           ></textarea>
         </div>
-      </div>
+      </TutorialTarget>
 
       <!-- Eligibility Card -->
-      <div class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700">
+      <TutorialTarget
+        class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700"
+        title="Eligibility"
+        help="Configures participant eligibility filters and exclusion rules for the new study."
+      >
         <div class="grid grid-cols-[1fr_auto] gap-6 items-start">
           <div class="space-y-4">
             <label class="flex items-center gap-2">
@@ -248,10 +260,14 @@ const onDeploy = async () => {
             </div>
           </div>
         </div>
-      </div>
+      </TutorialTarget>
 
       <!-- Status Card -->
-      <div class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700 space-y-4">
+      <TutorialTarget
+        class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700 space-y-4"
+        title="Deployment status"
+        help="Checks whether the experiment is configured, committed, and deployed before study publication."
+      >
         <div
           class="p-4 rounded-lg bg-success-200 text-success-600 [&>h3]:text-success-700"
           v-if="status === 'deployed'"
@@ -326,10 +342,14 @@ const onDeploy = async () => {
           :action="onDeploy"
           :disabled="status !== 'ready'"
         />
-      </div>
+      </TutorialTarget>
     </fieldset>
 
-    <div class="mt-6 flex gap-4">
+    <TutorialTarget
+      class="mt-6 flex gap-4"
+      title="Create study"
+      help="Creates a Prolific draft, or creates and publishes immediately when all checks pass."
+    >
       <ActionButton
         class="btn-gray"
         loading
@@ -345,6 +365,6 @@ const onDeploy = async () => {
         success
         :disabled="!canSubmit || create.loading.value"
       />
-    </div>
+    </TutorialTarget>
   </div>
 </template>

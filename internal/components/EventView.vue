@@ -369,13 +369,33 @@ onUpdated(() => {
   >
     <div class="flex flex-row flex-items-center flex-gap-3 flex-wrap mb-2">
       <h2 class="shrink-0">Events</h2>
-      <TextFilter class="w-64" v-model="whitelistFilter" placeholder="Filter: e.g. !epoch *.trial" compact />
+      <TextFilter
+        class="w-64"
+        v-model="whitelistFilter"
+        placeholder="Filter: e.g. !epoch *.trial"
+        compact
+        tutorial-title="Event filter"
+        tutorial-help="Filters events: space is AND, comma is OR, ! negates, and * is a wildcard. Press / to focus."
+      />
       <div class="flex flex-row flex-items-center flex-gap-3 text-xs">
-        <label v-for="(ref, name) in showFilters" :key="name">
+        <TutorialTarget
+          as="label"
+          v-for="(ref, name) in showFilters"
+          :key="name"
+          title="Event categories"
+          help="Shows or hides whole categories of debug events without changing the saved event log."
+        >
           <input type="checkbox" v-model="ref.value"> {{ name }}
-        </label>
+        </TutorialTarget>
       </div>
-      <IconButton icon="i-mdi-broom" title="Clear" @click="events.length = 0" />
+      <IconButton
+        icon="i-mdi-broom"
+        title="Clear"
+        tutorial-title="Clear events"
+        tutorial-help="Clears events displayed in this debug panel. It does not delete saved data."
+        tutorial-placement="left"
+        @click="events.length = 0"
+      />
     </div>
     <div
       ref="horizontalScrollEl"
@@ -402,9 +422,11 @@ onUpdated(() => {
             </div>
           </Teleport>
         </template>
-        <div
+        <TutorialTarget
           class="p-2 rounded-md relative w-260px min-w-260px h-full"
           :class="event.cardClass ?? 'p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700'"
+          title="Event card"
+          help="Shows one logged event, including its type, time, caption, and payload preview when present."
         >
           <span class="font-bold">{{ event.eventType }}</span>
           <div class="text-right absolute top-2 right-2">
@@ -423,19 +445,21 @@ onUpdated(() => {
                 >
                   <pre class="whitespace-pre-wrap break-words overflow-hidden line-height-snug p-2 text-8px">{{ formatOverflowPreview(event.data) }}</pre>
                 </div>
-                <button
+                <TutorialTarget
+                  as="button"
                   class="absolute top-1 right-1 w-5 h-5 rounded bg-gray-200 hover:bg-gray-300 flex flex-wrap justify-center items-center"
                   v-if="hasPreviewOverflow(getPopoverKey(event, index))"
                   @click.stop="toggleDataPopover(getPopoverKey(event, index))"
                   title="Show full data"
+                  help="Opens the full event payload when the inline preview is truncated."
                 >
                   <span class="i-mdi-open-in-new text-xs" />
-                </button>
+                </TutorialTarget>
               </template>
               <pre v-else class="whitespace-pre-wrap break-words text-xs">{{ formatForPre(event.data, 54) }}</pre>
             </div>
           </template>
-        </div>
+        </TutorialTarget>
         </template>
       </template>
     </div>
@@ -450,13 +474,33 @@ onUpdated(() => {
     <div class="flex flex-col flex-gap-1 mb-2">
       <h2 class="shrink-0">Events</h2>
       <div class="flex flex-row flex-items-center flex-gap-3 text-xs">
-        <label v-for="(ref, name) in showFilters" :key="name">
+        <TutorialTarget
+          as="label"
+          v-for="(ref, name) in showFilters"
+          :key="name"
+          title="Event categories"
+          help="Shows or hides whole categories of debug events without changing the saved event log."
+        >
           <input type="checkbox" v-model="ref.value"> {{ name }}
-        </label>
+        </TutorialTarget>
       </div>
-      <TextFilter class="w-52" v-model="whitelistFilter" placeholder="e.g. !epoch *.trial" />
+      <TextFilter
+        class="w-52"
+        v-model="whitelistFilter"
+        placeholder="e.g. !epoch *.trial"
+        tutorial-title="Event filter"
+        tutorial-help="Filters events: space is AND, comma is OR, ! negates, and * is a wildcard. Press / to focus."
+      />
       <!-- <button r1 t1 ml-auto btn-gray btn-xs @click="events.length = 0">clear</button> -->
-      <IconButton class="absolute right-1 top-1" icon="i-mdi-broom" title="Clear" @click="events.length = 0" />
+      <IconButton
+        class="absolute right-1 top-1"
+        icon="i-mdi-broom"
+        title="Clear"
+        tutorial-title="Clear events"
+        tutorial-help="Clears events displayed in this debug panel. It does not delete saved data."
+        tutorial-placement="left"
+        @click="events.length = 0"
+      />
     </div>
     <div
       class="[scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.2)_transparent] flex-1 min-h-0 flex flex-col flex-gap-2 overflow-y-auto"
@@ -481,9 +525,11 @@ onUpdated(() => {
             </div>
           </Teleport>
         </template>
-        <div
+        <TutorialTarget
           class="p-2 mr-1 rounded-md relative"
           :class="event.cardClass ?? 'p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700'"
+          title="Event card"
+          help="Shows one logged event, including its type, time, caption, and payload preview when present."
         >
           <span class="font-bold">{{ event.eventType }}</span>
           <div class="text-right absolute top-2 right-2">
@@ -502,19 +548,21 @@ onUpdated(() => {
                 >
                   <pre class="whitespace-pre-wrap break-words overflow-hidden line-height-snug p-2 text-8px">{{ formatOverflowPreview(event.data) }}</pre>
                 </div>
-                <button
+                <TutorialTarget
+                  as="button"
                   class="absolute top-1 right-1 w-5 h-5 rounded bg-gray-200 hover:bg-gray-300 flex flex-wrap justify-center items-center"
                   v-if="hasPreviewOverflow(getPopoverKey(event, index))"
                   @click.stop="toggleDataPopover(getPopoverKey(event, index))"
                   title="Show full data"
+                  help="Opens the full event payload when the inline preview is truncated."
                 >
                   <span class="i-mdi-open-in-new text-xs" />
-                </button>
+                </TutorialTarget>
               </template>
               <pre v-else class="whitespace-pre-wrap break-words text-xs">{{ formatForPre(event.data, 72) }}</pre>
             </div>
           </template>
-        </div>
+        </TutorialTarget>
         </template>
       </template>
     </div>

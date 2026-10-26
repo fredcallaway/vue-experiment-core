@@ -23,24 +23,32 @@ const formatValue = (value: unknown) => {
     </div>
     <div class="flex flex-col flex-gap-1">
       <div class="flex flex-row flex-items-center flex-gap-2" v-for="key in conditionKeys" :key="key">
-        <button
+        <TutorialTarget
+          as="button"
           @click.stop="isPinned[key] = !isPinned[key]"
           class="group w-4 h-4 flex flex-wrap justify-center items-center rounded hover:bg-gray-100"
           :title="isPinned[key] ? 'Unpin' : 'Pin condition'"
+          help="Locks or unlocks this condition value while you iterate on the experiment."
         >
           <div class="i-mdi-pin text-blue-500" v-if="isPinned[key]" />
           <div class="i-mdi-pin-outline text-gray-300 group-hover:text-gray-400" v-else />
-        </button>
+        </TutorialTarget>
         <span class="font-bold min-w-80px">{{ key }}:</span>
-        <select
-          class="bg-white border border-gray-300 rounded px-1 text-xs min-w-0 flex-1"
-          v-model="conditions[key]"
-          @change="isPinned[key] = true"
+        <TutorialTarget
+          class="min-w-0 flex-1"
+          title="Condition value"
+          help="Overrides this randomized condition. Changing the value pins it so it will not randomize again."
         >
-          <option v-for="(value, index) in options[key]" :key="index" :value="value">
-            {{ formatValue(value) }}
-          </option>
-        </select>
+          <select
+            class="bg-white border border-gray-300 rounded px-1 text-xs w-full"
+            v-model="conditions[key]"
+            @change="isPinned[key] = true"
+          >
+            <option v-for="(value, index) in options[key]" :key="index" :value="value">
+              {{ formatValue(value) }}
+            </option>
+          </select>
+        </TutorialTarget>
       </div>
     </div>
   </div>

@@ -64,16 +64,25 @@ const handleNext = () => {
     <IconButton
       icon="i-mdi-arrow-left-bold-box"
       title="Previous Epoch"
+      tutorial-title="Previous epoch"
+      tutorial-help="Jumps to the previous leaf epoch in the discovered timeline."
       :disabled="!backTargetId || isTraversing || isJumping"
       @click="handleBack"
     />
     <IconButton
       icon="i-mdi-arrow-right-bold-box"
       title="Next Epoch"
+      tutorial-title="Next epoch"
+      tutorial-help="Marks the current epoch done and advances to the next epoch."
       :disabled="isTraversing || isJumping"
       @click="handleNext"
     />
-    <button @click="cycleCurrentPin">
+    <TutorialTarget
+      as="button"
+      title="Pin current epoch"
+      help="Pins the current epoch in the URL with a jump parameter, so reloads return to this point."
+      @click="cycleCurrentPin"
+    >
       <div
         class="text-2xl"
         :title="pinStatus == 'current' ? 'Unpin Current Epoch' : 'Pin Current Epoch'"
@@ -82,7 +91,13 @@ const handleNext = () => {
           pinStatus != 'none' ? 'text-blue-500' : 'text-gray-300',
         ]"
       />
-    </button>
-    <IconToggle v-model="fast" label="Fast Mode" icon="i-mdi-speedometer" />
+    </TutorialTarget>
+    <IconToggle
+      v-model="fast"
+      label="Fast Mode"
+      icon="i-mdi-speedometer"
+      tutorial-title="Fast mode"
+      tutorial-help="Skips or shortens waits that support fast mode while you are developing."
+    />
   </div>
 </template>

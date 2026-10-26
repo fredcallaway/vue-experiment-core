@@ -6,6 +6,8 @@ const props = withDefaults(defineProps<{
   modelValue: string
   placeholder?: string
   compact?: boolean
+  tutorialTitle?: string
+  tutorialHelp?: string
 }>(), {
   placeholder: 'e.g. foo* bar, baz !qux'
 })
@@ -37,7 +39,12 @@ const searchQuery = computed({
 </script>
 
 <template>
-  <div class="flex flex-col flex-gap-2 min-w-97 max-w-150">
+  <TutorialTarget
+    class="flex flex-col flex-gap-2 min-w-97 max-w-150"
+    :title="props.tutorialTitle"
+    :help="props.tutorialHelp"
+    placement="left"
+  >
     <div>
       <div class="text-sm text-gray-600 mb--1" v-if="!compact">
         Filter (<kbd>/</kbd>): space is AND, comma is OR, ! negates, * is wildcard
@@ -51,6 +58,6 @@ const searchQuery = computed({
         :placeholder="placeholder"
       />
     </div>
-  </div>
+  </TutorialTarget>
 </template>
 

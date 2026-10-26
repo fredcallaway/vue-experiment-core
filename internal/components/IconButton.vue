@@ -4,6 +4,9 @@ const props = defineProps<{
   title: string
   disabled?: boolean
   tone?: 'default' | 'danger'
+  tutorialTitle?: string
+  tutorialHelp?: string
+  tutorialPlacement?: 'bottom' | 'left'
 }>()
 defineEmits<{ click: [] }>()
 
@@ -14,10 +17,18 @@ const enabledClass = computed(() => {
 </script>
 
 <template>
-  <button @click="$emit('click')" :disabled="props.disabled" :class="props.disabled ? 'cursor-not-allowed' : ''">
+  <TutorialTarget
+    as="button"
+    :title="props.tutorialTitle ?? props.title"
+    :help="props.tutorialHelp"
+    :placement="props.tutorialPlacement"
+    :aria-label="props.title"
+    :disabled="props.disabled"
+    :class="props.disabled ? 'cursor-not-allowed' : ''"
+    @click="$emit('click')"
+  >
     <div
       class="text-2xl transition-transform duration-75"
-      :title="props.title"
       :class="[
         props.icon,
         props.disabled
@@ -25,5 +36,5 @@ const enabledClass = computed(() => {
           : enabledClass,
       ]"
     />
-  </button>
+  </TutorialTarget>
 </template>

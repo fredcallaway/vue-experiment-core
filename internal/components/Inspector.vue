@@ -29,16 +29,18 @@ const entriesArray = computed(() => {
     <div
       class="[scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:rgba(0,0,0,0.2)_transparent] flex flex-col flex-gap-2 overflow-y-auto"
     >
-      <div
+      <TutorialTarget
         class="p-4 rounded-lg bg-gray-200 text-gray-600 [&>h3]:text-gray-700 p-2 mr-1 rounded-md relative"
         v-for="entry in entriesArray"
         :key="entry.id"
+        title="Inspected value"
+        help="Shows live debug data registered with the inspector by experiment code."
       >
         <span class="font-bold">{{ entry.label }}</span>
         <div class="relative mt-1">
           <pre class="whitespace-pre-wrap break-words text-xs">{{ stringify(entry.data, { indent: 2, maxLength: 80 }) }}</pre>
         </div>
-      </div>
+      </TutorialTarget>
     </div>
   </div>
 </template>

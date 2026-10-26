@@ -347,7 +347,12 @@ watch(selectedWorkspaceId, () => {
 <template>
   <div class="p-8 max-w-7xl min-w-2xl mx-auto">
 
-    <section class="bg-gray-100 rounded-lg p-5 mb-6">
+    <TutorialTarget
+      as="section"
+      class="bg-gray-100 rounded-lg p-5 mb-6"
+      title="Prolific overview"
+      help="Summarizes study activity and cost, links to the next study needing attention, and opens connection settings."
+    >
       <div class="flex flex-wrap flex-gap-6 flex-items-stretch">
         <div class="flex flex-gap-8 flex-items-center">
           <div class="min-w-20">
@@ -401,7 +406,7 @@ watch(selectedWorkspaceId, () => {
           </button>
         </div>
       </div>
-    </section>
+    </TutorialTarget>
 
     <div
       v-if="showConnectionForm"
@@ -410,7 +415,10 @@ watch(selectedWorkspaceId, () => {
         : 'mb-6'"
       @click.self="showConnectionModal && closeConnectionModal()"
     >
-      <section
+      <TutorialTarget
+        as="section"
+        title="Prolific connection"
+        help="Stores the Prolific API token and project ID. Choose an existing project or create one using workspace tools."
         class="bg-white border border-gray-200 rounded-lg p-6 w-full"
         :class="showConnectionModal ? 'max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl' : ''"
         :role="showConnectionModal ? 'dialog' : undefined"
@@ -533,7 +541,7 @@ watch(selectedWorkspaceId, () => {
         <div v-if="setupError" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mt-5">
           {{ setupError }}
         </div>
-      </section>
+      </TutorialTarget>
     </div>
 
     <!-- Error Display -->
@@ -541,10 +549,21 @@ watch(selectedWorkspaceId, () => {
       {{ error }}
     </div>
 
-    <ProlificMessages class="mb3 rounded mb-4" v-if="isReady" />
+    <TutorialTarget
+      class="mb3 rounded mb-4"
+      v-if="isReady"
+      title="Prolific messages"
+      help="Shows unresolved participant conversations that may need a response before reviewing submissions."
+    >
+      <ProlificMessages />
+    </TutorialTarget>
 
     <!-- Study List View -->
-    <div v-if="prolific && isReady">
+    <TutorialTarget
+      v-if="prolific && isReady"
+      title="Study list"
+      help="Lists cached Prolific studies, with search and refresh controls for finding study dashboards."
+    >
 
       <div class="flex flex-row flex-gap-2 flex-justify-between flex-items-end mb-2">
         <div>
@@ -602,6 +621,6 @@ watch(selectedWorkspaceId, () => {
           </tbody>
         </table>
       </div>
-    </div>
+    </TutorialTarget>
   </div>
 </template>

@@ -2,6 +2,7 @@
 import { useScrollHandler } from '../../composables/useScrollHandler'
 import { useWindowEnforcer } from '../../composables/windowEnforcer'
 import { useSizeScale } from '../composables/useSizeScale'
+import { useTutorialMode } from '../composables/useTutorialMode'
 
 const { enabled, percentage, scale } = useSizeScale()
 const { violated } = useWindowEnforcer()
@@ -13,8 +14,10 @@ const scrollHandler = useScrollHandler((direction) => {
 const inverseScale = computed(() => 1 / scale.value)
 const isNotDefault = computed(() => scale.value !== 1)
 const isHovered = ref(false)
+const { tutorialMode } = useTutorialMode()
 
 const opacity = computed(() => {
+  if (tutorialMode.value) return 1
   if (isHovered.value) return 1.0
   if (violated.value) return 1.0
   if (isNotDefault.value) return 0.2
@@ -23,8 +26,11 @@ const opacity = computed(() => {
 </script>
 
 <template>
-  <div
+  <TutorialTarget
     v-if="enabled"
+    title="Zoom"
+    help="Adjusts the developer preview scale when the experiment viewport does not fit the browser window."
+    placement="left"
     style="position: fixed; top: 2px; right: 8px; z-index: 50; transform-origin: top right;"
     :style="{ transform: `scale(${inverseScale})`, opacity: opacity }"
     class="transition-opacity"
@@ -47,6 +53,6 @@ const opacity = computed(() => {
     />
 
     
-  </div>
+  </TutorialTarget>
 </template>
 

@@ -805,7 +805,11 @@ const versions = computed(() => {
 
     <div v-if="study">
       <div class="flex gap-6 mb-6">
-        <div class="bg-gray-100 p-6 rounded flex-1">
+        <TutorialTarget
+          class="bg-gray-100 p-6 rounded flex-1"
+          title="Study summary"
+          help="Summarizes study metadata, linked data versions, current cost, and the public Prolific link."
+        >
           <h2 >{{ study.internal_name }}</h2>
           <CacheRefreshButton class="mb-2 italic" :cache="studyCache" />
 
@@ -833,10 +837,14 @@ const versions = computed(() => {
               View on Prolific →
             </a>
           </div>
-        </div>
+        </TutorialTarget>
 
         <!-- Actions -->
-        <div class="bg-gray-100 p-6 rounded min-w-100">
+        <TutorialTarget
+          class="bg-gray-100 p-6 rounded min-w-100"
+          title="Recruitment and review"
+          help="Controls study publishing, pausing, places, replacement assignments, submission actions, and bonuses."
+        >
           <h2>Recruitment</h2>
 
           <!-- Draft Study Actions -->
@@ -961,15 +969,18 @@ const versions = computed(() => {
               />
             </div>
           </div>
-        </div>
+        </TutorialTarget>
       </div>
 
       <div v-if="study.status === 'UNPUBLISHED'">
-        <div>
+        <TutorialTarget
+          title="Unpublished study"
+          help="Shows draft access details before the study is published and starts collecting submissions."
+        >
           <h3 class="text-xl font-bold">Unpublished Study</h3>
           <p>This study is not published yet. You can publish it by clicking the "Publish Study" button.</p>
           <pre>{{ study.access_details }}</pre>
-        </div>
+        </TutorialTarget>
       </div>
       <!-- Submissions Table -->
       <div v-else-if="allData.isMissing.value">
@@ -978,7 +989,11 @@ const versions = computed(() => {
       <div v-else-if="allData.isLoading.value">
         loading submissions...
       </div>
-      <div v-else>
+      <TutorialTarget
+        v-else
+        title="Submissions"
+        help="Reviews submissions against saved data, completion codes, actions, timing, bonuses, and messages."
+      >
         <div class="flex flex-row flex-gap-2 flex-justify-between flex-items-end mb-2 mt-8">
           <div>
             <h3 class="text-xl font-bold">Submissions ({{ filteredSubmissions.length }} / {{ submissions.length }})</h3>
@@ -1123,7 +1138,7 @@ const versions = computed(() => {
             </tbody>
           </table>
         </div>
-      </div>
+      </TutorialTarget>
     </div>
 
     <!-- Import Bonuses Modal -->

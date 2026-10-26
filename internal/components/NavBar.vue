@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useConfig } from '../../composables/useConfig'
 import { useSessionStorage, watchImmediate } from '@vueuse/core'
+import { useTutorialMode } from '../composables/useTutorialMode'
 
 
 const router = useRouter()
@@ -14,6 +15,7 @@ const router = useRouter()
 
 
 const route = useRoute()
+const { tutorialMode, toggleTutorialMode } = useTutorialMode()
 
 const getSectionSegment = (path: string) => {
   const [segment] = path.split('/').filter(Boolean)
@@ -59,9 +61,11 @@ watchImmediate(
 )
 
 const getNavTarget = (linkPath: string) => {
-  if (isActiveLink(linkPath)) return linkPath
   const section = getSectionSegment(linkPath)
-  return lastSubroutesBySection.value[section] ?? linkPath
+  const path = isActiveLink(linkPath) ? linkPath : lastSubroutesBySection.value[section] ?? linkPath
+  if (!tutorialMode.value) return path
+  const target = router.resolve(path)
+  return { path: target.path, query: { ...target.query, tutorial: '1' }, hash: target.hash }
 }
 </script>
 
@@ -77,6 +81,17 @@ const getNavTarget = (linkPath: string) => {
       >
         {{ link.label }}
       </NuxtLink>
+      <button
+        type="button"
+        class="flex items-center gap-1 text-sm transition-colors"
+        :class="tutorialMode ? 'text-pink-600' : 'text-gray-400 hover:text-gray-600'"
+        :aria-pressed="tutorialMode"
+        :title="tutorialMode ? 'Disable tutorial mode' : 'Enable tutorial mode'"
+        @click="toggleTutorialMode"
+      >
+        <span class="text-xl" :class="tutorialMode ? 'i-mdi-help-circle' : 'i-mdi-help-circle-outline'" />
+        Tutorial
+      </button>
     </div>
   </nav>
 </template>

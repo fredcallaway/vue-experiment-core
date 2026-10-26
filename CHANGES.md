@@ -1,3 +1,7 @@
+# Contextual developer tutorial
+
+- The top navigation now includes a Tutorial toggle. Enabling it highlights developer controls and Prolific panels in pink, with explanations on hover or keyboard focus. The setting persists across navigation and reloads in the same tab; `?tutorial=1` also enables it. Repeated controls share one highlight. No consumer migration is required.
+
 # Development overflow warning
 
 - The development frame's red overflow outline now updates when experiment content grows, shrinks, or is replaced inside a fixed-size frame. Observation runs only when the development outline is enabled. No consumer migration is required.
