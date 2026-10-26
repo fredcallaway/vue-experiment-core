@@ -116,7 +116,11 @@ const fmtCell = (value: unknown) => (value === null || value === undefined ? 'â€
           </thead>
           <tbody>
             <tr class="b-t b-gray-100" v-for="(row, i) in rows" :key="i">
-              <td class="p1" v-for="col in columns" :key="col">{{ fmtCell(row[col]) }}</td>
+              <td class="p1" v-for="col in columns" :key="col">
+                <div class="max-w-64 line-clamp-3 break-words" :title="fmtCell(row[col])">
+                  {{ fmtCell(row[col]) }}
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
