@@ -21,15 +21,23 @@ const isExperimentView = computed(() => getSectionSegment(route.path) === 'dev')
 const lastSubroutesBySection = useSessionStorage<Record<string, string>>('nav:last-subroute', {})
 const config = useConfig()
 
-type NavLink = { label: string; path: string; preview?: boolean }
+type NavLink = { label: string; path: string; help: string; preview?: boolean }
 const topNavLinks: NavLink[] = [
-  { label: 'Develop', path: '/dev', preview: false },
-  { label: 'Preview', path: '/dev', preview: true },
-  { label: 'Prolific', path: '/prolific' },
-  { label: 'Data', path: '/data' },
-  { label: 'Docs', path: '/docs' },
-  { label: 'Examples', path: '/examples' },
-  ...Object.entries(config.navPages ?? {}).map(([label, path]) => ({ label, path })),
+  {
+    label: 'Develop', path: '/dev', preview: false,
+    help: 'Run your experiment alongside the epoch outline, controls, data preview, and event log.',
+  },
+  {
+    label: 'Preview', path: '/dev', preview: true,
+    help: 'See the participant view with a floating outline. Switching modes keeps your current experiment running.',
+  },
+  { label: 'Prolific', path: '/prolific', help: 'Create studies, manage recruitment, and review submissions and bonuses.' },
+  { label: 'Data', path: '/data', help: 'Browse saved sessions and export the data recorded by your experiment.' },
+  { label: 'Docs', path: '/docs', help: 'Read the guide to experiment structure, configuration, data, and developer tools.' },
+  { label: 'Examples', path: '/examples', help: 'Try runnable examples and use their source as a starting point.' },
+  ...Object.entries(config.navPages ?? {}).map(([label, path]) => ({
+    label, path, help: 'Open this custom project page configured in epoch.config.ts.',
+  })),
 ]
 
 const isActiveLink = (link: NavLink) => {
@@ -62,29 +70,46 @@ const getNavTarget = (link: NavLink) => {
 
 <template>
   <nav class="developer-nav h6 px1" :class="{ 'preview-nav': preview }" aria-label="Developer navigation">
-    <div class="flex items-center gap-6">
-      <span class="font-bold">{{ config.title }}</span>
-      <NuxtLink
+    <div class="flex items-center gap-6 w-full">
+      <TutorialTarget
+        as="span"
+        class="font-bold shrink-0"
+        title="Experiment title"
+        help="The experiment title is configured in epoch.config.ts."
+      >{{ config.title }}</TutorialTarget>
+      <TutorialTarget
+        as="span"
         v-for="link in topNavLinks"
         :key="link.label"
-        :to="getNavTarget(link)"
-        class="nav-link"
-        :class="{ active: isActiveLink(link) }"
-        :aria-current="isActiveLink(link) ? 'page' : undefined"
+        class="shrink-0"
+        :title="link.label"
+        :help="link.help"
       >
-        {{ link.label }}
-      </NuxtLink>
-      <button
-        type="button"
-        class="nav-link flex items-center gap-1 text-sm"
-        :class="{ active: tutorialMode }"
-        :aria-pressed="tutorialMode"
+        <NuxtLink
+          :to="getNavTarget(link)"
+          class="nav-link"
+          :class="{ active: isActiveLink(link) }"
+          :aria-current="isActiveLink(link) ? 'page' : undefined"
+        >{{ link.label }}</NuxtLink>
+      </TutorialTarget>
+      <TutorialTarget
+        as="span"
+        class="ml-auto flex shrink-0"
         :title="tutorialMode ? 'Disable tutorial mode' : 'Enable tutorial mode'"
-        @click="toggleTutorialMode"
+        help="Show or hide pink highlights. Hover or focus a highlighted control to read its explanation."
+        placement="left"
       >
-        <span class="text-xl" :class="tutorialMode ? 'i-mdi-help-circle' : 'i-mdi-help-circle-outline'" />
-        Tutorial
-      </button>
+        <button
+          type="button"
+          class="nav-link tutorial-toggle flex items-center"
+          :class="{ active: tutorialMode }"
+          :aria-pressed="tutorialMode"
+          aria-label="Tutorial"
+          @click="toggleTutorialMode"
+        >
+          <span class="text-xl" :class="tutorialMode ? 'i-mdi-help-circle' : 'i-mdi-help-circle-outline'" />
+        </button>
+      </TutorialTarget>
     </div>
   </nav>
 </template>
@@ -112,6 +137,10 @@ const getNavTarget = (link: NavLink) => {
 
 .nav-link.active {
   opacity: 1;
+}
+
+.tutorial-toggle.active {
+  color: #db2777;
 }
 
 .nav-link:focus-visible {
