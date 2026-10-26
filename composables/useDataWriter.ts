@@ -122,12 +122,13 @@ const normalizeDatabaseShape = (value: unknown): unknown => {
 }
 
 export class DataWriter {
-  private meta: SessionMeta | null = null  // null before initialized
+  private meta = shallowRef<SessionMeta | null>(null)
   private mode: WriteMode = 'dummy'
   private updates: Ref<Record<string, any>> // path -> value (now reactive)
   private delay: number
   private maxWait: number
   private debounceFlush: () => void
+  private flushInFlight: Promise<boolean> | null = null
   private disabled: boolean = false
   private _events: LogEvent[] = []
   // each page load gets a unique client id; the database records the single active
@@ -142,7 +143,7 @@ export class DataWriter {
     this.maxWait = 5000 // ms
 
     this.updates = ref({})
-    this.debounceFlush = useDebounceFn(() => this._flush(), this.delay, { maxWait: this.maxWait })
+    this.debounceFlush = useDebounceFn(() => this.flush(), this.delay, { maxWait: this.maxWait })
 
     // Watch for network restoration and retry flush
     whenever(online, () => {
@@ -151,7 +152,7 @@ export class DataWriter {
   }
 
   get initialized() {
-    return this.meta !== null
+    return this.meta.value !== null
   }
 
   get events(): ReadonlyArray<LogEvent> {
@@ -159,7 +160,7 @@ export class DataWriter {
   }
 
   get sessionId() {
-    return this.meta?.sessionId ?? '__PREINIT__'
+    return this.meta.value?.sessionId ?? '__PREINIT__'
   }
 
   async initializeSession(meta: SessionMeta): Promise<unknown> {
@@ -169,7 +170,7 @@ export class DataWriter {
     }
     console.log('DataWriter: initializing session:', toRaw(meta))
 
-    this.meta = meta
+    this.meta.value = meta
     this.mode = meta.mode
 
     logEvent('DataWriter.initializeSession', meta)
@@ -188,6 +189,7 @@ export class DataWriter {
       // session's queue so it can never touch the one we are about to use.
       sweepStaleQueues(meta.sessionId)
       this.updates = useStorage(storageKey(meta.sessionId), {}, localStorage, {
+        flush: 'sync',
         serializer: {
           read: (v: string) => v ? JSON.parse(v) : {},
           write: (v: Record<string, any>) => JSON.stringify(v),
@@ -304,53 +306,52 @@ export class DataWriter {
     this.disabled = true
   }
 
-  async flush() {
-    if (this.disabled) {
-      console.warn('DataWriter.flush() called while disabled; possible mistake?')
-      return
+  // True only after the database acknowledges this call's queued data and metadata.
+  // A caller arriving during a write must also flush changes queued since that write began.
+  async flush(): Promise<boolean> {
+    while (this.flushInFlight) {
+      if (!await this.flushInFlight) return false
     }
-    await this._flush()
+    this.flushInFlight = this._flush()
+    try {
+      return await this.flushInFlight
+    } finally {
+      this.flushInFlight = null
+    }
   }
 
-  private async _flush() {
-    if (!online.value) return
-    if (this.disabled || this.superseded.value) return
-    if (!this.meta) return
-
-    const now = Date.now()
+  private async _flush(): Promise<boolean> {
+    if (this.disabled || this.superseded.value || !this.meta.value || this.mode === 'dummy') return false
 
     this.syncIdleTime()
-    this.meta.lastUpdateTime = now
+    this.meta.value.lastUpdateTime = Date.now()
 
-    // pull out current updates
-    const toFlush = toRaw(this.updates.value)
-    this.updates.value = {}
-    // every flush writes the full meta object, so the database copy always
-    // exactly mirrors the client's copy (modulo the debounce delay)
-    toFlush[this.dbPath('meta')] = normalizeDatabaseShape(toRaw(this.meta))
+    // Keep the full batch in recovery storage until the database acknowledges it.
+    this.updates.value[this.dbPath('meta')] = normalizeDatabaseShape(toRaw(this.meta.value))
+    if (!online.value) return false
+    const toFlush = R.clone(toRaw(this.updates.value))
 
-    if (this.mode === 'dummy') {
-      console.debug(`fake-flushed ${Object.keys(toFlush).length} updates`, toFlush)
-      return
-    }
-    
     try {
       const db = useDatabase()
 
-      // this should be impossible, will remove when I'm more confident
       if (Object.keys(toFlush).some(key => key.includes('__PREINIT__'))) {
         logError('tried to flush updates with __PREINIT__ as sessionId')
-        this.clearQueue()
-      } else {
-        await db.update('/', toFlush)
+        return false
       }
+      await db.update('/', toFlush)
+
+      // Newer values at the same paths still need their own acknowledgment.
+      const remaining = { ...toRaw(this.updates.value) }
+      for (const [path, value] of Object.entries(toFlush)) {
+        if (R.isDeepEqual(remaining[path], value)) delete remaining[path]
+      }
+      this.updates.value = remaining
       console.debug(`flushed ${Object.keys(toFlush).length} updates`, toFlush)
+      return !this.disabled && !this.superseded.value
     } catch (error) {
+      // Logging through logError would queue another event and schedule a retry of its own failure.
       console.error('Failed to flush updates:', error, toFlush)
-      logError('Failed to flush updates', {
-        error: JSON.stringify(error), 
-        updates: JSON.stringify(toFlush)
-      })
+      return false
     }
   }
 
@@ -367,9 +368,9 @@ export class DataWriter {
   }
 
   private syncIdleTime() {
-    if (!this.meta) return
-    if (this.meta.completionTime) return  // because active time uses completionTime
-    this.meta.inactiveTime = useInactivityTracker().getTotalInactiveTime()
+    if (!this.meta.value) return
+    if (this.meta.value.completionTime) return  // because active time uses completionTime
+    this.meta.value.inactiveTime = useInactivityTracker().getTotalInactiveTime()
   }
 
   private clientPath(): string {

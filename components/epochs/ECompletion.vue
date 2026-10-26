@@ -8,10 +8,8 @@ import { useEpoch } from '../../composables/useEpoch'
 import { useInactivityTracker } from '../../composables/useInactivityTracker'
 import { useUnload } from '../../internal/composables/useUnload'
 import { getCompletionCode } from '../../internal/prolific'
-import { useOnline, useTimeout } from '@vueuse/core'
+import { useOnline, useTimeout, whenever } from '@vueuse/core'
 
-
-// NOTE: this page has only been tested with config.completion.mode == 'prolific'
 
 const props = withDefaults(defineProps<{
   error?: boolean
@@ -35,13 +33,12 @@ const showBonus = computed(() => {
 const online = useOnline()
 const longWait = useTimeout(30_000)
 const dataSaved = ref(false)
-
-// whenever(longWait, () => useUnload().disable())
+const saving = ref(false)
 
 const code = computed(() => {
   if (config.completion.mode !== 'prolific') return null
   if (props.error) return getCompletionCode('ERROR')
-  if (longWait.value && !dataSaved.value) return getCompletionCode('DISCONNECTED')
+  if (!dataSaved.value) return getCompletionCode('DISCONNECTED')
   return getCompletionCode('COMPLETED')
 })
 
@@ -66,14 +63,22 @@ meta.inactiveTime = useInactivityTracker().getTotalInactiveTime()
 meta.completionTime = Date.now()
 logEvent('experiment.complete', meta)
 
-if (dataWriter.initialized) {
-  dataWriter.flush().then(() => dataSaved.value = true)
+const saveData = async () => {
+  if (saving.value || dataSaved.value || !dataWriter.initialized) return
+  saving.value = true
+  try {
+    dataSaved.value = await dataWriter.flush()
+  } finally {
+    saving.value = false
+  }
 }
+if (dataWriter.initialized) saveData()
+whenever(online, saveData)
 const minWait = useTimeout(2000)
 
 const saveDebugData = async () => {
   await dataWriter.initializeSession(useCurrentSession())
-  dataWriter.flush()
+  await saveData()
 }
 
 const initialized = computed(() => {
@@ -125,8 +130,11 @@ const initialized = computed(() => {
           The submit button will appear when your connection is restored.
         </div>
         <div v-else-if="!longWait">
-          <div>Please wait for your data to be saved...</div>
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300 mt-3 mx-auto" />
+          <template v-if="saving">
+            <div>Please wait for your data to be saved...</div>
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300 mt-3 mx-auto" />
+          </template>
+          <div v-else>Your data has not been saved yet. Please try again.</div>
         </div>
         <div v-else>
           <template v-if="config.completion.mode === 'prolific'">
@@ -142,6 +150,9 @@ const initialized = computed(() => {
             </button>
           </template>
         </div>
+        <button v-if="online && !saving" class="btn-blue mt-4" @click="saveData">
+          Try saving again
+        </button>
       </div>
 
       <!-- data saving is complete -->

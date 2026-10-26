@@ -1,3 +1,9 @@
+# Acknowledged session saving
+
+- `DataWriter.flush()` now returns `Promise<boolean>`: `true` means Firebase acknowledged the queued batch and session metadata. Offline, disabled, superseded, uninitialized/dummy, invalid-session, and rejected writes return `false`. Existing callers may continue ignoring the return value; custom completion pages should check it before reporting success or redirecting. No required consumer-code migration or raw-data format change.
+- Pending live data, including an in-flight batch, stays in local recovery storage until acknowledgment. Flushes run sequentially, and acknowledgment only removes values that have not been replaced by newer queued updates. Rejected batches remain available for retry. Flush failures are reported to the console without queuing recursive error events that trigger further failed writes.
+- Shared `ECompletion` waits for acknowledgment, retries when the browser comes online, and offers a retry button after an unsuccessful save. Unsaved Prolific submissions use the existing `DISCONNECTED` code; successful saves use `COMPLETED` (or `ERROR` for error completion). Uninitialized development runs still offer an explicit debug-database save, with reactive initialization and acknowledgment tracking.
+
 # Contextual developer tutorial
 
 - The top navigation now includes a Tutorial toggle. Enabling it highlights developer controls and Prolific panels in pink, with explanations on hover or keyboard focus. The setting persists across navigation and reloads in the same tab; `?tutorial=1` also enables it. Repeated controls share one highlight. No consumer migration is required.
