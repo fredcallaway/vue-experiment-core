@@ -39,7 +39,7 @@
 - Keep `plugins/00.config.ts` importing `epoch.config.ts` before the app loads. Core client plugins install the global seeded RNG and compatibility polyfills before experiment setup, including for custom app shells.
 - See [the import guide](docs/guide/imports.md) for authoring examples and migration checks.
 
-# Simplified Template Migration Notes
+# Template Migration Notes
 
 ## Class-based styling
 
@@ -48,8 +48,6 @@
 - Removed non-button shortcuts and custom rules: expand `flex-center` with explicit flex direction/wrapping and alignment, `circle-N`/`square-N` with dimensions, `card-*` and `input`/`input-mono` with their utilities, and `tN`/`bN`/`rN`/`lN` with absolute positioning in pixels (N × 10). Expand scrollbar styling into standard arbitrary-property utilities. Check local configuration definitions before conversion because older projects used different flex directions and input spacing.
 - Shared `btn-*` classes and `PButton` color/unstyled props remain supported. Button overrides must be passed through `class`, not styling attributes.
 - Use complete class maps for finite dynamic colors; see `docs/guide/styling.md`.
-
-This branch simplifies the template by removing playback-specific infrastructure and the generic participant event abstraction. The goal is to make experiment code easier to understand and maintain while keeping the common `PButton`, `PButtons`, and `PKey` component names available for compatibility.
 
 ## Summary
 
@@ -138,7 +136,7 @@ Note that `localStorage` is shared per origin, so a full quota is usually not th
 
 `EContinue` is the standard leaf epoch: it shows content and advances when the participant continues (a button, or the space key). It is the default for the most common screen in any experiment — an instruction or text page — and bundles the epoch wrapper, content slot, and continue affordance into one component.
 
-This reverses an earlier decision on this branch that removed `EContinue` in favor of `EPage` + a standalone `PContinue`. In practice, `EContinue` is the dominant idiom in real experiments built on the template, and the split forced the verbose `EPage` + `PContinue` pairing for the most common screen. `PContinue` has been **removed**; its only real advantage over `EContinue` — placing the affordance manually — is now covered by `EContinue`'s `#bottom` slot, which renders content below the button / space prompt.
+In practice, `EContinue` is the dominant idiom in real experiments built on the template. `PContinue` has been **removed**; its only real advantage over `EContinue` — placing the affordance manually — is now covered by `EContinue`'s `#bottom` slot, which renders content below the button / space prompt.
 
 The division of labor:
 
@@ -522,7 +520,7 @@ This is in the instructions flow after the button-click example so projects can 
 
 ## Migration Checklist
 
-1. Update the `core` submodule to this branch/version.
+1. Update the `core` submodule.
 2. Search project code for `useParticipant`, `useParticipantBus`, `Participant`, `PARTICIPANT_INPUT_BLOCKED`, and `withParticipantInputBlocked`.
 3. Replace `P.promiseKeyPress(...)` with `promiseKeyPress(...)`.
 4. Replace `P.onKeyPress(...)` with `onKeyPress(...)`.
