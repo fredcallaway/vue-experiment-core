@@ -99,7 +99,7 @@ onClickOutside(dock, close)
   flex-direction: column;
   gap: 8px;
   width: min(320px, calc(100vw - 32px));
-  height: min(560px, calc(100vh - 100px));
+  height: calc(100dvh - 100px);
   margin-top: 8px;
   padding: 8px;
   border: 1px solid rgb(0 0 0 / 12%);
