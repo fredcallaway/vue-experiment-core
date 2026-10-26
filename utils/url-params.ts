@@ -12,8 +12,8 @@ export function getUrlParam<T = string>(key: string, converter?: (value: string)
   return converter ? converter(value) : value as unknown as T
 }
 
-// Presence means true, per the usual query-string convention: `?noDev`, `?noDev=`, and `?noDev=1`
-// are all on. Only an explicit negation, such as `?noDev=0`, turns the flag off.
+// Presence means true: `?preview`, `?preview=`, and `?preview=1` are all on.
+// Only an explicit negation, such as `?preview=0`, turns the flag off.
 export function getUrlFlag(key: string): boolean {
   return getUrlParam(key, (v) => !['0', 'false', 'no'].includes(v.toLowerCase())) ?? false
 }
@@ -43,6 +43,10 @@ export function useUrlParam<T>(key: string, codec?: UrlParamCodec<T>) {
 }
 
 const urlParams = useUrlSearchParams()
+export function useUrlParams() {
+  return urlParams
+}
+
 const cache = new Map<string, WritableComputedRef<unknown>>()
 function useUrlParamWithCodec<T>(key: string, codec: UrlParamCodec<T>): WritableComputedRef<T | undefined> {
   const result = computed({

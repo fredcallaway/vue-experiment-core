@@ -1,4 +1,5 @@
 import { useSessionStorage } from '@vueuse/core'
+import { useUrlParams } from '../../utils/url-params'
 
 const isEnabled = (value: unknown): boolean => {
   if (Array.isArray(value)) return value.some(isEnabled)
@@ -17,7 +18,7 @@ export function useTutorialMode() {
   const toggleTutorialMode = async () => {
     const enabled = !tutorialMode.value
     tutorialMode.value = enabled
-    const query = { ...route.query }
+    const query = { ...useUrlParams() }
     if (enabled) query.tutorial = '1'
     else delete query.tutorial
     await router.replace({ path: route.path, query, hash: route.hash })
