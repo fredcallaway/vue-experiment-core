@@ -23,6 +23,11 @@ const cases = [
     + 'These essential instructions should remain visible.</p>', expected: ['clipped-text'] },
   { name: 'covered-control', body: '<button>Continue</button><div style="position:absolute;'
     + 'inset:0;background:white">Cover</div>', expected: ['occluded-control'] },
+  { name: 'wrapped-link', body: '<p style="width:300px;font:16px monospace">'
+    + 'xxxxxxxxxxxxxxxxxxxxxxxxx <a href="#">short link</a> after the link.</p>', expected: [] },
+  { name: 'covered-wrapped-link', body: '<p style="width:300px;font:16px monospace">'
+    + 'xxxxxxxxxxxxxxxxxxxxxxxxx <a href="#">short link</a> after the link.</p>'
+    + '<div style="position:absolute;inset:0;background:white">Cover</div>', expected: ['occluded-control'] },
   { name: 'offscreen-control', body: '<button style="position:fixed;left:-500px">Continue</button>',
     expected: ['offscreen-content'] },
   { name: 'broken-image', body: '<img src="data:image/png;base64,broken" alt="Stimulus" width="120" height="80">',

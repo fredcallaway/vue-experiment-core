@@ -201,13 +201,18 @@ export async function inspectLayout(page, options = {}) {
         })
       }
       if (isControl && !isDisabled && area(intersection(box, viewport)) > 0) {
-        let visible = intersection(box, viewport)
-        for (const bound of bounds) visible = intersection(visible, bound.box, bound.x, bound.y)
-        if (visible.width > tolerance * 2 && visible.height > tolerance * 2) {
+        // Wrapped inline controls have separate line boxes. Their combined bounding
+        // rectangle includes unrelated text and whitespace that cannot receive clicks.
+        const visibleRects = [...element.getClientRects()].map(fragment => {
+          let visible = intersection(fragment, viewport)
+          for (const bound of bounds) visible = intersection(visible, bound.box, bound.x, bound.y)
+          return visible
+        }).filter(visible => visible.width > tolerance * 2 && visible.height > tolerance * 2)
+        if (visibleRects.length) {
           const blocked = []
-          const points = [0.2, 0.5, 0.8].flatMap((x) => [0.2, 0.5, 0.8].map((y) => ({
+          const points = visibleRects.flatMap(visible => [0.2, 0.5, 0.8].flatMap(x => [0.2, 0.5, 0.8].map(y => ({
             x: visible.x + visible.width * x, y: visible.y + visible.height * y,
-          })))
+          }))))
           for (const point of points) {
             const hit = document.elementFromPoint(point.x, point.y)
             if (hit && hit !== element && !element.contains(hit)) blocked.push({ ...point, blocker: selector(hit) })
@@ -216,9 +221,9 @@ export async function inspectLayout(page, options = {}) {
             report(element, 'occluded-control', 'error', 'No sampled point on this control receives pointer input.', {
               blocked, sampledPoints: points.length, pointerEvents: style(element).pointerEvents,
             })
-          } else if (blocked.length >= 5 || blocked.some((point) => (
-            point.x === points[4].x && point.y === points[4].y
-          ))) {
+          } else if (blocked.length >= points.length / 2 || blocked.some(point => points.some((sample, index) => (
+            index % 9 === 4 && point.x === sample.x && point.y === sample.y
+          )))) {
             report(element, 'partially-occluded-control', 'review', 'The center or most control points are covered.', {
               blocked, sampledPoints: points.length,
             })
