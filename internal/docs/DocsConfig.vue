@@ -33,6 +33,9 @@ import DocsConditions from './DocsConditions.vue'
         that arrow pointing one way is what makes a variant reproducible — pin the condition
         and everything downstream follows.
       </p>
+    </DocsPage>
+
+    <DocsPage name="project">
       <h3>Project settings</h3>
       <p>
         <code>epoch.config.ts</code> at the project root holds app-level metadata, read

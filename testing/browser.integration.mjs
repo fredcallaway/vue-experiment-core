@@ -13,6 +13,7 @@ test('test URLs cannot select participant, backend, encoded, or nonlocal routes'
   assert.equal(url.searchParams.get('session_id'), 'seed-1')
   assert.equal(url.searchParams.get('testing'), '1')
   assert.equal(url.searchParams.get('jump'), 'trial')
+  assert.equal(new URL(testUrl('http://localhost:3030/docs')).pathname, '/docs')
 })
 
 test('fresh browser blocks external HTTP, external WebSockets and local writes before delivery', async () => {

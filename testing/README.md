@@ -12,7 +12,7 @@ bunx playwright install chromium
 bun run test:experiments help
 ```
 
-The last command runs the CLI in Node (tested with Node 22); `bun core/testing/cli.mjs` also forwards to Node. Browser processes and integration tests use Node because concurrent Playwright runs under the installed Bun 1.2.10 showed browser-transport and fixture-listener failures during verification; the matching Node runs passed. Reuse the experiment's existing dev server; the tools do not start or stop dev servers. Browser contexts use fresh storage, allow local `/dev` and `/examples` routes, block external HTTP and WebSockets, and block local write requests. They never test production database persistence. Use `runtime.seed` only with the current core's development-only `testing` flag; unseeded exploration also works against older consumers.
+The last command runs the CLI in Node (tested with Node 22); `bun core/testing/cli.mjs` also forwards to Node. Browser processes and integration tests use Node because concurrent Playwright runs under the installed Bun 1.2.10 showed browser-transport and fixture-listener failures during verification; the matching Node runs passed. Reuse the experiment's existing dev server; the tools do not start or stop dev servers. Browser contexts use fresh storage, allow local `/dev`, `/docs`, and `/examples` routes, block external HTTP and WebSockets, and block local write requests. They never test production database persistence. Use `runtime.seed` only with the current core's development-only `testing` flag; unseeded exploration also works against older consumers.
 
 ## Record an agent run
 
@@ -80,5 +80,7 @@ These checks cover the visited path and captured states. They do not establish t
 `bun run test:testing` runs browser isolation/session/contract tests, injected visual faults, replay mutation tests, and an independent adversarial suite. `bun run typecheck` checks the Nuxt integration. [Evaluation notes](EVALUATION.md) separate synthetic checks, real experiment runs, timings, and unresolved findings.
 
 With a project dev server running, `node core/testing/main-content.integration.mjs http://localhost:<port>` checks that the development overflow outline responds to content growth, shrinkage, width changes, stylesheet resizing, and content replacement inside a fixed frame. It uses the isolated browser harness and writes screenshots to `.experiment-tests/overflow-warning/` by default; pass an output directory as the second argument to change it.
+
+`node core/testing/docs.integration.mjs http://localhost:<port>` walks every Docs page using Next, audits layout, and checks scrolling and outline navigation. Screenshots and a page-by-page report go to `.experiment-tests/docs/` by default; pass an output directory as the second argument to change it.
 
 The implementation uses Playwright [network routing](https://playwright.dev/docs/network) with service workers blocked, separate WebSocket routing, and [screenshot comparison](https://playwright.dev/docs/test-snapshots). It leaves animations running during observation and fails unstable checkpoints instead of changing the task's timing to obtain a screenshot.

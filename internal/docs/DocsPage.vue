@@ -12,10 +12,14 @@ const props = defineProps<{
 
 const epoch = useEpoch(props.name)
 
+const page = ref<HTMLElement>()
+onMounted(() => {
+  page.value?.closest('.docs-content')?.scrollTo(0, 0)
+})
 </script>
 
 <template>
-  <div>
+  <div ref="page" :data-doc-page="name">
     <slot />
     <div class="mt-8" v-if="!last">
       <PButton class="btn-primary" once value="Next" @click="epoch.done" />

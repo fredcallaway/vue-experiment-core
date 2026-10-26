@@ -4,57 +4,40 @@ import DocsPage from './DocsPage.vue'
 
 <template>
   <DocsPage name="overview">
-    <h2>Hello there!</h2>
+    <h2>Welcome!</h2>
     <p>
-      This template is a <a href="https://nuxt.com" target="_blank" rel="noopener">Nuxt 3</a>
-      framework for building online behavioral experiments in
-      <a href="https://vuejs.org/" target="_blank" rel="noopener">Vue</a> and running them
-      on <a href="https://www.prolific.com/" target="_blank" rel="noopener">Prolific</a>.
+      Run online behavioral experiments with the tools you need to recruit participants,
+      follow their progress, inspect their data, and review payments in one place.
     </p>
-    <div class="p-4 rounded-lg bg-info-200 text-info-600 [&>h3]:text-info-700">
-      New to Vue? The
-      <a href="https://vuejs.org/tutorial/" target="_blank" rel="noopener">official tutorial</a>
-      is a good 20-minute introduction. You only need the basics (and maybe some help from a coding agent).
-    </div>
-    <p>
-      Compared to other web experiment frameworks like
-      <a href="https://www.jspsych.org/latest/" target="_blank" rel="noopener">jsPsych</a> and
-      <a href="https://smile.gureckislab.org/" target="_blank" rel="noopener">Smile</a>,
-      this template is broader in scope and stronger in opinion. It is an <b>end to end system</b>, providing:
-    </p>
+    <p>Alongside your experiment, you get:</p>
     <ul>
       <li>
-        a place to host your experiment online and store your data (using
-        <a href="https://firebase.google.com/" target="_blank" rel="noopener">Firebase</a>)
+        <b>An online home for your study</b>, with responses saved as participants work.
       </li>
       <li>
-        a custom Prolific interface that syncs with participant data for automatic bonus payments
+        <b>Prolific study management</b> to create studies, monitor recruitment, and keep
+        submissions connected to the data they produced.
       </li>
       <li>
-        interactive live views of your data, updated every 5 seconds
+        <b>Data views</b> to inspect individual sessions and whole study versions, then save
+        analysis tables to your computer.
       </li>
       <li>
-        a hierarchical <b>epoch</b> system for composing experiments like you write outlines
+        <b>Review and payment tools</b> that propose submission decisions and bring recorded
+        bonuses into your review for you to check and apply.
       </li>
       <li>
-        a developer interface, including jumping to any moment in your experiment in one click
+        <b>Balanced condition assignment</b>, with tools to replace incomplete assignments.
       </li>
       <li>
-        perfectly balanced condition assignment with exclusion-aware replacement
-      </li>
-      <li>
-        universal type safety to catch mistakes <em>before</em> you run the experiment
-      </li>
-      <li>
-        (optional) integration with
-        <a href="https://posthog.com/" target="_blank" rel="noopener">PostHog</a>
-        to watch videos of participants doing your task
+        <b>Optional session recordings</b> to watch how participants experienced the task.
       </li>
     </ul>
     <p>
-      These docs follow that arc: how to <b>compose</b> an experiment out of epochs, how to
-      <b>record</b> what happens, how to <b>configure</b> and counterbalance it, and how to
-      <b>run</b> it on Prolific. Click next to learn more.
+      Start with the researcher guide to running a study. It covers posting to Prolific,
+      viewing and saving data, and reviewing submissions without assuming you write code.
+      Technical explanations and examples follow for anyone who wants to go deeper.
     </p>
+    <p>Use <b>Next</b> to read in order, or choose a page from the outline beside these docs.</p>
   </DocsPage>
 </template>

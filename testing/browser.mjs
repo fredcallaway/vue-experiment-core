@@ -1,7 +1,7 @@
 import { chromium } from 'playwright'
 
 function isTestPath(pathname) {
-  try { return /^\/dev\/?$|^\/examples(?:\/[a-zA-Z0-9_-]+)?\/?$/.test(decodeURIComponent(pathname)) }
+  try { return /^\/(?:dev|docs)\/?$|^\/examples(?:\/[a-zA-Z0-9_-]+)?\/?$/.test(decodeURIComponent(pathname)) }
   catch { return false }
 }
 
@@ -11,7 +11,7 @@ export function testUrl(input, { seed } = {}) {
     throw new Error('Experiment tests require a local HTTP dev server.')
   }
   if (url.username || url.password || !isTestPath(url.pathname)) {
-    throw new Error('Use /dev or /examples for experiment tests.')
+    throw new Error('Use /dev, /docs, or /examples for experiment tests.')
   }
   if (url.searchParams.get('mode') === 'live') throw new Error('Tests cannot run in live mode.')
   if (seed !== undefined) {

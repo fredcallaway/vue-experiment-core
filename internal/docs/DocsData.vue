@@ -23,6 +23,10 @@ import DocsPage from './DocsPage.vue'
           rectangular table you actually analyze — typically one row per trial.
         </li>
       </ol>
+    </DocsPage>
+
+    <DocsPage name="record">
+      <h3>The event stream is the record</h3>
       <p>
         The reason for the split is that these two things change at different rates and for
         different reasons. The analysis format is a moving target: you will rewrite it after
@@ -72,19 +76,18 @@ import DocsPage from './DocsPage.vue'
       </p>
       <p>
         Logged events are collected by the data writer and synced to a Firebase Realtime
-        Database. Writes are batched and flushed in the background; a dropped connection won't
-        lose data (queued writes are held in <code>localStorage</code> and retried). Just log
-        events as they happen and trust that they'll arrive.
+        Database. Writes are batched in the background; queued writes are held in
+        <code>localStorage</code> and retried after connection failures. Completion waits for
+        saving and reports a disconnected outcome if it cannot confirm that the data arrived.
       </p>
     </DocsPage>
 
     <DocsPage name="views">
       <h3>Data views</h3>
       <p>
-        A <b>data view</b> (<code>declareDataView</code>) is the second layer: a pure function
-        from one session's events to export rows. A trial usually logs several events (an
-        onset, a response, …), so the view groups them back together with
-        <code>chunkBy</code>, keyed off the event that starts each trial:
+        A <b>data view</b> (<code>declareDataView</code>) turns one session's events into
+        export rows. Group each trial's events with <code>chunkBy</code>, keyed off the event
+        that starts the trial:
       </p>
       <DemoCode
         code="

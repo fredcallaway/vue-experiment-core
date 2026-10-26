@@ -6,34 +6,44 @@
 // pages/docs.vue) so edits trigger component-level HMR that preserves the running
 // epoch state and the outline.
 import DocsOverview from './DocsOverview.vue'
+import DocsResearcher from './DocsResearcher.vue'
+import DocsTechnical from './DocsTechnical.vue'
 import DocsEpochs from './DocsEpochs.vue'
 import DocsComposition from './DocsComposition.vue'
 import DocsData from './DocsData.vue'
 import DocsConfig from './DocsConfig.vue'
 import DocsDevtools from './DocsDevtools.vue'
 import DocsFiles from './DocsFiles.vue'
-import DocsProlific from './DocsProlific.vue'
+import DocsPublishing from './DocsPublishing.vue'
 import DocsExamples from './DocsExamples.vue'
 
 </script>
 
 <template>
-  <div class="docs-content w-full p6 text-left">
+  <div class="docs-content w-full h-full p6 text-left">
     <ESequence name="docs">
       <DocsOverview />
+      <DocsResearcher />
+      <DocsTechnical />
       <DocsEpochs />
       <DocsComposition />
       <DocsData />
       <DocsConfig />
+      <DocsPublishing />
       <DocsDevtools />
       <DocsFiles />
-      <DocsProlific />
       <DocsExamples />
     </ESequence>
   </div>
 </template>
 
 <style>
+.main-content .docs-content {
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  scrollbar-gutter: stable;
+}
+
 .docs-content h2 {
   @apply text-2xl font-bold mb-3;
 }
