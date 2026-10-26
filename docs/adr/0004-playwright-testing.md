@@ -2,7 +2,7 @@
 
 - **Status:** Superseded by [ADR 0012](0012-agent-testing-and-compiled-replay.md)
 - **Date:** 2026-06-02
-- **Scope:** `core/` template layer + project root, `simplified` branch
+- **Scope:** `core/` template layer + project root
 - **Related:** [0003-offscreen-outline-traversal.md](./0003-offscreen-outline-traversal.md)
 - **Relevant files:** `core/internal/composables/useEpochTree.ts` (`traverseTimeline`),
   `core/internal/components/OutlineWorkerFrame.vue`, `core/internal/components/OutlineWorkerDriver.vue`,

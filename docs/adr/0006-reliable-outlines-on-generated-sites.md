@@ -2,7 +2,7 @@
 
 - **Status:** Proposed (decision pending)
 - **Date:** 2026-08-13
-- **Scope:** `core/` template layer, generated/static deployments on the `simplified` branch
+- **Scope:** `core/` template layer, generated/static deployments
 - **Related:** [0003-offscreen-outline-traversal.md](./0003-offscreen-outline-traversal.md),
   [0004-playwright-testing.md](./0004-playwright-testing.md)
 - **Relevant files:** `core/internal/composables/useEpochTree.ts`,

@@ -2,7 +2,7 @@
 
 - **Status:** Proposed (no decision; documenting the problem and options)
 - **Date:** 2026-06-01
-- **Scope:** `core/` template layer, `simplified` branch
+- **Scope:** `core/` template layer
 - **Related:** [0001-remove-pseudo-leaf.md](./0001-remove-pseudo-leaf.md)
 - **Relevant files:** `core/composables/useEpoch.ts`, `core/internal/composables/useEpochTree.ts`,
   `core/components/epochs/ENavigableSequence.vue`, `core/components/epochs/ESequence.vue`,

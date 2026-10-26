@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-16
-- **Scope:** `core/` template layer, `simplified` branch
+- **Scope:** `core/` template layer
 - **Relevant files:** `core/utils/conditions.ts`, `core/composables/useCondition.ts`,
   `core/internal/docs/DocsConditions.vue`
 

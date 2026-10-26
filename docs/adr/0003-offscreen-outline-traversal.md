@@ -2,7 +2,7 @@
 
 - **Status:** Accepted and implemented
 - **Date:** 2026-06-02
-- **Scope:** `core/` template layer, `simplified` branch
+- **Scope:** `core/` template layer
 - **Related:** [0001-remove-pseudo-leaf.md](./0001-remove-pseudo-leaf.md), [0002-epoch-id-not-unique-over-time.md](./0002-epoch-id-not-unique-over-time.md)
 - **Relevant files:** `core/internal/composables/useEpochTree.ts`, `core/internal/components/EpochOutline.vue`,
   `core/layouts/default.vue`, `core/pages/dev.vue`, `core/composables/useEpoch.ts`,

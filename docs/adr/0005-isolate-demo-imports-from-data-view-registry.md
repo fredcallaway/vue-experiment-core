@@ -2,7 +2,7 @@
 
 - **Status:** Accepted and implemented
 - **Date:** 2026-07-07
-- **Scope:** `core/` template layer, `simplified` branch
+- **Scope:** `core/` template layer
 - **Related:** [0004-playwright-testing.md](./0004-playwright-testing.md)
 - **Relevant files:** `core/nuxt.config.ts`, `core/internal/demos/manifest.ts`, `core/pages/demo/index.vue`, `core/pages/demo/[slug].vue`, `core/composables/dataViews.ts`, `core/internal/demos/*.vue`
 

@@ -2,7 +2,7 @@
 
 - **Status:** Accepted (implemented)
 - **Date:** 2026-06-01
-- **Scope:** `core/` template layer, `simplified` branch
+- **Scope:** `core/` template layer
 - **Affected files:** `core/composables/useEpoch.ts`, `core/internal/composables/useEpochTree.ts`, `core/CHANGES.md`
 
 ## Context

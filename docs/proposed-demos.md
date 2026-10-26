@@ -62,19 +62,19 @@ The demo page would wrap this in an `ERepeat` so the reader sees independent per
 
 ### 2. `data` — Events, data views, and exports
 
-**Gap.** Logging is mentioned in passing (basics, the custom-epoch proposal) but there's no demo dedicated to the data pipeline: `declareEventLogger` → logged events → `declareDataView` → the wide/long export shape. Since the simplified branch deliberately removed automatic `participant.*` logging in favor of explicit semantic logs (see `CHANGES.md`), developers now *must* understand this pipeline, and there's no reference for it.
+**Gap.** Logging is mentioned in passing (basics, the custom-epoch proposal) but there's no demo dedicated to the data pipeline: `declareEventLogger` → logged events → `declareDataView` → the wide/long export shape. Developers must understand this pipeline to declare explicit semantic logs, and there's no reference for it.
 
 **Proposal.** A small interactive trial that logs a couple of typed events, with the live event stream and the resulting data-view rows shown side by side on the page. Cover: typed payloads, the `isX` type guard for filtering, `chunkBy` for grouping events into trials, and the difference between the raw event log and the export view. This pairs naturally with the custom-epoch demo and can reuse its event shape.
 
 ### 3. `params` — Parameters and conditions
 
-**Gap.** `defineParams` and `useConditions` are core to making a configurable, counterbalanced experiment, and the condition inspector was added on this branch (`CHANGES.md`), but neither has a demo. Parameter overrides via the `params` prop and condition pinning from the dev UI are exactly the things a developer needs to test variants.
+**Gap.** `defineParams` and `useConditions` are core to making a configurable, counterbalanced experiment, but neither has a demo. Parameter overrides via the `params` prop and condition pinning from the dev UI are exactly the things a developer needs to test variants.
 
 **Proposal.** A demo that defines a parameter set, renders the same epoch twice with different `params` overrides to show they're independent, and registers a condition with `useConditions().choice(...)` / `.permute(...)` so the reader can open the dev UI, see it in the condition inspector, and pin it. Explain the `condition.<key>` URL params and how pinning interacts with the assignment counter.
 
 ### 4. `responses` — Collecting participant input
 
-**Gap.** Response collection is used in essentially every trial, but the components and helpers that do it (`PButton`, `PButtons`, `PContinue`, `usePButton`, `PKey`, `onKeyPress`, `promiseKeyPress`) are never explained as a group. The only keyboard example is a single page buried in the instructions flow, and the simplified branch's removal of `useParticipant` (`CHANGES.md`) means the current response model — including how to gate input during transitions — has no reference. This merges the previously separate "keyboard" and "affordances" proposals into one high-priority demo, since in practice mouse and keyboard responses are two sides of the same concern.
+**Gap.** Response collection is used in essentially every trial, but the components and helpers that do it (`PButton`, `PButtons`, `PContinue`, `usePButton`, `PKey`, `onKeyPress`, `promiseKeyPress`) are never explained as a group. The only keyboard example is a single page buried in the instructions flow, and the current response model — including how to gate input during transitions — has no reference. This merges the previously separate "keyboard" and "affordances" proposals into one high-priority demo, since in practice mouse and keyboard responses are two sides of the same concern.
 
 **Proposal.** A demo that covers both response modalities and both usage styles:
 
@@ -91,11 +91,11 @@ Useful but narrower; worth adding once the priority set lands.
 
 ### 5. `surveys` — Survey epochs
 
-**Gap.** `ESurveyWrapper`, `ESurveyButtons`, `ESurveyMultiButtons`, and `ESurveyText` replaced `ESurveySequence` on this branch and projects must now declare their own survey data views (`CHANGES.md`), but there's no demo. A worked example of a short survey plus the data view that extracts responses would save every project from rediscovering the pattern.
+**Gap.** `ESurveyWrapper`, `ESurveyButtons`, `ESurveyMultiButtons`, and `ESurveyText` replaced `ESurveySequence` and projects must now declare their own survey data views (`CHANGES.md`), but there's no demo. A worked example of a short survey plus the data view that extracts responses would save every project from rediscovering the pattern.
 
 ### 6. `timing` — Timers and fixed-duration pages
 
-**Gap.** `useTimer`, `EPage :duration`, and `useLocalAsync().sleep` are the timing primitives (the latter two added/changed on this branch) with no dedicated example. A demo with a countdown timer, an auto-advancing fixed-duration feedback page, and an awaited delay would cover the common timing needs in one place.
+**Gap.** `useTimer`, `EPage :duration`, and `useLocalAsync().sleep` are the timing primitives with no dedicated example. A demo with a countdown timer, an auto-advancing fixed-duration feedback page, and an awaited delay would cover the common timing needs in one place.
 
 ## Suggested ordering
 
@@ -103,4 +103,4 @@ The demo index currently reads top-to-bottom as a learning path. Proposed insert
 
 ## Not proposed (out of scope)
 
-Per the `simplified` branch scope, demos for Prolific, the data page, Firebase/PostHog config, and the database structure are intentionally omitted. Browser-monitoring composables (`useBrowserMonitoring`, `useInactivityTracker`, `useMultipleTabDetection`) are likewise infrastructure rather than authoring patterns and don't warrant tutorials unless a project need arises.
+Demos for Prolific, the data page, Firebase/PostHog config, and the database structure are intentionally omitted. Browser-monitoring composables (`useBrowserMonitoring`, `useInactivityTracker`, `useMultipleTabDetection`) are likewise infrastructure rather than authoring patterns and don't warrant tutorials unless a project need arises.
