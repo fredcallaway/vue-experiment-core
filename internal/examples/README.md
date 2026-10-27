@@ -43,6 +43,7 @@ Timing:
 
 Data:
 
+- Record both participant interactions and experiment-driven events, including stimulus onset/offset, phase transitions, feedback, and reward changes. Use declared, typed semantic events for the data record; automatic `participant.*` events are debugging aids.
 - The pipeline (`declareEventLogger` → typed events → `declareDataView`) is part of the
   canonical trial: see `StroopTrial.vue`. To group several events per trial into one row,
   filter with the loggers' type guards and chunk with `chunkBy(events, isOnset)` — snippet

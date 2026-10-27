@@ -8,9 +8,7 @@ import DocsStudyData from './DocsStudyData.vue'
     <DocsPage name="intro">
       <h2>Running a study</h2>
       <p>
-        You lead the development of your experiment, whether you write the code yourself or
-        use a coding agent to implement it. This guide follows the whole process, from your
-        study design to participant payments.
+        This guide covers the full lifecycle of an experiment, from study design to participant payments.
       </p>
       <ol>
         <li><b>Develop:</b> build the experiment and test the participant experience.</li>
@@ -20,63 +18,89 @@ import DocsStudyData from './DocsStudyData.vue'
         <li><b>Pay:</b> review submissions and pay participants, including bonuses.</li>
       </ol>
       <p>
-        A <b>study</b> is a recruitment run on Prolific. A <b>session</b> is one participant's
-        attempt at your experiment. A <b>version</b> groups sessions collected with the same
-        experiment procedure; a pilot and a revised experiment should have different versions.
-      </p>
-      <p>
-        The <NuxtLink to="/prolific">Prolific pages</NuxtLink> connect submissions with
-        sessions, and the <NuxtLink to="/data">Data Viewer</NuxtLink> lets you explore the
-        collected data by version or session.
+        <em>
+          Note: this guide assumes that you will use an AI agent to do most of the coding.
+          If you want to do it the old-fashioned way, just replace "your agent" with "yourself"
+          (and read the <NuxtLink to="/docs?jump=docs%5B2%5D-technical" external>technical docs</NuxtLink>).
+        </em>
       </p>
     </DocsPage>
 
-    <DocsPage name="develop">
-      <h3>Developing your experiment</h3>
-      <p>
-        Start with your study design: instructions, trial structure, stimuli, response and
-        timing rules, conditions, and payments. Decide what the analysis tables should contain
-        as part of that design, so recording and preprocessing are built with the task.
-      </p>
-      <p>
-        If you use a <b>coding agent</b>, give it that specification and ask it to follow your
-        project's <code>AGENTS.md</code>, read <code>core/docs/guide/README.md</code>, and build
-        from the template's <NuxtLink to="/examples">working examples</NuxtLink>. Ask it to
-        run type checks and browser tests and explain how it verified the requested behavior.
-      </p>
-      <p>
-        Open <NuxtLink to="/dev">Develop</NuxtLink> to try each part as it is built. The
-        outline lets you jump to a section; the Events and Data panels let you inspect what
-        happens as you respond. Iterate with your agent until the behavior matches your design.
-      </p>
-      <p>
-        Walk through the complete experiment as a participant, including instructions,
-        consent and contact details, task timing, and completion. Before posting the study,
-        verify the recorded data as described next.
-      </p>
-    </DocsPage>
+    <ESequence name="develop">
+      <DocsPage name="design">
+        <h3>Developing your experiment</h3>
+        <p>
+          Start with the paradigm. What does a trial look like? Tell this to your agent and
+          ask for a link to test it. If you know what variables you'll manipulate or vary,
+          say so now. As long as your agent of choice reads <code>AGENTS.md</code> or
+          <code>CLAUDE.md</code> (almost all do), it will know what to do.
+        </p>
+        <blockquote>
+          <p>Implement a random dot motion task with variable coherence. Give feedback after each trial.</p>
+        </blockquote>
+        <p>
+          Next comes design. Specify conditions, block structure, and incentives (bonuses).
+          Watch your experiment's outline come to life and check that the different conditions
+          do what you expect. Test specific sections by clicking on the outline (you can also
+          pin sections so it stays there on reload).
+        </p>
+        <blockquote>
+          <p>
+            Each participant does four blocks of 30 trials. Coherence changes across blocks,
+            either increasing or decreasing depending on condition. Give 5 points for each
+            correct response (5 points = 1 cent).
+          </p>
+        </blockquote>
+      </DocsPage>
 
-    <DocsStudyData />
+      <DocsPage name="finish">
+        <h3>Data recording and instructions</h3>
+        <p>
+          Now the data recording. Most likely, it's already being recorded and formatted
+          nicely. But you should double-check the Data panel to the right as you go through
+          the experiment (you might need to adjust the dropdown in the top right). It should
+          look like a table/dataframe you'd want to analyze.
+        </p>
+        <blockquote>
+          <p>Add block index to the data view. Make sure RT is relative to motion onset.</p>
+        </blockquote>
+        <p>Finally, the instructions. For complex tasks, this usually needs a lot of human guidance.</p>
+        <blockquote>
+          <p>
+            Create interactive instructions including practice trials for different coherence
+            levels. Explain the bonus scheme. Do NOT tell participants about how coherence
+            changes across blocks. Minimize text.
+          </p>
+        </blockquote>
+        <p>That's it!</p>
+      </DocsPage>
+    </ESequence>
 
     <DocsPage name="post">
       <h3>Posting to Prolific</h3>
       <p>
-        Open <NuxtLink to="/prolific">Prolific</NuxtLink> to connect your account. This app
-        uses the <b>Prolific API</b> to manage studies on your behalf: enter an API token from
-        your Prolific account and choose a workspace and project when prompted.
+        A <b>study</b> is a recruitment run on Prolific. Open
+        <NuxtLink to="/prolific">Prolific</NuxtLink> to connect your account. The first time
+        you visit, you'll see a form to enter your Prolific API token and project ID (see instructions there).
       </p>
+      <p>To post a study, follow these three steps:</p>
       <ol>
         <li>
           Choose <b>Create New Study</b> and enter the description, reward, estimated
-          duration, number of places, and eligibility criteria. Check the hourly rate and total cost.
+          duration, number of places, and eligibility criteria. Check the hourly rate and
+          total cost (this doesn't include bonuses!).
         </li>
         <li>
-          Commit the experiment's changes, or ask your agent to do so, then click <b>Deploy
-          Website</b> to publish the verified experiment. The page checks that the published
-          copy matches your current version.
+          Click <b>Deploy Website</b> to publish the verified experiment. The page checks that
+          the published copy matches your current version, and will complain if it doesn't
+          (agents know how to fix it).
         </li>
         <li>Click <b>Create &amp; Publish Study</b> when you are ready to recruit participants.</li>
       </ol>
+      <p>
+        FYI: The system records the git commit ID (or "SHA") whenever you deploy. This way
+        you'll know exactly which version of the experiment (the exact code) each participant saw.
+      </p>
     </DocsPage>
 
     <DocsPage name="monitor">
@@ -94,10 +118,10 @@ import DocsStudyData from './DocsStudyData.vue'
       </ul>
       <p>
         Open a session to investigate an unexpected result. You can also message a participant
-        from the submission table and see the correspondence with the study.
+        from the submission table and see the previous correspondence associated with the study.
       </p>
       <p>
-        If approved submissions have incomplete data, the page can offer <b>replacement
+        If approved submissions have incomplete data, the page will offer <b>replacement
         places</b> targeted at their condition assignments. Review that proposal when filling
         gaps in a balanced design.
       </p>
@@ -107,7 +131,7 @@ import DocsStudyData from './DocsStudyData.vue'
       <h3>Paying participants</h3>
       <p>
         After participants take part, use the study's review page to approve submissions for
-        payment, request returns or reject submissions, and pay bonuses. It brings each
+        payment, request returns or reject submissions, and pay bonuses. The system brings each
         Prolific submission together with its recorded data to suggest a decision and bonus amount.
       </p>
       <h4 class="font-bold">Default policy</h4>
@@ -129,13 +153,16 @@ import DocsStudyData from './DocsStudyData.vue'
       </p>
       <p>
         You can adjust individual amounts by hand; adjusted amounts are marked. You can also
-        import a CSV when bonuses were calculated outside the app. Bonuses already paid are
-        subtracted from the intended totals, so another review pays only the remaining difference.
+        import a CSV when bonuses were calculated outside the app. The table always shows the
+        <b>total</b> intended bonus; if you pay a bonus and then increase it later, only the
+        remaining portion will be paid out in the second round.
       </p>
       <p>
         Check the decisions and pending payment total, then click <b>Execute</b> to apply
         the review actions and bonus payments to Prolific.
       </p>
     </DocsPage>
+
+    <DocsStudyData />
   </ESequence>
 </template>

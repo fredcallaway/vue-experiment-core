@@ -4,48 +4,22 @@ import DocsPage from './DocsPage.vue'
 
 <template>
   <ESequence name="data">
-    <DocsPage name="debug">
-      <h3>Recording test data</h3>
-      <p>
-        Verify the data while developing the experiment. In <NuxtLink to="/dev">Develop</NuxtLink>,
-        the <b>Events</b> panel shows the current run's recorded events, and the <b>Data</b>
-        panel shows the preprocessed rows as you respond. Use its selector to check each data
-        view's columns and values against your design.
-      </p>
-      <p>
-        To save a test session to the database, open
-        <NuxtLink to="/dev?mode=debug" external>Develop with debug recording</NuxtLink>
-        (<code>/dev?mode=debug</code>) and run the experiment. The <code>mode=debug</code>
-        URL parameter enables automatic recording to the <b>debug</b> database. If your URL
-        already has parameters, add <code>&amp;mode=debug</code> instead.
-      </p>
-      <p>
-        Ordinary Develop sessions let you inspect events and data views without automatically
-        saving them to the database. Use debug recording for test sessions you want to inspect
-        afterwards in the <NuxtLink to="/data?mode=debug">Data Viewer</NuxtLink>.
-      </p>
-      <p>
-        Check that responses, timing, conditions, bonuses, and analysis rows match what you
-        did in the task. Ask your agent to fix missing or incorrect data, then record another
-        test session before collecting from participants.
-      </p>
-    </DocsPage>
-
     <DocsPage name="view">
       <h3>Viewing your data</h3>
       <p>
-        Open the <NuxtLink to="/data?mode=debug">Data Viewer</NuxtLink> to inspect your
-        <b>debug</b> test data. Once you recruit participants, switch to <b>live</b> data
-        using the link at the top.
+        Open the <NuxtLink to="/data">Data Viewer</NuxtLink> to inspect your <b>live</b>
+        participant data. Use the link at the top to switch to <b>debug</b> test data when needed.
       </p>
       <ul>
         <li>
-          <b>Versions:</b> open a version for completion counts, condition counts, timing,
-          bonuses, errors, and tables combining its sessions.
+          <b>Versions:</b> group sessions collected with the same experiment procedure.
+          Open a version for completion counts, condition counts, timing, bonuses, errors,
+          and tables combining its sessions. A pilot and a revised experiment should have different versions.
         </li>
         <li>
-          <b>Sessions:</b> open one participant's attempt for its status, timing, bonus,
-          recorded events, and analysis tables. A replay link appears when session recording is configured.
+          <b>Sessions:</b> each session is one participant's attempt at your experiment.
+          Open it for its status, timing, bonus, recorded events, and analysis tables. A
+          replay link appears when session recording is configured.
         </li>
       </ul>
       <p>
