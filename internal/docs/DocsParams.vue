@@ -5,7 +5,7 @@ import DocsPage from './DocsPage.vue'
 <template>
   <ESequence name="params">
     <DocsPage name="intro">
-      <h3>Params</h3>
+      <h2>Params</h2>
       <p>
         A trial component almost always has knobs: how long the fixation cross shows, how many
         options appear, what the target color is. <code>defineParams</code> declares those knobs
@@ -40,7 +40,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="overrides">
-      <h3>Three layers of override</h3>
+      <h2>Three layers of override</h2>
       <p>Values resolve from three sources, each overriding the one before it:</p>
       <ol>
         <li><b>Defaults</b> — the object passed to <code>defineParams</code>.</li>
@@ -75,7 +75,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="defaults">
-      <h3>Computed defaults</h3>
+      <h2>Computed defaults</h2>
       <p>
         A default can be a function instead of a value, in which case it's called each time
         params are resolved rather than once when the module loads. Use this when a default

@@ -52,7 +52,7 @@ try {
     pages[0].title)
   assert.equal(await content.evaluate(el => el.scrollTop), 0, 'Outline navigation resets the scroll position')
   await page.locator('[data-epoch-id]').getByText('technical', { exact: true }).click()
-  await content.locator('[data-doc-page="technical"]').waitFor()
+  await content.locator('[data-doc-page="intro"]').waitFor()
   await page.screenshot({ path: resolve(output, 'technical-intro.png') })
   const report = { pages, errors: browser.errors }
   await writeFile(resolve(output, 'report.json'), JSON.stringify(report, null, 2))

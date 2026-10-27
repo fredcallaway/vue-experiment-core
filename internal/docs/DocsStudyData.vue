@@ -4,7 +4,7 @@ import DocsPage from './DocsPage.vue'
 
 <template>
   <DocsPage name="data">
-    <h3>Viewing and saving your data</h3>
+    <h2>Viewing and saving your data</h2>
     <p>
       Open the <NuxtLink to="/data">Data Viewer</NuxtLink> to inspect your <b>live</b>
       participant data. Use the link at the top to switch to <b>debug</b> test data when needed.

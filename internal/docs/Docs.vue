@@ -8,14 +8,6 @@
 import DocsOverview from './DocsOverview.vue'
 import DocsResearcher from './DocsResearcher.vue'
 import DocsTechnical from './DocsTechnical.vue'
-import DocsEpochs from './DocsEpochs.vue'
-import DocsComposition from './DocsComposition.vue'
-import DocsData from './DocsData.vue'
-import DocsConfig from './DocsConfig.vue'
-import DocsDevtools from './DocsDevtools.vue'
-import DocsFiles from './DocsFiles.vue'
-import DocsPublishing from './DocsPublishing.vue'
-import DocsExamples from './DocsExamples.vue'
 
 </script>
 
@@ -25,14 +17,6 @@ import DocsExamples from './DocsExamples.vue'
       <DocsOverview />
       <DocsResearcher />
       <DocsTechnical />
-      <DocsEpochs />
-      <DocsComposition />
-      <DocsData />
-      <DocsConfig />
-      <DocsPublishing />
-      <DocsDevtools />
-      <DocsFiles />
-      <DocsExamples />
     </ESequence>
   </div>
 </template>

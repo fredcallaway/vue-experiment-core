@@ -33,7 +33,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="completion">
-      <h3>Completion and recorded bonuses</h3>
+      <h2>Completion and recorded bonuses</h2>
       <p>
         <code>ECompletion</code> chooses a completion outcome: <code>COMPLETED</code>,
         <code>ERROR</code>, <code>ABORTED</code>, <code>TIMEOUT</code>, or

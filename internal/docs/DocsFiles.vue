@@ -32,7 +32,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="configuration">
-      <h3>Configuration files</h3>
+      <h2>Configuration files</h2>
       <ul>
         <li>
           <code>epoch.config.ts</code> — app metadata: title, icon, version, contact email,
@@ -60,7 +60,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="core">
-      <h3>The template layer</h3>
+      <h2>The template layer</h2>
       <ul>
         <li>
           <code>core/</code> — the template itself, included as a Nuxt layer: the epoch

@@ -26,7 +26,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="record">
-      <h3>The event stream is the record</h3>
+      <h2>The event stream is the record</h2>
       <p>
         The reason for the split is that these two things change at different rates and for
         different reasons. The analysis format is a moving target: you will rewrite it after
@@ -49,7 +49,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="events">
-      <h3>Logging events</h3>
+      <h2>Logging events</h2>
       <p>
         The lowest-level call is <code>logEvent(name, data)</code>. For the events that make
         up your data, prefer <code>declareEventLogger</code>: it fixes the event name and
@@ -83,7 +83,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="views">
-      <h3>Data views</h3>
+      <h2>Data views</h2>
       <p>
         A <b>data view</b> (<code>declareDataView</code>) turns one session's events into
         export rows. Group each trial's events with <code>chunkBy</code>, keyed off the event

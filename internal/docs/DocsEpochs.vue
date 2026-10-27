@@ -28,7 +28,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="tree">
-      <h3>The epoch tree</h3>
+      <h2>The epoch tree</h2>
       <p>
         Because epochs nest, your experiment forms a <b>tree</b>. Epochs with children
         (<code>ESequence</code>, <code>ERepeat</code>) are branches; epochs without children
@@ -45,7 +45,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="components">
-      <h3>Epochs are components</h3>
+      <h2>Epochs are components</h2>
       <p>
         Each epoch has an associated Vue component, and you compose epochs the same way you
         nest HTML: by nesting tags in a template. Here is about the smallest experiment you

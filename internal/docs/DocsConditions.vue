@@ -21,7 +21,7 @@ const assignments = Array.from({ length: getConditionAssignmentCount(design) }, 
 <template>
   <ESequence name="conditions">
     <DocsPage name="intro">
-      <h3>Conditions</h3>
+      <h2>Conditions</h2>
       <p>
         A <b>condition</b> is a between-subject choice: it's fixed for a participant for the
         whole session, and balanced across participants. Assign them in one place — usually your
@@ -45,7 +45,7 @@ const assignments = Array.from({ length: getConditionAssignmentCount(design) }, 
     </DocsPage>
 
     <DocsPage name="balance">
-      <h3>Balancing assignments</h3>
+      <h2>Balancing assignments</h2>
       <div
         class="mt-1 h-56 max-w-full overflow-auto b-1 b-gray-200 rounded"
         tabindex="0"
@@ -85,7 +85,7 @@ const assignments = Array.from({ length: getConditionAssignmentCount(design) }, 
     </DocsPage>
 
     <DocsPage name="pinning">
-      <h3>Pinning a condition</h3>
+      <h2>Pinning a condition</h2>
       <p>
         Conditions are the thing you most need to override while developing: you want to see the
         treatment arm without reloading eight times. The condition inspector in

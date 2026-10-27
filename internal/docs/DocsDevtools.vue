@@ -36,7 +36,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="inspection">
-      <h3>Inspecting a running experiment</h3>
+      <h2>Inspecting a running experiment</h2>
       <ul>
         <li>
           <b>Events</b> — the live event log for the session; the first place to check that

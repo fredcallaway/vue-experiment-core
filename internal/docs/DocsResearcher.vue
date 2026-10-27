@@ -21,13 +21,14 @@ import DocsStudyData from './DocsStudyData.vue'
         <em>
           Note: this guide assumes that you will use an AI agent to do most of the coding.
           If you want to do it the old-fashioned way, just replace "your agent" with "yourself"
-          (and read the <NuxtLink to="/docs?jump=docs%5B2%5D-technical" external>technical docs</NuxtLink>).
+          (and read the
+          <NuxtLink to="/docs?jump=docs%5B2%5D-technical%5B0%5D-intro" external>technical docs</NuxtLink>).
         </em>
       </p>
     </DocsPage>
 
     <DocsPage name="develop">
-      <h3>Developing your experiment</h3>
+      <h2>Developing your experiment</h2>
       <p>
         Start with the <b>paradigm</b>. What does a trial look like? Tell this to your agent and
         ask for a link to test it. If you know what variables you'll manipulate or vary,
@@ -72,7 +73,7 @@ import DocsStudyData from './DocsStudyData.vue'
     </DocsPage>
 
     <DocsPage name="post">
-      <h3>Posting to Prolific</h3>
+      <h2>Posting to Prolific</h2>
       <p>
         The template's <NuxtLink to="/prolific">Prolific interface</NuxtLink> lets you post
         studies, monitor recruitment, and pay participants in one place. The first time you
@@ -99,7 +100,7 @@ import DocsStudyData from './DocsStudyData.vue'
     </DocsPage>
 
     <DocsPage name="monitor">
-      <h3>Monitoring recruitment</h3>
+      <h2>Monitoring recruitment</h2>
       <p>
         Open a study to follow incoming submissions. The page refreshes while you are viewing
         it. You can pause, resume, or stop recruitment, and add more places to a running study.
@@ -123,7 +124,7 @@ import DocsStudyData from './DocsStudyData.vue'
     </DocsPage>
 
     <DocsPage name="payment">
-      <h3>Paying participants</h3>
+      <h2>Paying participants</h2>
       <p>
         After participants take part, use the study's review page to approve submissions for
         payment, request returns or reject submissions, and pay bonuses. The system brings each

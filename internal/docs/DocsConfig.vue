@@ -36,7 +36,7 @@ import DocsConditions from './DocsConditions.vue'
     </DocsPage>
 
     <DocsPage name="project">
-      <h3>Project settings</h3>
+      <h2>Project settings</h2>
       <p>
         <code>epoch.config.ts</code> at the project root holds app-level metadata, read
         anywhere via <code>useConfig()</code>:

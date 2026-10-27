@@ -15,7 +15,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="econtinue">
-      <h3>EContinue</h3>
+      <h2>EContinue</h2>
       <p>
         The standard leaf for a "read this, then continue" screen. By default it advances on
         space; pass <code>button</code> (boolean or a label) for a button, and
@@ -36,7 +36,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="esequence">
-      <h3>ESequence</h3>
+      <h2>ESequence</h2>
       <p>
         An <code>ESequence</code> shows its children one at a time. When the active child's
         epoch ends (calls <code>done()</code>), the sequence advances; when the last child
@@ -60,7 +60,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="rules">
-      <h3>Temporal vs. spatial composition</h3>
+      <h2>Temporal vs. spatial composition</h2>
       <p>
         <code>ESequence</code> breaks from normal Vue composition: usually all of a
         component's children render at once (<em>spatial</em> composition, like a
@@ -86,7 +86,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="erepeat">
-      <h3>ERepeat</h3>
+      <h2>ERepeat</h2>
       <p>
         Experiments are mostly repetition: the same trial, run many times with different
         stimuli. <code>ERepeat</code> runs a single child epoch <code>count</code> times; the
@@ -103,7 +103,7 @@ import DocsPage from './DocsPage.vue'
     </DocsPage>
 
     <DocsPage name="custom">
-      <h3>Custom components</h3>
+      <h2>Custom components</h2>
       <p>
         The moment a screen has real logic — internal phases, timing, state shared across
         those phases — write it as a <b>custom component</b>: a leaf epoch that declares
