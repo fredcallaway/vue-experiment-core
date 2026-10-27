@@ -13,6 +13,20 @@ Both commands require a clean committed checkout, including matching initialized
 
 `bun run deploy` and the dashboard's **Deploy Website** button use this same tracked Hosting service; they additionally require the Firebase CLI's selected project to match `firebase.config.json`. Database rules are a separate explicit deployment (`firebase deploy --only database --project <project-id>`).
 
+### Fix a deployment mismatch
+
+Use this procedure when **Create New Study** (`/prolific/create`) reports **Not deployed**, **Ready to deploy!**, **Warning: current code is not deployed**, or **Git worktree is not clean**. This is the agent workflow behind the researcher Docs' “agents know how to fix it.”
+
+The page compares the local eight-character Git SHA with `deployStatus.sha` in Firebase and checks for uncommitted changes. Here, “current version” means the committed source revision; `epoch.config.ts`'s `version` separately identifies the participant procedure/data cohort. The hosted build marker is verified during deployment or reconciliation, rather than fetched on every page visit.
+
+1. Inspect `git status --short` and `git submodule status --recursive` from the experiment root, and `git -C core status --short` for core edits. Finish and commit the intended changes in their owning repositories, then commit any adopted submodule pointer in the experiment repository. Preserve unrelated work; if it prevents a clean checkout, resolve that with the researcher before deploying.
+2. Run `bun run ops -- deploy inspect`. Confirm the explicit project/site, local `sha`, configured `version`, and existing `tracked` deployment. If inspection reports a contact-email error, set the real researcher address as described [below](#configure-contact-and-version). If it reports a posted-version warning, review the published commit and follow the same section's version policy before continuing.
+3. Run `bun run ops -- deploy run` to upload and track the intended commit. **Deploy Website** uses the same operation. If that button or `bun run deploy` reports a Firebase CLI project mismatch, confirm the intended target in `firebase.config.json` and select it with `firebase use <project-id>` before retrying.
+4. Verify that the result has `state: "tracked"`, its `fullSha` equals `git rev-parse HEAD`, and its project/site/version match the intended deployment. For an upload that succeeded but failed verification or tracking, use [reconciliation](#recover-an-interrupted-deployment) instead.
+5. Reload **Create New Study** after a CLI deployment or reconciliation so it rereads `deployStatus`. Expect **Deployed and ready to publish** with the current commit. If an old saved deployment error remains after a verified success, use **Dismiss Error**. If a draft's version differs from the configuration or deployment, recreate the draft with the current version before publication.
+
+The Git/deployment bypass checkboxes do not upload or verify a build. Resolve the mismatch with a tracked deployment before recruiting. Leave the final **Create & Publish Study** action to the researcher.
+
 ### Configure contact and version
 
 Set `contactEmail` in `epoch.config.ts` to a real researcher email. Missing, malformed, and `fakeDomain.*` placeholder addresses block deployment before building/uploading, with no bypass. Production `build` and `generate` also enforce this check; local development and typechecking work with the starter placeholder.
@@ -32,6 +46,8 @@ The warning remains on stderr when overridden. The dashboard offers a correspond
 These checks use this project's stored dashboard publication history, not live Prolific queries. Studies posted outside the dashboard, missing publication records, and non-Prolific recruitment require a manual history check. A successful deployment does not freeze a version, publish a study, or authorize recruitment.
 
 The project comes from `firebase.config.json`, not the Firebase CLI's active alias. Configure one static site in `firebase.json`, using `hosting.public: ".output/public"` and optional `hosting.site`; the default site is the project ID. Target aliases, multiple sites, framework backends, and function/Cloud Run rewrites are rejected. Deployment uses a temporary Hosting-only Firebase config without deploy hooks. The project's `generate` script and `epoch.config.ts` must run with Bun; version loading supplies the `defineEpochConfig` identity helper.
+
+### Recover an interrupted deployment
 
 Deployment records live in Git's `agent-operations/deployments/` directory. If upload succeeds but verification or tracking fails, inspect the reported record and retry tracking with:
 
