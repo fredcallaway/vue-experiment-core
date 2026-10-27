@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useProlific } from '../../internal/composables/useProlific'
 import { useProlificReviewDraft } from '../../internal/composables/useProlificReviewDraft'
+import ProlificTokenHelp from '../../internal/components/ProlificTokenHelp.vue'
 import { useAllData } from '../../internal/local-data'
 import { createTextFilter } from '../../utils/createTextFilter'
 import { formatCents, formatDateTime } from '../../utils/formatting'
@@ -455,9 +456,7 @@ watch(selectedWorkspaceId, () => {
               type="text"
               placeholder="Enter your Prolific API token"
             />
-            <p class="text-sm text-gray-600 mt-2">
-              Create or copy a token from <strong>API Tokens</strong> in your Prolific account.
-            </p>
+            <ProlificTokenHelp />
           </div>
 
           <div>

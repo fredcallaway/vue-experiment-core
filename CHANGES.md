@@ -1,3 +1,7 @@
+# Prolific token instructions
+
+- The Prolific connection form now includes a link opening instructions for creating an API token. The dialog supports keyboard navigation, Escape, and returning focus to the help link. No consumer-code or configuration migration is required.
+
 # Resizable developer panels
 
 - Drag the divider between Data and Events to adjust their vertical split. Both panels retain a usable minimum height, and the split adapts when the browser window changes size. With the divider focused, use Up/Down to adjust it or Home/End to reach its limits. No consumer-code or configuration migration is required.
