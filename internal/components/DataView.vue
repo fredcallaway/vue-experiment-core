@@ -135,7 +135,9 @@ const fmtCell = (value: unknown) => (value === null || value === undefined ? 'â€
           </thead>
           <tbody>
             <tr class="b-t b-gray-100" v-for="(row, i) in rows" :key="i">
-              <td class="p1" v-for="col in columns" :key="col">{{ fmtCell(row[col]) }}</td>
+              <td class="p1" v-for="col in columns" :key="col">
+                <DataViewCell :value="fmtCell(row[col])" :column="col" />
+              </td>
             </tr>
           </tbody>
         </table>
