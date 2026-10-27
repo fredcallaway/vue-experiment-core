@@ -7,7 +7,7 @@ import { defineWindowSize } from '../composables/windowEnforcer'
 // (component-level HMR preserves epoch state); this page is just the shell.
 import Docs from '../internal/docs/Docs.vue'
 
-defineWindowSize({ width: 720, height: 800 })
+defineWindowSize({ width: 750, height: 800 })
 
 </script>
 
