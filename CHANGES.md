@@ -1,6 +1,7 @@
 # Display phase transitions
 
 - A newer display-phase request supersedes pending fades, including when returning to the currently displayed phase. Outline jumps during an animation now keep the visible phase aligned with the epoch. No consumer-code migration is required.
+- Reentering a phase reattaches any retained epoch children to the new phase visit, so nested sequences remain navigable during interrupted fades and with persistent displays. The previous phase marker remains disabled. No consumer-code migration or raw-data format change is required.
 
 # Data preview cells
 

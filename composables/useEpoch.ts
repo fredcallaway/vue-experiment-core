@@ -117,11 +117,14 @@ const makeEpoch = (props: EpochProps): Epoch => {
     }
   }
 
-  // register with parent unless we have already (e.g. backward navigation in navigable sequences)
+  // Keep one entry per position, pointing to its latest mounted instance.
   if (!epoch.isNoEpoch && !epoch.isDisabled && props.parent) {
-    if (!props.parent.children.some(e => e.id === epoch.id)) {
+    const existingIndex = props.parent.children.findIndex(e => e.id === epoch.id)
+    if (existingIndex < 0) {
       // TODO: children is currently orderd by visitation, not their number
       props.parent.children.push(epoch)
+    } else {
+      props.parent.children[existingIndex] = epoch
     }
     if (!isMultistepEpoch(props.parent) && props.parent.children.length > 1) {
       console.warn('non-multistep epochs cannot have multiple children', { 
@@ -229,8 +232,8 @@ export function useEpoch<S extends string>(name: NoHyphen<S>): Epoch {
     // in which case it's not necessary because jumpToEpoch will set the epoch upon completion.
     epoch.isDisabled = true
     if (currentEpoch.value.id === epoch.id) {
-      console.debug(`👉 useEpoch: unmounted ${epoch.id}. Returning control to parent (${parentEpoch.id})`)
-      setCurrentEpoch(parentEpoch)
+      console.debug(`👉 useEpoch: unmounted ${epoch.id}. Returning control to parent (${epoch._parent.id})`)
+      setCurrentEpoch(epoch._parent)
     }
   })
 
@@ -342,10 +345,27 @@ export function usePhaseEpoch<const T extends readonly string[]>(
   const enterPhaseChild = () => {
     const prev = E.phaseEpoch.value
     if (prev) prev.isDisabled = true
+    // Display phases can retain their components across transitions (persist/constant,
+    // or an interrupted fade). Attach those live children to the new phase visit;
+    // the previous phase marker stays disabled so stale done() calls remain harmless.
+    const previousVisit = E.children.find(child => child._name === E.phase.value)
     const child = makeEpoch({ name: E.phase.value, parent: E })
+    child.children = [...(previousVisit?.children ?? [])]
+    for (const retained of child.children) {
+      if (!retained.isDisabled) retained._parent = child
+    }
     setCurrentEpoch(child)
     logEvent(`epoch.start`, { id: child.id })
     E.phaseEpoch.value = child
+    let current = child
+    while (true) {
+      const descendant = current.children.find(candidate =>
+        !candidate.isDisabled && candidate.id === makeId(candidate._name, current)
+      )
+      if (!descendant) break
+      current = descendant
+    }
+    setCurrentEpoch(current)
   }
 
   E.goTo = (arg: Phase | number) => {
