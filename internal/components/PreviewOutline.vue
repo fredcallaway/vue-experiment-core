@@ -17,7 +17,9 @@ const toggle = () => {
 }
 
 const handleFocusOut = (event: FocusEvent) => {
-  if (!dock.value?.contains(event.relatedTarget as Node | null)) close()
+  // Disabling a focused control blurs it without moving focus to another element.
+  if (!event.relatedTarget || dock.value?.matches(':hover')) return
+  if (!dock.value?.contains(event.relatedTarget as Node)) close()
 }
 
 const handleEscape = () => {

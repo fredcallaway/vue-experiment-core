@@ -6,6 +6,7 @@
 
 - Replaced the Experiment navigation link with Develop and Preview. Both modes keep the navigation in the same position; Develop uses black text and Preview uses white text, with opacity indicating active and inactive links.
 - Preview uses the participant frame’s dimensions and full-window centering. Hover over Outline to open the epoch outline and controls, or click to keep it open. The panel supports keyboard access, Escape, and outside-click dismissal without moving the experiment. Switching modes keeps the running experiment mounted.
+- The Preview outline stays open when navigation disables a focused control, including Previous after returning to the first page. Moving keyboard focus outside closes it when the pointer is also outside; Escape and outside clicks still dismiss it.
 - Use `?preview=1` for direct Preview links. Existing `?noDev` links remain supported; mode navigation converts them to the Preview flag. Hidden outline workers run in both modes and contain no developer chrome. No consumer-code or configuration migration is required.
 - Shared URL parameters now stay synchronized with client-side navigation, preserving mode, condition, tutorial, and newly pinned epoch parameters across developer controls.
 
