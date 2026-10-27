@@ -54,7 +54,7 @@ import DocsExamples from './DocsExamples.vue'
   @apply my-3 leading-relaxed;
 }
 .docs-content blockquote {
-  @apply my-3 border-l-3 border-gray-200 pl-4 text-gray-600;
+  @apply my-3 border-l-3 border-gray-200 pl-4 text-sm text-gray-600;
 }
 .docs-content ul, .docs-content ol {
   @apply my-3 pl-6 flex flex-col gap-2;
