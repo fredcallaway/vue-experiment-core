@@ -54,13 +54,31 @@ try {
   await page.locator('[data-epoch-id]').getByText('technical', { exact: true }).click()
   await content.locator('[data-doc-page="intro"]').waitFor()
   await page.screenshot({ path: resolve(output, 'technical-intro.png') })
+
+  // An active branch name returns to its beginning without remounting the branch.
+  const countStarts = async id => (await browser.readState()).events
+    .filter(event => event.eventType === 'epoch.start' && event.data.id === id).length
+  const technicalRow = page.locator('[data-epoch-id]').filter({ has: page.getByText('technical', { exact: true }) })
+  const technicalId = await technicalRow.getAttribute('data-epoch-id')
+  const technicalStarts = await countStarts(technicalId)
+  await content.getByRole('button', { name: 'Next', exact: true }).click()
+  await content.getByRole('heading', { name: 'Epochs', exact: true }).waitFor()
+  await technicalRow.getByText('technical', { exact: true }).click()
+  await page.waitForFunction(id => window.__experimentTest.snapshot().epoch === `${id}[0]-intro`, technicalId)
+  await content.locator('[data-doc-page="intro"]').waitFor()
+  assert.equal(await countStarts(technicalId), technicalStarts, 'Restarting a branch preserves its mounted epoch')
+  await page.locator('[data-epoch-id="docs"]').getByText('docs', { exact: true }).click()
+  await page.waitForFunction(firstTitle => document.querySelector('.docs-content h2')?.textContent === firstTitle,
+    pages[0].title)
+  assert.equal(await content.evaluate(el => el.scrollTop), 0, 'Root branch navigation returns to the first page')
+  await page.screenshot({ path: resolve(output, 'root-restarted.png') })
   const report = { pages, errors: browser.errors }
   await writeFile(resolve(output, 'report.json'), JSON.stringify(report, null, 2))
   const failures = pages.filter(item => item.overflow || item.findings.some(finding => finding.severity === 'error'))
   assert.equal(failures.length, 0,
     `Docs layout failures: ${failures.map(item => item.title).join(', ')}; see ${output}/report.json`)
   assert.deepEqual(browser.errors, [], 'Documentation produces no browser errors')
-  console.log(`Passed: ${pages.length} Docs pages, layout, scrolling and outline navigation; evidence: ${output}`)
+  console.log(`Passed: ${pages.length} Docs pages, layout, scrolling, leaf navigation and active branch restarts; evidence: ${output}`)
 } finally {
   await browser.close()
 }

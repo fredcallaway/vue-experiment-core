@@ -3,6 +3,14 @@
 - A newer display-phase request supersedes pending fades, including when returning to the currently displayed phase. Outline jumps during an animation now keep the visible phase aligned with the epoch. No consumer-code migration is required.
 - Reentering a phase reattaches any retained epoch children to the new phase visit, so nested sequences remain navigable during interrupted fades and with persistent displays. The previous phase marker remains disabled. No consumer-code migration or raw-data format change is required.
 
+# Outline branch navigation
+
+- Clicking a branch name in the developer outline jumps to its first leaf, including when the branch contains the current epoch. Shared ancestors remain mounted; navigation does not restore arbitrary experiment state. Leaf clicks, collapse controls, and pinning retain their behavior. No consumer-code migration is required.
+
+# Error diagnostics
+
+- Error logging now imports its error predicate explicitly, allowing the original error to be recorded instead of throwing a missing-name error. No consumer-code migration is required.
+
 # Data preview cells
 
 - The developer Data panel limits CSV cell previews to three lines. Overflowing cells have a button that opens the full value beside the cell; Escape or clicking outside closes it. Exported values are unchanged. No consumer-code migration is required.

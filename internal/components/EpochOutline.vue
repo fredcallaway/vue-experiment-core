@@ -341,10 +341,14 @@ const handleClickNode = async (node: EpochNode) => {
   if (isOutlineStale.value) {
     console.warn(outlineStaleReason.value ?? 'Epoch outline is stale. Reindex Timeline before jumping.')
   }
-  const result = await jumpToEpoch(node.id)
-  if (result === null && node.id !== currentEpoch.value.id) {
+  // Target the branch's beginning explicitly: jumpToEpoch preserves shared ancestors,
+  // so targeting an active ancestor itself would leave its current descendant unchanged.
+  let target = node
+  while (target.children.length > 0) target = target.children[0]
+  const result = await jumpToEpoch(target.id)
+  if (result === null && target.id !== currentEpoch.value.id) {
     markCachedOutlineStale(
-      `Cached epoch outline may be stale: jump to "${node.id}" did not resolve. Reindex Timeline.`,
+      `Cached epoch outline may be stale: jump to "${target.id}" did not resolve. Reindex Timeline.`,
     )
   }
 }
@@ -508,7 +512,7 @@ const indentBase = 8
           class="truncate cursor-pointer min-w-0"
           @click="handleClickNode(row.node)"
           :title="row.node.error || 'Epoch name'"
-          help="Shows the epoch name. Click it to jump to that epoch in debug mode."
+          help="Click to jump to this epoch in debug mode. Branch names jump to their first leaf epoch."
         >
           {{ row.node.name }}
         </TutorialTarget>
