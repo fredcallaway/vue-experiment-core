@@ -68,7 +68,7 @@ import DocsStudyData from './DocsStudyData.vue'
           changes across blocks. Minimize text.
         </p>
       </blockquote>
-      <p>That's it!</p>
+      <p>That's it! Now you're ready to post your first study.</p>
     </DocsPage>
 
     <DocsPage name="post">
