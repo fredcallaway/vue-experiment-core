@@ -74,9 +74,9 @@ import DocsStudyData from './DocsStudyData.vue'
     <DocsPage name="post">
       <h3>Posting to Prolific</h3>
       <p>
-        A <b>study</b> is a recruitment run on Prolific. Open
-        <NuxtLink to="/prolific">Prolific</NuxtLink> to connect your account. The first time
-        you visit, you'll see a form to enter your Prolific API token and project ID (see instructions there).
+        The template's <NuxtLink to="/prolific">Prolific interface</NuxtLink> lets you post
+        studies, monitor recruitment, and pay participants in one place. The first time you
+        open it, follow the setup instructions to enter your Prolific API token and project ID.
       </p>
       <p>To post a study, follow these three steps:</p>
       <ol>
