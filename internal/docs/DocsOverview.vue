@@ -27,20 +27,18 @@ import DocsPage from './DocsPage.vue'
         <b>An interactive experiment outline</b> that lets you jump to different sections in one click.
       </li>
       <li>
-        <b>Rich data recording and live data views.</b> Record participant actions in real time
-        and define preprocessing alongside your experiment. Inspect raw events and analysis
-        tables live, then save them to your computer. Refine the preprocessing later and
-        apply it to data you have already collected.
+        <b>Real-time recording</b> of every participant action, with live previews of tidy
+        analysis tables that sync to your computer as CSVs.
       </li>
       <li>
         <b>Perfectly balanced condition assignment</b>, with tools to replace incomplete assignments.
       </li>
       <li>
-        <b>Tools that help you and your coding agent catch mistakes:</b> reusable experiment
-        components, working examples, agent-facing documentation, type checks, and automated browser tests.
+        <b>Tools that help you and your coding agent avoid errors:</b> reusable experiment
+        components, working examples, agent-facing documentation, type checking, and automated browser tests.
       </li>
       <li>
-        <b>Optional session recordings</b> to watch how participants experienced the task.
+        <b>Optional session recordings</b> with Posthog to watch how participants experienced the task.
       </li>
     </ul>
     <p>
