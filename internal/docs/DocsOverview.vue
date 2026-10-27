@@ -38,7 +38,9 @@ import DocsPage from './DocsPage.vue'
         components, working examples, agent-facing documentation, type checking, and automated browser tests.
       </li>
       <li>
-        <b>Optional session recordings</b> with Posthog to watch how participants experienced the task.
+        <b>Optional session recordings</b> with
+        <a href="https://posthog.com/session-replay" target="_blank" rel="noopener">Posthog</a>
+        to see how participants experienced the task.
       </li>
     </ul>
     <p>
