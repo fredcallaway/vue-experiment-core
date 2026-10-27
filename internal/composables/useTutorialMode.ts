@@ -1,4 +1,4 @@
-import { useSessionStorage } from '@vueuse/core'
+import { createSharedComposable, useSessionStorage } from '@vueuse/core'
 import { useUrlParams } from '../../utils/url-params'
 
 const isEnabled = (value: unknown): boolean => {
@@ -6,7 +6,7 @@ const isEnabled = (value: unknown): boolean => {
   return value === null || (typeof value === 'string' && !['0', 'false', 'no'].includes(value.toLowerCase()))
 }
 
-export function useTutorialMode() {
+export const useTutorialMode = createSharedComposable(() => {
   const route = useRoute()
   const router = useRouter()
   const tutorialMode = useSessionStorage('tutorial-mode', false)
@@ -25,4 +25,4 @@ export function useTutorialMode() {
   }
 
   return { tutorialMode, toggleTutorialMode }
-}
+})

@@ -84,6 +84,28 @@ try {
   await page.goto(`${query.href}&tutorial`)
   await page.locator('.tutorial-target-active').first().waitFor()
   assert.equal(await toggle.getAttribute('aria-pressed'), 'true', 'A bare tutorial flag follows URL flag conventions')
+
+  // Same-page controls must share state even when storage-event delivery is unavailable.
+  await browser.context.addInitScript(() => {
+    for (const type of ['storage', 'vueuse-storage']) {
+      window.addEventListener(type, event => {
+        if ((event.key ?? event.detail?.key) === 'tutorial-mode') event.stopImmediatePropagation()
+      }, true)
+    }
+  })
+  await page.goto(new URL('/docs?testing=1&preview=0', url).href)
+  await page.locator('.docs-content h2').first().waitFor()
+  await toggle.click()
+  await page.waitForFunction(() => document.querySelector('.tutorial-toggle').getAttribute('aria-pressed') === 'false'
+    && document.querySelectorAll('.tutorial-target-active').length === 0)
+  await page.getByRole('link', { name: 'Preview', exact: true }).click()
+  await page.getByRole('link', { name: 'Develop', exact: true }).click()
+  assert.equal(await toggle.getAttribute('aria-pressed'), 'false')
+  assert.equal(await page.locator('.tutorial-target-active').count(), 0, 'Remounted controls stay off')
+  await page.reload()
+  await toggle.waitFor()
+  assert.equal(await toggle.getAttribute('aria-pressed'), 'false')
+  assert.equal(await page.locator('.tutorial-target-active').count(), 0)
   assert.deepEqual(browser.errors, [], 'Tutorial interactions produce no browser errors')
   console.log('Passed: UI toggle, hover/focus help, deduplication, navigation, reload, and URL activation')
 } finally {
