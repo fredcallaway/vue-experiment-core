@@ -404,7 +404,7 @@ const indentBase = 8
   <div
     class="rounded-lg border border-2 border-gray-300 bg-white cursor-default flex flex-col pr2 relative min-w-170px"
   >
-    <h2 class="ml2 mb0 shrink-0">Epochs</h2>
+    <h2 class="ml2 mb0 shrink-0">Outline</h2>
     <div class="absolute right-1 top-1 flex flex-items-center flex-gap-1">
       <IconToggle
         v-model="autoTraverse"
