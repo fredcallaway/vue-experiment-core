@@ -1,52 +1,22 @@
-import { execFileSync, execSync } from 'child_process'
 import { assertFirebaseProjectMatchesCli } from '../../../operations/firebase-project'
+import { FirebaseRestDatabase } from '../../../operations/database'
+import { DeploymentOperations } from '../../../operations/deployment'
+import { readDeploymentConfig } from '../../../operations/experiment-config'
+import { withOperationLock } from '../../../operations/project'
 
 export default defineEventHandler(async (event) => {
   try {
-    // Check if git worktree is clean
-    const fullGitStatusOutput = execSync('git status --porcelain', { encoding: 'utf-8' }).trim()
-    const gitStatusOutput = fullGitStatusOutput
-      .split('\n')
-      .filter(line => !line.includes('core/pages/data'))
-      .filter(line => !line.includes('core/pages/prolific'))
-      .filter(line => !line.includes('core/pages/examples'))
-      .filter(line => !line.includes('core/server'))
-      .filter(line => !line.includes('data/processed'))
-      .join('\n')
-      .trim()
-    const sha = execSync('git rev-parse HEAD', { encoding: 'utf-8' }).trim().substring(0, 8)
-
-    if (gitStatusOutput) {
-      return {
-        success: false, 
-        sha,
-        reason: 'dirty',
-      }
-    }
-
-    // Verify that Hosting and the built app use the same Firebase project.
-    const projectId = await assertFirebaseProjectMatchesCli(process.cwd())
-
-    // Run deploy command
-    console.log('👉 deploying...')
-    execSync('bun run generate', { stdio: 'inherit' })
-    execFileSync('firebase', ['deploy', '--project', projectId], { stdio: 'inherit' })
-    
-    console.log('👉 successfully deployed!')
-    return {
-      success: true,
-      sha,
-    }
-  } catch (error: any) {
-    if (error.statusCode) {
-      console.error('👉 unhandled error in deploy.ts')
-      throw error
-    }
-    console.error('👉 unhandled error with statusCode:', error.statusCode, 'in deploy.ts', error)
-    return {
-      success: false, 
-      reason: 'unknown error',
-      error: error.message,
-    }
+    const root = process.cwd()
+    await readDeploymentConfig(root)
+    await assertFirebaseProjectMatchesCli(root)
+    const body = await readBody(event)
+    const database = await FirebaseRestDatabase.fromProject(root)
+    const operations = new DeploymentOperations(root, database)
+    const result = await withOperationLock(root, () => operations.deploy({
+      allowVersionReuse: body?.allowVersionReuse === true,
+    }))
+    return { success: true as const, ...result }
+  } catch (error) {
+    return { success: false as const, error: error instanceof Error ? error.message : String(error) }
   }
 })

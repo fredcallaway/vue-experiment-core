@@ -11,6 +11,26 @@ bun run ops -- deploy run
 
 Both commands require a clean committed checkout, including matching initialized submodules. `inspect` reports the local SHA, experiment version, explicit Firebase project/site, URL, and current tracking. `run` generates the static site, checks that Git has not changed, uploads only Hosting, verifies the live `ops-deployment.json` marker, and atomically updates `deployStatus` and `deploys/<timestamp>`. The existing study UI receives its eight-character `sha`, `version`, and `deployedAt`; the record also includes the full SHA, submodule revisions, and operation ID.
 
+`bun run deploy` and the dashboard's **Deploy Website** button use this same tracked Hosting service; they additionally require the Firebase CLI's selected project to match `firebase.config.json`. Database rules are a separate explicit deployment (`firebase deploy --only database --project <project-id>`).
+
+### Configure contact and version
+
+Set `contactEmail` in `epoch.config.ts` to a real researcher email. Missing, malformed, and `fakeDomain.*` placeholder addresses block deployment before building/uploading, with no bypass. Production `build` and `generate` also enforce this check; local development and typechecking work with the starter placeholder.
+
+`version` identifies the participant procedure/data cohort, while the Git SHA identifies each source revision. Keep the planned version while deploying and fixing bugs before posting a study. Additional recruitment batches from the same code can reuse that version. After posting, increment it for changes to the participant procedure or analysis, including conditions, stimuli, instructions, or recorded data interpretation.
+
+`deploy inspect` returns structured `warnings` when the most recently posted study for this version (`studies/<id>/publishTime`) has a different or missing recorded SHA. Draft studies and earlier deployments alone do not trigger the warning. Once a build has deliberately been posted with the same version, additional unchanged-code batches compare against that latest publication. SHA comparison is conservative: documentation-only changes can warn too. Review the diff against the listed published commit; if keeping the version is intentional, acknowledge it explicitly:
+
+```bash
+bun run ops -- deploy run --allow-version-reuse
+# Equivalent shortcut, with the selected-project check:
+bun run deploy --allow-version-reuse
+```
+
+The warning remains on stderr when overridden. The dashboard offers a corresponding checkbox and rechecks before deployment/publication, including publication of an existing draft. Publication records the currently deployed SHA, so fixes between draft creation and posting are attributed to the build actually posted. A draft's version must match the current configuration and deployment before publication; recreate an outdated draft after changing version.
+
+These checks use this project's stored dashboard publication history, not live Prolific queries. Studies posted outside the dashboard, missing publication records, and non-Prolific recruitment require a manual history check. A successful deployment does not freeze a version, publish a study, or authorize recruitment.
+
 The project comes from `firebase.config.json`, not the Firebase CLI's active alias. Configure one static site in `firebase.json`, using `hosting.public: ".output/public"` and optional `hosting.site`; the default site is the project ID. Target aliases, multiple sites, framework backends, and function/Cloud Run rewrites are rejected. Deployment uses a temporary Hosting-only Firebase config without deploy hooks. The project's `generate` script and `epoch.config.ts` must run with Bun; version loading supplies the `defineEpochConfig` identity helper.
 
 Deployment records live in Git's `agent-operations/deployments/` directory. If upload succeeds but verification or tracking fails, inspect the reported record and retry tracking with:

@@ -16,7 +16,8 @@ definePageMeta({
 })
 
 const prolific = useProlific()
-const { deploy, localSha, deployedSha, status, error: deploymentError, gitStatus } = useDeployment()
+const { deploy, localSha, deployedSha, status, error: deploymentError, gitStatus, versionSafety } = useDeployment()
+const { warnings: versionWarnings, loading: versionLoading, error: versionError } = versionSafety
 
 const MIN_WAGE = 8
 
@@ -45,6 +46,10 @@ const dismissDeploymentError = () => {
 
 const bypassGitCheck = ref(false)
 const bypassDeployedCheck = ref(false)
+const bypassVersionCheck = ref(false)
+watch(() => JSON.stringify([config.version, localSha.value, versionWarnings.value]), () => {
+  bypassVersionCheck.value = false
+}, { flush: 'sync' })
 
 const internalName = computed(() => {
   return `${config.version || 'unknown'} (git ${localSha.value})`
@@ -63,6 +68,10 @@ const totalCost = computed(() => formData.value.total_available_places * formDat
 
 const cannotSubmitReason = computed(() => {
   if (formDataLoading.value) return 'Loading study draft...'
+  if (status.value === 'unconfigured') return 'Set a real contact email in epoch.config.ts'
+  if (versionLoading.value) return 'Checking posted experiment versions...'
+  if (versionError.value) return versionError.value
+  if (versionWarnings.value.length && !bypassVersionCheck.value) return 'Review the experiment version warning'
   if (!isValidWage.value) return 'Wage is too low'
   if (status.value == 'loading') return 'Deploying...'
   if (status.value != 'deployed' && !bypassDeployedCheck.value && !bypassGitCheck.value) return 'Not deployed'
@@ -80,6 +89,8 @@ const previewUrl = computed(() => {
 const create = useAsyncRunner(err => err instanceof ProlificError ? err.userMessage : null)
 const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
   await create.run(async () => {
+    await versionSafety.refresh()
+    if (!canSubmit.value) throw new Error(cannotSubmitReason.value)
     const study = await prolific.createStudy({
       ...formData.value,
       internal_name: internalName.value
@@ -96,8 +107,10 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
       if (!canSubmit.value) {
         throw new Error(`Problem submitting: ${cannotSubmitReason.value}`)
       }
+      const publication = await useStudies().preparePublication(study.id)
+      if (publication.warnings.length && !bypassVersionCheck.value) throw new Error('Review the experiment version warning')
       await prolific.publishStudy(study.id)
-      await useStudies().publishStudy(study.id)
+      await useStudies().publishStudy(study.id, publication.deployment)
     }
     
     // await prolific.getStudiesCache().refresh()
@@ -106,7 +119,7 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
 }
 
 const onDeploy = async () => {
-  const success = await deploy()
+  const success = await deploy(bypassVersionCheck.value)
   if (!success) {
     throw new Error(deploymentError.value)
   }
@@ -268,6 +281,8 @@ const onDeploy = async () => {
         title="Deployment status"
         help="Checks whether the experiment is configured, committed, and deployed before study publication."
       >
+        <VersionWarning v-model="bypassVersionCheck" :warnings="versionWarnings" />
+        <div v-if="versionError" role="alert" class="text-error">{{ versionError }}</div>
         <div
           class="p-4 rounded-lg bg-success-200 text-success-600 [&>h3]:text-success-700"
           v-if="status === 'deployed'"
@@ -340,7 +355,8 @@ const onDeploy = async () => {
           loading
           :name="status == 'loading' ? 'Deploying...' : 'Deploy Website'"
           :action="onDeploy"
-          :disabled="status !== 'ready'"
+          :disabled="status !== 'ready' || versionLoading || !!versionError ||
+            (versionWarnings.length > 0 && !bypassVersionCheck)"
         />
       </TutorialTarget>
     </fieldset>

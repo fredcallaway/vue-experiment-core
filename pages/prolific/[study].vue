@@ -158,8 +158,12 @@ const stopStudy = wrap(async () => {
 })
 
 const publishStudy = wrap(async () => {
+  const publication = await useStudies().preparePublication(studyId)
+  if (publication.warnings.length && !confirm(
+    publication.warnings.map(warning => warning.message).join('\n\n') + '\n\nPublish with this version anyway?',
+  )) return
   await prolific.publishStudy(studyId)
-  await useStudies().publishStudy(studyId)
+  await useStudies().publishStudy(studyId, publication.deployment)
 })
 
 const { copy } = useClipboard()

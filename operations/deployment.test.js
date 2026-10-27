@@ -14,6 +14,8 @@ async function project() {
   const root = await mkdtemp(resolve(tmpdir(), 'deployment-test-'))
   roots.push(root)
   await writeFile(resolve(root, '.gitignore'), '.output/\n')
+  await writeFile(resolve(root, 'epoch.config.ts'),
+    'export default defineEpochConfig({ version: "cohort-1", contactEmail: "researcher@university.edu" })\n')
   await writeJson(resolve(root, 'firebase.config.json'), { projectId: 'test-project' })
   await writeJson(resolve(root, 'firebase.json'), {
     hosting: { public: '.output/public', predeploy: ['spend-money'], postdeploy: ['spend-more'],
@@ -45,7 +47,7 @@ async function deploymentFixture(options = {}) {
   const io = {
     run: async (cwd, executable, args) => {
       calls.push({ executable, args })
-      if (executable === 'bun' && args[0] === '--eval') return 'cohort-1'
+      if (executable === 'bun' && args[0] === '--eval') return command(cwd, executable, args)
       if (executable === 'bun' && args[0] === 'run') {
         if (options.buildFails) throw new Error('build failed')
         await mkdir(resolve(root, '.output/public'), { recursive: true })
@@ -71,6 +73,38 @@ async function deploymentFixture(options = {}) {
 }
 
 describe('tracked static Hosting deployment', () => {
+  test('blocks placeholder contact email before build/upload, even with the version override', async () => {
+    const fixture = await deploymentFixture()
+    await writeFile(resolve(fixture.root, 'epoch.config.ts'),
+      'export default { version: "cohort-1", contactEmail: "yourEmailAddress@fakeDomain.foo" }\n')
+    await expect(fixture.operations.deploy({ allowVersionReuse: true })).rejects.toThrow('Set contactEmail')
+    expect(fixture.calls).toHaveLength(1)
+    expect(fixture.state).toEqual({})
+  })
+
+  test('allows bugfix redeployment before posting and another batch of the same posted build', async () => {
+    const fixture = await deploymentFixture()
+    fixture.state.studies = { draft: { version: 'cohort-1', sha: 'aaaaaaaa' } }
+    const first = await fixture.operations.deploy()
+    await writeFile(resolve(fixture.root, 'fix.ts'), '// fix noticed before posting\n')
+    await command(fixture.root, 'git', ['add', 'fix.ts'])
+    await command(fixture.root, 'git', ['commit', '-qm', 'fix before posting'])
+    const second = await fixture.operations.deploy()
+    expect(second.fullSha).not.toBe(first.fullSha)
+    fixture.state.studies.posted = { version: second.version, sha: second.sha, publishTime: Date.now() }
+    expect((await fixture.operations.inspect()).warnings).toEqual([])
+    expect((await fixture.operations.deploy()).state).toBe('tracked')
+  })
+
+  test('requires deliberate override when a posted version has different code', async () => {
+    const fixture = await deploymentFixture()
+    fixture.state.studies = { posted: { version: 'cohort-1', sha: 'aaaaaaaa', publishTime: 1 } }
+    expect((await fixture.operations.inspect()).warnings).toMatchObject([{ studyId: 'posted', version: 'cohort-1' }])
+    await expect(fixture.operations.deploy()).rejects.toThrow('--allow-version-reuse')
+    expect(fixture.calls.some(call => call.executable === 'firebase' || call.args[0] === 'run')).toBe(false)
+    expect((await fixture.operations.deploy({ allowVersionReuse: true })).state).toBe('tracked')
+  })
+
   test('accepts initialized submodules whose SHA starts with a digit and rejects uninitialized submodules', async () => {
     const source = await project()
     let sha = await command(source, 'git', ['rev-parse', 'HEAD'])

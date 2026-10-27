@@ -29,7 +29,7 @@ const readJsonInput = async () => {
 
 const usage = () => `Usage:
   bun run ops -- deploy inspect
-  bun run ops -- deploy run
+  bun run ops -- deploy run [--allow-version-reuse]
   bun run ops -- deploy reconcile --id <operation-id>
   bun run ops -- study-draft get
   bun run ops -- study-draft update --json '<patch>'
@@ -47,7 +47,7 @@ const main = async () => {
   if (!resource || !action) throw new Error(usage())
 
   const allowed: Record<string, string[]> = {
-    'deploy inspect': [], 'deploy run': [], 'deploy reconcile': ['--id'],
+    'deploy inspect': [], 'deploy run': ['--allow-version-reuse'], 'deploy reconcile': ['--id'],
     'study-draft get': [], 'study-draft update': ['--json', '--file'],
     'review-draft get': ['--study'], 'review-draft update': ['--study', '--json', '--file'],
     'review inspect': ['--study', '--submission', '--fixture'],
@@ -59,6 +59,7 @@ const main = async () => {
     const flag = args[i]!
     if (!flags.includes(flag) || seen.has(flag)) throw new Error(`Unknown or duplicate option: ${flag}`)
     seen.add(flag)
+    if (flag === '--allow-version-reuse') continue
     if (!args[++i] || args[i]!.startsWith('--')) {
       throw new Error(`Missing value for ${flag}`)
     }
@@ -72,7 +73,8 @@ const main = async () => {
     const deployments = new DeploymentOperations(process.cwd(), database)
     if (action === 'inspect') result = await deployments.inspect()
     else result = await withOperationLock(process.cwd(), () => action === 'run'
-      ? deployments.deploy() : deployments.reconcile(option('--id') ?? ''))
+      ? deployments.deploy({ allowVersionReuse: seen.has('--allow-version-reuse') })
+      : deployments.reconcile(option('--id') ?? ''))
   } else if (resource === 'study-draft' && action === 'get') {
     result = await drafts.getStudyDraft()
   } else if (resource === 'study-draft' && action === 'update') {

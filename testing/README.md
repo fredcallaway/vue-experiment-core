@@ -85,6 +85,8 @@ With a project dev server running, `node core/testing/main-content.integration.m
 
 `node core/testing/prolific-token-help.integration.mjs http://localhost:<port>` checks the token-help dialog's keyboard behavior, focus restoration, and layout at desktop and smaller sizes. All backend requests are fixtures and external traffic is blocked. Screenshots go to `.experiment-tests/prolific-token-help/` by default.
 
+`node core/testing/deployment-safety.integration.mjs http://localhost:<port>` checks contact configuration, posted-version acknowledgment, isolation from deployment bypasses, pre-posting/same-code reuse, and publication attribution to the current deployed build. Database/deployment operations use in-memory fixtures and external traffic is blocked. Screenshots go to `.experiment-tests/deployment-safety/` by default.
+
 `node core/testing/preview.integration.mjs http://localhost:<port>` checks Develop/Preview switching, stable navigation and experiment state, query preservation, hover/click/keyboard outline access, cold Preview startup, reload/history, and worker isolation. Screenshots go to `.experiment-tests/preview/` by default; pass an output directory as the second argument to change it.
 
 The implementation uses Playwright [network routing](https://playwright.dev/docs/network) with service workers blocked, separate WebSocket routing, and [screenshot comparison](https://playwright.dev/docs/test-snapshots). It leaves animations running during observation and fails unstable checkpoints instead of changing the task's timing to obtain a screenshot.

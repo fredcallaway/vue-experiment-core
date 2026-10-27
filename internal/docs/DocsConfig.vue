@@ -53,9 +53,11 @@ import DocsConditions from './DocsConditions.vue'
       "
       />
       <p>
-        <code>version</code> is worth setting deliberately: it's recorded with every session
-        and shown in the Prolific study's internal name, so it's how you tell a pilot's data
-        from the real run.
+        Set <code>contactEmail</code> to a real researcher email; the starter placeholder
+        blocks production builds and deployment. <code>version</code> is recorded with every
+        session and shown in the Prolific study's internal name. Keep it during fixes before
+        posting and for additional batches of unchanged code. After posting, increment it
+        when the participant procedure or analysis changes.
       </p>
       <div class="p-4 rounded-lg bg-info-200 text-info-600 [&>h3]:text-info-700">
         Experiment-wide values that aren't app metadata — stimulus sets, block counts, shared

@@ -1,3 +1,10 @@
+# Deployment configuration and posted-version safety
+
+- Production builds/generation and all supported deployment entry points reject missing, malformed, or `fakeDomain.*` placeholder contact emails in `epoch.config.ts`. Set a real researcher email; development and typechecking still work with the starter placeholder.
+- `bun run deploy` and the Prolific dashboard now use the tracked static Hosting service, including clean/matching-submodule checks, hosted-marker verification, and atomic deployment tracking. These entry points retain their selected-Firebase-project check. Database rules must be deployed separately with `firebase deploy --only database --project <project-id>`.
+- Deployment inspection reports posted-version warnings using stored study `publishTime`, `version`, and SHA. Changed or unknown code under a previously posted version requires a dashboard acknowledgment or CLI `--allow-version-reuse`; the warning is still reported. Draft-only/pre-posting redeployments and unchanged-code batches do not warn. Existing raw study metadata remains readable; no consumer-code migration is required. See [the operations guide](operations/README.md) for coverage limits and commands.
+- Existing-draft publication also checks version reuse and matching configured/deployed versions. Publication records the current deployed SHA rather than retaining the draft-creation SHA.
+
 # Prolific token instructions
 
 - The Prolific connection form now includes a link opening instructions for creating an API token. The dialog supports keyboard navigation, Escape, and returning focus to the help link. No consumer-code or configuration migration is required.

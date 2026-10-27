@@ -1,6 +1,8 @@
 import { useConfig } from '../../composables/useConfig'
 import { useDatabase } from '../../composables/useDatabase'
 import { useIntervalFn } from '@vueuse/core'
+import { contactEmailError } from '../deploymentSafety'
+import { useVersionSafety } from './useVersionSafety'
 
 
 export interface GitStatus {
@@ -19,9 +21,8 @@ export const useDeployment = () => {
   const gitStatus = ref('')
 
   const config = useConfig()
-  const unconfigured = computed(() => {
-    return config.contactEmail.includes('@fakeDomain')
-  })
+  const unconfigured = computed(() => !!contactEmailError(config.contactEmail))
+  const versionSafety = useVersionSafety(() => config.version, () => localSha.value)
 
   const status = computed<DeploymentStatus>(() => {
     if (unconfigured.value) return 'unconfigured'
@@ -57,39 +58,27 @@ export const useDeployment = () => {
   }
   checkDeployedSha()
   
-  const deploy = async () => {
+  const deploy = async (allowVersionReuse = false) => {
     await checkGitStatus()
-    if (isLoading.value || isDirty.value) {
+    if (isLoading.value || isDirty.value || unconfigured.value) {
       return false
     }
     isLoading.value = true
-    const response = await fetch('/api/prolific/deploy', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-    isLoading.value = false
-    const result = await response.json()
-    
-    if (!result.success) {
-      error.value = result.error
+    try {
+      await versionSafety.refresh()
+      const result = await $fetch('/api/prolific/deploy', {
+        method: 'POST', body: { allowVersionReuse },
+      })
+      if (!result.success) throw new Error(result.error)
+      error.value = ''
+      deployedSha.value = result.sha
+      return true
+    } catch (cause) {
+      error.value = cause instanceof Error ? cause.message : String(cause)
       return false
+    } finally {
+      isLoading.value = false
     }
-    error.value = ''
-    
-    // Store deployed SHA in Firebase
-    const info = {
-      sha: result.sha,
-      deployedAt: Date.now(),
-      version: config.version,
-    }
-    const db = useDatabase()
-    await db.set('deployStatus', info)
-    await db.set(`deploys/${info.deployedAt}`, info)
-    deployedSha.value = result.sha
-
-    return true
   }
 
   return {
@@ -99,5 +88,6 @@ export const useDeployment = () => {
     status,
     error,
     gitStatus,
+    versionSafety,
   }
 }

@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import type { OperationsDatabase } from './database'
 import { command, gitSnapshot, operationDirectory, readJson, safeSegment, unchanged, writeJson } from './project'
+import { readDeploymentConfig } from './experiment-config'
+import { versionWarnings, type StudyDeployment } from '../internal/deploymentSafety'
 
 type Deployment = {
   id: string
@@ -61,14 +63,13 @@ export class DeploymentOperations {
   }
 
   async inspect() {
+    const { version, contactEmail } = await readDeploymentConfig(this.root, this.io.run)
     const snapshot = await gitSnapshot(this.root)
     const config = await this.config()
-    const version = await this.io.run(this.root, 'bun', ['--eval',
-      'globalThis.defineEpochConfig = c => c; console.log((await import("./epoch.config.ts")).default.version)',
-    ])
-    safeSegment(version, 'experiment version')
-    return { ...snapshot, version, projectId: config.projectId, site: config.site,
-      url: `https://${config.site}.web.app`, tracked: await this.database.get('deployStatus') }
+    const studies = await this.database.get<Record<string, StudyDeployment>>('studies')
+    return { ...snapshot, version, contactEmail, projectId: config.projectId, site: config.site,
+      url: `https://${config.site}.web.app`, tracked: await this.database.get('deployStatus'),
+      warnings: versionWarnings(version, snapshot.sha, studies) }
   }
 
   private async recordPath(id: string) {
@@ -94,8 +95,12 @@ export class DeploymentOperations {
     return { ...info, state: record.state, url: `https://${info.site}.web.app` }
   }
 
-  async deploy() {
+  async deploy({ allowVersionReuse = false } = {}) {
     const inspected = await this.inspect()
+    for (const warning of inspected.warnings) process.stderr.write(`WARNING: ${warning.message}\n`)
+    if (inspected.warnings.length && !allowVersionReuse) {
+      throw new Error('Review the posted-version warning, then increment version or explicitly use --allow-version-reuse.')
+    }
     const snapshot = { sha: inspected.sha, submodules: inspected.submodules }
     const config = await this.config()
     const deployment: Deployment = {

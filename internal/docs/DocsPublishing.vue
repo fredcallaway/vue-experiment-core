@@ -19,8 +19,16 @@ import DocsPage from './DocsPage.vue'
       <p>
         The study's internal name includes <code>version</code> from <code>epoch.config.ts</code>
         and the commit identifier. The commit identifies a source revision; the version
-        identifies a participant cohort. After collecting data under a version, increment it
-        before collecting data from a meaningfully different procedure.
+        identifies a participant procedure/data cohort. Keep the version through bugfix
+        deployments before posting a study, and when recruiting another batch from unchanged
+        code. After posting, increment it before changing the procedure or analysis.
+      </p>
+      <p>
+        Deployment and study publication warn when a previously posted version has a different
+        commit. Review the listed changes, then update <code>epoch.config.ts</code> or explicitly
+        acknowledge keeping the version. Documentation-only changes can also trigger this
+        conservative warning. Check publication history manually for studies posted outside
+        this dashboard. Replace the starter contact email before building or deploying.
       </p>
     </DocsPage>
 

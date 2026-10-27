@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { readDeploymentConfig } from './operations/experiment-config'
+
 export default defineNuxtConfig({
   // we want a standard single page application, no server-side rendering
   ssr: false,
@@ -31,7 +33,8 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@unocss/nuxt',
-    (_options, nuxt) => {
+    async (_options, nuxt) => {
+      if (!nuxt.options.dev && !nuxt.options._prepare) await readDeploymentConfig(nuxt.options.rootDir)
       const sourcemaps = nuxt.options.posthogConfig?.sourcemaps
       if (sourcemaps && !sourcemaps.personalApiKey?.startsWith('phx_')) {
         sourcemaps.enabled = false
