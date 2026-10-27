@@ -61,7 +61,10 @@ import DocsStudyData from './DocsStudyData.vue'
       <blockquote>
         <p>Add block index to the data view. Make sure RT is relative to motion onset.</p>
       </blockquote>
-      <p>Finally, the <b>instructions</b>. For complex tasks, this usually needs a lot of human guidance.</p>
+      <p>
+        Finally, the <b>instructions</b>. For complex tasks, this often needs a lot of human guidance.
+        But an agent can get you started.
+      </p>
       <blockquote>
         <p>
           Create interactive instructions including practice trials for different coherence
