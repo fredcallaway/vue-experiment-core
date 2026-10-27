@@ -1,10 +1,9 @@
 # Experiment Project Guide
 
-This is the canonical starting point for agents working on experiment projects built from this core. Project-level `AGENTS.md` files should point here instead of copying project-agnostic guidance.
+This is the canonical starting point for agents working on experiment projects built from this core.
 
 ## Before editing
 
-- Read the project's own `AGENTS.md` for repository-specific constraints.
 - Keep experiment code at the project root. Do not edit `core/` unless the task explicitly calls for a template-layer change.
 - Find the closest implementation in [`internal/examples/README.md`](../../internal/examples/README.md) and copy its structure. The examples are live and type-checked.
 - Use the human-facing concept docs at `/docs` when you need explanation rather than an implementation pattern.
