@@ -1,3 +1,7 @@
+# Data preview cells
+
+- The developer Data panel limits CSV cell previews to three lines. Overflowing cells have a button that opens the full value beside the cell; Escape or clicking outside closes it. Exported values are unchanged. No consumer-code migration is required.
+
 # Deployment configuration and posted-version safety
 
 - Production builds/generation and all supported deployment entry points reject missing, malformed, or `fakeDomain.*` placeholder contact emails in `epoch.config.ts`. Set a real researcher email; development and typechecking still work with the starter placeholder.
