@@ -52,9 +52,17 @@ export const useDisplayPhases = <const T extends readonly string[]>(
 
   const parseWhich = (which: string): Phase[] => which.split(/\s+/) as Phase[]
 
+  let transitionId = 0
   const goToPhase = async (newPhase: Phase) => {
     assertOneOf(newPhase, phases, `goToPhase: ${newPhase} is not a valid phase (${phases.join(', ')})`)
-    if (phase.value === newPhase) return
+    // A newer phase request (including an outline jump) supersedes any pending fade.
+    const id = ++transitionId
+    if (phase.value === newPhase) {
+      transitionStage.value = null
+      fromPhase.value = null
+      toPhase.value = null
+      return
+    }
     fromPhase.value = phase.value
     toPhase.value = newPhase
 
@@ -66,11 +74,13 @@ export const useDisplayPhases = <const T extends readonly string[]>(
       if (outDuration > 0) {
         transitionStage.value = 'out'
         await sleep(outDuration)
+        if (id !== transitionId) return
       }
       phase.value = newPhase
       if (inDuration > 0) {
         transitionStage.value = 'in'
         await sleep(inDuration)
+        if (id !== transitionId) return
       }
     }
 

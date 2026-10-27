@@ -1,3 +1,7 @@
+# Display phase transitions
+
+- A newer display-phase request supersedes pending fades, including when returning to the currently displayed phase. Outline jumps during an animation now keep the visible phase aligned with the epoch. No consumer-code migration is required.
+
 # Data preview cells
 
 - The developer Data panel limits CSV cell previews to three lines. Overflowing cells have a button that opens the full value beside the cell; Escape or clicking outside closes it. Exported values are unchanged. No consumer-code migration is required.
