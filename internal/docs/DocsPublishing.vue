@@ -22,10 +22,6 @@ import DocsPage from './DocsPage.vue'
         identifies a participant cohort. After collecting data under a version, increment it
         before collecting data from a meaningfully different procedure.
       </p>
-      <p>
-        The create page's preview link supplies debug participant identifiers and
-        <code>assignment=0</code>. Test that deployed copy before publishing the study.
-      </p>
     </DocsPage>
 
     <DocsPage name="completion">

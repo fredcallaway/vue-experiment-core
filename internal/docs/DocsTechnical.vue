@@ -7,8 +7,8 @@ import DocsPage from './DocsPage.vue'
     <h2>Want to understand how it actually works?</h2>
     <p>
       The remaining pages explain how an experiment is built and how its parts fit together.
-      Read on if you want to understand the design, work with a developer or coding agent,
-      or change the experiment yourself.
+      Read on to understand the design behind your implementation, evaluate your agent's
+      choices, or work directly with the code.
     </p>
     <ul>
       <li><b>Epochs and composition:</b> arrange screens, trials, and blocks into an experiment.</li>
@@ -25,6 +25,6 @@ import DocsPage from './DocsPage.vue'
       <a href="https://vuejs.org/tutorial/" target="_blank" rel="noopener">Vue tutorial</a>
       introduces the basics. The examples in this app show the experiment-specific patterns.
     </p>
-    <p>You can stop here if you only need the researcher workflow, or choose any technical topic from the outline.</p>
+    <p>Read in order, or choose the technical topic you need from the outline.</p>
   </DocsPage>
 </template>

@@ -4,11 +4,39 @@ import DocsPage from './DocsPage.vue'
 
 <template>
   <ESequence name="data">
+    <DocsPage name="debug">
+      <h3>Recording test data</h3>
+      <p>
+        Verify the data while developing the experiment. In <NuxtLink to="/dev">Develop</NuxtLink>,
+        the <b>Events</b> panel shows the current run's recorded events, and the <b>Data</b>
+        panel shows the preprocessed rows as you respond. Use its selector to check each data
+        view's columns and values against your design.
+      </p>
+      <p>
+        To save a test session to the database, open
+        <NuxtLink to="/dev?mode=debug" external>Develop with debug recording</NuxtLink>
+        (<code>/dev?mode=debug</code>) and run the experiment. The <code>mode=debug</code>
+        URL parameter enables automatic recording to the <b>debug</b> database. If your URL
+        already has parameters, add <code>&amp;mode=debug</code> instead.
+      </p>
+      <p>
+        Ordinary Develop sessions let you inspect events and data views without automatically
+        saving them to the database. Use debug recording for test sessions you want to inspect
+        afterwards in the <NuxtLink to="/data?mode=debug">Data Viewer</NuxtLink>.
+      </p>
+      <p>
+        Check that responses, timing, conditions, bonuses, and analysis rows match what you
+        did in the task. Ask your agent to fix missing or incorrect data, then record another
+        test session before collecting from participants.
+      </p>
+    </DocsPage>
+
     <DocsPage name="view">
       <h3>Viewing your data</h3>
       <p>
-        Open the <NuxtLink to="/data">Data Viewer</NuxtLink> and check whether you are viewing
-        <b>live</b> participant data or <b>debug</b> test data. Use the link at the top to switch.
+        Open the <NuxtLink to="/data?mode=debug">Data Viewer</NuxtLink> to inspect your
+        <b>debug</b> test data. Once you recruit participants, switch to <b>live</b> data
+        using the link at the top.
       </p>
       <ul>
         <li>
@@ -34,9 +62,8 @@ import DocsPage from './DocsPage.vue'
     <DocsPage name="save">
       <h3>Saving data for analysis</h3>
       <p>
-        Participant responses are saved during the experiment. The Data Viewer's <b>save</b>
-        button has a separate purpose: it writes the current analysis tables to files on the
-        computer running this app.
+        Recording stores the session's events while the experiment runs. The Data Viewer's
+        <b>save</b> button writes the current analysis tables to files on the computer running this app.
       </p>
       <ol>
         <li>Open <b>Versions</b> in the <NuxtLink to="/data">Data Viewer</NuxtLink> and choose your version.</li>

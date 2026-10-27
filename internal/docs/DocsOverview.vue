@@ -44,9 +44,8 @@ import DocsPage from './DocsPage.vue'
       </li>
     </ul>
     <p>
-      Start with the researcher guide to running a study. It covers posting to Prolific,
-      viewing and saving data, and reviewing submissions—without assuming you write code.
-      Technical explanations and examples follow for anyone who wants to go deeper.
+      Start with the guide to developing and running a study, whether you write code or use
+      an agent. Technical explanations and examples follow.
     </p>
     <p>Use <b>Next</b> to read in order, or choose a page from the outline on the right.</p>
   </DocsPage>
