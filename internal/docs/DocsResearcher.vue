@@ -26,55 +26,50 @@ import DocsStudyData from './DocsStudyData.vue'
       </p>
     </DocsPage>
 
-    <ESequence name="develop">
-      <DocsPage name="design">
-        <h3>Developing your experiment</h3>
+    <DocsPage name="develop">
+      <h3>Developing your experiment</h3>
+      <p>
+        Start with the <b>paradigm</b>. What does a trial look like? Tell this to your agent and
+        ask for a link to test it. If you know what variables you'll manipulate or vary,
+        say so now. As long as your agent of choice reads <code>AGENTS.md</code> or
+        <code>CLAUDE.md</code> (almost all do), it will know what to do.
+      </p>
+      <blockquote>
+        <p>Implement a random dot motion task with variable coherence. Give feedback after each trial.</p>
+      </blockquote>
+      <p>
+        Next comes <b>design</b>. Specify conditions, block structure, and incentives (bonuses).
+        Watch your experiment's outline come to life and check that the different conditions
+        do what you expect. Test specific sections by clicking on the outline (you can also
+        pin sections so it stays there on reload).
+      </p>
+      <blockquote>
         <p>
-          Start with the paradigm. What does a trial look like? Tell this to your agent and
-          ask for a link to test it. If you know what variables you'll manipulate or vary,
-          say so now. As long as your agent of choice reads <code>AGENTS.md</code> or
-          <code>CLAUDE.md</code> (almost all do), it will know what to do.
+          Each participant does four blocks of 30 trials. Coherence changes across blocks,
+          either increasing or decreasing depending on condition. Give 5 points for each
+          correct response (5 points = 1 cent).
         </p>
-        <blockquote>
-          <p>Implement a random dot motion task with variable coherence. Give feedback after each trial.</p>
-        </blockquote>
-        <p>
-          Next comes design. Specify conditions, block structure, and incentives (bonuses).
-          Watch your experiment's outline come to life and check that the different conditions
-          do what you expect. Test specific sections by clicking on the outline (you can also
-          pin sections so it stays there on reload).
-        </p>
-        <blockquote>
-          <p>
-            Each participant does four blocks of 30 trials. Coherence changes across blocks,
-            either increasing or decreasing depending on condition. Give 5 points for each
-            correct response (5 points = 1 cent).
-          </p>
-        </blockquote>
-      </DocsPage>
+      </blockquote>
 
-      <DocsPage name="finish">
-        <h3>Data recording and instructions</h3>
+      <p>
+        Now the <b>data</b>. Most likely, it's already being recorded and formatted
+        nicely. But you should double-check the Data panel to the right as you go through
+        the experiment (you might need to adjust the dropdown in the top right). It should
+        look like a table/dataframe you'd want to analyze.
+      </p>
+      <blockquote>
+        <p>Add block index to the data view. Make sure RT is relative to motion onset.</p>
+      </blockquote>
+      <p>Finally, the <b>instructions</b>. For complex tasks, this usually needs a lot of human guidance.</p>
+      <blockquote>
         <p>
-          Now the data recording. Most likely, it's already being recorded and formatted
-          nicely. But you should double-check the Data panel to the right as you go through
-          the experiment (you might need to adjust the dropdown in the top right). It should
-          look like a table/dataframe you'd want to analyze.
+          Create interactive instructions including practice trials for different coherence
+          levels. Explain the bonus scheme. Do NOT tell participants about how coherence
+          changes across blocks. Minimize text.
         </p>
-        <blockquote>
-          <p>Add block index to the data view. Make sure RT is relative to motion onset.</p>
-        </blockquote>
-        <p>Finally, the instructions. For complex tasks, this usually needs a lot of human guidance.</p>
-        <blockquote>
-          <p>
-            Create interactive instructions including practice trials for different coherence
-            levels. Explain the bonus scheme. Do NOT tell participants about how coherence
-            changes across blocks. Minimize text.
-          </p>
-        </blockquote>
-        <p>That's it!</p>
-      </DocsPage>
-    </ESequence>
+      </blockquote>
+      <p>That's it!</p>
+    </DocsPage>
 
     <DocsPage name="post">
       <h3>Posting to Prolific</h3>
