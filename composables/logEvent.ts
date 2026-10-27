@@ -1,5 +1,6 @@
 import { type BaseLogEvent, type LogEvent, type SafeDataObject, toSafeDataObject } from '../internal/data'
 import { trueRandom } from '../utils/trueRandom'
+import { isError } from '../utils/asserts'
 import { useDataWriter } from './useDataWriter'
 import { createGlobalState, useEventBus, useEventListener, watchImmediate } from '@vueuse/core'
 
