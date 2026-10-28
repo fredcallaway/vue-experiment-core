@@ -1,3 +1,7 @@
+# Template deployment command
+
+- The template's root package now uses `bun run ops -- deploy inspect` and `bun run ops -- deploy run` for deployment, without a separate `deploy` script. Existing projects can remove their `deploy` script and add `"ops": "bun core/operations/cli.ts"` if needed, or invoke `bun core/operations/cli.ts deploy run` directly. The dashboard's Deploy Website action is unchanged.
+
 # Display phase transitions
 
 - A newer display-phase request supersedes pending fades, including when returning to the currently displayed phase. Outline jumps during an animation now keep the visible phase aligned with the epoch. No consumer-code migration is required.
@@ -18,7 +22,7 @@
 # Deployment configuration and posted-version safety
 
 - Production builds/generation and all supported deployment entry points reject missing, malformed, or `fakeDomain.*` placeholder contact emails in `epoch.config.ts`. Set a real researcher email; development and typechecking still work with the starter placeholder.
-- `bun run deploy` and the Prolific dashboard now use the tracked static Hosting service, including clean/matching-submodule checks, hosted-marker verification, and atomic deployment tracking. These entry points retain their selected-Firebase-project check. Database rules must be deployed separately with `firebase deploy --only database --project <project-id>`.
+- The deployment CLI and Prolific dashboard use the tracked static Hosting service, including clean/matching-submodule checks, hosted-marker verification, and atomic deployment tracking. The dashboard retains its selected-Firebase-project check. Database rules must be deployed separately with `firebase deploy --only database --project <project-id>`.
 - Deployment inspection reports posted-version warnings using stored study `publishTime`, `version`, and SHA. Changed or unknown code under a previously posted version requires a dashboard acknowledgment or CLI `--allow-version-reuse`; the warning is still reported. Draft-only/pre-posting redeployments and unchanged-code batches do not warn. Existing raw study metadata remains readable; no consumer-code migration is required. See [the operations guide](operations/README.md) for coverage limits and commands.
 - Existing-draft publication also checks version reuse and matching configured/deployed versions. Publication records the current deployed SHA rather than retaining the draft-creation SHA.
 
@@ -66,7 +70,7 @@
 
 # Firebase deployment project check
 
-- The Prolific dashboard deploy action now checks that the selected Firebase CLI project matches `firebase.config.json` before building or deploying, then passes that project explicitly to the CLI. For the same check in project scripts, set the top-level `deploy` command to `bun core/operations/deploy-cli.ts`. Select the intended project with `firebase use` and update `firebase.config.json` before deploying a new experiment.
+- The Prolific dashboard deploy action checks that the selected Firebase CLI project matches `firebase.config.json` before building or deploying, then passes that project explicitly to the CLI. Select the intended project with `firebase use` and update the full `firebase.config.json` before deploying a new experiment. The operations CLI uses the explicit project in `firebase.config.json`.
 
 # Utility ownership and startup
 
@@ -481,11 +485,9 @@ For async hook-based waits, prefer explicit lifecycle code on `EPage`:
 
 ## Data And Event Views
 
-The core `PEvent` type and `isParticipantEvent` helper were removed from `core/internal/data.ts`.
+The core `PEvent` type was removed. The event viewer retains `isParticipantEvent` in `core/internal/data.ts` for participant-event highlighting and filters.
 
-The debug event view no longer gives participant events special formatting or participant/hover filters. Existing historical data that contains `participant.*` events will still appear as ordinary logged events when loaded, but new template code no longer creates those events.
-
-PostHog no longer needs to blacklist `participant.hover` and `participant.mousedown`, because those events are no longer emitted.
+The input primitives still emit automatic `participant.*` events directly, as described under Logging. These events and historical participant events remain available for inspection/debugging; analysis should use explicitly logged semantic task events.
 
 ## Developer Navigation
 

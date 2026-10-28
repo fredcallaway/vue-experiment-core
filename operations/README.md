@@ -11,7 +11,7 @@ bun run ops -- deploy run
 
 Both commands require a clean committed checkout, including matching initialized submodules. `inspect` reports the local SHA, experiment version, explicit Firebase project/site, URL, and current tracking. `run` generates the static site, checks that Git has not changed, uploads only Hosting, verifies the live `ops-deployment.json` marker, and atomically updates `deployStatus` and `deploys/<timestamp>`. The existing study UI receives its eight-character `sha`, `version`, and `deployedAt`; the record also includes the full SHA, submodule revisions, and operation ID.
 
-`bun run deploy` and the dashboard's **Deploy Website** button use this same tracked Hosting service; they additionally require the Firebase CLI's selected project to match `firebase.config.json`. Database rules are a separate explicit deployment (`firebase deploy --only database --project <project-id>`).
+The dashboard's **Deploy Website** button uses this same tracked Hosting service and additionally requires the Firebase CLI's selected project to match `firebase.config.json`. Database rules are a separate explicit deployment (`firebase deploy --only database --project <project-id>`).
 
 ### Fix a deployment mismatch
 
@@ -21,7 +21,7 @@ The page compares the local eight-character Git SHA with `deployStatus.sha` in F
 
 1. Inspect `git status --short` and `git submodule status --recursive` from the experiment root, and `git -C core status --short` for core edits. Finish and commit the intended changes in their owning repositories, then commit any adopted submodule pointer in the experiment repository. Preserve unrelated work; if it prevents a clean checkout, resolve that with the researcher before deploying.
 2. Run `bun run ops -- deploy inspect`. Confirm the explicit project/site, local `sha`, configured `version`, and existing `tracked` deployment. If inspection reports a contact-email error, set the real researcher address as described [below](#configure-contact-and-version). If it reports a posted-version warning, review the published commit and follow the same section's version policy before continuing.
-3. Run `bun run ops -- deploy run` to upload and track the intended commit. **Deploy Website** uses the same operation. If that button or `bun run deploy` reports a Firebase CLI project mismatch, confirm the intended target in `firebase.config.json` and select it with `firebase use <project-id>` before retrying.
+3. Run `bun run ops -- deploy run` to upload and track the intended commit. **Deploy Website** uses the same operation. If that button reports a Firebase CLI project mismatch, confirm the intended target in `firebase.config.json` and select it with `firebase use <project-id>` before retrying.
 4. Verify that the result has `state: "tracked"`, its `fullSha` equals `git rev-parse HEAD`, and its project/site/version match the intended deployment. For an upload that succeeded but failed verification or tracking, use [reconciliation](#recover-an-interrupted-deployment) instead.
 5. Reload **Create New Study** after a CLI deployment or reconciliation so it rereads `deployStatus`. Expect **Deployed and ready to publish** with the current commit. If an old saved deployment error remains after a verified success, use **Dismiss Error**. If a draft's version differs from the configuration or deployment, recreate the draft with the current version before publication.
 
@@ -37,8 +37,6 @@ Set `contactEmail` in `epoch.config.ts` to a real researcher email. Missing, mal
 
 ```bash
 bun run ops -- deploy run --allow-version-reuse
-# Equivalent shortcut, with the selected-project check:
-bun run deploy --allow-version-reuse
 ```
 
 The warning remains on stderr when overridden. The dashboard offers a corresponding checkbox and rechecks before deployment/publication, including publication of an existing draft. Publication records the currently deployed SHA, so fixes between draft creation and posting are attributed to the build actually posted. A draft's version must match the current configuration and deployment before publication; recreate an outdated draft after changing version.

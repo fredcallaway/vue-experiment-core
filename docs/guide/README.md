@@ -64,7 +64,7 @@ The user usually has a dev server already running. Before starting one, check wh
 Before deploying or preparing recruitment, read [the operations guide](../../operations/README.md). From the project root:
 
 - `bun run ops -- deploy inspect` reports the target, source identity, and posted-version warnings.
-- `bun run ops -- deploy run` deploys static Hosting, verifies the live build, and records its SHA/version. `bun run deploy` uses the same service and also checks the Firebase CLI's selected project.
+- `bun run ops -- deploy run` deploys static Hosting, verifies the live build, and records its SHA/version.
 - `bun run ops -- --help` lists study/review draft and read-only investigation commands. Study publication and participant actions/payments remain final researcher actions in the web UI.
 
 If Create New Study reports **Not deployed**, **Git worktree is not clean**, or different current/deployed commits, follow [Fix a deployment mismatch](../../operations/README.md#fix-a-deployment-mismatch).
