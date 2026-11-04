@@ -1,3 +1,7 @@
+# Deployment build isolation
+
+- Production builds and generation use `.nuxt/production`, leaving the development server's `.nuxt` files intact. Generated files under Nuxt's `dist` alias are ignored by development watchers. The dashboard stays available while **Deploy Website** generates the site. Consumers inherit these settings from core; no code migration or raw-data change is required.
+
 # Condition pinning
 
 - Initial `condition.<key>` URL pins now retain their requested values, including after reloading a UI-selected pin. Pinned conditions take precedence over assignment; assignment cycles over unpinned conditions only, for `choice`, `permute`, and `assign`. No consumer-code migration or raw-data format change is required.

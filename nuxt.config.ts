@@ -2,6 +2,14 @@
 import { readDeploymentConfig } from './operations/experiment-config'
 
 export default defineNuxtConfig({
+  $production: {
+    // Generation must not clear the running development server's build files.
+    buildDir: '.nuxt/production',
+  },
+
+  // Nuxt generation creates this alias to .output/public; generated HTML must not trigger HMR.
+  ignore: ['dist'],
+
   // we want a standard single page application, no server-side rendering
   ssr: false,
 
