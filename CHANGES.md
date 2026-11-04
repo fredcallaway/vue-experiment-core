@@ -1,3 +1,7 @@
+# Condition pinning
+
+- Initial `condition.<key>` URL pins now retain their requested values, including after reloading a UI-selected pin. Pinned conditions take precedence over assignment; assignment cycles over unpinned conditions only, for `choice`, `permute`, and `assign`. No consumer-code migration or raw-data format change is required.
+
 # Template deployment command
 
 - The template's root package now uses `bun run ops -- deploy inspect` and `bun run ops -- deploy run` for deployment, without a separate `deploy` script. Existing projects can remove their `deploy` script and add `"ops": "bun core/operations/cli.ts"` if needed, or invoke `bun core/operations/cli.ts deploy run` directly. The dashboard's Deploy Website action is unchanged.

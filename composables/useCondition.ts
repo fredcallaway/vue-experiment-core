@@ -33,6 +33,7 @@ export const useConditions = createGlobalState(() => {
     options[key] = values
     const pinned = getPinnedCondition(key)
     isPinned[key] = pinned.value !== undefined
+    if (isPinned[key]) conditions[key] = pinned.value
     watchEffect(() => {
       if (isPinned[key]) {
         pinned.value = conditions[key]
