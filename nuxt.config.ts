@@ -2,9 +2,11 @@
 import { readDeploymentConfig } from './operations/experiment-config'
 
 export default defineNuxtConfig({
-  $production: {
-    // Generation must not clear the running development server's build files.
-    buildDir: '.nuxt/production',
+  $env: {
+    deployment: {
+      // Tracked deployment must not clear the running development server's build files.
+      buildDir: '.nuxt/production',
+    },
   },
 
   // Nuxt generation creates this alias to .output/public; generated HTML must not trigger HMR.

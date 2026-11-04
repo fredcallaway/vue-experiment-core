@@ -1,10 +1,14 @@
+# Fresh-install type generation
+
+- Installation and typechecking generate the standard `.nuxt` types expected by consumer `tsconfig.json` files. Tracked CLI/dashboard deployments select an isolated Nuxt environment and generate into `.nuxt/production`, keeping the running development server available. No consumer-code migration is required.
+
 # Event-table session identity
 
 - Epoch-start rows retain their session IDs in the session and version Events tables, including session links and session-ID filtering. Raw data and registered data exports are unchanged; no consumer-code migration is required.
 
 # Deployment build isolation
 
-- Production builds and generation use `.nuxt/production`, leaving the development server's `.nuxt` files intact. Generated files under Nuxt's `dist` alias are ignored by development watchers. The dashboard stays available while **Deploy Website** generates the site. Consumers inherit these settings from core; no code migration or raw-data change is required.
+- Tracked deployments generate into `.nuxt/production`, leaving the development server's `.nuxt` files intact. Generated files under Nuxt's `dist` alias are ignored by development watchers. The dashboard stays available while **Deploy Website** generates the site. Consumers inherit these settings from core; no code migration or raw-data change is required.
 
 # Condition pinning
 

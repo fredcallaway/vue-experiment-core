@@ -11,7 +11,7 @@ bun run ops -- deploy run
 
 Both commands require a clean committed checkout, including matching initialized submodules. `inspect` reports the local SHA, experiment version, explicit Firebase project/site, URL, and current tracking. `run` generates the static site, checks that Git has not changed, uploads only Hosting, verifies the live `ops-deployment.json` marker, and atomically updates `deployStatus` and `deploys/<timestamp>`. The existing study UI receives its eight-character `sha`, `version`, and `deployedAt`; the record also includes the full SHA, submodule revisions, and operation ID.
 
-The dashboard's **Deploy Website** button uses this same tracked Hosting service and additionally requires the Firebase CLI's selected project to match `firebase.config.json`. Database rules are a separate explicit deployment (`firebase deploy --only database --project <project-id>`).
+The dashboard's **Deploy Website** button uses this same tracked Hosting service and additionally requires the Firebase CLI's selected project to match `firebase.config.json`. Deployment passes `--envName deployment` to the project's Nuxt `generate` script, selecting `.nuxt/production` without changing the standard `.nuxt` directory used by installation, typechecking, and development. Database rules are a separate explicit deployment (`firebase deploy --only database --project <project-id>`).
 
 ### Fix a deployment mismatch
 

@@ -114,7 +114,7 @@ export class DeploymentOperations {
     process.stderr.write(`Deployment ${deployment.id}; recovery record: ${recordPath}\n`)
     const temporary = await mkdtemp(resolve(tmpdir(), 'experiment-hosting-'))
     try {
-      await this.io.run(this.root, 'bun', ['run', 'generate'])
+      await this.io.run(this.root, 'bun', ['run', 'generate', '--envName', 'deployment'])
       await unchanged(this.root, snapshot)
       await readFile(resolve(this.root, '.output/public/index.html'))
       await writeJson(resolve(this.root, '.output/public/ops-deployment.json'), deployment)

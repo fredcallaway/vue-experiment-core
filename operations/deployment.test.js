@@ -49,6 +49,7 @@ async function deploymentFixture(options = {}) {
       calls.push({ executable, args })
       if (executable === 'bun' && args[0] === '--eval') return command(cwd, executable, args)
       if (executable === 'bun' && args[0] === 'run') {
+        expect(args).toEqual(['run', 'generate', '--envName', 'deployment'])
         if (options.buildFails) throw new Error('build failed')
         await mkdir(resolve(root, '.output/public'), { recursive: true })
         await writeFile(resolve(root, '.output/public/index.html'), '<html>test</html>')
