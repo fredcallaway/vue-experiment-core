@@ -1,3 +1,7 @@
+# Persistent project Firebase credentials
+
+- Configure a lab service-account key once with `bun run ops -- firebase-auth configure --key <file>`. Supported CLI and dashboard deployments automatically read the private project key and isolate cached human Firebase credentials, with no terminal exports or server restart needed. The key is validated against the configured project and kept in Git metadata outside tracked/public files. Projects using an administrator's existing CLI login continue to work until a project key is configured; no consumer-code or raw-data migration is required.
+
 # Fresh-install type generation
 
 - Installation and typechecking generate the standard `.nuxt` types expected by consumer `tsconfig.json` files. Tracked CLI/dashboard deployments select an isolated Nuxt environment and generate into `.nuxt/production`, keeping the running development server available. No consumer-code migration is required.

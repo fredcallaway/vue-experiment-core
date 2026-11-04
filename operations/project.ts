@@ -2,12 +2,14 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import { firebaseEnvironment } from './firebase-auth'
 
 const exec = promisify(execFile)
 
 export async function command(root: string, executable: string, args: string[]) {
   try {
-    const { stdout, stderr } = await exec(executable, args, { cwd: root, maxBuffer: 32 * 1024 * 1024 })
+    const env = executable === 'firebase' ? await firebaseEnvironment(root) : process.env
+    const { stdout, stderr } = await exec(executable, args, { cwd: root, env, maxBuffer: 32 * 1024 * 1024 })
     if (stderr) process.stderr.write(stderr)
     return stdout.trim()
   } catch (error: any) {

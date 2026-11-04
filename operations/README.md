@@ -2,6 +2,20 @@
 
 These local JSON commands expose tracked static Hosting deployment, study preparation, and review investigation. Run them from the experiment project's root. Projects without an `ops` package script can invoke `bun core/operations/cli.ts <resource> <action>` directly; adding the script is optional. `bun run ops -- --help` lists commands. Results go to stdout; diagnostics go to stderr. Prolific publication, participant actions, bonuses, and other money-spending operations have no CLI command.
 
+## Configure Firebase authentication once
+
+For a lab-managed project, configure the administrator-provided service-account JSON key once per checkout:
+
+```bash
+bun run ops -- firebase-auth configure --key "/absolute/path/to/service-account.json"
+```
+
+The command validates the key's project against `firebase.config.json` and stores a private copy at the Git metadata path `firebase-auth/service-account.json` with mode 0600. `git rev-parse --git-path firebase-auth` reports its directory, including in worktrees. Configuration changes no tracked files and needs no source commit.
+
+Supported CLI deployment commands and the dashboard load this key automatically for every Firebase CLI invocation, including the selected-project check. They use a project-private Firebase CLI configuration directory and clear inherited `FIREBASE_TOKEN`, so cached human credentials cannot override a configured project key. Each operation reads the current key; rerun the configuration command to replace it without restarting the dashboard. Missing or invalid configured credentials fail instead of falling back to a human login.
+
+After setup, normal development and deployment commands work from any shell without credential exports. Database access and rules remain separate from Hosting authentication. The [setup guide](../../README.md#use-a-lab-managed-project-as-a-student) covers administrator roles and project setup.
+
 ## Deploy the site
 
 ```bash

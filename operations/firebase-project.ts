@@ -1,12 +1,11 @@
 import { execFileSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { firebaseEnvironment } from './firebase-auth'
 
 type RunCommand = (command: string, args: string[]) => string
 
-const runCommand: RunCommand = (command, args) => execFileSync(command, args, { encoding: 'utf8' })
-
-export async function assertFirebaseProjectMatchesCli(root: string, run: RunCommand = runCommand): Promise<string> {
+export async function assertFirebaseProjectMatchesCli(root: string, run?: RunCommand): Promise<string> {
   const configPath = resolve(root, 'firebase.config.json')
   const config = JSON.parse(await readFile(configPath, 'utf8'))
   const projectId = config.projectId
@@ -14,9 +13,13 @@ export async function assertFirebaseProjectMatchesCli(root: string, run: RunComm
     throw new Error(`Set a Firebase project ID in ${configPath} before deploying`)
   }
 
+  const env = run ? undefined : await firebaseEnvironment(root)
   let activeProject: string
   try {
-    const selection = JSON.parse(run('firebase', ['use', '--json']))
+    const output = run
+      ? run('firebase', ['use', '--json'])
+      : execFileSync('firebase', ['use', '--json'], { cwd: root, env, encoding: 'utf8' })
+    const selection = JSON.parse(output)
     if (selection.status !== 'success' || typeof selection.result !== 'string') throw new Error()
     activeProject = selection.result
   } catch {

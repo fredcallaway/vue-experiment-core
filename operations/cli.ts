@@ -6,6 +6,7 @@ import { MockProlificReader, ProlificHttpReader } from './prolific-reader'
 import { ReviewOperations } from './review'
 import { DeploymentOperations } from './deployment'
 import { withOperationLock } from './project'
+import { configureFirebaseCredentials } from './firebase-auth'
 
 const args = process.argv.slice(2)
 if (args[0] === '--') args.shift()
@@ -28,6 +29,7 @@ const readJsonInput = async () => {
 }
 
 const usage = () => `Usage:
+  bun run ops -- firebase-auth configure --key <service-account.json>
   bun run ops -- deploy inspect
   bun run ops -- deploy run [--allow-version-reuse]
   bun run ops -- deploy reconcile --id <operation-id>
@@ -47,6 +49,7 @@ const main = async () => {
   if (!resource || !action) throw new Error(usage())
 
   const allowed: Record<string, string[]> = {
+    'firebase-auth configure': ['--key'],
     'deploy inspect': [], 'deploy run': ['--allow-version-reuse'], 'deploy reconcile': ['--id'],
     'study-draft get': [], 'study-draft update': ['--json', '--file'],
     'review-draft get': ['--study'], 'review-draft update': ['--study', '--json', '--file'],
@@ -63,6 +66,12 @@ const main = async () => {
     if (!args[++i] || args[i]!.startsWith('--')) {
       throw new Error(`Missing value for ${flag}`)
     }
+  }
+
+  if (resource === 'firebase-auth') {
+    const result = await configureFirebaseCredentials(process.cwd(), option('--key') ?? '')
+    console.log(JSON.stringify(result, null, 2))
+    return
   }
 
   const database = await FirebaseRestDatabase.fromProject()
