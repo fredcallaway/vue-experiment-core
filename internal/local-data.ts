@@ -230,6 +230,7 @@ export const makeEventList = (session: SessionData) => {
       // currentEpoch = typeof payload.id === 'string' ? payload.id as string : currentEpoch
       currentEpoch = assertString(payload.id)
       return {
+        sessionId: session.meta.sessionId,
         time: event.timestamp,
         timeRaw: event.timestamp,
         epoch: currentEpoch,
