@@ -1,3 +1,7 @@
+# Debug-session persistence
+
+- Initialized debug sessions now retain unacknowledged event batches across reloads, just like live sessions. Recovery queues are separated by mode, and existing live recovery queues remain readable. Firebase events continue using separate `debug/` and `live/` namespaces; no raw-data migration is required.
+
 # Automatic Prolific URL validation
 
 - `FIREBASE_DEFAULT` requires a single default Hosting site whose site ID matches `firebase.config.json`'s `projectId`. Prolific URL generation now throws an actionable error for a nondefault site, target alias, or multiple-site configuration. Set the study draft's `baseUrl` to an explicit HTTPS URL for another site or custom domain. Standard default-site setups and existing raw data require no migration.

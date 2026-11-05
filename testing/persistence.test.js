@@ -98,9 +98,10 @@ if (process.env.EXPERIMENT_PERSISTENCE_TEST_CHILD !== '1') {
     const promise = new Promise((yes, no) => { resolve = yes; reject = no })
     return { promise, resolve, reject }
   }
-  const stored = () => JSON.parse(localStorage.getItem(`dataWriter-${meta.sessionId}`))
-  const markerPath = () => `live/other/${meta.sessionId}/marker`
-  const metaPath = () => `live/meta/${meta.sessionId}`
+  const stored = () => JSON.parse(localStorage.getItem(meta.mode === 'live'
+    ? `dataWriter-${meta.sessionId}` : `dataWriter:debug:${meta.sessionId}`))
+  const markerPath = () => `${meta.mode}/other/${meta.sessionId}/marker`
+  const metaPath = () => `${meta.mode}/meta/${meta.sessionId}`
   const start = async () => {
     expect(await scope.run(() => writer.initializeSession(meta))).toBe(true)
     await writer.flush()
@@ -307,7 +308,8 @@ if (process.env.EXPERIMENT_PERSISTENCE_TEST_CHILD !== '1') {
     expect(values[metaPath()].completionTime).toBe(meta.completionTime)
   })
 
-  test('live recovery storage retains an unacknowledged batch across a fresh writer', async () => {
+  test.each(['live', 'debug'])('%s recovery retains an unacknowledged batch across a fresh writer', async mode => {
+    meta.mode = mode
     await start()
     writer.updateOther('marker', 'recover after reload')
     const ack = deferred()
@@ -326,7 +328,29 @@ if (process.env.EXPERIMENT_PERSISTENCE_TEST_CHILD !== '1') {
     expect(values[markerPath()]).toBe('recover after reload')
   })
 
-  test('background reconnect flush uses the same acknowledgment and recovery contract', async () => {
+  test('debug recovery cannot flush a live queue with the same session ID', async () => {
+    await start()
+    writer.updateOther('marker', 'live pending')
+    online.value = false
+    expect(await writer.flush()).toBe(false)
+    const liveKey = `dataWriter-${meta.sessionId}`
+    const liveQueue = localStorage.getItem(liveKey)
+    scope.stop()
+    scope = Vue.effectScope()
+    writer = scope.run(() => new DataWriter())
+    meta = Vue.reactive({ ...Vue.toRaw(meta), mode: 'debug' })
+    online.value = true
+    await start()
+    writer.updateOther('marker', 'debug marker')
+    expect(await writer.flush()).toBe(true)
+    expect(localStorage.getItem(liveKey)).toBe(liveQueue)
+    expect(values[markerPath()]).toBe('debug marker')
+    expect(writes.every(batch => Object.keys(batch).every(path => path.startsWith('debug/')))).toBe(true)
+    expect(values[`live/other/${meta.sessionId}/marker`]).toBeUndefined()
+  })
+
+  test.each(['live', 'debug'])('%s reconnect flush uses the same acknowledgment and recovery contract', async mode => {
+    meta.mode = mode
     await start()
     online.value = false
     writer.updateOther('marker', 'background reconnect')
