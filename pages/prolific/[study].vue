@@ -269,8 +269,8 @@ const applyCsvBonuses = async () => {
 const allData = useAllData('live')
 
 const sessions = computed(() => {
-  if (!allData.sessions.value) return null
-  return Object.values(allData.sessions.value).filter(session => session.studyId === studyId)
+  if (allData.isLoading.value) return null
+  return Object.values(allData.sessions.value ?? {}).filter(session => session.studyId === studyId)
 })
 
 const sessionsBySessionId = computed(() => {
@@ -987,9 +987,6 @@ const versions = computed(() => {
         </TutorialTarget>
       </div>
       <!-- Submissions Table -->
-      <div v-else-if="allData.isMissing.value">
-        failed to load submissions; check database
-      </div>
       <div v-else-if="allData.isLoading.value">
         loading submissions...
       </div>
@@ -1014,6 +1011,10 @@ const versions = computed(() => {
             />
           </div>
         </div>
+
+        <p v-if="allData.isMissing.value" class="my-2 text-gray-500">
+          No experiment sessions have been recorded yet.
+        </p>
 
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
