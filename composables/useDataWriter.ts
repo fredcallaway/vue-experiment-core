@@ -28,9 +28,7 @@ export function useDataWriter(): DataWriter {
   return dbInstance
 }
 
-const storageKey = (mode: DataMode, sessionId: string) => mode === 'live'
-  ? `dataWriter-${sessionId}`
-  : `dataWriter:debug:${sessionId}`
+const storageKey = (sessionId: string) => `dataWriter-${sessionId}`
 
 // Recovery queues that were never flushed accumulate in localStorage and can eventually exhaust
 // the origin's quota, which breaks unrelated features (see core/CHANGES.md). A queue is only
@@ -61,14 +59,14 @@ const queueTimestamp = (updates: Record<string, unknown>): number | null => {
 // Drop other sessions' recovery queues once they are older than STALE_QUEUE_MAX_AGE_MS. Deliberately
 // conservative: a queue whose age cannot be established is kept, because deleting it would discard
 // participant data that never reached the database.
-const sweepStaleQueues = (mode: DataMode, currentSessionId: string) => {
+const sweepStaleQueues = (currentSessionId: string) => {
   if (typeof localStorage === 'undefined') return
 
-  const keep = storageKey(mode, currentSessionId)
+  const keep = storageKey(currentSessionId)
   const now = Date.now()
 
   for (const key of Object.keys(localStorage)) {
-    if ((!key.startsWith('dataWriter-') && !key.startsWith('dataWriter:debug:')) || key === keep) continue
+    if (!key.startsWith('dataWriter-') || key === keep) continue
 
     const raw = localStorage.getItem(key)
     if (!raw) continue
@@ -189,18 +187,22 @@ export class DataWriter {
       console.log('initializeSession: found existing updates', toRaw(currentUpdates))
     }
 
-    // Both modes retain pending events across reloads. Keep the existing live key for recovery compatibility.
-    sweepStaleQueues(meta.mode, meta.sessionId)
-    this.updates = useStorage(storageKey(meta.mode, meta.sessionId), {}, localStorage, {
-      flush: 'sync',
-      serializer: {
-        read: (v: string) => v ? JSON.parse(v) : {},
-        write: (v: Record<string, any>) => JSON.stringify(v),
+    // in live mode, the queue is held in local storage so it can be recovered after a refresh
+    if (meta.mode === 'live') {
+      // Reclaim quota from queues abandoned by earlier sessions. Runs before we open this
+      // session's queue so it can never touch the one we are about to use.
+      sweepStaleQueues(meta.sessionId)
+      this.updates = useStorage(storageKey(meta.sessionId), {}, localStorage, {
+        flush: 'sync',
+        serializer: {
+          read: (v: string) => v ? JSON.parse(v) : {},
+          write: (v: Record<string, any>) => JSON.stringify(v),
+        }
+      })
+      if (Object.keys(this.updates.value).length > 0) {
+        console.log('recovered updates from localStorage', this.updates.value)
+        logEvent('DataWriter.recoveredUpdates', { numUpdates: Object.keys(this.updates.value).length })
       }
-    })
-    if (Object.keys(this.updates.value).length > 0) {
-      console.log('recovered updates from localStorage', this.updates.value)
-      logEvent('DataWriter.recoveredUpdates', { numUpdates: Object.keys(this.updates.value).length })
     }
 
     // migrate updates from __PREINIT__ to the new sessionId
