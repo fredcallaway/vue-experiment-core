@@ -1,3 +1,7 @@
+# Automatic Prolific URL validation
+
+- `FIREBASE_DEFAULT` requires a single default Hosting site whose site ID matches `firebase.config.json`'s `projectId`. Prolific URL generation now throws an actionable error for a nondefault site, target alias, or multiple-site configuration. Set the study draft's `baseUrl` to an explicit HTTPS URL for another site or custom domain. Standard default-site setups and existing raw data require no migration.
+
 # Mouse trace initialization
 
 - Saved mouse trajectories discard their first sample to remove the tracker's synthetic initialization point. Coordinate and timestamp arrays remain aligned; existing raw recordings and their format are unchanged. No consumer-code migration is required.

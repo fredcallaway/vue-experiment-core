@@ -4,6 +4,7 @@ import { hashString } from '../utils/misc'
 
 import { z } from 'zod'
 import firebaseConfig from '~/firebase.config.json'
+import firebaseHostingConfig from '~/firebase.json'
 
 export const PROLIFIC_FEE = 1.333333 // they say it's 33.3% ...they lie
 
@@ -61,6 +62,13 @@ export const DEFAULT_PROLIFIC_CONFIG: ProlificConfig = {
 
 export const getProlificBaseUrl = (config: ProlificConfig): string => {
   if (config.baseUrl === 'FIREBASE_DEFAULT') {
+    const hosting = firebaseHostingConfig.hosting
+    assert(
+      hosting != null && typeof hosting === 'object' && !Array.isArray(hosting) &&
+        !('target' in hosting) && (!('site' in hosting) || hosting.site === firebaseConfig.projectId),
+      'FIREBASE_DEFAULT requires a single default Firebase Hosting site whose site ID matches projectId. ' +
+        'Set the Prolific study draft baseUrl to an explicit HTTPS URL for another Hosting site.',
+    )
     return `https://${firebaseConfig.projectId}.web.app/`
   }
   assert(config.baseUrl.startsWith('https://'), 'Prolific base URL must start with https://')
