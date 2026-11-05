@@ -2,7 +2,7 @@
 
 Use this procedure when the lab manager asks you to prepare a new student's experiment setup. The result is one block of text the manager can copy and send privately. The student pastes it into the installer or gives it to their coding agent, following the [template README](../../../README.md#create-your-experiment).
 
-Run the preparation script from a current template checkout. The source project can be elsewhere on disk. It must already have a Firebase project dedicated to the student's experiment, a web app, Realtime Database, a Hosting site, and a deployment service account. Project provisioning is a separate administrator operation.
+Run the preparation script from a current template checkout. The source project can be elsewhere on disk. It must already have a Firebase project dedicated to the student's experiment, a web app, Realtime Database, a Hosting site, and a deployment service account. For independent use, [set up Firebase first](firebase-setup.md).
 
 ## Gather the information
 
