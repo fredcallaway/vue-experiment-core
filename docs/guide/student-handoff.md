@@ -4,6 +4,8 @@ Use this procedure when the lab manager asks for a student's experiment setup or
 
 The manager forwards the block privately. The student pastes it into the installer or gives it to their coding agent, following the [template README](../../../README.md#create-your-experiment). Creating the student's local experiment checkout is the installer's later job; preparing the block does not require running that installer on the manager's machine.
 
+If the experiment requires audio or other file uploads, include the optional [Storage setup](audio-and-files.md#enable-firebase-storage-for-a-project). The default handoff provisions Hosting and Realtime Database; the receiving project also needs the Storage rules entry described there before live collection. Creating a setup block alone does not authorize upgrading billing.
+
 ## Confirm project details and source
 
 Use the manager's supplied project name and researcher contact email. Resolve the remaining settings as follows:

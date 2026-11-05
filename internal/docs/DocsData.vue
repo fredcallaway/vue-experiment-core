@@ -82,6 +82,26 @@ import DocsPage from './DocsPage.vue'
       </p>
     </DocsPage>
 
+    <DocsPage name="audio">
+      <h2>Audio and other files</h2>
+      <p>
+        Use <code>useAudioRecorder()</code> for microphone access, recording, and playback.
+        Recording starts after permission is granted and releases the microphone when stopped
+        or when the component is removed. Participants can listen before continuing.
+      </p>
+      <p>
+        Save audio and other Blobs with <code>useFirebaseStorage().upload(filename, blob)</code>.
+        Live trials must wait for an acknowledged upload before advancing. Keep the recording
+        available for retry if saving fails, and log the returned file path in a semantic event.
+        Development previews keep audio local and explicitly report that nothing was uploaded.
+      </p>
+      <p>
+        Storage needs a bucket, anonymous Firebase authentication, and the supplied Storage rules.
+        Your agent can follow <code>core/docs/guide/audio-and-files.md</code> to configure these.
+        Try the <NuxtLink to="/examples/audio">audio example</NuxtLink> to record and play back a response.
+      </p>
+    </DocsPage>
+
     <DocsPage name="views">
       <h2>Data views</h2>
       <p>

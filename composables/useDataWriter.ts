@@ -155,6 +155,10 @@ export class DataWriter {
     return this.meta.value !== null
   }
 
+  get writable() {
+    return this.initialized && this.mode !== 'dummy' && !this.disabled && !this.superseded.value
+  }
+
   get events(): ReadonlyArray<LogEvent> {
     return this._events
   }

@@ -62,6 +62,11 @@ export const examples: Record<string, ExampleEntry> = {
     summary: 'Per-trial mouse trajectories with the MouseTracker component.',
     component: () => import('./MouseTrackingExample.vue'),
   },
+  audio: {
+    title: 'Audio recording',
+    summary: 'Microphone permission, recording, playback, and acknowledged Firebase Storage uploads with retry.',
+    component: () => import('./AudioExample.vue'),
+  },
 }
 
 export const exampleSlugs = Object.keys(examples)

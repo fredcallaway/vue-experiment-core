@@ -4,6 +4,8 @@ If you have a setup block from your lab manager, follow the [README](../../../RE
 
 Keep a clean checkout of the template, including its core submodule. Create a separate provisioning directory outside that checkout and copy the template's `firebase.json` and `database.rules.json` into it. Run the Firebase commands below from that provisioning directory. Keeping the template checkout unchanged lets the setup block refer to its published revision.
 
+Experiments that upload audio or other files also need the optional [Firebase Storage setup](audio-and-files.md#enable-firebase-storage-for-a-project), including a bucket, anonymous authentication, and Storage rules.
+
 ## Create the project and database
 
 Install the [Firebase CLI](https://firebase.google.com/docs/cli), sign in, and choose a unique project ID:

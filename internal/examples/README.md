@@ -71,6 +71,10 @@ Instructions:
 
 Other:
 
+- `AudioExample.vue` + `AudioTrial.vue` (`/examples/audio`) — `useAudioRecorder` for microphone access,
+  recording and playback; `useFirebaseStorage().upload` for acknowledged session-scoped
+  file uploads. Includes retry and a local preview that never uploads. Read
+  [audio and files setup](../../docs/guide/audio-and-files.md) before live collection.
 - `MouseTrackingExample.vue` (`/examples/mouse-tracking`) — `<MouseTracker />` per trial
   epoch; saved to the session's `other/mouse` data.
 - `SurveysExample.vue` (`/examples/surveys`) — `ESurveyWrapper` + `ESurveyButtons` /

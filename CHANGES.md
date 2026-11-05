@@ -2,6 +2,11 @@
 
 - `FIREBASE_DEFAULT` requires a single default Hosting site whose site ID matches `firebase.config.json`'s `projectId`. Prolific URL generation now throws an actionable error for a nondefault site, target alias, or multiple-site configuration. Set the study draft's `baseUrl` to an explicit HTTPS URL for another site or custom domain. Standard default-site setups and existing raw data require no migration.
 
+# Audio recording and Firebase Storage
+
+- Added `useAudioRecorder()` for microphone permission, recording, playback, and lifecycle cleanup, and `useFirebaseStorage().upload(filename, blob)` for acknowledged session-scoped file uploads. Development runs return an explicit unsaved result without contacting Firebase. Live uploads require an active session, sign in with Firebase Authentication as needed, and reject on failure. Recording components must await uploads before advancing; completion's event flush does not save Blobs.
+- Storage is opt-in: configure a bucket and Anonymous authentication, copy `core/operations/storage.rules` into the project, register it in `firebase.json`, and deploy the reviewed rules as an administrator. See [audio and files](docs/guide/audio-and-files.md) and `/examples/audio`. Existing consumers and raw data require no migration.
+
 # Mouse trace initialization
 
 - Saved mouse trajectories discard their first sample to remove the tracker's synthetic initialization point. Coordinate and timestamp arrays remain aligned; existing raw recordings and their format are unchanged. No consumer-code migration is required.
