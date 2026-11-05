@@ -1,41 +1,121 @@
 # Prepare a student handoff
 
-Use this procedure when the lab manager asks you to prepare a new student's experiment setup. The result is one block of text the manager can copy and send privately. The student pastes it into the installer or gives it to their coding agent, following the [template README](../../../README.md#create-your-experiment).
+Use this procedure when the lab manager asks for a student's experiment setup or says **“Make me a setup block.”** That request is enough to create a fresh Firebase project, provision its resources and deployment key, and return one complete private block. Carry out the procedure without asking the manager to provide a project name, contact email, configuration, or key when the defaults below resolve them. Explicit instructions to review documentation, dry-run, or avoid resource creation take precedence.
 
-Run the preparation script from a current template checkout. The source project can be elsewhere on disk. It must already have a Firebase project dedicated to the student's experiment, a web app, Realtime Database, a Hosting site, and a deployment service account. For independent use, [set up Firebase first](firebase-setup.md).
+The manager forwards the block privately. The student pastes it into the installer or gives it to their coding agent, following the [template README](../../../README.md#create-your-experiment). Creating the student's local experiment checkout is the installer's later job; preparing the block does not require running that installer on the manager's machine.
 
-## Gather the information
+## Choose defaults and source
 
-Confirm these with the manager or read them from the configured project:
+Use values supplied in the request first. Otherwise:
 
-- **Project name** — the new local folder name, using letters, digits, and hyphens.
-- **Researcher contact email** — the real address to show participants; use the intended value from `epoch.config.ts`.
-- **Firebase web configuration** — the complete `firebase.config.json`, including the database URL.
-- **Hosting site** — resolved from `firebase.json` and `.firebaserc`; the default site is the Firebase project ID.
-- **Deployment key** — the project's service-account JSON key. Use the already configured key in Git metadata, or obtain the key's file path from the manager.
-- **Template source** — a committed template revision and its clone URL. The generator records the current template HEAD and defaults to the public template repository.
+- **Project and folder name:** generate `fc-experiment-YYYYMMDD-xxxx`, using today's date and four random lowercase letters/digits. Use the same value for the Firebase project ID, Hosting site, and student's default local folder. Retry with a new suffix if the ID is unavailable.
+- **Researcher contact email:** use the real participant-facing address in an explicitly selected source project's `epoch.config.ts`, or the authenticated manager's Firebase account email. Ignore starter placeholders. Read the account email from the existing CLI session; ask only if neither source provides a real address.
+- **Administrator account:** reuse the manager's existing Firebase CLI login. Use `firebase login:list` for account discovery; its `--json` output includes authentication tokens and must not be printed. Request interactive login only if authentication is actually missing or expired.
+- **Database region:** use the project's documented region, otherwise `us-central1`.
+- **Resources:** create a new project unless the manager explicitly selects an existing one. Do not choose the template's project, an earlier test project, or another experiment merely because credentials are available.
 
-The service account needs the project-scoped Hosting Admin and API Keys Viewer roles. Confirm the database exists and its rules support the intended experiment. Hosting credentials do not authorize the current database adapters; keep database-rule changes separate. Never reuse the template's Firebase project or an unrelated research project's credentials.
+State the selected name and contact in a progress update and continue. Missing optional student details are not a blocker. Stop for a concrete authentication, permission, quota, or policy failure that cannot be resolved within the request; report what was completed and the exact remaining action.
 
-Before sending a block, confirm that its template commit and pinned core commit are available from the stated repositories to the student. Commit local changes and publish the release through the normal release process first. A local-only commit cannot be installed from the public URL. For an internal test, `--repository` can name an absolute local clone path.
+Run the preparation script from a clean, committed template checkout. Check that its HEAD and pinned core commit are available from their stated repositories. Follow the repository's release process for any required publication; do not silently substitute an older revision. A local-only commit cannot be installed from the public URL. If publication remains blocked, finish the private preparation and identify the unpublished revisions before presenting the block as ready to send. For an explicitly local installer test, `--repository` can name an absolute local clone path.
+
+## Provision the Firebase project
+
+If the manager explicitly selected an existing project, inspect its resources and configured deployment key first. Reuse the completed setup and provision only missing requirements. A fully configured project can proceed directly to verification and block generation.
+
+Create a private provisioning directory outside Git repositories, with mode `0700`. Keep the key and generated block there with mode `0600`. Copy the template's `firebase.json` and `database.rules.json` into it, and run all provisioning commands there. Leave the template checkout's Firebase configuration unchanged.
+
+Use the selected name as `EXPERIMENT_FIREBASE_PROJECT_ID`. Install the Firebase CLI if necessary, then:
+
+```bash
+firebase projects:create "$EXPERIMENT_FIREBASE_PROJECT_ID" --display-name "$EXPERIMENT_FIREBASE_PROJECT_ID"
+firebase init database --project "$EXPERIMENT_FIREBASE_PROJECT_ID"
+firebase apps:create WEB experiment --project "$EXPERIMENT_FIREBASE_PROJECT_ID"
+```
+
+Run `firebase init database` in a PTY and answer its prompts yourself: use `database.rules.json`, create the first database in the selected region, and keep the copied rules when asked about overwriting them. See [first-database initialization](../hiccups/initialize-project.md). The standalone `database:instances:create` command requires an existing default database, so it cannot create the first one.
+
+For this new empty project, deploy the copied template rules with `firebase deploy --only database --project "$EXPERIMENT_FIREBASE_PROJECT_ID"`. The template's current rules permit unauthenticated reads and writes until their configured expiry; state this access model in the handoff summary. Hosting credentials do not authorize the current database adapters. Changing the database access design is separate work.
+
+Record the new web App ID and download its complete SDK configuration to a previously nonexistent file:
+
+```bash
+firebase apps:sdkconfig WEB "$EXPERIMENT_FIREBASE_APP_ID" --project "$EXPERIMENT_FIREBASE_PROJECT_ID" --out firebase.config.json
+firebase database:instances:list --project "$EXPERIMENT_FIREBASE_PROJECT_ID"
+firebase hosting:sites:list --project "$EXPERIMENT_FIREBASE_PROJECT_ID"
+```
+
+Confirm `firebase.config.json` contains the new project's `projectId`, `appId`, and exact `databaseURL`; add the database URL from the instance metadata if it is absent. Use the default Hosting site named after the project ID. If it is absent, create it with `firebase hosting:sites:create "$EXPERIMENT_FIREBASE_PROJECT_ID" --project "$EXPERIMENT_FIREBASE_PROJECT_ID"`. Set `hosting.site` in the provisioning copy of `firebase.json` to that site, retaining `.output/public` and the single-page-app rewrite. Write `.firebaserc` with `projects.default` set to the new project ID.
+
+Create a dedicated `experiment-deployer` service account with the project-scoped roles `roles/firebasehosting.admin` and `roles/serviceusage.apiKeysViewer`, then create its JSON key. If an authenticated Google Cloud CLI is available, use the commands in [Create deployment credentials](firebase-setup.md#create-deployment-credentials), keeping its existing login. A missing `gcloud` installation does not require another manager interaction: the existing Firebase CLI administrator session can authenticate the Google REST APIs as described below.
+
+### Use the Firebase administrator session for IAM
+
+For an agent using the installed Firebase CLI, resolve its executable and inspect that installation's `lib/auth.js`. The following Node pattern uses the existing login without displaying tokens or creating another account. It relies on Firebase CLI internals, so verify these exports against the installed version first. Keep any task script in the private provisioning workspace.
+
+```bash
+export EXPERIMENT_FIREBASE_CLI="$(command -v firebase)"
+```
+
+```js
+import { realpath, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+
+const require = createRequire(await realpath(process.env.EXPERIMENT_FIREBASE_CLI))
+const auth = require('../auth.js')
+const account = auth.getGlobalDefaultAccount()
+if (!account) throw new Error('Firebase administrator login required')
+const token = await auth.getAccessToken(account.tokens.refresh_token, ['https://www.googleapis.com/auth/cloud-platform'])
+
+async function api(url, body) {
+  const response = await fetch(url, {
+    method: body === undefined ? 'GET' : 'POST',
+    headers: { Authorization: `Bearer ${token.access_token}`, 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(`Google API request failed: HTTP ${response.status}: ${result.error?.message}`)
+  return result
+}
+```
+
+Use that in-memory `api` helper for these operations, replacing `PROJECT_ID` and `SERVICE_ACCOUNT_EMAIL` with the new project's values:
+
+1. Enable IAM with `POST https://serviceusage.googleapis.com/v1/projects/PROJECT_ID/services/iam.googleapis.com:enable`, body `{}`. Poll the returned operation until complete using `GET https://serviceusage.googleapis.com/v1/OPERATION_NAME`.
+2. [Create the service account](https://docs.cloud.google.com/iam/docs/reference/rest/v1/projects.serviceAccounts/create) with `POST https://iam.googleapis.com/v1/projects/PROJECT_ID/serviceAccounts`, body `{ "accountId": "experiment-deployer", "serviceAccount": { "displayName": "Experiment deployer" } }`. Record its returned email.
+3. Fetch the project's policy with `POST https://cloudresourcemanager.googleapis.com/v1/projects/PROJECT_ID:getIamPolicy`, body `{ "options": { "requestedPolicyVersion": 3 } }`. Preserve the full policy, including its `etag`, bindings, and conditions; add `serviceAccount:SERVICE_ACCOUNT_EMAIL` to unconditional bindings for the two roles above. [Write the updated policy](https://docs.cloud.google.com/resource-manager/reference/rest/v1/projects/setIamPolicy) with `POST https://cloudresourcemanager.googleapis.com/v1/projects/PROJECT_ID:setIamPolicy`, body `{ "policy": UPDATED_POLICY }`. On a policy conflict, fetch and merge again.
+4. [Create the key](https://docs.cloud.google.com/iam/docs/reference/rest/v1/projects.serviceAccounts.keys/create) with `POST https://iam.googleapis.com/v1/projects/PROJECT_ID/serviceAccounts/SERVICE_ACCOUNT_EMAIL/keys`, body `{ "privateKeyType": "TYPE_GOOGLE_CREDENTIALS_FILE" }`. Decode the response's `privateKeyData` directly into the private workspace, for example `await writeFile(keyPath, Buffer.from(result.privateKeyData, 'base64'), { mode: 0o600, flag: 'wx' })`. Do not print the response or the decoded key.
+
+Wait for API enablement and IAM propagation before testing. On an uncertain creation response, inspect the selected project's resources before retrying so the workflow does not create duplicate projects, accounts, or keys. Keep administrator tokens out of the handoff; it contains only the new project's service-account key.
+
+## Verify the provisioned project
+
+Before producing the block:
+
+- Check the web config, database URL, Hosting site, service-account email, and key `project_id` all identify the new project.
+- Read back the service account's two project-level role bindings and the deployed database rules.
+- Run `firebase hosting:sites:list --project PROJECT_ID` in a child process with a fresh private `HOME`/`XDG_CONFIG_HOME`, `GOOGLE_APPLICATION_CREDENTIALS` set to the new key, and inherited `FIREBASE_TOKEN` cleared. This must succeed without the manager's cached login. Do not change the parent shell or global Firebase login.
+- Confirm no credentials were written inside a source checkout. Keep resource IDs and non-secret verification evidence in the work record; keep the key and block in their private directory.
+
+This verifies provisioning and service-account access. It does not deploy the experiment, test a participant session, or post a Prolific study.
 
 ## Produce the block
 
-Choose an output path outside Git repositories, in an existing private directory. From the template checkout, run:
+From the clean template checkout, pass the provisioning directory and its new key:
 
 ```bash
 node scripts/prepare-student.mjs \
-  --project /absolute/path/to/configured-project \
+  --project /absolute/private/path/provisioning \
   --name my-experiment \
   --contact-email researcher@lab.edu \
+  --key /absolute/private/path/service-account.json \
   --out /absolute/private/path/my-experiment-setup.txt
 ```
 
-The script reads the project's configured deployment key automatically. If it has not been configured locally, add `--key /absolute/path/to/service-account.json`. Use `--template /path/to/template-checkout` and `--repository <clone-url>` to choose a different template source. Run `--help` for the full command.
+Replace the example name and email with the selected defaults. If the manager explicitly selected an already configured experiment checkout, use that as `--project`; the script reads its deployment key from Git metadata when `--key` is omitted. Use `--template /path/to/template-checkout` and `--repository <clone-url>` to choose a different template source. Run `--help` for the full command.
 
 The output includes the complete private key, has owner-only file permissions, and refuses to overwrite an existing file. It is a single JSON block between `-----BEGIN EXPERIMENT SETUP-----` and `-----END EXPERIMENT SETUP-----`. The generator checks that the key and web configuration identify the same project. It does not create cloud resources, deploy, or change the source project.
 
-Give the manager the complete block as one copyable text block, including its boundary lines. Keep any explanation outside that block. Send it only to the manager here; the manager will forward it privately to the student. Treat the block like the deployment key: keep it out of source files, issue trackers, public documentation, and logs. An agent can pass it to the installer through stdin or an owner-only file outside the project:
+Give the manager the complete block as one copyable text block, including its boundary lines. Also link the private output file and state the chosen project name, researcher contact, and database access model. Keep any explanation outside the block. Send it only to the manager here; the manager will forward it privately to the student. Treat the block like the deployment key: keep it out of source files, issue trackers, public documentation, and logs. An agent can pass it to the installer through stdin or an owner-only file outside the project:
 
 ```bash
 node scripts/create-experiment.mjs --file /absolute/private/path/my-experiment-setup.txt

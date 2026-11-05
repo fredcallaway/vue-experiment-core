@@ -16,7 +16,8 @@ This is a Nuxt 3 experiment app that extends the template layer in `core/`.
 
 ## Before editing
 
-- For a new student's project, follow [Prepare a student handoff](student-handoff.md) and the [student setup instructions](../../../README.md#create-your-experiment).
+- When the lab manager asks for a setup block (for example, “Make me a setup block”), follow [Prepare a student handoff](student-handoff.md). The request includes creating a fresh student Firebase project; the guide supplies defaults and provisioning steps. An explicit documentation-only or dry-run request takes precedence.
+- When a student supplies a setup block, follow the [student setup instructions](../../../README.md#create-your-experiment).
 - Find the closest implementation in [`internal/examples/README.md`](../../internal/examples/README.md) and copy its structure. The examples are live and type-checked.
 - Use the human-facing concept docs at `/docs` when you need explanation rather than an implementation pattern.
 - When you need to confirm that something actually runs, drive `/dev` in a browser: see [`browser-testing.md`](browser-testing.md) for jumping straight to an epoch by URL and verifying against the event log.
