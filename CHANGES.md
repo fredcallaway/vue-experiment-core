@@ -1,3 +1,7 @@
+# Development session mode
+
+- Develop always initializes debug sessions, including when participant or study URL parameters would otherwise infer live mode. Existing raw data and consumer code require no migration.
+
 # Debug audio uploads
 
 - Initialized debug sessions now upload files with the same authentication, acknowledgment, retry, and automatic indexing behavior as live sessions. Their Storage session directory starts with `debug.`, and uploaded objects include mode metadata. Existing live paths and Storage rules remain valid; uninitialized previews and outline jumps still return an explicit unsaved result. Custom recording components should require `result.saved` for every initialized session, rather than bypassing acknowledgment based on debug mode.

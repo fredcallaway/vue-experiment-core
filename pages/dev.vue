@@ -11,7 +11,7 @@ const params = parseUrlParams()
 
 // Browser tests retain a seeded session and in-memory events without opening a database session.
 const testing = import.meta.dev && getUrlFlag('testing')
-if (params.mode == 'live') {
+if (meta.mode === 'live') {
   console.error('refusing to initialize session in live mode on /dev')
   meta.mode = 'debug'
 }
