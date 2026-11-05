@@ -14,7 +14,7 @@ The command validates the key's project against `firebase.config.json` and store
 
 Supported CLI deployment commands and the dashboard load this key automatically for every Firebase CLI invocation, including the selected-project check. They use a project-private Firebase CLI configuration directory and clear inherited `FIREBASE_TOKEN`, so cached human credentials cannot override a configured project key. Each operation reads the current key; rerun the configuration command to replace it without restarting the dashboard. Missing or invalid configured credentials fail instead of falling back to a human login.
 
-After setup, normal development and deployment commands work from any shell without credential exports. Database access and rules remain separate from Hosting authentication. The [setup guide](../../README.md#use-a-lab-managed-project-as-a-student) covers administrator roles and project setup.
+After setup, normal development and deployment commands work from any shell without credential exports. Database access and rules remain separate from Hosting authentication. New students use the [setup block and installer](../../README.md#create-your-experiment); the [agent handoff guide](../docs/guide/student-handoff.md) explains how to prepare that block from an already provisioned project.
 
 ## Deploy the site
 

@@ -46,10 +46,10 @@ import DocsPage from './DocsPage.vue'
     <p>
       Setting up your first experiment? Follow the
       <a
-        href="https://github.com/fredcallaway/vue-experiment-template/blob/release/1.0/README.md#firebase-setup"
+        href="https://github.com/fredcallaway/vue-experiment-template/blob/release/1.0/README.md#create-your-experiment"
         target="_blank" rel="noopener"
-      >installation and Firebase setup guide</a>
-      in the template README, including creating your Google account and connecting your own Firebase project.
+      >student setup instructions</a>
+      in the template README. Your lab manager provides a setup block for your experiment.
     </p>
     <p>
       Start with the guide to developing and running a study, whether you write code or use
