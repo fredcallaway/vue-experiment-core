@@ -119,6 +119,10 @@ export const useMouseTracking = (options: MouseTrackingOptions = {}): MouseTrack
     currentInstance = null
     stopWatch?.()
     data.endTime = Date.now()
+    // Drop the initial frame recorded before the first mouse event.
+    data.x.shift()
+    data.y.shift()
+    data.t.shift()
     dataWriter.updateOther(`mouse/${data.startTime}`, data)
     return data
   }

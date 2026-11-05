@@ -1,3 +1,7 @@
+# Mouse trace initialization
+
+- Saved mouse trajectories discard their first sample to remove the tracker's synthetic initialization point. Coordinate and timestamp arrays remain aligned; existing raw recordings and their format are unchanged. No consumer-code migration is required.
+
 # Prolific studies before the first session
 
 - A published study's submissions table remains available when the live database has no participant sessions yet. The page explains that no experiment sessions have been recorded, and submissions without a matching session show missing data. No consumer-code or raw-data migration is required.
