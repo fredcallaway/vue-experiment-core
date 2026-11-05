@@ -1,0 +1,6 @@
+{
+  "apiKey": "audio-fixture",
+  "projectId": "audio-fixture",
+  "databaseURL": "https://audio-fixture.invalid",
+  "storageBucket": "audio-fixture.invalid"
+}

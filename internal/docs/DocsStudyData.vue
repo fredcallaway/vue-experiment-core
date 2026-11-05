@@ -24,6 +24,12 @@ import DocsPage from './DocsPage.vue'
       turns those records into an analysis table, such as one row per trial. Your experiment's
       views appear as named tabs alongside sessions and events.
     </p>
+    <p>
+      For experiments that record audio, open the <b>audio</b> tab on a session or version page.
+      Click <b>Play</b> to load a recording; version lists can be filtered by session or participant.
+      Playback uses your local dashboard's project credentials with Storage Object Viewer permission.
+      Your agent can follow <code>core/docs/guide/audio-and-files.md</code> to configure access.
+    </p>
     <h4 class="font-bold">Saving data for analysis</h4>
     <p>
       Open a version and inspect its data-view tabs, then click <b>save</b> beside the data

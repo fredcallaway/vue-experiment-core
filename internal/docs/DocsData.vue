@@ -96,6 +96,10 @@ import DocsPage from './DocsPage.vue'
         Development previews keep audio local and explicitly report that nothing was uploaded.
       </p>
       <p>
+        Acknowledged uploads are indexed with the session. The Data dashboard's session and version
+        pages offer an audio tab for playback, using the local server's project credentials.
+      </p>
+      <p>
         Storage needs a bucket, anonymous Firebase authentication, and the supplied Storage rules.
         Your agent can follow <code>core/docs/guide/audio-and-files.md</code> to configure these.
         Try the <NuxtLink to="/examples/audio">audio example</NuxtLink> to record and play back a response.

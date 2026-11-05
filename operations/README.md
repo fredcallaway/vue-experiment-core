@@ -16,6 +16,8 @@ Supported CLI deployment commands and the dashboard load this key automatically 
 
 After setup, normal development and deployment commands work from any shell without credential exports. Database access and rules remain separate from Hosting authentication. New students use the [setup block and installer](../../README.md#create-your-experiment); the [agent handoff guide](../docs/guide/student-handoff.md) explains how to prepare that block from an already provisioned project.
 
+For audio playback in the local Data dashboard, grant the configured service account `roles/storage.objectViewer` on the experiment's Storage bucket. The Audio tab reads recordings through a local server endpoint; it does not require client-read access in Storage rules. See [audio setup and playback](../docs/guide/audio-and-files.md#play-recordings-in-the-data-dashboard). This additional role is optional for projects that do not store recordings.
+
 ## Deploy the site
 
 ```bash

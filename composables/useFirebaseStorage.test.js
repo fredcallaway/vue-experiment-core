@@ -7,7 +7,9 @@ test('session uploads isolate previews, require a writable session, and await Fi
     import { strict as assert } from 'node:assert'
     import { mock } from 'bun:test'
     const session = { mode: 'debug', sessionId: 'session/1', participantId: 'p', studyId: 's', version: 'v' }
-    const writer = { writable: true, sessionId: session.sessionId }
+    const registered = []
+    const writer = { writable: true, sessionId: session.sessionId,
+      updateOther: (path, file) => registered.push({ path, file }) }
     const jumping = { value: false }
     const config = { storageBucket: 'test.invalid' }
     let initialized = 0, signedIn = 0, uploads = [], acknowledge, failAuth = false
@@ -60,6 +62,7 @@ test('session uploads isolate previews, require a writable session, and await Fi
     assert.equal(settled, false)
     acknowledge.reject(new Error('Network failed'))
     await assert.rejects(pending, /Network failed/)
+    assert.equal(registered.length, 0, 'failed uploads must not enter the session file index')
     const retry = upload('clip one.webm', blob)
     while (uploads.length < 2) await new Promise(resolve => setTimeout(resolve, 1))
     assert.equal(uploads[0].path, uploads[1].path)
@@ -71,6 +74,9 @@ test('session uploads isolate previews, require a writable session, and await Fi
     acknowledge.resolve()
     assert.deepEqual(await retry, { saved: true, path: uploads[1].path, bucket: 'test.invalid',
       size: blob.size, contentType: 'audio/webm' })
+    assert.deepEqual(registered, [{ path: 'files/clip%20one%2Ewebm', file: {
+      saved: true, path: uploads[1].path, bucket: 'test.invalid', size: blob.size, contentType: 'audio/webm'
+    } }])
     assert.equal(signedIn, 2, 'failed authentication can retry; successful identity is reused')
   `], { cwd: new URL('.', import.meta.url), encoding: 'utf8', timeout: 15000 })
   expect(result.stderr + result.stdout).not.toContain('AssertionError')

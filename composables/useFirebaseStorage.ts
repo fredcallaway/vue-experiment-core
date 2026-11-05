@@ -59,8 +59,11 @@ export function useFirebaseStorage() {
       },
     })
     assertWritable()
-    return { saved: true, path: result.metadata.fullPath, bucket: result.metadata.bucket,
+    const file: StoredFile = { saved: true, path: result.metadata.fullPath, bucket: result.metadata.bucket,
       size: result.metadata.size, contentType: result.metadata.contentType ?? 'application/octet-stream' }
+    const key = encodeURIComponent(filename).replaceAll('.', '%2E')
+    writer.updateOther(`files/${key}`, file)
+    return file
   }
 
   return { upload }

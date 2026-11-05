@@ -146,6 +146,10 @@ const timeInfo = computed(() => {
           <pre class="bg-gray-100 p-4 rounded overflow-auto max-h-96 text-xs">{{ JSON.stringify(meta, null, 2) }}</pre>
         </Tab>
 
+        <Tab title="audio">
+          <RecordedAudio :sessions="data ? [data] : []" />
+        </Tab>
+
       </TabContainer>
     </div>
   </div>

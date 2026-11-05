@@ -4,6 +4,8 @@
 
 # Audio recording and Firebase Storage
 
+- Session and version Data pages now have an **audio** tab with on-demand playback, filtering, and retry. Successful uploads automatically queue a session file index. Existing upload-result events and fluency `audio_path` records remain readable; no raw-data migration is needed. Run `bun install` after adopting core to install the server authentication dependency.
+- Researcher playback uses a loopback-only server endpoint and the configured project service-account key. Grant that account `roles/storage.objectViewer` on the configured bucket; participant Storage rules may continue denying reads. See [playback setup](docs/guide/audio-and-files.md#play-recordings-in-the-data-dashboard).
 - Added `useAudioRecorder()` for microphone permission, recording, playback, and lifecycle cleanup, and `useFirebaseStorage().upload(filename, blob)` for acknowledged session-scoped file uploads. Development runs return an explicit unsaved result without contacting Firebase. Live uploads require an active session, sign in with Firebase Authentication as needed, and reject on failure. Recording components must await uploads before advancing; completion's event flush does not save Blobs.
 - Storage is opt-in: configure a bucket and Anonymous authentication, copy `core/operations/storage.rules` into the project, register it in `firebase.json`, and deploy the reviewed rules as an administrator. See [audio and files](docs/guide/audio-and-files.md) and `/examples/audio`. Existing consumers and raw data require no migration.
 

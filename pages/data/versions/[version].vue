@@ -448,6 +448,9 @@ const completedByCondition = computed(() => {
             No session data available
           </div>
         </Tab>
+        <Tab title="audio">
+          <RecordedAudio :sessions="mySessionData" />
+        </Tab>
       </TabContainer>
     </div>
   </div>
