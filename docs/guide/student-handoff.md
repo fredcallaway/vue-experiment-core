@@ -1,20 +1,20 @@
 # Prepare a student handoff
 
-Use this procedure when the lab manager asks for a student's experiment setup or says **“Make me a setup block.”** That request is enough to create a fresh Firebase project, provision its resources and deployment key, and return one complete private block. Carry out the procedure without asking the manager to provide a project name, contact email, configuration, or key when the defaults below resolve them. Explicit instructions to review documentation, dry-run, or avoid resource creation take precedence.
+Use this procedure when the lab manager asks for a student's experiment setup or says **“Make me a setup block.”** The request authorizes creating a fresh Firebase project, provisioning its resources and deployment key, and returning one complete private block. Before provisioning resources or generating the block, require a project name and participant-facing researcher contact email from the manager. If either is missing, ask for all missing values together and pause until the manager supplies them. Explicit instructions to review documentation, dry-run, or avoid resource creation take precedence.
 
 The manager forwards the block privately. The student pastes it into the installer or gives it to their coding agent, following the [template README](../../../README.md#create-your-experiment). Creating the student's local experiment checkout is the installer's later job; preparing the block does not require running that installer on the manager's machine.
 
-## Choose defaults and source
+## Confirm project details and source
 
-Use values supplied in the request first. Otherwise:
+Use the manager's supplied project name and researcher contact email. Resolve the remaining settings as follows:
 
-- **Project and folder name:** generate `fc-experiment-YYYYMMDD-xxxx`, using today's date and four random lowercase letters/digits. Use the same value for the Firebase project ID, Hosting site, and student's default local folder. Retry with a new suffix if the ID is unavailable.
-- **Researcher contact email:** use the real participant-facing address in an explicitly selected source project's `epoch.config.ts`, or the authenticated manager's Firebase account email. Ignore starter placeholders. Read the account email from the existing CLI session; ask only if neither source provides a real address.
+- **Project and folder name:** ask the manager if it was not provided. Use the supplied name for the Firebase project ID, Hosting site, and student's default local folder. If it cannot be used as an available Firebase project ID, ask for a suitable replacement.
+- **Researcher contact email:** use the participant-facing address provided by the manager, and ask for it if missing.
 - **Administrator account:** reuse the manager's existing Firebase CLI login. Use `firebase login:list` for account discovery; its `--json` output includes authentication tokens and must not be printed. Request interactive login only if authentication is actually missing or expired.
 - **Database region:** use the project's documented region, otherwise `us-central1`.
 - **Resources:** create a new project unless the manager explicitly selects an existing one. Do not choose the template's project, an earlier test project, or another experiment merely because credentials are available.
 
-State the selected name and contact in a progress update and continue. Missing optional student details are not a blocker. Stop for a concrete authentication, permission, quota, or policy failure that cannot be resolved within the request; report what was completed and the exact remaining action.
+Once both required values are supplied, state the project name and contact in a progress update and continue. Missing optional student details are not a blocker. Stop for a concrete authentication, permission, quota, or policy failure that cannot be resolved within the request; report what was completed and the exact remaining action.
 
 Run the preparation script from a clean, committed template checkout. Check that its HEAD and pinned core commit are available from their stated repositories. Follow the repository's release process for any required publication; do not silently substitute an older revision. A local-only commit cannot be installed from the public URL. If publication remains blocked, finish the private preparation and identify the unpublished revisions before presenting the block as ready to send. For an explicitly local installer test, `--repository` can name an absolute local clone path.
 
@@ -111,7 +111,7 @@ node scripts/prepare-student.mjs \
   --out /absolute/private/path/my-experiment-setup.txt
 ```
 
-Replace the example name and email with the selected defaults. If the manager explicitly selected an already configured experiment checkout, use that as `--project`; the script reads its deployment key from Git metadata when `--key` is omitted. Use `--template /path/to/template-checkout` and `--repository <clone-url>` to choose a different template source. Run `--help` for the full command.
+Replace the example name and email with the values supplied by the manager. If the manager explicitly selected an already configured experiment checkout, use that as `--project`; the script reads its deployment key from Git metadata when `--key` is omitted. Use `--template /path/to/template-checkout` and `--repository <clone-url>` to choose a different template source. Run `--help` for the full command.
 
 The output includes the complete private key, has owner-only file permissions, and refuses to overwrite an existing file. It is a single JSON block between `-----BEGIN EXPERIMENT SETUP-----` and `-----END EXPERIMENT SETUP-----`. The generator checks that the key and web configuration identify the same project. It does not create cloud resources, deploy, or change the source project.
 
