@@ -2,7 +2,7 @@
 import { declareDataView } from '../../composables/dataViews'
 import { declareEventLogger } from '../../composables/logEvent'
 import { useAudioRecorder } from '../../composables/useAudioRecorder'
-import { useCurrentSession } from '../../composables/useCurrentSession'
+import { useDataWriter } from '../../composables/useDataWriter'
 import { useEpoch } from '../../composables/useEpoch'
 import { useFirebaseStorage, type FileUploadResult } from '../../composables/useFirebaseStorage'
 import { useLocalAsync } from '../../composables/useLocalAsync'
@@ -22,7 +22,8 @@ const epoch = useEpoch('audio')
 const audio = useAudioRecorder()
 const { upload } = useFirebaseStorage()
 const { registerAsync } = useLocalAsync()
-const live = computed(() => useCurrentSession().mode === 'live')
+const writer = useDataWriter()
+const localPreview = computed(() => !writer.initialized)
 const busy = ref(false)
 const message = ref('')
 const saved = ref(false)
@@ -62,10 +63,10 @@ function stop() {
 function save() {
   return run(async () => {
     if (!audio.recording.value) return
-    // Reuse this filename and Blob on retry. Only an acknowledged upload is saved in live mode.
+    // Reuse this filename and Blob on retry. Initialized sessions require an acknowledged upload in both modes.
     const result = await registerAsync(upload(filename, audio.recording.value.blob))
     logSaved(result)
-    saved.value = result.saved || !live.value
+    saved.value = result.saved || localPreview.value
     message.value = result.saved ? 'Recording saved.' : 'Local preview only. No file was uploaded.'
   })
 }
@@ -88,7 +89,7 @@ function save() {
       </PButton>
       <PButton v-else value="stop" :disabled="busy" @click="stop">Stop recording</PButton>
       <PButton v-if="audio.recording.value" value="save" :disabled="busy || saved" @click="save">
-        {{ live ? 'Save recording' : 'Finish local preview' }}
+        {{ localPreview ? 'Finish local preview' : 'Save recording' }}
       </PButton>
       <PButton v-if="saved" value="continue" :disabled="busy" @click="epoch.done()">Continue</PButton>
     </div>

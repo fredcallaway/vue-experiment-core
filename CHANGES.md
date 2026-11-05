@@ -1,3 +1,7 @@
+# Debug audio uploads
+
+- Initialized debug sessions now upload files with the same authentication, acknowledgment, retry, and automatic indexing behavior as live sessions. Their Storage session directory starts with `debug.`, and uploaded objects include mode metadata. Existing live paths and Storage rules remain valid; uninitialized previews and outline jumps still return an explicit unsaved result. Custom recording components should require `result.saved` for every initialized session, rather than bypassing acknowledgment based on debug mode.
+
 # Automatic Prolific URL validation
 
 - `FIREBASE_DEFAULT` requires a single default Hosting site whose site ID matches `firebase.config.json`'s `projectId`. Prolific URL generation now throws an actionable error for a nondefault site, target alias, or multiple-site configuration. Set the study draft's `baseUrl` to an explicit HTTPS URL for another site or custom domain. Standard default-site setups and existing raw data require no migration.
@@ -7,7 +11,7 @@
 - Local playback recognizes loopback requests forwarded by Nuxt's development worker, which does not provide a native socket address. Direct server requests still use their socket address; no configuration or raw-data migration is required.
 - Session and version Data pages now have an **audio** tab with on-demand playback, filtering, and retry. Successful uploads automatically queue a session file index. Existing upload-result events and fluency `audio_path` records remain readable; no raw-data migration is needed. Run `bun install` after adopting core to install the server authentication dependency.
 - Researcher playback uses a loopback-only server endpoint and the configured project service-account key. Grant that account `roles/storage.objectViewer` on the configured bucket; participant Storage rules may continue denying reads. See [playback setup](docs/guide/audio-and-files.md#play-recordings-in-the-data-dashboard).
-- Added `useAudioRecorder()` for microphone permission, recording, playback, and lifecycle cleanup, and `useFirebaseStorage().upload(filename, blob)` for acknowledged session-scoped file uploads. Development runs return an explicit unsaved result without contacting Firebase. Live uploads require an active session, sign in with Firebase Authentication as needed, and reject on failure. Recording components must await uploads before advancing; completion's event flush does not save Blobs.
+- Added `useAudioRecorder()` for microphone permission, recording, playback, and lifecycle cleanup, and `useFirebaseStorage().upload(filename, blob)` for acknowledged session-scoped file uploads. Uninitialized previews return an explicit unsaved result without contacting Firebase. Initialized debug and live uploads require an active session, sign in with Firebase Authentication as needed, and reject on failure. Recording components must await uploads before advancing; completion's event flush does not save Blobs.
 - Storage is opt-in: configure a bucket and Anonymous authentication, copy `core/operations/storage.rules` into the project, register it in `firebase.json`, and deploy the reviewed rules as an administrator. See [audio and files](docs/guide/audio-and-files.md) and `/examples/audio`. Existing consumers and raw data require no migration.
 
 # Mouse trace initialization

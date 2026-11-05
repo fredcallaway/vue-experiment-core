@@ -91,9 +91,10 @@ import DocsPage from './DocsPage.vue'
       </p>
       <p>
         Save audio and other Blobs with <code>useFirebaseStorage().upload(filename, blob)</code>.
-        Live trials must wait for an acknowledged upload before advancing. Keep the recording
+        Initialized debug and live trials must wait for an acknowledged upload before advancing. Keep the recording
         available for retry if saving fails, and log the returned file path in a semantic event.
-        Development previews keep audio local and explicitly report that nothing was uploaded.
+        Debug recordings are saved separately from live data. Uninitialized previews keep audio local
+        and explicitly report that nothing was uploaded.
       </p>
       <p>
         Acknowledged uploads are indexed with the session. The Data dashboard's session and version

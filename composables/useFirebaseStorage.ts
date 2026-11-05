@@ -30,7 +30,7 @@ export function useFirebaseStorage() {
     if (!blob.size || blob.size > MAX_UPLOAD_BYTES) {
       throw new Error(`File size must be between 1 and ${MAX_UPLOAD_BYTES} bytes.`)
     }
-    if (session.mode !== 'live' || isJumping.value) return { saved: false, path: null }
+    if (isJumping.value || (session.mode === 'debug' && !writer.initialized)) return { saved: false, path: null }
     const assertWritable = () => {
       if (!writer.writable || writer.sessionId !== session.sessionId) {
         throw new Error('File uploads require an active, initialized experiment session.')
@@ -50,12 +50,14 @@ export function useFirebaseStorage() {
     assertWritable()
     if (!auth.currentUser) throw new Error('Firebase authentication ended before the upload started.')
     const segment = encodeURIComponent
-    const path = `sessions/${segment(auth.currentUser.uid)}/${segment(session.sessionId)}/${segment(filename)}`
+    // URL session IDs cannot contain dots, so debug directories cannot collide with live directories.
+    const sessionPath = `${session.mode === 'debug' ? 'debug.' : ''}${segment(session.sessionId)}`
+    const path = `sessions/${segment(auth.currentUser.uid)}/${sessionPath}/${segment(filename)}`
     const result = await uploadBytes(ref(getStorage(app), path), blob, {
       contentType: blob.type.split(';')[0] || 'application/octet-stream',
       customMetadata: {
         sessionId: session.sessionId, participantId: session.participantId,
-        studyId: session.studyId, version: session.version,
+        studyId: session.studyId, version: session.version, mode: session.mode,
       },
     })
     assertWritable()
