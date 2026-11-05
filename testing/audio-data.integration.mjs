@@ -70,6 +70,10 @@ try {
     URL.revokeObjectURL = url => { window.__revokedAudio.push(url); revoke(url) }
   })
   const page = await context.newPage()
+  // Exercise the real Nuxt endpoint before mocking file bytes for the UI checks below.
+  const endpoint = `${origin}/api/recordings?bucket=audio-fixture.invalid`
+  assert.equal((await fetch(endpoint)).status, 400, 'The local Nuxt request must reach parameter validation')
+  assert.equal((await fetch(endpoint, { headers: { Origin: 'https://other.invalid' } })).status, 403)
   page.setDefaultTimeout(10_000)
   page.on('pageerror', error => errors.push(error.message))
   const audioTab = () => page.getByRole('button', { name: 'audio', exact: true })

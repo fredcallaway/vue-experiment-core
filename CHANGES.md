@@ -4,6 +4,7 @@
 
 # Audio recording and Firebase Storage
 
+- Local playback recognizes loopback requests forwarded by Nuxt's development worker, which does not provide a native socket address. Direct server requests still use their socket address; no configuration or raw-data migration is required.
 - Session and version Data pages now have an **audio** tab with on-demand playback, filtering, and retry. Successful uploads automatically queue a session file index. Existing upload-result events and fluency `audio_path` records remain readable; no raw-data migration is needed. Run `bun install` after adopting core to install the server authentication dependency.
 - Researcher playback uses a loopback-only server endpoint and the configured project service-account key. Grant that account `roles/storage.objectViewer` on the configured bucket; participant Storage rules may continue denying reads. See [playback setup](docs/guide/audio-and-files.md#play-recordings-in-the-data-dashboard).
 - Added `useAudioRecorder()` for microphone permission, recording, playback, and lifecycle cleanup, and `useFirebaseStorage().upload(filename, blob)` for acknowledged session-scoped file uploads. Development runs return an explicit unsaved result without contacting Firebase. Live uploads require an active session, sign in with Firebase Authentication as needed, and reject on failure. Recording components must await uploads before advancing; completion's event flush does not save Blobs.

@@ -4,7 +4,9 @@ export default defineEventHandler(async event => {
   try {
     const url = getRequestURL(event)
     assertLocalStorageRequest({ hostname: url.hostname, origin: url.origin,
-      remoteAddress: event.node.req.socket.remoteAddress, requestOrigin: getHeader(event, 'origin'),
+      // Nuxt's development worker forwards the loopback address without a native request socket.
+      remoteAddress: getRequestIP(event, { xForwardedFor: import.meta.dev }),
+      requestOrigin: getHeader(event, 'origin'),
       fetchSite: getHeader(event, 'sec-fetch-site') })
     const { bucket, path } = getQuery(event)
     if (typeof bucket !== 'string' || typeof path !== 'string') {
