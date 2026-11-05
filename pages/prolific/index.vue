@@ -34,6 +34,8 @@ const isLoadingWorkspaces = ref(false)
 const isLoadingProjects = ref(false)
 const isCreatingProject = ref(false)
 const showConnectionModal = ref(false)
+let workspaceRequestId = 0
+let projectRequestId = 0
 
 const searchQuery = ref('')
 const isReady = computed(() => status.value === 'ok')
@@ -237,10 +239,12 @@ const deleteAllDrafts = async () => {
 }
 
 const loadWorkspaces = async () => {
+  const requestId = ++workspaceRequestId
   setupError.value = ''
   isLoadingWorkspaces.value = true
   try {
     const workspaces = await prolific.listWorkspaces()
+    if (requestId !== workspaceRequestId) return
     workspaceOptions.value = workspaces.map(workspace => ({
       id: workspace.id,
       label: workspace.title || workspace.name || workspace.id,
@@ -250,16 +254,19 @@ const loadWorkspaces = async () => {
       setupError.value = 'No Prolific workspaces were found for this API token.'
     }
   } catch (error) {
+    if (requestId !== workspaceRequestId) return
     setupError.value = error instanceof Error ? error.message : String(error)
   } finally {
-    isLoadingWorkspaces.value = false
+    if (requestId === workspaceRequestId) isLoadingWorkspaces.value = false
   }
 }
 
 const loadProjects = async () => {
+  const requestId = ++projectRequestId
+  projectOptions.value = []
+  selectedExistingProjectId.value = ''
+  isLoadingProjects.value = false
   if (!selectedWorkspaceId.value) {
-    projectOptions.value = []
-    selectedExistingProjectId.value = ''
     return
   }
 
@@ -267,15 +274,17 @@ const loadProjects = async () => {
   isLoadingProjects.value = true
   try {
     const projects = await prolific.listProjects(selectedWorkspaceId.value)
+    if (requestId !== projectRequestId) return
     projectOptions.value = projects.map(project => ({
       id: project.id,
       label: project.title || project.id,
     }))
     selectedExistingProjectId.value = projectOptions.value[0]?.id ?? ''
   } catch (error) {
+    if (requestId !== projectRequestId) return
     setupError.value = error instanceof Error ? error.message : String(error)
   } finally {
-    isLoadingProjects.value = false
+    if (requestId === projectRequestId) isLoadingProjects.value = false
   }
 }
 
@@ -333,7 +342,19 @@ onMounted(() => {
   }
 })
 
-watch([showConnectionForm, tokenIsValid], ([showForm, validToken]) => {
+watch(token, () => {
+  workspaceRequestId++
+  projectRequestId++
+  workspaceOptions.value = []
+  projectOptions.value = []
+  selectedWorkspaceId.value = ''
+  selectedExistingProjectId.value = ''
+  setupError.value = ''
+  isLoadingWorkspaces.value = false
+  isLoadingProjects.value = false
+}, { flush: 'sync' })
+
+watch([showConnectionForm, tokenIsValid, token], ([showForm, validToken]) => {
   if (showForm && validToken && workspaceOptions.value.length === 0 && !isLoadingWorkspaces.value) {
     loadWorkspaces()
   }

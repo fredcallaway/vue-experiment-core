@@ -1,3 +1,7 @@
+# Prolific credential refresh
+
+- Changing the API token automatically clears and reloads workspace and project choices in the connection form. Responses from previous credentials are ignored. No consumer-code or raw-data migration is required.
+
 # Persistent project Firebase credentials
 
 - Configure a lab service-account key once with `bun run ops -- firebase-auth configure --key <file>`. Supported CLI and dashboard deployments automatically read the private project key and isolate cached human Firebase credentials, with no terminal exports or server restart needed. The key is validated against the configured project and kept in Git metadata outside tracked/public files. Projects using an administrator's existing CLI login continue to work until a project key is configured; no consumer-code or raw-data migration is required.
