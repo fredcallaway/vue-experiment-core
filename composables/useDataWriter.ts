@@ -135,6 +135,10 @@ export class DataWriter {
   // client for each session, and any other client (e.g. an older tab) stops writing
   private clientId = `${Date.now()}-${trueRandom().toString(36).substring(2, 11)}`
   readonly superseded = ref(false)
+  readonly ready = ref(false)
+  readonly savingPaused = ref(false)
+  readonly saveError = shallowRef<unknown>(null)
+  readonly saveCount = ref(0)
 
   constructor() {
     // this.sessionId = '__PREINIT__'  // until initialized
@@ -156,7 +160,7 @@ export class DataWriter {
   }
 
   get writable() {
-    return this.initialized && this.mode !== 'dummy' && !this.disabled && !this.superseded.value
+    return this.ready.value && !this.savingPaused.value && !this.disabled && !this.superseded.value
   }
 
   get events(): ReadonlyArray<LogEvent> {
@@ -174,6 +178,7 @@ export class DataWriter {
     }
     console.log('DataWriter: initializing session:', toRaw(meta))
 
+    this.ready.value = false
     this.meta.value = meta
     this.mode = meta.mode
 
@@ -273,9 +278,12 @@ export class DataWriter {
       }
       assert(dbMeta.sessionId == localMeta.sessionId, 'sessionId must match between meta and database')
 
+      this.ready.value = true
+      this.debounceFlush()
       return true // success
 
     } catch (error) {
+      this.saveError.value = error
       console.error('Failed to initialize database connection.', error)
       this.mode = 'dummy'
       console.warn('DataWriter: falling back to dummy mode due to database initialization error')
@@ -325,7 +333,7 @@ export class DataWriter {
   }
 
   private async _flush(): Promise<boolean> {
-    if (this.disabled || this.superseded.value || !this.meta.value || this.mode === 'dummy') return false
+    if (!this.writable || !this.meta.value) return false
 
     this.syncIdleTime()
     this.meta.value.lastUpdateTime = Date.now()
@@ -351,8 +359,12 @@ export class DataWriter {
       }
       this.updates.value = remaining
       console.debug(`flushed ${Object.keys(toFlush).length} updates`, toFlush)
-      return !this.disabled && !this.superseded.value
+      if (!this.writable) return false
+      this.saveError.value = null
+      this.saveCount.value++
+      return true
     } catch (error) {
+      this.saveError.value = error
       // Logging through logError would queue another event and schedule a retry of its own failure.
       console.error('Failed to flush updates:', error, toFlush)
       return false
@@ -396,6 +408,7 @@ export class DataWriter {
   private supersede() {
     if (this.superseded.value) return
     this.superseded.value = true
+    this.saveError.value = new Error('This session is now being saved by another tab.')
     console.warn('DataWriter: session claimed by another client; this tab will no longer save data')
   }
 

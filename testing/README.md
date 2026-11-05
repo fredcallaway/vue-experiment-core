@@ -14,6 +14,8 @@ bun run test:experiments help
 
 The last command runs the CLI in Node (tested with Node 22); `bun core/testing/cli.mjs` also forwards to Node. Browser processes and integration tests use Node because concurrent Playwright runs under the installed Bun 1.2.10 showed browser-transport and fixture-listener failures during verification; the matching Node runs passed. Reuse the experiment's existing dev server; the tools do not start or stop dev servers. Browser contexts use fresh storage, allow local `/dev`, `/docs`, and `/examples` routes, block external HTTP and WebSockets, and block local write requests. They never test production database persistence. Use `runtime.seed` only with the current core's development-only `testing` flag; unseeded exploration also works against older consumers.
 
+`node core/testing/debug-saving.integration.mjs` runs the real developer navigation and data writer against a dedicated in-memory database fixture. It starts and stops its own local fixture server, blocks external requests and filesystem data APIs, and checks session prompting, collisions, acknowledgments, failure/retry, pausing, Preview continuity, and URL/reload behavior. Screenshots and results are written to `.experiment-tests/debug-saving/`.
+
 ## Record an agent run
 
 ```sh

@@ -24,9 +24,10 @@ try {
   await page.locator('.main-content').evaluate(el => { window.__previewFrame = el })
 
   const nav = page.getByRole('navigation', { name: 'Developer navigation' })
-  const geometry = () => nav.locator('a, button').evaluateAll(els => els.map(el => ({
-    text: el.textContent.trim(), bounds: el.getBoundingClientRect().toJSON(),
-  })))
+  const geometry = () => nav.locator('a, button').evaluateAll(els => els
+    .filter(el => el.getClientRects().length).map(el => ({
+      text: el.textContent.trim(), bounds: el.getBoundingClientRect().toJSON(),
+    })))
   const developGeometry = await geometry()
   assert.equal(await nav.evaluate(el => getComputedStyle(el).color), 'rgb(0, 0, 0)')
   await page.screenshot({ path: resolve(output, 'develop.png') })
@@ -35,7 +36,8 @@ try {
   await page.locator('.preview-mode').waitFor()
   assert.deepEqual(await geometry(), developGeometry, 'Every navigation item stays in the same position')
   assert.equal(await nav.evaluate(el => getComputedStyle(el).color), 'rgb(255, 255, 255)')
-  assert.ok((await nav.locator('a, button').evaluateAll(els => els.map(el => getComputedStyle(el).color)))
+  assert.ok((await nav.locator('a, button').evaluateAll(els => els
+    .filter(el => el.getClientRects().length).map(el => getComputedStyle(el).color)))
     .every(color => color === 'rgb(255, 255, 255)'), 'All Preview navigation uses white text')
   assert.equal(await page.getByRole('link', { name: 'Preview', exact: true }).getAttribute('aria-current'), 'page')
   assert.equal(await page.evaluate(() => document.querySelector('.main-content') === window.__previewFrame), true)

@@ -418,4 +418,33 @@ if (process.env.EXPERIMENT_PERSISTENCE_TEST_CHILD !== '1') {
     expect(writer.hasPendingUpdates).toBe(true)
     expect(writes).toHaveLength(0)
   })
+
+  test('initialization cannot flush session data before metadata is established', async () => {
+    const connection = deferred()
+    database.assertConnected = () => connection.promise
+    logEvent('trial.response', { response: 'before initialization' })
+    const initialization = scope.run(() => writer.initializeSession(meta))
+    expect(writer.writable).toBe(false)
+    expect(await writer.flush()).toBe(false)
+    expect(writes).toHaveLength(0)
+    connection.resolve()
+    expect(await initialization).toBe(true)
+    expect(writer.writable).toBe(true)
+    expect(await writer.flush()).toBe(true)
+    expect(Object.keys(values).some(path => path.includes('trial:response'))).toBe(true)
+  })
+
+  test('paused saving retains local events and resumes without reinitializing the session', async () => {
+    meta.mode = 'debug'
+    await start()
+    writer.savingPaused.value = true
+    logEvent('trial.response', { response: 'while paused' })
+    expect(writer.writable).toBe(false)
+    expect(await writer.flush()).toBe(false)
+    expect(writes).toHaveLength(0)
+    expect(writer.hasPendingUpdates).toBe(true)
+    writer.savingPaused.value = false
+    expect(await writer.flush()).toBe(true)
+    expect(Object.keys(values).some(path => path.includes('trial:response'))).toBe(true)
+  })
 }

@@ -92,24 +92,27 @@ const getNavTarget = (link: NavLink) => {
           :aria-current="isActiveLink(link) ? 'page' : undefined"
         >{{ link.label }}</NuxtLink>
       </TutorialTarget>
-      <TutorialTarget
-        as="span"
-        class="ml-auto flex shrink-0"
-        :title="tutorialMode ? 'Disable tutorial mode' : 'Enable tutorial mode'"
-        help="Show or hide pink highlights. Hover or focus a highlighted control to read its explanation."
-        placement="left"
-      >
-        <button
-          type="button"
-          class="nav-link tutorial-toggle flex items-center"
-          :class="{ active: tutorialMode }"
-          :aria-pressed="tutorialMode"
-          aria-label="Tutorial"
-          @click="toggleTutorialMode"
+      <div class="ml-auto flex items-center gap-4 shrink-0">
+        <DebugSaving v-if="isExperimentView" :preview="preview" />
+        <TutorialTarget
+          as="span"
+          class="flex shrink-0"
+          :title="tutorialMode ? 'Disable tutorial mode' : 'Enable tutorial mode'"
+          help="Show or hide pink highlights. Hover or focus a highlighted control to read its explanation."
+          placement="left"
         >
-          <span class="text-xl" :class="tutorialMode ? 'i-mdi-help-circle' : 'i-mdi-help-circle-outline'" />
-        </button>
-      </TutorialTarget>
+          <button
+            type="button"
+            class="nav-link tutorial-toggle flex items-center"
+            :class="{ active: tutorialMode }"
+            :aria-pressed="tutorialMode"
+            aria-label="Tutorial"
+            @click="toggleTutorialMode"
+          >
+            <span class="text-xl" :class="tutorialMode ? 'i-mdi-help-circle' : 'i-mdi-help-circle-outline'" />
+          </button>
+        </TutorialTarget>
+      </div>
     </div>
   </nav>
 </template>

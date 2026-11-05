@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import { logError } from '../composables/logEvent'
 import { parseUrlParams, useCurrentSession } from '../composables/useCurrentSession'
-import { useDataWriter } from '../composables/useDataWriter'
+import { useDebugSaving } from '../internal/composables/useDebugSaving'
 import { getUrlFlag } from '../utils/url-params'
 
 
@@ -16,12 +15,7 @@ if (meta.mode === 'live') {
   meta.mode = 'debug'
 }
 if (!testing && (params.sessionId || params.mode)) {
-  console.log('initializing dev session', meta)
-  useDataWriter().initializeSession(meta).then((error) => {
-    if (error instanceof Error) {
-      logError('Failed to initialize data writer; check firebase.config.json', error)
-    }
-  })
+  useDebugSaving().start()
 }
 
 

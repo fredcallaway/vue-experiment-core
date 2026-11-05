@@ -90,6 +90,8 @@ Boolean flags follow the usual query-string convention: **presence means true**.
 
 Enable fast mode with the developer toolbar toggle. It persists in session storage for the tab. Delays and newly created or reset countdown timers use fast-mode scaling; an active countdown keeps its current duration.
 
+The cloud indicator just left of Tutorial enables debug-database saving after prompting for a session ID. It remains green during ordinary background saves and turns red after a failed write; click red to retry. Its menu opens the saved session or pauses saving. Reloading turns saving off unless `session_id`, `SESSION_ID`, or `mode=debug` is explicitly present in the URL. UI-generated IDs are never added to the URL. The isolated `testing=1` harness suppresses URL-triggered persistence even with a seeded session ID.
+
 Combine them to test the real participant experience at an arbitrary point:
 
 ```

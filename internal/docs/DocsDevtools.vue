@@ -11,6 +11,18 @@ import DocsPage from './DocsPage.vue'
         panel — the same one wrapped around these docs:
       </p>
       <p>
+        Click the <b>cloud icon</b> just left of the question mark to save a test run. Choose a session ID;
+        the <code>debug</code> prefix is fixed. The indicator shows <b>saving…</b> until the first save is
+        confirmed, then stays green with the session ID while data is saved automatically. A red cloud
+        means a save failed; click it to retry. Ordinary background saves keep the indicator steady.
+      </p>
+      <p>
+        Click the green indicator to <b>Open session</b> in a new tab or <b>Stop saving</b>. Click the paused
+        indicator to resume the same session, including events recorded while paused. Reloading starts
+        with saving off, unless the URL explicitly enables it with <code>session_id</code> (or
+        <code>SESSION_ID</code>) or <code>mode=debug</code>. IDs chosen in the dialog stay out of the URL.
+      </p>
+      <p>
         Click the <b>question-mark icon</b> at the far right of the top navigation to highlight controls in pink.
         Hover or focus a highlighted control to read its explanation. Tutorial mode stays on as you
         navigate and reload in the same tab; click the icon again to turn it off. You can

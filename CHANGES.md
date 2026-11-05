@@ -1,3 +1,7 @@
+# Debug saving indicator
+
+- Develop and Preview now include a cloud indicator beside Tutorial. Choose a session ID with a fixed `debug` prefix to save the accumulated run and subsequent events. Activation waits at least 500 ms and for database acknowledgment; confirmed saving is green, actual save failures are red with retry, and routine queued events leave the indicator steady. The active menu opens the session or pauses saving; re-enabling resumes the same session. Reloading starts off unless a session ID or mode URL parameter enables saving. UI-generated IDs never enter the URL. No consumer-code or raw-data migration is required.
+
 # Development session mode
 
 - Develop always initializes debug sessions, including when participant or study URL parameters would otherwise infer live mode. Existing raw data and consumer code require no migration.
