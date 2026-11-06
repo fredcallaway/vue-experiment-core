@@ -4,37 +4,40 @@ import { useLogEventBus } from '../../composables/logEvent'
 import { useCurrentSession } from '../../composables/useCurrentSession'
 import { useCurrentEpoch } from '../../composables/useEpoch'
 import { type LogEvent } from '../data'
+import { DataViewPreview, type PreviewResult } from '../dataViewPreview'
 import { useLocalStorage } from '@vueuse/core'
 
 import stringify from "json-stringify-pretty-compact";
 
 // Live preview of a declared data view. Accumulates events off the log bus as the
-// session runs and re-runs the selected view's `fn`, so a developer building a task
+// session runs and re-runs the declared transforms, so a developer building a task
 // sees its export rows materialize as they play through it.
 //
 // Data views are registered globally by name (see composables/dataViews.ts) with no
-// built-in link to the SFC that declared them. By convention, a view's name matches
-// the epoch's logical name (e.g. `clicktest`), so we auto-select the view whose name
-// appears in the current epoch path. A manual selector covers cases where it doesn't.
+// built-in link to the SFC that declared them. Auto prefers the deepest whole-name
+// epoch match, then follows changed output. Manual picks remain authoritative.
 
 const views = useDataViews()
 const viewNames = computed(() => Object.keys(views))
 const meta = useCurrentSession()
 
 const currentEpoch = useCurrentEpoch()
-const epochPath = computed(() => {
+const epochNames = computed(() => {
   const segments: string[] = []
   let node = currentEpoch.value
   while (node._name !== '__TOP_EPOCH__') {
-    segments.push(node._name, node.id)
+    segments.push(node._name)
     node = node._parent
   }
-  return segments.map(s => s.toLowerCase())
+  return segments
 })
 
-const autoSelected = computed(() =>
-  viewNames.value.find(name => epochPath.value.some(seg => seg.includes(name.toLowerCase())))
-)
+const preview = new DataViewPreview()
+const results = shallowRef<Record<string, PreviewResult>>({})
+const autoSelected = ref<string>()
+const selectAuto = () => {
+  autoSelected.value = preview.select(viewNames.value, epochNames.value, autoSelected.value)
+}
 
 // '' / missing => follow autoSelected; otherwise honor the explicit pick if still present.
 const override = useLocalStorage('dataView.selected', '')
@@ -45,18 +48,19 @@ const selectedName = computed(() => {
 const view = computed(() => selectedName.value ? views[selectedName.value] : undefined)
 
 // Accumulate the live event stream for this session.
-const events = reactive<LogEvent[]>([])
-useLogEventBus().on(e => events.push(e))
-
-const result = computed(() => {
-  const v = view.value
-  if (!v) return null
-  try {
-    return { ok: true as const, data: v.fn({ meta, events: [...events] }) }
-  } catch (error) {
-    return { ok: false as const, error: String((error as Error)?.message ?? error) }
-  }
+const events: LogEvent[] = []
+const refresh = (trackChanges = true) => {
+  results.value = preview.update(views, { meta, events: [...events] }, trackChanges)
+  selectAuto()
+}
+useLogEventBus().on(event => {
+  events.push(event)
+  refresh()
 })
+watch(views, () => refresh(false), { immediate: true, deep: true })
+watch(meta, () => refresh(), { deep: true })
+watch(epochNames, selectAuto)
+const result = computed(() => selectedName.value ? results.value[selectedName.value] : undefined)
 
 const rows = computed(() => {
   const r = result.value
@@ -88,10 +92,10 @@ const fmtCell = (value: unknown) => (value === null || value === undefined ? 'â€
       <TutorialTarget
         class="ml-auto"
         title="Data view selector"
-        help="Chooses which declared data view to preview. Auto follows the current epoch when a matching view exists."
+        help="Auto prefers the deepest matching epoch name, then the most recently changed output. Choose a view to pin it."
         placement="left"
       >
-        <select class="bg-white border border-gray-300 rounded px-1 text-xs" v-model="override">
+        <select aria-label="Data view" class="bg-white border border-gray-300 rounded px-1 text-xs" v-model="override">
           <option value="">auto{{ autoSelected ? ` (${autoSelected})` : '' }}</option>
           <option v-for="name in viewNames" :key="name" :value="name">{{ name }}</option>
         </select>

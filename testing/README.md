@@ -16,6 +16,8 @@ The last command runs the CLI in Node (tested with Node 22); `bun core/testing/c
 
 `node core/testing/debug-saving.integration.mjs` runs the real developer navigation and data writer against a dedicated in-memory database fixture. It starts and stops its own local fixture server, blocks external requests and filesystem data APIs, and checks session prompting, collisions, acknowledgments, failure/retry, pausing, Preview continuity, and URL/reload behavior. Screenshots and results are written to `.experiment-tests/debug-saving/`.
 
+`node core/testing/data-preview.integration.mjs` runs the real Develop Data panel against isolated synthetic epochs and views. It checks deepest-name priority, output recency, CSV/JSON changes, manual pins, errors, metadata, reloads, and jumps without opening a database session. It owns its fixture server unless an existing fixture origin is supplied as the first argument. Evidence is written to `.experiment-tests/data-preview/`.
+
 ## Record an agent run
 
 ```sh
