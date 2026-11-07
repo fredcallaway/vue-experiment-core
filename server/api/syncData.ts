@@ -117,7 +117,7 @@ const getFsMeta = async (mode: DataMode) => {
   return { fsMeta, fsMetaPath }
 }
 
-const syncSessions = async (mode: DataMode) => {
+const syncSessions = async (mode: DataMode, sessionId?: string) => {
 
   const dbMeta = await getDatabasePath<Record<string, SessionMeta>>(`${mode}/meta`)
   if (!dbMeta) {
@@ -128,6 +128,7 @@ const syncSessions = async (mode: DataMode) => {
   const { fsMeta, fsMetaPath } = await getFsMeta(mode)
 
   const sessionsToUpdate = Object.entries(dbMeta)
+    .filter(([id]) => !sessionId || id === sessionId)
     .filter(([sessionId, meta]) => (fsMeta[sessionId]?._downloadTime || 0) < meta.lastUpdateTime)
     .map(([sessionId, meta]) => ({ sessionId, meta }))
   
@@ -200,7 +201,10 @@ export default defineEventHandler(async (event) => {
   }
   try {
     syncRunning = true
-    return await syncSessions(mode)
+    if (body.sessionId !== undefined && (typeof body.sessionId !== 'string' || !body.sessionId)) {
+      throw createError({ statusCode: 400, message: 'sessionId must be a nonempty string' })
+    }
+    return await syncSessions(mode, body.sessionId)
   } catch (error) {
     console.error('error syncing data', error)
     throw error

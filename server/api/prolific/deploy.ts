@@ -13,6 +13,7 @@ export default defineEventHandler(async (event) => {
     const database = await FirebaseRestDatabase.fromProject(root)
     const operations = new DeploymentOperations(root, database)
     const result = await withOperationLock(root, () => operations.deploy({
+      version: body?.version,
       allowVersionReuse: body?.allowVersionReuse === true,
     }))
     return { success: true as const, ...result }

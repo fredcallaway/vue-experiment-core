@@ -35,7 +35,7 @@ import DocsPage from './DocsPage.vue'
       <h2>Configuration files</h2>
       <ul>
         <li>
-          <code>epoch.config.ts</code> — app metadata: title, icon, version, contact email,
+          <code>epoch.config.ts</code> — app metadata: title, icon, contact email,
           completion mode.
         </li>
         <li>

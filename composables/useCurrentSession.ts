@@ -2,7 +2,7 @@ import { type DataMode, type SessionMeta } from '../internal/data'
 import { assertOneOf } from '../utils/asserts'
 import { START_TIME } from '../internal/state'
 import { getUrlNumber } from '../utils/url-params'
-import { useConfig } from './useConfig'
+import { useBuildDeployment } from './useBuildDeployment'
 import { createGlobalState } from '@vueuse/core'
 
 
@@ -79,12 +79,15 @@ export const useCurrentSession = createGlobalState<() => SessionMeta>(() => {
     console.log(`inferred mode="${mode}" from studyId="${studyId}" and participantId="${participantId}"`)
   }
 
+  const deployment = useBuildDeployment()
   const meta: SessionMeta = {
     sessionId,
     participantId,
     studyId,
     mode,
-    version: useConfig().version,
+    ...(deployment ? {
+      version: deployment.version, deploymentId: deployment.id, sha: deployment.fullSha || deployment.sha,
+    } : {}),
     startTime: START_TIME,
     lastUpdateTime: Date.now(),
     inactiveTime: 0,

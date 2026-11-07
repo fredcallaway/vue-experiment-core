@@ -15,14 +15,24 @@ const sessions: SessionData[] = [1, 2].map(index => ({
     bucket: 'audio-fixture.invalid', path: 'sessions/uid/audio-session-1/clip%20one.wav' } } } : null,
 }))
 
-export const useSessionData = (_mode: string, id: string) => {
-  const data = ref(sessions.find(session => session.meta.sessionId === id) ?? null)
+const debugSessions: SessionData[] = [
+  { ...sessions[0]!, meta: { ...sessions[0]!.meta, mode: 'debug', sessionId: 'debug-hosted-old',
+    version: 'old-pilot', startTime: 1000 } },
+  { ...sessions[0]!, meta: { ...sessions[0]!.meta, mode: 'debug', sessionId: 'debug-hosted-new',
+    version: 'new-pilot', startTime: 3000 } },
+  { ...sessions[0]!, meta: { ...sessions[0]!.meta, mode: 'debug', sessionId: 'debug-local',
+    version: undefined, startTime: 2000 } },
+]
+const forMode = (mode: string) => mode === 'debug' ? debugSessions : sessions
+
+export const useSessionData = (mode: string, id: string) => {
+  const data = ref(forMode(mode).find(session => session.meta.sessionId === id) ?? null)
   return { data, meta: computed(() => data.value?.meta), downloadTime: ref(5000), status: ref('completed') }
 }
-export const useAllData = () => ({
-  sessions: ref(Object.fromEntries(sessions.map(session => [session.meta.sessionId, session.meta]))),
+export const useAllData = (mode: string) => ({
+  sessions: ref(Object.fromEntries(forMode(mode).map(session => [session.meta.sessionId, session.meta]))),
   syncStatus: ref('synced'), syncLocalData: async () => {}, lastUpdateTime: ref(4000), lastSyncTime: ref(5000),
 })
-export const readLocalSessionData = async (_mode: string, id: string) =>
-  sessions.find(session => session.meta.sessionId === id)!
+export const readLocalSessionData = async (mode: string, id: string) =>
+  forMode(mode).find(session => session.meta.sessionId === id)!
 export const useProlificMessages = () => ({ getOrCreateCorrespondence: () => null })

@@ -57,7 +57,9 @@ export function useFirebaseStorage() {
       contentType: blob.type.split(';')[0] || 'application/octet-stream',
       customMetadata: {
         sessionId: session.sessionId, participantId: session.participantId,
-        studyId: session.studyId, version: session.version, mode: session.mode,
+        studyId: session.studyId, mode: session.mode,
+        ...(session.version ? { version: session.version } : {}),
+        ...(session.deploymentId ? { deploymentId: session.deploymentId, sha: session.sha! } : {}),
       },
     })
     assertWritable()

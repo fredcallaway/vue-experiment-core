@@ -2,6 +2,12 @@
 import { readDeploymentConfig } from './operations/experiment-config'
 
 export default defineNuxtConfig({
+  runtimeConfig: {
+    public: {
+      // Embedded in this build, never read from the mutable current-deployment database record.
+      experimentDeployment: process.env.EXPERIMENT_DEPLOYMENT || '',
+    },
+  },
   $env: {
     deployment: {
       // Tracked deployment must not clear the running development server's build files.

@@ -7,6 +7,7 @@ type StudyData = {
   sha: string
   publishTime?: number
   version: string
+  deploymentId?: string
   completionCodes: Record<string, string>
   prolificConfig?: ProlificConfig
 }
@@ -31,15 +32,17 @@ export const useStudies = () => {
     if (error) throw new Error(error)
     const study = await getStudy(studyId)
     const deployed = (await db.get('deployStatus')).val()
-    if (!study || !deployed?.sha || deployed.version !== study.version || config.version !== study.version) {
-      throw new Error('The draft version must match epoch.config.ts and the deployed version. Deploy and recreate the draft.')
+    const selected = (await db.get('deploymentVersion')).val()
+    if (!study || !deployed?.sha || deployed.version !== study.version || (selected && selected !== study.version)) {
+      throw new Error('The draft version must match the selected dataset version and deployment. Deploy and recreate the draft.')
     }
-    const deployment = { version: deployed.version as string, sha: (deployed.fullSha || deployed.sha) as string }
+    const deployment = { version: deployed.version as string, sha: (deployed.fullSha || deployed.sha) as string,
+      ...(deployed.id ? { deploymentId: deployed.id as string } : {}) }
     const studies = (await db.get('studies')).val()
     return { deployment, warnings: versionWarnings(deployment.version, deployment.sha, studies) }
   }
 
-  const publishStudy = async (studyId: string, deployment: { version: string, sha: string }) => {
+  const publishStudy = async (studyId: string, deployment: { version: string, sha: string, deploymentId?: string }) => {
     const db = useDatabase()
     await db.update(`studies/${studyId}`, { ...deployment, publishTime: Date.now() })
   }

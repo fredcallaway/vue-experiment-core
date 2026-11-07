@@ -85,7 +85,7 @@ import DocsStudyData from './DocsStudyData.vue'
       <p>To post a study, follow these three steps:</p>
       <ol>
         <li>
-          Choose <b>Create New Study</b> and enter the description, reward, estimated
+          Choose <b>Create New Study</b>, set the dataset version, and enter the description, reward, estimated
           duration, number of places, and eligibility criteria. Check the hourly rate and
           total cost (this doesn't include bonuses!).
         </li>

@@ -124,6 +124,7 @@ const getCellLink = (column: string, row: Record<string, any>) => {
     case 'sessionId':
       return `/data/sessions/${row.sessionId}`
     case 'version':
+      if (useRoute().query.mode === 'debug' || !value) return undefined
       return `/data/versions/${value}`
     case 'studyId':
       if (value === 'UNKNOWN') return undefined

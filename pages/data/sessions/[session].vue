@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { useDataViews } from '../../../composables/dataViews'
 import { useProlificMessages } from '../../../internal/composables/useProlificMessages'
-import { getSessionTimeInfo, makeEventList, useSessionData } from '../../../internal/local-data'
-import { assertDefined } from '../../../utils/asserts'
+import { getSessionTimeInfo, makeEventList, readLocalSessionData, useSessionData } from '../../../internal/local-data'
 import { formatDateTime, formatTime } from '../../../utils/formatting'
 import * as R from 'remeda'
 
@@ -40,6 +39,35 @@ const eventList = computed(() => {
 })
 
 const dataViews = useDataViews()
+const saveError = ref<unknown>(null)
+const saving = ref(false)
+const lastSaveTime = ref<number | null>(null)
+const processedDataPath = `data/processed/debug/${sessionId}/`
+
+const saveSession = async () => {
+  if (saving.value) return
+  saving.value = true
+  saveError.value = null
+  try {
+    const synced = await $fetch('/api/syncData', { method: 'POST', body: { mode, sessionId } })
+    if (synced.numError > 0) throw new Error('Could not refresh this session. Retry before exporting.')
+    const session = await readLocalSessionData(mode, sessionId)
+    // Evaluate every view before writing so preprocessing errors cannot produce a partial export.
+    const files = Object.entries(dataViews).map(([name, view]) => ({
+      name: `${name}.${view.format}`, data: view.fn(session),
+    }))
+    files.push({ name: '_session.json', data: session })
+    await Promise.all(files.map(file => $fetch(`/api/data/processed/debug/${encodeURIComponent(sessionId)}/${file.name}`, {
+      method: 'POST', body: JSON.stringify(file.data),
+      headers: { 'Content-Type': file.name.endsWith('.json') ? 'text/plain' : 'application/json' },
+    })))
+    lastSaveTime.value = Date.now()
+  } catch (error) {
+    saveError.value = error
+  } finally {
+    saving.value = false
+  }
+}
 
 const processedData = computed(() => {
   const dv = data.value
@@ -97,12 +125,12 @@ const timeInfo = computed(() => {
           <div class="grid grid-cols-1 gap-2">
             <!-- <div><b>Participant ID:</b> <span class="font-mono text-xs">{{ meta.participantId || 'N/A' }}</span></div> -->
             <!-- <div><b>Study ID:</b> <span class="font-mono text-xs">{{ meta.studyId || 'N/A' }}</span></div> -->
-            <div>
+            <div v-if="mode === 'live' && meta.version">
               <b>Version: </b>
               <NuxtLink
-                :to="`/data/versions/${assertDefined(meta.version, `Missing version for session ${sessionId}`)}?mode=${mode}`"
+                :to="`/data/versions/${meta.version}?mode=${mode}`"
               >
-                {{ assertDefined(meta.version, `Missing version for session ${sessionId}`) }}
+                {{ meta.version }}
               </NuxtLink>
             </div>
             <!-- <div><b>Mode:</b> {{ meta.mode || 'N/A' }}</div> -->
@@ -127,6 +155,14 @@ const timeInfo = computed(() => {
         </div>
         <pre class="bg-gray-100 p-4 rounded overflow-auto max-h-96 text-xs">{{ JSON.stringify(sessionData, null, 2) }}</pre>
       </div> -->
+
+      <div v-if="mode === 'debug'" class="my-4 flex flex-wrap items-center gap-2">
+        <b>Data:</b>
+        <span class="font-mono">{{ processedDataPath }}</span>
+        <span v-if="lastSaveTime">saved at {{ formatDateTime(lastSaveTime) }}</span>
+        <button class="btn-blue-sm" :disabled="saving" @click="saveSession">{{ saving ? 'saving…' : 'save' }}</button>
+      </div>
+      <Error :error="saveError" />
 
       <TabContainer id=session-tabs :default-tab="0">
         <Tab title="events">

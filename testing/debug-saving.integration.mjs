@@ -110,6 +110,16 @@ try {
   await waitState('on')
   assert.ok(await page.evaluate(() => window.__saveElapsed >= 500), 'Activation lasts at least 500 ms')
   assert.match(await indicator.textContent(), /debugXL7CE/)
+  const savedMeta = await page.evaluate(() => window.__debugDatabase.values['debug/meta/debugXL7CE'])
+  const build = JSON.parse(process.env.EXPERIMENT_DEPLOYMENT || 'null')
+  if (build) {
+    assert.equal(savedMeta.version, build.version)
+    assert.equal(savedMeta.deploymentId, build.id)
+    assert.equal(savedMeta.sha, build.fullSha || build.sha)
+  } else {
+    assert.equal(savedMeta.version, undefined, 'Local debug has no dataset version despite legacy epoch config')
+    assert.equal(savedMeta.deploymentId, undefined)
+  }
   assert.equal(new URL(page.url()).searchParams.has('session_id'), false)
   assert.ok(await page.evaluate(() => Object.keys(window.__debugDatabase.values)
     .some(path => path.startsWith('debug/events/debugXL7CE/') && path.includes('fixture:response'))),

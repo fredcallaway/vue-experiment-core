@@ -6,9 +6,9 @@ import { firebaseEnvironment } from './firebase-auth'
 
 const exec = promisify(execFile)
 
-export async function command(root: string, executable: string, args: string[]) {
+export async function command(root: string, executable: string, args: string[], environment: NodeJS.ProcessEnv = {}) {
   try {
-    const env = executable === 'firebase' ? await firebaseEnvironment(root) : process.env
+    const env = { ...(executable === 'firebase' ? await firebaseEnvironment(root) : process.env), ...environment }
     const { stdout, stderr } = await exec(executable, args, { cwd: root, env, maxBuffer: 32 * 1024 * 1024 })
     if (stderr) process.stderr.write(stderr)
     return stdout.trim()

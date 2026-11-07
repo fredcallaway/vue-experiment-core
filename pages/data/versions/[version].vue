@@ -24,6 +24,7 @@ definePageMeta({
 const route = useRoute()
 const version = route.params.version as string
 const mode = (route.query.mode as 'live' | 'debug') || 'live'
+if (mode === 'debug') await navigateTo('/data/sessions?mode=debug', { replace: true })
 
 const { sessions: allSessions, syncStatus, syncLocalData, lastUpdateTime } = useAllData(mode)
 

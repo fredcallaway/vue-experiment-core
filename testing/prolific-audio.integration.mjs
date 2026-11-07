@@ -75,13 +75,15 @@ try {
         places_taken: 0, total_cost: 0,
       }
       else if (target.pathname === '/api/prolific/studies/') json = { results: [], meta: { count: 0 } }
+      else if (target.pathname.endsWith('/studies')) json = { results: [], meta: { count: 0 } }
+      else if (target.pathname.includes('/messages')) json = { results: [] }
       return route.fulfill({ json })
     }
     return ['GET', 'HEAD'].includes(request.method()) ? route.continue() : route.abort('blockedbyclient')
   })
   await context.routeWebSocket('**/*', socket => socket.close())
   const page = await context.newPage()
-  page.on('pageerror', error => errors.push(error.message))
+  page.on('pageerror', error => errors.push(error.stack || error.message))
   await page.goto(url.href)
   const microphone = page.getByRole('checkbox', { name: 'Microphone (audio recording)', exact: true })
   const playback = page.getByRole('checkbox', { name: 'Audio playback (speakers or headphones)', exact: true })
@@ -100,6 +102,12 @@ try {
   await page.getByRole('button', { name: 'Create Draft', exact: true }).click()
   await page.waitForURL('**/prolific/fixture-study')
   assert.deepEqual(payload.peripheral_requirements, ['microphone', 'audio'])
+  const expectedCodes = await page.evaluate(async () => {
+    const { createCompletionCodes } = await import('/_nuxt/core/internal/prolific.ts')
+    return createCompletionCodes(window.audioStudyFixture.deployStatus.version)
+  })
+  assert.deepEqual(payload.completion_codes, expectedCodes, 'Study codes use the deployed dataset version')
+  assert.equal(await page.evaluate(() => window.audioStudyFixture.studies['fixture-study'].version), '0.1')
   assert.deepEqual(payload.filters.find(filter => filter.filter_id === 'custom_blocklist').selected_values,
     ['aaaaaaaaaaaaaaaaaaaaaaaa'], 'Skip synthetic identities while retaining excluded real participants')
   assert.deepEqual(errors, [])

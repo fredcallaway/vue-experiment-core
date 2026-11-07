@@ -7,6 +7,7 @@ test('startup preserves native randomness and installs the seeded stream and pro
     import { strict as assert } from 'node:assert'
     import { ref, reactive } from 'vue'
     Object.assign(globalThis, { ref, reactive, defineNuxtPlugin: plugin => plugin })
+    globalThis.useRuntimeConfig = () => ({ public: { experimentDeployment: '' } })
     globalThis.window = { location: { search: '?session_id=startup-test&mode=debug' } }
 
     const nativeRandom = Math.random

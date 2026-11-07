@@ -3,6 +3,7 @@ import { useDatabase } from '../../composables/useDatabase'
 import { useIntervalFn } from '@vueuse/core'
 import { contactEmailError } from '../deploymentSafety'
 import { useVersionSafety } from './useVersionSafety'
+import { datasetVersionError } from '../deploymentIdentity'
 
 
 export interface GitStatus {
@@ -16,20 +17,24 @@ export const useDeployment = () => {
   const error = ref('')
   const localSha = ref('')
   const deployedSha = ref('')  
+  const deployedVersion = ref('')
+  const deployedId = ref('')
+  const version = useDatabase().sync('deploymentVersion', '')
+  const versionError = computed(() => datasetVersionError(version.value))
   const isLoading = ref(false)
   const isDirty = ref(false)
   const gitStatus = ref('')
 
   const config = useConfig()
   const unconfigured = computed(() => !!contactEmailError(config.contactEmail))
-  const versionSafety = useVersionSafety(() => config.version, () => localSha.value)
+  const versionSafety = useVersionSafety(() => version.value, () => localSha.value)
 
   const status = computed<DeploymentStatus>(() => {
     if (unconfigured.value) return 'unconfigured'
-    if (isLoading.value || !localSha.value || deployedSha.value === 'loading...') return 'loading'
+    if (isLoading.value || !version.ready || !localSha.value || deployedSha.value === 'loading...') return 'loading'
     if (isDirty.value) return 'dirty'
     if (error.value) return 'error'
-    if (deployedSha.value && deployedSha.value === localSha.value) return 'deployed'
+    if (deployedSha.value && deployedSha.value === localSha.value && deployedVersion.value === version.value) return 'deployed'
     return 'ready'
   })
 
@@ -55,23 +60,32 @@ export const useDeployment = () => {
     const snapshot = await db.get('deployStatus')
     const data = snapshot.val()
     deployedSha.value = data?.sha || ''
+    deployedVersion.value = data?.version || ''
+    deployedId.value = data?.id || ''
   }
   checkDeployedSha()
+  watch(() => version.ready && deployedSha.value !== 'loading...', ready => {
+    if (ready && !version.value && deployedVersion.value) version.value = deployedVersion.value
+  }, { once: true })
   
   const deploy = async (allowVersionReuse = false) => {
     await checkGitStatus()
-    if (isLoading.value || isDirty.value || unconfigured.value) {
+    if (isLoading.value || isDirty.value || unconfigured.value || versionError.value) {
       return false
     }
     isLoading.value = true
     try {
       await versionSafety.refresh()
+      const selectedVersion = version.value
+      await version.syncImmediate()
       const result = await $fetch('/api/prolific/deploy', {
-        method: 'POST', body: { allowVersionReuse },
+        method: 'POST', body: { version: selectedVersion, allowVersionReuse },
       })
       if (!result.success) throw new Error(result.error)
       error.value = ''
       deployedSha.value = result.sha
+      deployedVersion.value = result.version
+      deployedId.value = result.id
       return true
     } catch (cause) {
       error.value = cause instanceof Error ? cause.message : String(cause)
@@ -85,9 +99,14 @@ export const useDeployment = () => {
     deploy,
     localSha,
     deployedSha,
+    deployedVersion,
+    deployedId,
+    version,
+    versionError,
     status,
     error,
     gitStatus,
     versionSafety,
+    refreshDeployment: checkDeployedSha,
   }
 }

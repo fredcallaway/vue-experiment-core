@@ -34,7 +34,7 @@ export function versionWarnings(version: string, sha: string, studies: Record<st
       studyId, version, publishedSha, currentSha: sha,
       message: `Version ${version} was already posted in study ${studyId} ` +
         `(commit ${publishedSha ?? 'unknown'}); current commit is ${sha}. ` +
-        'Increment epoch.config.ts version if the participant procedure or analysis has changed. ' +
+        'Choose a new dataset version in the Prolific interface if the participant procedure or analysis has changed. ' +
         'Keep it only after reviewing why these changes belong to the same version.',
     })
   }

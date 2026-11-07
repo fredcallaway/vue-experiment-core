@@ -33,7 +33,7 @@ async function project() {
 async function deploymentFixture(options = {}) {
   const root = await project()
   const calls = []
-  const state = {}
+  const state = { deploymentVersion: 'cohort-1' }
   let remote
   let failTracking = options.failTracking
   const database = {
@@ -45,8 +45,8 @@ async function deploymentFixture(options = {}) {
     },
   }
   const io = {
-    run: async (cwd, executable, args) => {
-      calls.push({ executable, args })
+    run: async (cwd, executable, args, environment) => {
+      calls.push({ executable, args, environment })
       if (executable === 'bun' && args[0] === '--eval') return command(cwd, executable, args)
       if (executable === 'bun' && args[0] === 'run') {
         expect(args).toEqual(['run', 'generate', '--envName', 'deployment'])
@@ -80,7 +80,7 @@ describe('tracked static Hosting deployment', () => {
       'export default { version: "cohort-1", contactEmail: "yourEmailAddress@fakeDomain.foo" }\n')
     await expect(fixture.operations.deploy({ allowVersionReuse: true })).rejects.toThrow('Set contactEmail')
     expect(fixture.calls).toHaveLength(1)
-    expect(fixture.state).toEqual({})
+    expect(fixture.state.deployStatus).toBeUndefined()
   })
 
   test('allows bugfix redeployment before posting and another batch of the same posted build', async () => {
@@ -130,19 +130,34 @@ describe('tracked static Hosting deployment', () => {
     expect(fixture.state.deployStatus.fullSha).toBe(await command(fixture.root, 'git', ['rev-parse', 'HEAD']))
     expect(fixture.state.deployStatus.sha).toHaveLength(8)
     expect(fixture.state[`deploys/${result.deployedAt}`]).toEqual(fixture.state.deployStatus)
+    const build = fixture.calls.find(call => call.args[0] === 'run')
+    expect(JSON.parse(build.environment.EXPERIMENT_DEPLOYMENT)).toEqual(fixture.state.deployStatus)
+  })
+
+  test('uses the UI selection or an explicit version without editing source', async () => {
+    const fixture = await deploymentFixture()
+    fixture.state.deploymentVersion = 'pilot-with-longer-instructions'
+    const first = await fixture.operations.deploy()
+    expect(first.version).toBe(fixture.state.deploymentVersion)
+    const second = await fixture.operations.deploy({ version: 'main-study' })
+    expect(second.version).toBe('main-study')
+    expect(second.fullSha).toBe(first.fullSha)
+    delete fixture.state.deploymentVersion
+    await expect(fixture.operations.deploy()).rejects.toThrow('Choose a dataset version')
+    await expect(fixture.operations.deploy({ version: '../escape' })).rejects.toThrow('Choose a dataset version')
   })
 
   test.each([{ buildFails: true }, { changeDuringBuild: true }])('does not upload after a failed or changed build: %j', async options => {
     const fixture = await deploymentFixture(options)
     await expect(fixture.operations.deploy()).rejects.toThrow()
     expect(fixture.calls.some(call => call.executable === 'firebase')).toBe(false)
-    expect(fixture.state).toEqual({})
+    expect(fixture.state.deployStatus).toBeUndefined()
   })
 
   test('never marks a mismatching remote build as deployed', async () => {
     const fixture = await deploymentFixture({ wrongBuild: true })
     await expect(fixture.operations.deploy()).rejects.toThrow('does not match')
-    expect(fixture.state).toEqual({})
+    expect(fixture.state.deployStatus).toBeUndefined()
   })
 
   test('recovers a successful upload after a tracking failure without uploading again', async () => {

@@ -33,9 +33,11 @@ import DocsPage from './DocsPage.vue'
       collecting the data, make sure to click save again to update the analysis files.
     </p>
     <p>
-      Files are saved under <code>data/processed/&lt;mode&gt;/&lt;version&gt;/</code>. The mode is
-      <code>live</code> or <code>debug</code>. Data collected through the prolific interface is saved under
-      <code>live</code>. While testing your experiment, it's sometimes useful to record your own data.
+      Live datasets are saved under <code>data/processed/live/&lt;version&gt;/</code>.
+      Debug data is a chronological list of sessions, with no version grouping. Open a debug
+      session and click <b>save</b> to write that session and its data views under
+      <code>data/processed/debug/&lt;session-id&gt;/</code>.
+      While testing your experiment, it's sometimes useful to record your own data.
       You can activate debug data saving by clicking the cloud icon in the top right when you're on the
       Develop or Preview pages. You can then view that data by clicking "view debug data" on the Data page.
     </p>

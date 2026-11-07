@@ -1,15 +1,14 @@
 import { contactEmailError } from '../internal/deploymentSafety'
-import { command, safeSegment } from './project'
+import { command } from './project'
 
 export async function readDeploymentConfig(root: string, run = command) {
   const output = await run(root, 'bun', ['--eval',
     'globalThis.defineEpochConfig = c => c; ' +
-    'const {version, contactEmail} = (await import("./epoch.config.ts")).default; ' +
-    'console.log(JSON.stringify({version, contactEmail}))',
+    'const {contactEmail} = (await import("./epoch.config.ts")).default; ' +
+    'console.log(JSON.stringify({contactEmail}))',
   ])
-  const config = JSON.parse(output) as { version: string, contactEmail: string }
+  const config = JSON.parse(output) as { contactEmail: string }
   const error = contactEmailError(config.contactEmail)
   if (error) throw new Error(error)
-  safeSegment(config.version, 'experiment version')
   return config
 }

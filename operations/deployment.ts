@@ -6,6 +6,7 @@ import type { OperationsDatabase } from './database'
 import { command, gitSnapshot, operationDirectory, readJson, safeSegment, unchanged, writeJson } from './project'
 import { readDeploymentConfig } from './experiment-config'
 import { versionWarnings, type StudyDeployment } from '../internal/deploymentSafety'
+import { datasetVersionError } from '../internal/deploymentIdentity'
 
 type Deployment = {
   id: string
@@ -62,8 +63,11 @@ export class DeploymentOperations {
     return { projectId, site, hosting: staticHosting }
   }
 
-  async inspect() {
-    const { version, contactEmail } = await readDeploymentConfig(this.root, this.io.run)
+  async inspect(version?: string) {
+    const { contactEmail } = await readDeploymentConfig(this.root, this.io.run)
+    version ??= await this.database.get<string>('deploymentVersion') ?? ''
+    const error = datasetVersionError(version)
+    if (error) throw new Error(error)
     const snapshot = await gitSnapshot(this.root)
     const config = await this.config()
     const studies = await this.database.get<Record<string, StudyDeployment>>('studies')
@@ -87,7 +91,9 @@ export class DeploymentOperations {
   private async track(record: DeploymentRecord) {
     const info = record.deployment
     // Preserve the short SHA and timestamp history keys consumed by the existing study UI.
-    await this.database.update('', { deployStatus: info, [`deploys/${info.deployedAt}`]: info })
+    await this.database.update('', {
+      deploymentVersion: info.version, deployStatus: info, [`deploys/${info.deployedAt}`]: info,
+    })
     const saved = await this.database.get<Deployment>('deployStatus')
     if (saved?.id !== info.id || saved?.fullSha !== info.fullSha) throw new Error('Deployment tracking verification failed')
     record.state = 'tracked'
@@ -95,8 +101,8 @@ export class DeploymentOperations {
     return { ...info, state: record.state, url: `https://${info.site}.web.app` }
   }
 
-  async deploy({ allowVersionReuse = false } = {}) {
-    const inspected = await this.inspect()
+  async deploy({ version, allowVersionReuse = false }: { version?: string, allowVersionReuse?: boolean } = {}) {
+    const inspected = await this.inspect(version)
     for (const warning of inspected.warnings) process.stderr.write(`WARNING: ${warning.message}\n`)
     if (inspected.warnings.length && !allowVersionReuse) {
       throw new Error('Review the posted-version warning, then increment version or explicitly use --allow-version-reuse.')
@@ -114,7 +120,9 @@ export class DeploymentOperations {
     process.stderr.write(`Deployment ${deployment.id}; recovery record: ${recordPath}\n`)
     const temporary = await mkdtemp(resolve(tmpdir(), 'experiment-hosting-'))
     try {
-      await this.io.run(this.root, 'bun', ['run', 'generate', '--envName', 'deployment'])
+      await this.io.run(this.root, 'bun', ['run', 'generate', '--envName', 'deployment'], {
+        EXPERIMENT_DEPLOYMENT: JSON.stringify(deployment),
+      })
       await unchanged(this.root, snapshot)
       await readFile(resolve(this.root, '.output/public/index.html'))
       await writeJson(resolve(this.root, '.output/public/ops-deployment.json'), deployment)

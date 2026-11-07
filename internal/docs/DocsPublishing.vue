@@ -17,7 +17,7 @@ import DocsPage from './DocsPage.vue'
         Resolve a mismatch before recruiting against the intended build.
       </p>
       <p>
-        The study's internal name includes <code>version</code> from <code>epoch.config.ts</code>
+        The study's internal name includes the dataset version selected on the Prolific create page
         and the commit identifier. The commit identifies a source revision; the version
         identifies a participant procedure/data cohort. Keep the version through bugfix
         deployments before posting a study, and when recruiting another batch from unchanged
@@ -25,7 +25,7 @@ import DocsPage from './DocsPage.vue'
       </p>
       <p>
         Deployment and study publication warn when a previously posted version has a different
-        commit. Review the listed changes, then update <code>epoch.config.ts</code> or explicitly
+        commit. Review the listed changes, then choose a new dataset version or explicitly
         acknowledge keeping the version. Documentation-only changes can also trigger this
         conservative warning. Check publication history manually for studies posted outside
         this dashboard. Replace the starter contact email before building or deploying.

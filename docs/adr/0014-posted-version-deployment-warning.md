@@ -1,6 +1,6 @@
 # 0014: Warn on changed code under a posted experiment version
 
-Status: Accepted
+Status: Superseded by [0018](0018-dataset-versions-and-debug-sessions.md) for version ownership and session provenance. The posted-version warnings remain in effect.
 
 ## Decision
 

@@ -9,7 +9,7 @@ import { Toaster } from 'vue-sonner'
 const config = useConfig()
 
 console.log('------------ initializing app ------------')
-console.log('version: ', config.version)
+console.log('deployment: ', useRuntimeConfig().public.experimentDeployment)
 
 useHead({
   title: config.title,

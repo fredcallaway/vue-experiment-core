@@ -41,11 +41,25 @@ try {
   browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' })
   let failNext = true
-  const requests = [], errors = []
+  let failNextSync = false
+  const requests = [], errors = [], exports = [], syncs = []
   await context.route('**/*', route => {
     const request = route.request()
     const target = new URL(request.url())
-    if (target.origin !== origin || !['GET', 'HEAD'].includes(request.method())) return route.abort()
+    if (target.origin !== origin) return route.abort()
+    if (target.pathname === '/api/syncData' && request.method() === 'POST') {
+      syncs.push(request.postDataJSON())
+      if (failNextSync) {
+        failNextSync = false
+        return route.fulfill({ json: { numUpdated: 0, numError: 1 } })
+      }
+      return route.fulfill({ json: { numUpdated: 1, numError: 0 } })
+    }
+    if (target.pathname.startsWith('/api/data/processed/debug/') && request.method() === 'POST') {
+      exports.push({ path: target.pathname, data: JSON.parse(request.postData()) })
+      return route.fulfill({ json: null })
+    }
+    if (!['GET', 'HEAD'].includes(request.method())) return route.abort()
     if (target.pathname === '/api/recordings') {
       requests.push(Object.fromEntries(target.searchParams))
       if (failNext) {
@@ -105,6 +119,40 @@ try {
   await page.screenshot({ path: resolve(output, 'version-audio.png') })
   assert.equal(requests.at(-1).path, 'word-naming/p2/audio-session-2/legacy.wav')
   assert.equal(requests.every(request => request.bucket === 'audio-fixture.invalid'), true)
+
+  await page.goto(`${origin}/data?mode=debug`)
+  await page.getByRole('heading', { name: 'Debug sessions', exact: true }).waitFor()
+  await page.waitForURL('**/data/sessions?mode=debug')
+  assert.equal(await page.getByRole('button', { name: 'versions', exact: true }).count(), 0)
+  assert.deepEqual(await page.locator('tbody tr a').filter({ hasText: /^debug-/ }).allTextContents(),
+    ['debug-hosted-new', 'debug-local', 'debug-hosted-old'], 'Debug sessions are newest first across versions')
+  assert.equal(await page.locator('thead').getByText('version', { exact: true }).count(), 0)
+  await page.screenshot({ path: resolve(output, 'debug-sessions.png') })
+  await page.getByRole('link', { name: 'debug-local', exact: true }).click()
+  await page.getByRole('button', { name: 'save', exact: true }).waitFor()
+  assert.equal(new URL(page.url()).searchParams.get('mode'), 'debug')
+  await page.getByRole('button', { name: 'save', exact: true }).click()
+  await page.getByText('saved at', { exact: false }).waitFor()
+  assert.deepEqual(syncs, [{ mode: 'debug', sessionId: 'debug-local' }])
+  assert.equal(exports.length, 4)
+  assert.ok(exports.every(file => file.path.startsWith('/api/data/processed/debug/debug-local/')))
+  assert.equal(exports.find(file => file.path.endsWith('/_session.json')).data.meta.sessionId, 'debug-local')
+  assert.deepEqual(exports.find(file => file.path.endsWith('/trial.csv')).data,
+    [{ session_id: 'debug-local', response: 'fixture' }])
+  assert.equal(exports.find(file => file.path.endsWith('/empty.json')).data, null)
+  await page.screenshot({ path: resolve(output, 'debug-session-export.png') })
+  await page.goto(`${origin}/data/versions/old-pilot?mode=debug`)
+  await page.waitForURL('**/data/sessions?mode=debug')
+  assert.equal(exports.length, 4, 'Old debug version links do not export or combine sessions')
+  await page.goto(`${origin}/data/sessions/debug-hosted-new?mode=debug`)
+  failNextSync = true
+  await page.getByRole('button', { name: 'save', exact: true }).click()
+  await page.getByText('Could not refresh this session. Retry before exporting.', { exact: true }).waitFor()
+  assert.equal(exports.length, 4, 'A failed session refresh cannot export stale data')
+  await page.getByRole('button', { name: 'save', exact: true }).click()
+  await page.getByText('saved at', { exact: false }).waitFor()
+  assert.ok(exports.slice(4).every(file => file.path.startsWith('/api/data/processed/debug/debug-hosted-new/')))
+  assert.equal(await page.getByRole('link', { name: 'new-pilot', exact: true }).count(), 0)
   assert.deepEqual(errors, [])
   await writeFile(resolve(output, 'result.json'), JSON.stringify({ requests, errors,
     checks: ['session playback', 'permission error and retry', 'no eager downloads', 'cleanup on tab change',

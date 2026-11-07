@@ -1,6 +1,6 @@
-import { useConfig } from '../composables/useConfig'
 import { assert } from '../utils/asserts'
 import { hashString } from '../utils/misc'
+import { useBuildDeployment } from '../composables/useBuildDeployment'
 
 import { z } from 'zod'
 import firebaseConfig from '~/firebase.config.json'
@@ -175,11 +175,12 @@ const getCompletionActions = (codeType: CompletionCodeType) => {
   }
 }
 
-// completion code is a deterministic hash of config.version and codeType
-export const getCompletionCode = (codeType: CompletionCodeType): string => {
-  const config = useConfig()
-
-  const input = `${codeType}-${config.version}`
+// Dashboard creation passes the deployed version; participants use their loaded build's version.
+export const getCompletionCode = (
+  codeType: CompletionCodeType,
+  version = useBuildDeployment()?.version ?? 'debug',
+): string => {
+  const input = `${codeType}-${version}`
   const hash = hashString(input)
 
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -194,11 +195,11 @@ export const getCompletionCode = (codeType: CompletionCodeType): string => {
   return code
 }
 
-export const createCompletionCodes = (): CompletionCodeSpec[] => {
+export const createCompletionCodes = (version: string): CompletionCodeSpec[] => {
  return COMPLETION_CODE_TYPES.map(codeType => ({
     code_type: codeType,
     actions: getCompletionActions(codeType),
-    code: getCompletionCode(codeType),
+    code: getCompletionCode(codeType, version),
   }))
 }
 

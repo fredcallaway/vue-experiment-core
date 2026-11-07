@@ -244,6 +244,9 @@ export class DataWriter {
               throw new Error("DataWriter.repeatSession.mismatch")
             }
           }
+          for (const key of ['deploymentId', 'sha'] as const) {
+            if (oldMeta[key] && oldMeta[key] !== meta[key]) throw new Error('DataWriter.repeatSession.mismatch')
+          }
           logEvent('DataWriter.repeatSession.update')
           Object.assign(meta, oldMeta)
         }

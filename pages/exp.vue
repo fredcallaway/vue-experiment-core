@@ -17,6 +17,9 @@ definePageMeta({
 })
 
 const meta = useCurrentSession()
+if (meta.mode === 'live' && !meta.deploymentId) {
+  throw new Error('Live sessions require a tracked deployment. Use debug mode for local development.')
+}
 const initialized = useDataWriter().initializeSession(meta)
 
 useErrorLogging()

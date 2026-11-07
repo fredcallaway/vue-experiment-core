@@ -1,9 +1,11 @@
 import { createGlobalState } from '@vueuse/core'
+import { useBuildDeployment } from './useBuildDeployment'
 
 export type Config = {
   title: string
   icon: string
-  version: string
+  /** Legacy configuration field; dataset versions are selected in the Prolific interface. */
+  version?: string
   contactEmail: string
   completion: { mode: 'prolific' } | { mode: 'link', link: string}
   navPages?: Record<string, string>
@@ -23,5 +25,5 @@ export const useConfig = createGlobalState(() => {
       'Epoch config not initialized. Import epoch.config.ts in your app or create a plugin to initialize it before using the framework.'
     )
   }
-  return reactive({ ..._config })
+  return reactive({ ..._config, version: useBuildDeployment()?.version })
 })

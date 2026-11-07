@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useConfig } from '../../composables/useConfig'
 import { useAsyncRunner } from '../../internal/composables/useAsyncRunner'
 import { useDeployment } from '../../internal/composables/useDeployment'
 import { useProlific } from '../../internal/composables/useProlific'
@@ -16,12 +15,12 @@ definePageMeta({
 })
 
 const prolific = useProlific()
-const { deploy, localSha, deployedSha, status, error: deploymentError, gitStatus, versionSafety } = useDeployment()
+const { deploy, localSha, deployedSha, deployedVersion, deployedId, version, versionError: datasetError,
+  status, error: deploymentError, gitStatus, versionSafety, refreshDeployment } = useDeployment()
 const { warnings: versionWarnings, loading: versionLoading, error: versionError } = versionSafety
 
 const MIN_WAGE = 8
 
-const config = useConfig()
 const { config: formData, isLoading: formDataLoading } = useProlificConfig()
 
 // Persist deployment error to localStorage
@@ -47,12 +46,12 @@ const dismissDeploymentError = () => {
 const bypassGitCheck = ref(false)
 const bypassDeployedCheck = ref(false)
 const bypassVersionCheck = ref(false)
-watch(() => JSON.stringify([config.version, localSha.value, versionWarnings.value]), () => {
+watch(() => JSON.stringify([version.value, localSha.value, versionWarnings.value]), () => {
   bypassVersionCheck.value = false
 }, { flush: 'sync' })
 
 const internalName = computed(() => {
-  return `${config.version || 'unknown'} (git ${localSha.value})`
+  return `${deployedVersion.value || 'unknown'} (git ${deployedSha.value})`
 })
 
 const hourlyWage = computed(() => {
@@ -69,6 +68,8 @@ const totalCost = computed(() => formData.value.total_available_places * formDat
 const cannotSubmitReason = computed(() => {
   if (formDataLoading.value) return 'Loading study draft...'
   if (status.value === 'unconfigured') return 'Set a real contact email in epoch.config.ts'
+  if (datasetError.value) return datasetError.value
+  if (!deployedVersion.value || version.value !== deployedVersion.value) return 'Deploy the selected dataset version first'
   if (versionLoading.value) return 'Checking posted experiment versions...'
   if (versionError.value) return versionError.value
   if (versionWarnings.value.length && !bypassVersionCheck.value) return 'Review the experiment version warning'
@@ -89,15 +90,17 @@ const previewUrl = computed(() => {
 const create = useAsyncRunner(err => err instanceof ProlificError ? err.userMessage : null)
 const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
   await create.run(async () => {
+    await refreshDeployment()
     await versionSafety.refresh()
     if (!canSubmit.value) throw new Error(cannotSubmitReason.value)
+    const deployment = { version: deployedVersion.value, sha: deployedSha.value,
+      ...(deployedId.value ? { deploymentId: deployedId.value } : {}) }
     const study = await prolific.createStudy({
       ...formData.value,
       internal_name: internalName.value
-    })
+    }, deployment.version)
     await useStudies().addStudy(study.id, {
-      sha: deployedSha.value,
-      version: useConfig().version,
+      ...deployment,
       completionCodes: Object.fromEntries(study.completion_codes.map((x) => [x.code_type, x.code])),
       prolificConfig: R.clone(formData.value),
     })
@@ -293,6 +296,14 @@ const onDeploy = async () => {
         title="Deployment status"
         help="Checks whether the experiment is configured, committed, and deployed before study publication."
       >
+        <div>
+          <label for="dataset-version" class="block mb-2 font-semibold">Dataset version</label>
+          <input id="dataset-version" v-model="version" type="text" :disabled="status === 'loading'"
+            class="border border-2 px-3 py-1 box-border bg-white w-full" placeholder="e.g. pilot-1" />
+          <p class="text-sm mt-2 mb-0">Names the live dataset. Deploy after changing it; recruitment batches can share a version.</p>
+          <div v-if="datasetError" class="text-error text-sm mt-2">{{ datasetError }}</div>
+          <div v-if="deployedVersion" class="text-sm mt-2">Deployed dataset: <b>{{ deployedVersion }}</b></div>
+        </div>
         <VersionWarning v-model="bypassVersionCheck" :warnings="versionWarnings" />
         <div v-if="versionError" role="alert" class="text-error">{{ versionError }}</div>
         <div
@@ -367,7 +378,7 @@ const onDeploy = async () => {
           loading
           :name="status == 'loading' ? 'Deploying...' : 'Deploy Website'"
           :action="onDeploy"
-          :disabled="status !== 'ready' || versionLoading || !!versionError ||
+          :disabled="status !== 'ready' || !!datasetError || versionLoading || !!versionError ||
             (versionWarnings.length > 0 && !bypassVersionCheck)"
         />
       </TutorialTarget>

@@ -46,7 +46,6 @@ import DocsConditions from './DocsConditions.vue'
         export default defineEpochConfig({
           title: 'Psychology Experiment',
           icon: '/favicon.svg',
-          version: '0.1',
           contactEmail: 'you@example.edu',
           completion: { mode: 'prolific' },
         })
@@ -54,10 +53,10 @@ import DocsConditions from './DocsConditions.vue'
       />
       <p>
         Set <code>contactEmail</code> to a real researcher email; the starter placeholder
-        blocks production builds and deployment. <code>version</code> is recorded with every
-        session and shown in the Prolific study's internal name. Keep it during fixes before
-        posting and for additional batches of unchanged code. After posting, increment it
-        when the participant procedure or analysis changes.
+        blocks production builds and deployment. Choose the dataset version in
+        <b>Prolific → Create New Study</b> before deploying. It is recorded in the deployed
+        build and its sessions, and shown in the study's internal name. Local debug sessions
+        have no dataset version.
       </p>
       <div class="p-4 rounded-lg bg-info-200 text-info-600 [&>h3]:text-info-700">
         Experiment-wide values that aren't app metadata — stimulus sets, block counts, shared

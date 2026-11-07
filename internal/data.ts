@@ -21,7 +21,9 @@ export type SessionMeta = {
   sessionId: string
   participantId: string
   studyId: string
-  version: string
+  version?: string
+  deploymentId?: string
+  sha?: string
   mode: DataMode
   startTime: number
   noReturnTime?: number

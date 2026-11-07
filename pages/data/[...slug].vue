@@ -23,6 +23,7 @@ const rawSlug = computed(() => {
   return slug
 })
 const normalizedSlug = computed(() => {
+  if (mode === 'debug') return ['sessions']
   const slug = rawSlug.value
   if (slug.length > 0) {
     const first = slug[0]
@@ -74,7 +75,8 @@ const versionList = computed(() => {
 
 const sessionList = computed(() => {
   if (!sessions.value) return []
-  return makeSessionList(sessions.value)
+  const rows = makeSessionList(sessions.value)
+  return mode === 'debug' ? rows.map(R.omit(['version'])) : rows
 })
 
 // sync status: assume synced for first second to prevent jitter
@@ -94,7 +96,7 @@ onMounted(() => {
   <div class="p-8 max-w-7xl mx-auto">
     <!-- <Error :error="metaError" /> -->
 
-    <h1>Data Viewer</h1>
+    <h1>{{ mode === 'debug' ? 'Debug sessions' : 'Data Viewer' }}</h1>
 
     <NuxtLink external :href="`/data?mode=${otherMode}`">view {{ otherMode }} data</NuxtLink>
     <br />
@@ -114,7 +116,11 @@ onMounted(() => {
       </span>
     </div>
 
-    <TabContainer :default-tab="defaultTab">
+    <DataTable v-if="mode === 'debug'" :data="sessionList" placeholder="e.g. active,complete 11/5">
+      <h2>Sessions ({{ sessionList.length }})</h2>
+    </DataTable>
+
+    <TabContainer v-else :default-tab="defaultTab">
 
       <Tab title="versions">
         <DataTable :data="versionList" placeholder="e.g. v1.*">

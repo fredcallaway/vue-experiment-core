@@ -524,7 +524,7 @@ export const useProlific = createGlobalState(() => {
   }
 
   // Prolific operations
-  const createStudy = async (cfg: ProlificConfig & { internal_name: string }): Promise<StudyFull> => {
+  const createStudy = async (cfg: ProlificConfig & { internal_name: string }, version: string): Promise<StudyFull> => {
     const filters = cfg.eligibility 
       ? eligibilityToFilters(cfg.eligibility)
       : [...(cfg.filters || [])]
@@ -563,7 +563,7 @@ export const useProlific = createGlobalState(() => {
         // auto_rejection_categories: ['EXCEPTIONALLY_FAST'],
       },
       access_details: createAccessDetails(cfg.total_available_places),
-      completion_codes: createCompletionCodes(),
+      completion_codes: createCompletionCodes(version),
     }
 
     const studyResponse = await request<any>('POST', '/studies/', payload)

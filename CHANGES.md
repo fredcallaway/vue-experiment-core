@@ -1,3 +1,8 @@
+# Dataset versions and debug session exports
+
+- Choose **Dataset version** in **Prolific → Create New Study**, then deploy. The selection is stored outside source code. Tracked builds embed their version, Git SHA, and deployment identity; participant metadata and completion codes use the loaded build. Existing `epoch.config.ts` version fields remain accepted but are ignored and may be removed. The CLI reads the saved selection or accepts `deploy inspect/run --version <name>`; select a version before the first deployment after adopting this core. Raw data needs no migration.
+- All debug data uses a chronological session list, regardless of where it ran or any legacy version label. Debug saves write one session and its views under `data/processed/debug/<session-id>/`; live exports remain grouped by version. Existing debug version links open the session list. Local debug sessions omit version; tracked-build debug sessions retain deployment provenance in metadata.
+
 # Synthetic sessions and recruitment
 
 - The database participant blocklist skips sessions explicitly marked `synthetic: true` in their metadata. Live smoke tests should mark their session metadata as synthetic after the writer has stopped. Analysis-excluded real participants remain on the recruitment blocklist. Existing sessions need no migration.

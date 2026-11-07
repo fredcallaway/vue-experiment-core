@@ -17,6 +17,7 @@ try {
         studies: { prior: { version: '0.1', sha: scenario === 'same-build' ? 'bbbbbbbb' : 'aaaaaaaa',
           ...(scenario === 'draft' ? {} : { publishTime: 1 }) } },
         deployStatus: { sha: 'aaaaaaaa', version: '0.1' },
+        deploymentVersion: '0.1',
         studyDraft: { reward: 200, estimated_completion_time: 10, total_available_places: 5 },
       }
     }, { scenario })
@@ -39,7 +40,12 @@ try {
             onValue: (path, callback) => { callback(snap(path)); return () => {}; },
             set: async (path, data) => { state[path] = structuredClone(data); },
             update: async (path, data) => { Object.assign(value(path), structuredClone(data)); },
-            sync: (path, initial) => ref(value(path) ?? initial),
+            sync: (path, initial) => {
+              const data = ref(value(path) ?? initial);
+              data.ready = true;
+              data.syncImmediate = async () => { state[path] = data.value; };
+              return data;
+            },
           });
         ` })
       }
@@ -55,7 +61,8 @@ try {
         if (target.pathname === '/api/prolific/deploy') {
           assert.equal(request.postDataJSON().allowVersionReuse, scenario === 'posted')
           deploys++
-          return route.fulfill({ json: { success: true, sha: 'bbbbbbbb' } })
+          return route.fulfill({ json: { success: true, sha: 'bbbbbbbb', id: 'fixture-deployment',
+            version: request.postDataJSON().version } })
         }
         const json = target.pathname === '/api/prolific/git-status'
           ? { sha: 'bbbbbbbb', dirty: false, gitStatusOutput: '' } : {}
@@ -100,6 +107,18 @@ try {
       await deploy.click()
       await page.getByText('Deployed and ready to publish', { exact: false }).waitFor()
       assert.equal(deploys, 1)
+
+      if (scenario === 'same-build') {
+        await page.getByRole('textbox', { name: 'Dataset version', exact: true }).fill('main-study')
+        await page.getByText('Ready to deploy!', { exact: false }).waitFor()
+        await page.getByRole('checkbox', { name: 'Bypass deployment check' }).check()
+        assert.ok(await publish.isDisabled(), 'A Git/deployment bypass cannot relabel an existing deployment')
+        await deploy.click()
+        await page.getByText('Deployed and ready to publish', { exact: false }).waitFor()
+        assert.equal(deploys, 2)
+        assert.equal(await page.evaluate(() => window.deploymentFixture.deploymentVersion), 'main-study')
+        await page.screenshot({ path: resolve(output, 'dataset-version-selection.png'), fullPage: true })
+      }
 
       if (scenario === 'posted') {
         const result = await page.evaluate(async () => {
