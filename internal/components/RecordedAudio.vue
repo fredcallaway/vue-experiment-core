@@ -27,7 +27,7 @@ const filtered = computed(() => {
       <ul class="divide-y divide-gray-200 max-h-150 overflow-auto [scrollbar-gutter:stable]">
         <li v-for="file in filtered" :key="`${file.sessionId}/${file.bucket}/${file.path}`"
           :data-recording-path="file.path" class="h-16 box-border py-2 flex items-center gap-4">
-          <AudioPlayButton :file="audioFile(file)" />
+          <AudioPlayButton :file="audioFile(file)" :duration-ms="file.durationMs" />
           <div class="min-w-0 flex-1">
             <div class="truncate" :title="file.filename">{{ file.filename }}</div>
             <div class="truncate text-sm">

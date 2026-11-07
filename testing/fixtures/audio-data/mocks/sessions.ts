@@ -10,8 +10,8 @@ const sessions: SessionData[] = [1, 2].map(index => ({
     completionTime: 4000, bonus: 0, assignment: index },
   events: index === 2 ? [{ timestamp: 2000, eventType: 'fluency.block', index: 0, uid: 'event-1',
     currentEpochId: 'trial[1]', data: { audio_path: 'word-naming/p2/audio-session-2/legacy.wav',
-      audio_mime_type: 'audio/wav', audio_bytes: 8044 } }] : [],
-  other: index === 1 ? { files: { clip: { saved: true, contentType: 'audio/wav', size: 8044,
+      audio_mime_type: 'audio/wav', audio_bytes: 64044 } }] : [],
+  other: index === 1 ? { files: { clip: { saved: true, contentType: 'audio/wav', size: 64044, durationMs: 4000,
     bucket: 'audio-fixture.invalid', path: 'sessions/uid/audio-session-1/clip%20one.wav' } } } : null,
 }))
 

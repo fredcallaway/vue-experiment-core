@@ -172,7 +172,8 @@ const timeInfo = computed(() => {
 
         <Tab v-for="(val, name) in processedData" :key="String(name)" :title="String(name)">
           <Error v-if="val && !val.success" :error="val.error" />
-          <DataTable v-else-if="val && val.success && val.format === 'csv'" :data="(val.data as any)" />
+          <DataTable v-else-if="val && val.success && val.format === 'csv'"
+            :data="(val.data as any)" :audio-sessions="data ? [data] : []" />
           <pre
             v-else-if="val && val.success && val.format === 'json'"
             class="bg-gray-100 p-4 rounded overflow-auto max-h-96 text-xs"

@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import firebaseConfig from '~/firebase.config.json'
 import { type ParseError } from '../../composables/dataViews'
 import { audioFilename, isAudioFile } from '../audio-file'
+import type { SessionData } from '../data'
+import { sessionAudio } from '../session-audio'
 import AudioPlayButton from './AudioPlayButton.vue'
 import { assertDefined } from '../../utils/asserts'
 import { createTextFilter } from '../../utils/createTextFilter'
@@ -11,10 +14,17 @@ import { tryOnScopeDispose, useElementVisibility, useVirtualList } from '@vueuse
 
 const props = defineProps<{
   data: Record<string, any>[]
+  audioSessions?: SessionData[]
   placeholder?: string
   getLink?: (column: string, value: any, row: Record<string, any>) => string | undefined
   formatValue?: (column: string, value: any, row: Record<string, any>) => string
 }>()
+
+const audioDurations = computed(() => {
+  const bucket = 'storageBucket' in firebaseConfig ? String(firebaseConfig.storageBucket) : ''
+  return new Map(props.audioSessions?.flatMap(session => sessionAudio(session, bucket)
+    .map(file => [`${file.bucket}/${file.path}`, file.durationMs] as const)))
+})
 
 const errors = computed(() => {
   return props.data.filter(row => row._isParseError === true) as ParseError[]
@@ -284,8 +294,12 @@ const columnWidths = computed(() => {
     
     // Measure all cell values for this column
     formattedTableData.value.forEach(row => {
+      if (isAudioFile(row.original[col])) {
+        measuredWidth = Math.max(measuredWidth, 104)
+        return
+      }
       const value = row.formatted[col] ?? ''
-      let text = isAudioFile(row.original[col]) ? 'Play' : String(value)
+      let text = String(value)
       if (text == '[object Object]') {
         text = Object.entries(row.original[col]).map(([key, value]) => `${key}:${value} `).join(' ')
       }
@@ -388,7 +402,8 @@ const slots = useSlots()
                   style="white-space: nowrap; overflow: hidden;"
                   :style="columnWidths[col] ? { width: `${columnWidths[col]+2}px` } : {}"
                 >
-                  <AudioPlayButton v-if="isAudioFile(row.original[col])" :file="row.original[col]" />
+                  <AudioPlayButton v-if="isAudioFile(row.original[col])" :file="row.original[col]"
+                    :duration-ms="audioDurations.get(`${row.original[col].bucket}/${row.original[col].path}`)" />
                   <template v-else-if="getCellLinkRoute(col, row.original)">
                     <NuxtLink :to="getCellLinkRoute(col, row.original)" class="cursor-pointer">
                       {{ row.formatted[col] }}

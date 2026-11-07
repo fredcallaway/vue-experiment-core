@@ -70,7 +70,7 @@ Recording and upload are separate operations. A recording is held in browser mem
 
 ## Play recordings in the Data dashboard
 
-Open a session or version under **Data**, then select **audio** or a data view with an audio column. The recording list can be filtered by session, participant, filename, or epoch. Play/Stop stays in its row and recordings load only on request. Loading failures offer Retry. Switching tabs or leaving the page stops playback and releases its Blob URL.
+Open a session or version under **Data**, then select **audio** or a data view with an audio column. The recording list can be filtered by session, participant, filename, or epoch. The compact player shows the duration when available and swaps it for a seek bar during playback. Recordings load on request, and loading failures offer Retry. Switching tabs or leaving the page stops playback and releases its Blob URL.
 
 Playback uses the local Nuxt server started by `bun run dev`. The server reads the configured bucket with the project's service-account key; it keeps credentials on the server and streams bytes to the local browser. The participant-facing static Firebase site does not provide this researcher endpoint. Storage rules can continue denying client reads. Google Cloud IAM separately authorizes the service account's reads.
 

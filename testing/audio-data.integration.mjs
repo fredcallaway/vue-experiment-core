@@ -24,7 +24,7 @@ server.stdout.pipe(log)
 server.stderr.pipe(log)
 
 // A short PCM WAV exercises the real browser decoder without a microphone or participant data.
-const wav = Buffer.alloc(8044)
+const wav = Buffer.alloc(64044)
 wav.write('RIFF'); wav.writeUInt32LE(wav.length - 8, 4); wav.write('WAVEfmt ', 8)
 wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22)
 wav.writeUInt32LE(8000, 24); wav.writeUInt32LE(16000, 28); wav.writeUInt16LE(2, 32)
@@ -111,6 +111,8 @@ try {
   assert.equal(requests.length, 0, 'opening session data does not download recordings')
   await audioTab().click()
   await list().scrollIntoViewIfNeeded()
+  assert.equal(await list().getByTitle('Duration', { exact: true }).innerText(), '0:04')
+  assert.equal(requests.length, 0, 'The idle duration comes from session metadata')
   const initialGeometry = await geometry()
   holdNextAudio = true
   await list().getByRole('button', { name: 'Play clip one.wav', exact: true }).click()
@@ -128,11 +130,12 @@ try {
     'sessions/uid/audio-session-1/clip%20one.wav')
   assert.equal(await list().getByRole('button', { name: 'Stop clip one.wav', exact: true })
     .evaluate(button => document.activeElement === button), true)
-  assert.equal(await player.evaluate(audio => audio.duration), 0.5)
+  assert.equal(await player.evaluate(audio => audio.duration), 4)
   assert.equal(await player.evaluate(audio => audio.controls), false)
   const firstUrl = await player.getAttribute('src')
   await page.screenshot({ path: resolve(output, 'session-audio.png') })
   await list().getByRole('button', { name: 'Stop clip one.wav', exact: true }).click()
+  assert.equal(await list().getByTitle('Duration', { exact: true }).innerText(), '0:04')
   assert.ok(await page.evaluate(url => window.__revokedAudio.includes(url), firstUrl))
   await list().getByRole('button', { name: 'Play clip one.wav', exact: true }).click()
   await page.waitForFunction(() => document.querySelector('audio')?.readyState > 0)
@@ -168,14 +171,22 @@ try {
   const cellPlay = page.locator('td').getByRole('button', { name: 'Play clip one.wav', exact: true })
   const cellStop = page.locator('td').getByRole('button', { name: 'Stop clip one.wav', exact: true })
   const row = page.locator('tbody tr').filter({ hasText: 'audio-session-1' })
+  assert.equal(await row.getByTitle('Duration', { exact: true }).innerText(), '0:04')
   const rowHeight = (await row.boundingBox()).height
   await cellPlay.click()
   await page.waitForFunction(() => document.querySelector('td audio')?.readyState > 0)
   assert.equal((await row.boundingBox()).height, rowHeight, 'Audio cells preserve the height of their trial row')
   assert.equal(await page.locator('td audio[controls]').count(), 0)
+  const slider = row.getByRole('slider', { name: 'Seek clip one.wav', exact: true })
+  assert.equal(await slider.evaluate(input => Number(input.max)), 4)
+  const { width, height } = await slider.boundingBox()
+  await slider.click({ position: { x: width / 2, y: height / 2 } })
+  await page.waitForFunction(() => document.querySelector('td audio')?.currentTime > 1.7)
+  await slider.press('Home')
+  await page.waitForFunction(() => document.querySelector('td audio')?.currentTime < 0.5)
+  await page.screenshot({ path: resolve(output, 'audio-cell.png') })
   await cellStop.click()
   await cellPlay.waitFor()
-  await page.screenshot({ path: resolve(output, 'audio-cell.png') })
 
   await page.getByRole('button', { name: 'save', exact: true }).click()
   await page.getByText('was last updated at', { exact: false }).waitFor()
@@ -226,7 +237,8 @@ try {
   await writeFile(resolve(output, 'result.json'), JSON.stringify({ requests, errors,
     checks: ['session playback', 'permission error and retry', 'no eager downloads', 'cleanup on tab change',
       'version playback', 'legacy recording paths', 'session filtering', 'inline player',
-      'fixed row geometry during loading, error, retry, and playback', 'keyboard playback', 'narrow row geometry'] }, null, 2) + '\n')
+      'fixed row geometry during loading, error, retry, and playback', 'idle duration',
+      'pointer and keyboard seeking', 'keyboard playback', 'narrow row geometry'] }, null, 2) + '\n')
   console.log(`Data-page audio checks passed; evidence: ${output}`)
 } finally {
   await browser?.close()

@@ -453,7 +453,7 @@ const completedByCondition = computed(() => {
           <DataTable v-if="eventList" :data="Object.values(eventList)" placeholder="e.g. key:SPACE !instructions" />
         </Tab>
         <Tab v-for="(view, key) in csvViews" :key="key" :title="key">
-          <DataTable v-if="mySessionData" :data="prepareCombinedData(view.fn as any)" />
+          <DataTable v-if="mySessionData" :data="prepareCombinedData(view.fn as any)" :audio-sessions="mySessionData" />
           <div v-else class="text-gray-400">
             No session data available
           </div>

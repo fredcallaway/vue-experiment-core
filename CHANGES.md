@@ -5,7 +5,7 @@
 # Incremental audio downloads
 
 - Saving live version data or a debug session downloads its missing audio files beneath `data/raw/<mode>/audio/`, preserving each recording's Storage path and filename. Complete local files are skipped without contacting Storage. Existing cached sessions are checked too, so recordings can be downloaded after their events were saved earlier. Interrupted downloads leave no completed file and are retried on the next save. Upload events and data-view paths remain unchanged; no consumer-code or raw-data migration is required.
-- Recording lists and typed audio cells use Play/Stop within the row. Loading, playback, errors, and retry preserve the row and list geometry.
+- Recording lists and typed audio cells show a compact play icon with the duration. During playback, a seek bar uses the same space. Loading, playback, errors, and retry preserve the row and list geometry.
 
 # Dataset versions and debug session exports
 
