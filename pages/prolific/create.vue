@@ -224,7 +224,6 @@ const onDeploy = async () => {
             <input v-model="formData.peripheral_requirements" type="checkbox" value="audio" />
             <span>Audio playback (speakers or headphones)</span>
           </label>
-          <p class="text-sm m-0">Prolific shows these requirements before participants join. Describe recording in the listing too.</p>
         </div>
       </TutorialTarget>
 
