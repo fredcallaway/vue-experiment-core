@@ -64,6 +64,7 @@ try {
         return route.fulfill({ json: { id: 'fixture-study' } })
       }
       let json = {}
+      if (target.pathname === '/api/prolific/active-studies') json = []
       if (target.pathname === '/api/prolific/token') json = { token: 'fixture-token' }
       if (target.pathname === '/api/prolific/git-status') json = { sha: 'bbbbbbbb', dirty: false }
       if (target.pathname === '/api/prolific/filters/') json = { results: [

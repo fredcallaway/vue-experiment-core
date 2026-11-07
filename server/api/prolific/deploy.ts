@@ -15,6 +15,7 @@ export default defineEventHandler(async (event) => {
     const result = await withOperationLock(root, () => operations.deploy({
       version: body?.version,
       allowVersionReuse: body?.allowVersionReuse === true,
+      allowLiveStudies: Array.isArray(body?.allowLiveStudies) ? body.allowLiveStudies : [],
     }))
     return { success: true as const, ...result }
   } catch (error) {

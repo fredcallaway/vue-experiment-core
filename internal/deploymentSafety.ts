@@ -4,6 +4,8 @@ export type StudyDeployment = {
   publishTime?: number
 }
 
+export type ActiveProlificStudy = { id: string, name: string }
+
 export type VersionWarning = {
   studyId: string
   version: string

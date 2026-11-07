@@ -16,7 +16,8 @@ definePageMeta({
 
 const prolific = useProlific()
 const { deploy, localSha, deployedSha, deployedVersion, deployedId, version, versionError: datasetError,
-  status, error: deploymentError, gitStatus, versionSafety, refreshDeployment } = useDeployment()
+  status, error: deploymentError, gitStatus, versionSafety, refreshDeployment,
+  activeStudies, activeStudiesError, refreshActiveStudies } = useDeployment()
 const { warnings: versionWarnings, loading: versionLoading, error: versionError } = versionSafety
 
 const MIN_WAGE = 8
@@ -46,6 +47,11 @@ const dismissDeploymentError = () => {
 const bypassGitCheck = ref(false)
 const bypassDeployedCheck = ref(false)
 const bypassVersionCheck = ref(false)
+const confirmLiveDeployment = ref(false)
+const activeStudyIds = computed(() => (activeStudies.value ?? []).map(study => study.id).sort())
+watch(() => JSON.stringify([version.value, localSha.value, activeStudyIds.value]), () => {
+  confirmLiveDeployment.value = false
+}, { flush: 'sync' })
 watch(() => JSON.stringify([version.value, localSha.value, versionWarnings.value]), () => {
   bypassVersionCheck.value = false
 }, { flush: 'sync' })
@@ -122,7 +128,7 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
 }
 
 const onDeploy = async () => {
-  const success = await deploy(bypassVersionCheck.value)
+  const success = await deploy(bypassVersionCheck.value, confirmLiveDeployment.value ? activeStudyIds.value : [])
   if (!success) {
     throw new Error(deploymentError.value)
   }
@@ -305,6 +311,23 @@ const onDeploy = async () => {
         </div>
         <VersionWarning v-model="bypassVersionCheck" :warnings="versionWarnings" />
         <div v-if="versionError" role="alert" class="text-error">{{ versionError }}</div>
+        <div v-if="activeStudiesError" role="alert" class="text-error">
+          {{ activeStudiesError }}
+          <button class="btn-gray" @click="refreshActiveStudies">Retry check</button>
+        </div>
+        <p v-else-if="activeStudies === null" class="text-sm">Checking for active Prolific studies…</p>
+        <div v-else-if="activeStudies.length" class="p-4 rounded-lg bg-warn-200 text-warn-600">
+          <b>Prolific is recruiting for these studies</b>
+          <ul class="my-2">
+            <li v-for="study in activeStudies" :key="study.id">
+              <NuxtLink :to="`/prolific/${study.id}`">{{ study.name }}</NuxtLink>
+            </li>
+          </ul>
+          <label class="flex items-center gap-2">
+            <input v-model="confirmLiveDeployment" type="checkbox" />
+            Deploy while these studies are active
+          </label>
+        </div>
         <div
           class="p-4 rounded-lg bg-success-200 text-success-600 [&>h3]:text-success-700"
           v-if="status === 'deployed'"
@@ -378,6 +401,7 @@ const onDeploy = async () => {
           :name="status == 'loading' ? 'Deploying...' : 'Deploy Website'"
           :action="onDeploy"
           :disabled="status !== 'ready' || !!datasetError || versionLoading || !!versionError ||
+            activeStudies === null || (activeStudyIds.length > 0 && !confirmLiveDeployment) ||
             (versionWarnings.length > 0 && !bypassVersionCheck)"
         />
       </TutorialTarget>

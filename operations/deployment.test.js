@@ -1,9 +1,10 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import { mkdtemp, mkdir, readdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { DeploymentOperations } from './deployment'
 import { command, gitSnapshot, readJson, writeJson, withOperationLock } from './project'
+import { ProlificHttpReader } from './prolific-reader'
 
 const roots = []
 afterEach(async () => {
@@ -45,6 +46,10 @@ async function deploymentFixture(options = {}) {
     },
   }
   const io = {
+    getActiveStudies: async (_root, projectId) => {
+      expect(projectId).toBe('fixture-prolific')
+      return options.activeStudies?.(calls) ?? []
+    },
     run: async (cwd, executable, args, environment) => {
       calls.push({ executable, args, environment })
       if (executable === 'bun' && args[0] === '--eval') return command(cwd, executable, args)
@@ -74,6 +79,50 @@ async function deploymentFixture(options = {}) {
 }
 
 describe('tracked static Hosting deployment', () => {
+  test('requires confirmation for active study IDs and rechecks after generation', async () => {
+    const first = { id: 'first', name: 'Recruiting study' }
+    const next = { id: 'next', name: 'Newly active study' }
+    const fixture = await deploymentFixture({ activeStudies: calls => calls.some(call => call.args[0] === 'run')
+      ? [first, next] : [first] })
+    fixture.state.prolificProjectId = 'fixture-prolific'
+    expect((await fixture.operations.inspect()).activeStudies).toEqual([first])
+    await expect(fixture.operations.deploy({ allowVersionReuse: true })).rejects.toThrow('--allow-live-studies first')
+    expect(fixture.calls.some(call => call.args[0] === 'run')).toBe(false)
+    await expect(fixture.operations.deploy({ allowLiveStudies: ['first'] })).rejects.toThrow('--allow-live-studies first,next')
+    expect(fixture.calls.some(call => call.executable === 'firebase')).toBe(false)
+    expect((await fixture.operations.deploy({ allowLiveStudies: ['first', 'next'] })).state).toBe('tracked')
+  })
+
+  test('blocks a linked project when its active studies cannot be checked', async () => {
+    const fixture = await deploymentFixture({ activeStudies: () => { throw new Error('token unavailable') } })
+    fixture.state.prolificProjectId = 'fixture-prolific'
+    await expect(fixture.operations.deploy({ allowLiveStudies: ['first'] })).rejects.toThrow('Could not check active studies')
+    expect(fixture.calls.some(call => call.args[0] === 'run')).toBe(false)
+  })
+
+  test('reads only ACTIVE studies in the selected Prolific project, across pages', async () => {
+    const fetch = spyOn(globalThis, 'fetch').mockImplementation(async request => {
+      const url = new URL(request)
+      expect(url.pathname).toBe('/api/v1/projects/fixture-prolific/studies/')
+      expect(url.searchParams.get('status')).toBe('ACTIVE')
+      return Response.json(url.searchParams.get('page') === '1' ? {
+        results: [
+          { id: 'active', name: 'Active', status: 'ACTIVE' },
+          { id: 'paused', name: 'Paused', status: 'PAUSED' },
+          { id: 'review', name: 'Review', status: 'AWAITING REVIEW' },
+        ],
+        _links: { next: { href: 'next-page' } },
+      } : { results: [{ id: 'second', name: 'Second', status: 'ACTIVE' }] })
+    })
+    try {
+      expect(await new ProlificHttpReader('fixture-token').getActiveStudies('fixture-prolific')).toEqual([
+        { id: 'active', name: 'Active' }, { id: 'second', name: 'Second' },
+      ])
+    } finally {
+      fetch.mockRestore()
+    }
+  })
+
   test('blocks placeholder contact email before build/upload, even with the version override', async () => {
     const fixture = await deploymentFixture()
     await writeFile(resolve(fixture.root, 'epoch.config.ts'),

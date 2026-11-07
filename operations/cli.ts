@@ -31,7 +31,7 @@ const readJsonInput = async () => {
 const usage = () => `Usage:
   bun run ops -- firebase-auth configure --key <service-account.json>
   bun run ops -- deploy inspect [--version <dataset-version>]
-  bun run ops -- deploy run [--version <dataset-version>] [--allow-version-reuse]
+  bun run ops -- deploy run [--version <dataset-version>] [--allow-version-reuse] [--allow-live-studies <id[,id...]>]
   bun run ops -- deploy reconcile --id <operation-id>
   bun run ops -- study-draft get
   bun run ops -- study-draft update --json '<patch>'
@@ -50,7 +50,8 @@ const main = async () => {
 
   const allowed: Record<string, string[]> = {
     'firebase-auth configure': ['--key'],
-    'deploy inspect': ['--version'], 'deploy run': ['--version', '--allow-version-reuse'], 'deploy reconcile': ['--id'],
+    'deploy inspect': ['--version'], 'deploy run': ['--version', '--allow-version-reuse', '--allow-live-studies'],
+    'deploy reconcile': ['--id'],
     'study-draft get': [], 'study-draft update': ['--json', '--file'],
     'review-draft get': ['--study'], 'review-draft update': ['--study', '--json', '--file'],
     'review inspect': ['--study', '--submission', '--fixture'],
@@ -82,7 +83,10 @@ const main = async () => {
     const deployments = new DeploymentOperations(process.cwd(), database)
     if (action === 'inspect') result = await deployments.inspect(option('--version'))
     else result = await withOperationLock(process.cwd(), () => action === 'run'
-      ? deployments.deploy({ version: option('--version'), allowVersionReuse: seen.has('--allow-version-reuse') })
+      ? deployments.deploy({
+        version: option('--version'), allowVersionReuse: seen.has('--allow-version-reuse'),
+        allowLiveStudies: option('--allow-live-studies')?.split(','),
+      })
       : deployments.reconcile(option('--id') ?? ''))
   } else if (resource === 'study-draft' && action === 'get') {
     result = await drafts.getStudyDraft()

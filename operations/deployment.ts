@@ -5,8 +5,9 @@ import { resolve } from 'node:path'
 import type { OperationsDatabase } from './database'
 import { command, gitSnapshot, operationDirectory, readJson, safeSegment, unchanged, writeJson } from './project'
 import { readDeploymentConfig } from './experiment-config'
-import { versionWarnings, type StudyDeployment } from '../internal/deploymentSafety'
+import { versionWarnings, type ActiveProlificStudy, type StudyDeployment } from '../internal/deploymentSafety'
 import { datasetVersionError } from '../internal/deploymentIdentity'
+import { ProlificHttpReader } from './prolific-reader'
 
 type Deployment = {
   id: string
@@ -27,10 +28,12 @@ type DeploymentRecord = {
 export type DeploymentAdapters = {
   run: typeof command
   verify: (url: string) => Promise<unknown>
+  getActiveStudies: (root: string, projectId: string) => Promise<ActiveProlificStudy[]>
 }
 
 const adapters: DeploymentAdapters = {
   run: command,
+  getActiveStudies: async (root, projectId) => (await ProlificHttpReader.fromProject(root)).getActiveStudies(projectId),
   verify: async (url) => {
     const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(30_000) })
     if (!response.ok) throw new Error(`Hosted build verification failed: HTTP ${response.status}`)
@@ -73,7 +76,24 @@ export class DeploymentOperations {
     const studies = await this.database.get<Record<string, StudyDeployment>>('studies')
     return { ...snapshot, version, contactEmail, projectId: config.projectId, site: config.site,
       url: `https://${config.site}.web.app`, tracked: await this.database.get('deployStatus'),
-      warnings: versionWarnings(version, snapshot.sha, studies) }
+      warnings: versionWarnings(version, snapshot.sha, studies), activeStudies: await this.getActiveStudies() }
+  }
+
+  async getActiveStudies(): Promise<ActiveProlificStudy[]> {
+    const projectId = await this.database.get<string>('prolificProjectId')
+    if (!projectId) return []
+    try {
+      return await this.io.getActiveStudies(this.root, projectId)
+    } catch (cause) {
+      throw new Error('Could not check active studies. Check the Prolific token, project selection, and connection.', { cause })
+    }
+  }
+
+  private requireStudyConfirmation(studies: ActiveProlificStudy[], confirmedIds: readonly string[]) {
+    if (studies.every(study => confirmedIds.includes(study.id))) return
+    const names = studies.map(study => `${study.name} (${study.id})`).join(', ')
+    const ids = studies.map(study => study.id).join(',')
+    throw new Error(`Prolific is recruiting for ${names}. Confirm deployment with --allow-live-studies ${ids}.`)
   }
 
   private async recordPath(id: string) {
@@ -101,8 +121,14 @@ export class DeploymentOperations {
     return { ...info, state: record.state, url: `https://${info.site}.web.app` }
   }
 
-  async deploy({ version, allowVersionReuse = false }: { version?: string, allowVersionReuse?: boolean } = {}) {
+  async deploy({ version, allowVersionReuse = false, allowLiveStudies = [] }: {
+    version?: string, allowVersionReuse?: boolean, allowLiveStudies?: string[],
+  } = {}) {
     const inspected = await this.inspect(version)
+    this.requireStudyConfirmation(inspected.activeStudies, allowLiveStudies)
+    if (inspected.activeStudies.length) {
+      process.stderr.write(`WARNING: Deploying while Prolific is recruiting for ${inspected.activeStudies.map(s => s.name).join(', ')}.\n`)
+    }
     for (const warning of inspected.warnings) process.stderr.write(`WARNING: ${warning.message}\n`)
     if (inspected.warnings.length && !allowVersionReuse) {
       throw new Error('Review the posted-version warning, then increment version or explicitly use --allow-version-reuse.')
@@ -130,6 +156,7 @@ export class DeploymentOperations {
       await writeJson(configFile, { hosting: {
         ...config.hosting, site: config.site, public: resolve(this.root, '.output/public'),
       } })
+      this.requireStudyConfirmation(await this.getActiveStudies(), allowLiveStudies)
       record.state = 'uploading'
       await writeJson(recordPath, record)
       await this.io.run(this.root, 'firebase', [

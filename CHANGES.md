@@ -1,3 +1,7 @@
+# Active Prolific study deployment check
+
+- The web and CLI deployment paths check the linked Prolific project for studies with status `ACTIVE` before building and again before uploading. Confirm the studies shown in the web UI or pass their IDs with `--allow-live-studies`. Paused and awaiting-review studies pass the check. A failed check blocks deployment when a Prolific project is linked.
+
 # Audio files in data views
 
 - `useFirebaseStorage().uploadAudio(filename, recording)` returns an `AudioFile` after an acknowledged upload. Log or return that reference in a data view; its table cell offers Play/Stop and its exported value is a relative path to the downloaded file. Duration, MIME type, and size are stored with the file under the session's `other/files` index. Existing audio events and file metadata remain readable.

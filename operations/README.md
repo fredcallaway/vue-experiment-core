@@ -31,6 +31,16 @@ Both commands require a clean committed checkout, including matching initialized
 
 The dashboard's **Deploy Website** button uses this same tracked Hosting service and additionally requires the Firebase CLI's selected project to match `firebase.config.json`. Deployment passes `--envName deployment` to the project's Nuxt `generate` script, selecting `.nuxt/production` without changing the standard `.nuxt` directory used by installation, typechecking, and development. Database rules are a separate explicit deployment (`firebase deploy --only database --project <project-id>`).
 
+### Confirm deployment during active recruitment
+
+`deploy inspect` lists studies with status `ACTIVE` in the linked Prolific project. If any are recruiting, deployment requires confirmation for those study IDs. Review the list, then confirm the studies on **Create New Study** or pass their comma-separated IDs to the CLI.
+
+```bash
+bun run ops -- deploy run --allow-live-studies <study-id>[,<study-id>]
+```
+
+The operation checks again immediately before upload. If another study becomes active, review and confirm the new list. Paused and awaiting-review studies pass this check. Projects with a linked Prolific project need a working token and a successful status check to deploy. Projects without a linked project can deploy directly.
+
 ### Fix a deployment mismatch
 
 Use this procedure when **Create New Study** (`/prolific/create`) reports **Not deployed**, **Ready to deploy!**, **Warning: current code is not deployed**, or **Git worktree is not clean**. This is the agent workflow behind the researcher Docs' “agents know how to fix it.”

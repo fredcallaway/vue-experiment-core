@@ -1,7 +1,7 @@
 import { useConfig } from '../../composables/useConfig'
 import { useDatabase } from '../../composables/useDatabase'
 import { useIntervalFn } from '@vueuse/core'
-import { contactEmailError } from '../deploymentSafety'
+import { contactEmailError, type ActiveProlificStudy } from '../deploymentSafety'
 import { useVersionSafety } from './useVersionSafety'
 import { datasetVersionError } from '../deploymentIdentity'
 
@@ -24,6 +24,22 @@ export const useDeployment = () => {
   const isLoading = ref(false)
   const isDirty = ref(false)
   const gitStatus = ref('')
+  const activeStudies = ref<ActiveProlificStudy[] | null>(null)
+  const activeStudiesError = ref('')
+
+  const refreshActiveStudies = async () => {
+    try {
+      const response = await fetch('/api/prolific/active-studies')
+      if (!response.ok) throw new Error('Active study check failed')
+      activeStudies.value = await response.json()
+      activeStudiesError.value = ''
+    } catch {
+      activeStudies.value = null
+      activeStudiesError.value = 'Could not check active studies. Check the Prolific token, project selection, and connection.'
+    }
+  }
+  refreshActiveStudies()
+  useIntervalFn(refreshActiveStudies, 30_000)
 
   const config = useConfig()
   const unconfigured = computed(() => !!contactEmailError(config.contactEmail))
@@ -68,7 +84,7 @@ export const useDeployment = () => {
     if (ready && !version.value && deployedVersion.value) version.value = deployedVersion.value
   }, { once: true })
   
-  const deploy = async (allowVersionReuse = false) => {
+  const deploy = async (allowVersionReuse = false, allowLiveStudies: string[] = []) => {
     await checkGitStatus()
     if (isLoading.value || isDirty.value || unconfigured.value || versionError.value) {
       return false
@@ -79,7 +95,7 @@ export const useDeployment = () => {
       const selectedVersion = version.value
       await version.syncImmediate()
       const result = await $fetch('/api/prolific/deploy', {
-        method: 'POST', body: { version: selectedVersion, allowVersionReuse },
+        method: 'POST', body: { version: selectedVersion, allowVersionReuse, allowLiveStudies },
       })
       if (!result.success) throw new Error(result.error)
       error.value = ''
@@ -89,6 +105,7 @@ export const useDeployment = () => {
       return true
     } catch (cause) {
       error.value = cause instanceof Error ? cause.message : String(cause)
+      void refreshActiveStudies()
       return false
     } finally {
       isLoading.value = false
@@ -108,5 +125,8 @@ export const useDeployment = () => {
     gitStatus,
     versionSafety,
     refreshDeployment: checkDeployedSha,
+    activeStudies,
+    activeStudiesError,
+    refreshActiveStudies,
   }
 }

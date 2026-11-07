@@ -10,12 +10,12 @@ const output = resolve(process.argv[3] ?? '.experiment-tests/deployment-safety')
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ headless: true })
 try {
-  for (const scenario of ['posted', 'draft', 'same-build', 'placeholder']) {
+  for (const scenario of ['posted', 'draft', 'same-build', 'active', 'placeholder']) {
     const context = await browser.newContext({ viewport: { width: 1280, height: 1000 }, serviceWorkers: 'block' })
     await context.addInitScript(({ scenario }) => {
       window.deploymentFixture = {
         studies: { prior: { version: '0.1', sha: scenario === 'same-build' ? 'bbbbbbbb' : 'aaaaaaaa',
-          ...(scenario === 'draft' ? {} : { publishTime: 1 }) } },
+          ...(['draft', 'active'].includes(scenario) ? {} : { publishTime: 1 }) } },
         deployStatus: { sha: 'aaaaaaaa', version: '0.1' },
         deploymentVersion: '0.1',
         studyDraft: { reward: 200, estimated_completion_time: 10, total_available_places: 5 },
@@ -58,8 +58,12 @@ try {
           .replace('yourEmailAddress@fakeDomain.foo', 'researcher@university.edu') })
       }
       if (target.pathname.startsWith('/api/')) {
+        if (target.pathname === '/api/prolific/active-studies') {
+          return route.fulfill({ json: scenario === 'active' ? [{ id: 'active-study', name: 'Recruiting study' }] : [] })
+        }
         if (target.pathname === '/api/prolific/deploy') {
           assert.equal(request.postDataJSON().allowVersionReuse, scenario === 'posted')
+          assert.deepEqual(request.postDataJSON().allowLiveStudies, scenario === 'active' ? ['active-study'] : [])
           deploys++
           return route.fulfill({ json: { success: true, sha: 'bbbbbbbb', id: 'fixture-deployment',
             version: request.postDataJSON().version } })
@@ -102,6 +106,13 @@ try {
         await page.screenshot({ path: resolve(output, 'posted-version-warning.png'), fullPage: true })
       } else {
         assert.equal(await acknowledge.count(), 0, 'Unposted fixes and same-code batches do not warn')
+      }
+      if (scenario === 'active') {
+        await page.getByRole('link', { name: 'Recruiting study', exact: true }).waitFor()
+        assert.ok(await deploy.isDisabled())
+        await page.getByRole('checkbox', { name: 'Bypass deployment check' }).check()
+        assert.ok(await deploy.isDisabled(), 'Deployment bypass cannot confirm an active study')
+        await page.getByRole('checkbox', { name: 'Deploy while these studies are active' }).check()
       }
       assert.ok(await deploy.isEnabled())
       await deploy.click()
