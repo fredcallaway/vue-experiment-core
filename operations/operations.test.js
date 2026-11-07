@@ -172,6 +172,18 @@ describe('review helpers', () => {
 })
 
 describe('draft operations', () => {
+  test('persists audio requirements and rejects unsupported peripherals before writing', async () => {
+    const database = new MemoryDatabase()
+    const operations = new DraftOperations(database)
+    const updated = await operations.updateStudyDraft({ peripheral_requirements: ['microphone', 'audio'] })
+    expect(updated.peripheral_requirements).toEqual(['microphone', 'audio'])
+    expect((await operations.getStudyDraft()).peripheral_requirements).toEqual(['microphone', 'audio'])
+    const writes = database.updates.length
+    await expect(operations.updateStudyDraft({ peripheral_requirements: ['headphones'] })).rejects.toThrow()
+    expect(database.updates).toHaveLength(writes)
+    expect((await operations.updateStudyDraft({ peripheral_requirements: [] })).peripheral_requirements).toEqual([])
+  })
+
   test('updates one study-draft leaf without dropping defaults or siblings', async () => {
     const database = new MemoryDatabase({ studyDraft: { reward: 250, eligibility: { allowUK: false } } })
     const operations = new DraftOperations(database)

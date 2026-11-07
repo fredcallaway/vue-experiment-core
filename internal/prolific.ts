@@ -8,6 +8,9 @@ import firebaseHostingConfig from '~/firebase.json'
 
 export const PROLIFIC_FEE = 1.333333 // they say it's 33.3% ...they lie
 
+const PeripheralRequirementSchema = z.enum(['audio', 'camera', 'download', 'microphone'])
+type PeripheralRequirement = z.infer<typeof PeripheralRequirementSchema>
+
 export type EligibilityConfig = {
   allowUK?: boolean
   minSubmissions?: number
@@ -26,6 +29,7 @@ export type ProlificConfig = {
   reward: number
   total_available_places: number
   device_compatibility?: string[]
+  peripheral_requirements?: PeripheralRequirement[]
   eligibility?: EligibilityConfig
   exclusions?: {
     databaseParticipants?: boolean
@@ -46,6 +50,7 @@ export const DEFAULT_PROLIFIC_CONFIG: ProlificConfig = {
   maximum_allowed_time: 60,
   reward: 200,
   total_available_places: 5,
+  peripheral_requirements: [],
   eligibility: {
     allowUK: true,
     minSubmissions: 50,
@@ -144,6 +149,7 @@ export type StudyPayload = {
   reward: number
   currency_code: string
   device_compatibility: string[]
+  peripheral_requirements: PeripheralRequirement[]
   project: string
   filters?: Filter[]
   submissions_config?: SubmissionsConfig
@@ -237,6 +243,7 @@ export const ProlificConfigSchema: z.ZodType<ProlificConfig> = z.object({
   reward: z.number().int().nonnegative(),
   total_available_places: z.number().int().positive(),
   device_compatibility: z.array(z.string()).optional(),
+  peripheral_requirements: z.array(PeripheralRequirementSchema).optional(),
   eligibility: z.object({
     allowUK: z.boolean().optional(),
     minSubmissions: z.number().int().nonnegative().optional(),

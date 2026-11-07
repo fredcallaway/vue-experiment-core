@@ -553,6 +553,7 @@ export const useProlific = createGlobalState(() => {
       reward: cfg.reward,
       currency_code: 'USD',
       device_compatibility: cfg.device_compatibility ?? ['desktop'],
+      peripheral_requirements: cfg.peripheral_requirements ?? [],
       project: projectId.value,
       filters,
       submissions_config: {

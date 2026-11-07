@@ -1,3 +1,7 @@
+# Prolific audio requirements
+
+- Create New Study now offers microphone recording and audio playback requirements. These persist in the study draft and are sent to Prolific as `peripheral_requirements` when creating a study. Existing drafts with no selection keep no extra requirements; no consumer-code or raw-data migration is required.
+
 # Balanced condition assignment
 
 - `useConditions().assign({...})` is now the sole assignment API. Pass every factor and its possible values in one flat object; it returns the participant's assigned conditions. Replace `choice(...)`, combine partial declarations, flatten the former `{ main, counterbalance }` structure, and replace assigning `permute(...)` calls with an explicit factor of possible orders. `permutations(n)` remains a pure index-permutation helper in `core/utils/array.ts`.

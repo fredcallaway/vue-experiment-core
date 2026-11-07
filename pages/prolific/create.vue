@@ -211,6 +211,18 @@ const onDeploy = async () => {
             rows="5"
           ></textarea>
         </div>
+        <div class="space-y-2">
+          <h3 class="text-base font-semibold m-0">Audio requirements</h3>
+          <label class="flex items-center gap-2">
+            <input v-model="formData.peripheral_requirements" type="checkbox" value="microphone" />
+            <span>Microphone (audio recording)</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input v-model="formData.peripheral_requirements" type="checkbox" value="audio" />
+            <span>Audio playback (speakers or headphones)</span>
+          </label>
+          <p class="text-sm m-0">Prolific shows these requirements before participants join. Describe recording in the listing too.</p>
+        </div>
       </TutorialTarget>
 
       <!-- Eligibility Card -->
