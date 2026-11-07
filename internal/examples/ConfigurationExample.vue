@@ -13,12 +13,8 @@ import ProbeTrial, { provideProbeParams } from './ProbeTrial.vue'
 
 const { assign, isPinned } = useConditions()
 const conditions = assign({
-  main: {
-    probeColor: ['steelblue', 'tomato'],
-  },
-  counterbalance: {
-    probeSize: [60, 100],
-  },
+  probeColor: ['steelblue', 'tomato'],
+  probeSize: [60, 100],
 })
 
 // Conditions usually affect behavior by feeding params. Every ProbeTrial below

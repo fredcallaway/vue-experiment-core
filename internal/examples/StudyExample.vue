@@ -23,7 +23,7 @@ const bonus = useBonus()
 bonus.centsPerPoint = 5
 
 // Between-subject condition, feeding params for every PeekGame below.
-const { hintValidity } = useConditions().choice({ hintValidity: [0.7, 0.9] })
+const { hintValidity } = useConditions().assign({ hintValidity: [0.7, 0.9] })
 providePeekGameParams({ hintValidity })
 
 // Each hint-block guarantees one lying hint; everything else stays random.

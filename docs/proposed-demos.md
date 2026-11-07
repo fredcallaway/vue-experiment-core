@@ -70,7 +70,7 @@ The demo page would wrap this in an `ERepeat` so the reader sees independent per
 
 **Gap.** `defineParams` and `useConditions` are core to making a configurable, counterbalanced experiment, but neither has a demo. Parameter overrides via the `params` prop and condition pinning from the dev UI are exactly the things a developer needs to test variants.
 
-**Proposal.** A demo that defines a parameter set, renders the same epoch twice with different `params` overrides to show they're independent, and registers a condition with `useConditions().choice(...)` / `.permute(...)` so the reader can open the dev UI, see it in the condition inspector, and pin it. Explain the `condition.<key>` URL params and how pinning interacts with the assignment counter.
+**Proposal.** A demo that defines a parameter set, renders the same epoch twice with different `params` overrides to show they're independent, and declares all factors together with `useConditions().assign(...)` so the reader can open the dev UI, see them in the condition inspector, and pin them. Explain the `condition.<key>` URL params and how pinning reduces the active assignment design.
 
 ### 4. `responses` — Collecting participant input
 

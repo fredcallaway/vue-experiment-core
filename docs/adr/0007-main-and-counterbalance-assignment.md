@@ -1,6 +1,6 @@
 # ADR 0007: Separate main and counterbalance assignment
 
-- **Status:** Accepted
+- **Status:** Superseded by [0017: Complete balanced condition assignment](0017-complete-balanced-condition-assignment.md)
 - **Date:** 2026-08-16
 - **Scope:** `core/` template layer
 - **Relevant files:** `core/utils/conditions.ts`, `core/composables/useCondition.ts`,
