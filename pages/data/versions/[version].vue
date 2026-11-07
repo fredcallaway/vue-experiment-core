@@ -41,11 +41,16 @@ const mySessionIds = computed(() => {
 
 const syncError = ref<any>(null)
 const lastLoadTime = ref(0)
-const { state: mySessionData, execute: refreshMySessionData, isLoading: sessionsLoading } = useAsyncState<SessionData[]>(async () => {
+const loadSessionData = async (includeAudio = false): Promise<SessionData[]> => {
   console.log('loading session data')
   syncError.value = null
   await until(mySessionIds).toMatch(x => x.length > 0)
-  await syncLocalData()
+  try {
+    await syncLocalData({ includeAudio, version })
+  } catch (error) {
+    syncError.value = error
+    throw error
+  }
   // NOTE: we write to FS then read from it; this could be avoided
   
   const sessionIds = mySessions.value.map(session => session.sessionId)
@@ -66,7 +71,8 @@ const { state: mySessionData, execute: refreshMySessionData, isLoading: sessions
   console.log('mySessions.result', result)
   lastLoadTime.value = Date.now()
   return Object.values(result)
-}, [])
+}
+const { state: mySessionData, execute: refreshMySessionData, isLoading: sessionsLoading } = useAsyncState(loadSessionData, [])
 
 const versionMeta = computed(() => {
   if (!mySessionData.value) return null
@@ -151,9 +157,10 @@ const syncAllViews = async () => {
   if (syncAllLoading.value) return
   syncAllLoading.value = true
   try {
-    await refreshMySessionData()
+    await refreshMySessionData(0, true)
     if (syncError.value) {
       console.error('local data sync failed, skipping view sync', syncError.value)
+      return
     }
     await Promise.all([
       syncSessions(),

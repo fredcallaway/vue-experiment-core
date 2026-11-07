@@ -49,7 +49,7 @@ const saveSession = async () => {
   saving.value = true
   saveError.value = null
   try {
-    const synced = await $fetch('/api/syncData', { method: 'POST', body: { mode, sessionId } })
+    const synced = await $fetch('/api/syncData', { method: 'POST', body: { mode, sessionId, includeAudio: true } })
     if (synced.numError > 0) throw new Error('Could not refresh this session. Retry before exporting.')
     const session = await readLocalSessionData(mode, sessionId)
     // Evaluate every view before writing so preprocessing errors cannot produce a partial export.

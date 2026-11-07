@@ -16,8 +16,17 @@ const selected = shallowRef<SessionAudio | null>(null)
 const playbackUrl = ref('')
 const error = ref('')
 const loading = ref(false)
-const player = useTemplateRef('player')
+const player = shallowRef<HTMLAudioElement | null>(null)
 let request: AbortController | undefined
+
+function bindPlayer(element: unknown) {
+  player.value = element instanceof HTMLAudioElement ? element : null
+}
+
+function isSelected(file: SessionAudio) {
+  return selected.value?.sessionId === file.sessionId && selected.value.bucket === file.bucket
+    && selected.value.path === file.path
+}
 
 function clearPlayback() {
   player.value?.pause()
@@ -46,6 +55,7 @@ async function play(file: SessionAudio) {
     await nextTick()
     // Controls remain available when a browser requires another click for playback.
     await player.value?.play().catch(() => {})
+    player.value?.focus({ preventScroll: true })
   } catch (cause) {
     if (!current.signal.aborted) error.value = cause instanceof Error ? cause.message : String(cause)
   } finally {
@@ -64,28 +74,46 @@ onBeforeUnmount(() => { request?.abort(); clearPlayback() })
         <span>{{ filtered.length }} recording{{ filtered.length === 1 ? '' : 's' }}</span>
         <TextFilter v-model="query" placeholder="Filter by session, participant, or recording" />
       </div>
-      <div v-if="selected" class="rounded border border-gray-200 p-4 flex flex-col gap-2">
-        <strong class="break-words">{{ selected.filename }}</strong>
-        <p v-if="loading" role="status">Loading recording…</p>
-        <audio v-if="playbackUrl" ref="player" :src="playbackUrl" controls class="w-full max-w-xl"
-          :aria-label="selected.filename" @error="error = 'This recording could not be played by your browser.'" />
-        <p v-if="error" role="alert">{{ error }}</p>
-        <button v-if="error" type="button" class="btn-blue-sm self-start" @click="play(selected)">Retry</button>
-      </div>
-      <ul class="divide-y divide-gray-200 max-h-150 overflow-auto">
+      <ul class="divide-y divide-gray-200 max-h-150 overflow-auto [scrollbar-gutter:stable]">
         <li v-for="file in filtered" :key="`${file.sessionId}/${file.bucket}/${file.path}`"
-          class="py-3 flex items-start gap-4">
-          <button type="button" class="btn-blue-sm shrink-0" :aria-label="`Play ${file.filename}`"
-            @click="play(file)">Play</button>
-          <div class="min-w-0">
-            <div class="break-words">{{ file.filename }}</div>
-            <NuxtLink :to="{ path: `/data/sessions/${file.sessionId}`, query: $route.query }" class="text-sm">
-              {{ file.sessionId }}
-            </NuxtLink>
-            <span v-if="file.epoch" class="text-sm text-gray-500 ml-3">{{ file.epoch }}</span>
+          :data-recording-path="file.path" class="h-20 box-border py-3 flex items-center gap-4">
+          <div class="min-w-0 flex-1">
+            <div class="truncate" :title="file.filename">{{ file.filename }}</div>
+            <div class="truncate text-sm">
+              <NuxtLink :to="{ path: `/data/sessions/${file.sessionId}`, query: $route.query }">
+                {{ file.sessionId }}
+              </NuxtLink>
+              <span v-if="file.epoch" class="text-gray-500 ml-3">{{ file.epoch }}</span>
+            </div>
+          </div>
+          <div class="recording-controls" :aria-busy="isSelected(file) && loading">
+            <audio v-if="isSelected(file) && playbackUrl && !error" :ref="bindPlayer" :src="playbackUrl"
+              controls tabindex="0" class="w-full h-10" :aria-label="file.filename"
+              @error="error = 'This recording could not be played by your browser.'" />
+            <template v-else>
+              <p v-if="isSelected(file) && error" role="alert" :title="error"
+                class="truncate text-sm text-red-600 m-0">{{ error }}</p>
+              <button type="button" class="btn-blue-sm shrink-0 w-22"
+                :aria-label="isSelected(file) && error ? `Retry ${file.filename}` : `Play ${file.filename}`"
+                :disabled="isSelected(file) && loading" @click="play(file)">
+                {{ isSelected(file) && loading ? 'Loading…' : isSelected(file) && error ? 'Retry' : 'Play' }}
+              </button>
+            </template>
           </div>
         </li>
       </ul>
     </template>
   </section>
 </template>
+
+<style scoped>
+.recording-controls {
+  flex: 0 0 min(20rem, 45%);
+  min-width: 0;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+</style>

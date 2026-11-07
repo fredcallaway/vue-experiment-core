@@ -68,6 +68,8 @@ Configure the project key once with `bun run ops -- firebase-auth configure --ke
 
 The Audio tab reads the automatic file index and existing event payloads containing successful upload results. Existing fluency events using `audio_path` and `audio_mime_type` also remain readable. Duplicate references to the same bucket/path produce one entry, and raw session data and analysis exports remain unchanged. Files must be in the bucket configured for this project; the dashboard does not read arbitrary buckets or create shared download links.
 
+Saving a live version or an individual debug session also downloads its recordings under `data/raw/<mode>/audio/<Storage path>`. Filenames and UUIDs match the saved event's `path`; the full Storage path keeps recordings from different sessions distinct. Complete files are reused without another Storage request. Missing or incomplete files are downloaded through the same project credentials and atomically installed after validation. Save reports a download failure and can be retried. Browsing data and on-demand playback do not trigger this filesystem download.
+
 ## Verify before collection
 
 Run `bun test core/composables/useAudioRecorder.test.js core/composables/useFirebaseStorage.test.js` for recorder lifecycle and upload-acknowledgement regressions. Run `node core/testing/audio.integration.mjs` for Chromium's real MediaRecorder/playback flow with a synthetic microphone in an isolated local fixture. The latter saves evidence under `.experiment-tests/audio/` and blocks external requests. It also accepts an existing local example URL as its first argument.

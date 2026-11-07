@@ -1,3 +1,8 @@
+# Incremental audio downloads
+
+- Saving live version data or a debug session downloads its missing audio files beneath `data/raw/<mode>/audio/`, preserving each recording's Storage path and filename. Complete local files are skipped without contacting Storage. Existing cached sessions are checked too, so recordings can be downloaded after their events were saved earlier. Interrupted downloads leave no completed file and are retried on the next save. Upload events and data-view paths remain unchanged; no consumer-code or raw-data migration is required.
+- Data-page playback controls appear inside the selected recording's fixed-height row. Loading, playback, errors, and retry preserve the row and list geometry.
+
 # Dataset versions and debug session exports
 
 - Choose **Dataset version** in **Prolific → Create New Study**, then deploy. The selection is stored outside source code. Tracked builds embed their version, Git SHA, and deployment identity; participant metadata and completion codes use the loaded build. Existing `epoch.config.ts` version fields remain accepted but are ignored and may be removed. The CLI reads the saved selection or accepts `deploy inspect/run --version <name>`; select a version before the first deployment after adopting this core. Raw data needs no migration.

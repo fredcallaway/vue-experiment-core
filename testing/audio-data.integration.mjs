@@ -42,8 +42,10 @@ try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' })
   let failNext = true
   let failNextSync = false
+  let releaseAudio
+  let holdNextAudio = false
   const requests = [], errors = [], exports = [], syncs = []
-  await context.route('**/*', route => {
+  await context.route('**/*', async route => {
     const request = route.request()
     const target = new URL(request.url())
     if (target.origin !== origin) return route.abort()
@@ -62,6 +64,10 @@ try {
     if (!['GET', 'HEAD'].includes(request.method())) return route.abort()
     if (target.pathname === '/api/recordings') {
       requests.push(Object.fromEntries(target.searchParams))
+      if (holdNextAudio) {
+        holdNextAudio = false
+        await new Promise(resolve => { releaseAudio = resolve })
+      }
       if (failNext) {
         failNext = false
         return route.fulfill({ status: 403, json: { message: 'The project service account needs Storage Object Viewer.' } })
@@ -92,15 +98,36 @@ try {
   page.on('pageerror', error => errors.push(error.message))
   const audioTab = () => page.getByRole('button', { name: 'audio', exact: true })
   const list = () => page.getByRole('region', { name: 'Recorded audio', exact: true })
+  const geometry = () => list().evaluate(region => ({
+    rows: [...region.querySelectorAll('[data-recording-path]')].map(row => {
+      const { x, y, width, height } = row.getBoundingClientRect()
+      return { x, y, width, height }
+    }),
+    scrollY: window.scrollY,
+    scrollTop: region.querySelector('ul').scrollTop,
+  }))
   await page.goto(`${origin}/data/sessions/audio-session-1`)
   await audioTab().waitFor({ timeout: 60_000 })
   assert.equal(requests.length, 0, 'opening session data does not download recordings')
   await audioTab().click()
+  await list().scrollIntoViewIfNeeded()
+  const initialGeometry = await geometry()
+  holdNextAudio = true
   await list().getByRole('button', { name: 'Play clip one.wav', exact: true }).click()
+  await list().getByRole('button', { name: 'Play clip one.wav', exact: true }).filter({ hasText: 'Loading' }).waitFor()
+  assert.deepEqual(await geometry(), initialGeometry, 'Loading must preserve row geometry and scroll position')
+  releaseAudio()
   await list().getByRole('alert').filter({ hasText: 'Storage Object Viewer' }).waitFor()
-  await list().getByRole('button', { name: 'Retry', exact: true }).click()
+  assert.deepEqual(await geometry(), initialGeometry, 'Errors must preserve row geometry and scroll position')
+  await list().getByRole('button', { name: 'Retry clip one.wav', exact: true }).focus()
+  await page.keyboard.press('Enter')
   await page.waitForFunction(() => document.querySelector('audio')?.readyState > 0)
+  await page.waitForFunction(() => document.activeElement === document.querySelector('audio'))
   const player = list().locator('audio')
+  assert.deepEqual(await geometry(), initialGeometry, 'Playback must preserve row geometry and scroll position')
+  assert.equal(await player.evaluate(audio => audio.closest('li')?.dataset.recordingPath),
+    'sessions/uid/audio-session-1/clip%20one.wav')
+  assert.equal(await player.evaluate(audio => document.activeElement === audio), true)
   assert.equal(await player.evaluate(audio => audio.duration), 0.5)
   const firstUrl = await player.getAttribute('src')
   await player.evaluate(async audio => { await audio.play(); audio.pause() })
@@ -111,11 +138,24 @@ try {
   await audioTab().waitFor()
   await audioTab().click()
   await list().getByRole('button', { name: 'Play clip one.wav', exact: true }).waitFor()
+  await list().scrollIntoViewIfNeeded()
+  const versionGeometry = await geometry()
   await list().getByRole('button', { name: 'Play legacy.wav', exact: true }).click()
   await page.waitForFunction(() => document.querySelector('audio')?.readyState > 0)
+  assert.deepEqual(await geometry(), versionGeometry, 'Selecting another row must not move its neighbors')
+  await page.setViewportSize({ width: 900, height: 800 })
+  await list().scrollIntoViewIfNeeded()
+  const narrowGeometry = await geometry()
+  await list().getByRole('button', { name: 'Play clip one.wav', exact: true }).click()
+  await page.waitForFunction(() => document.querySelector('audio')?.readyState > 0)
+  assert.deepEqual(await geometry(), narrowGeometry, 'Narrow layouts retain row geometry during playback')
+  await list().getByRole('button', { name: 'Play legacy.wav', exact: true }).click()
+  await page.waitForFunction(() => document.querySelector('audio')?.readyState > 0)
+  await page.setViewportSize({ width: 1440, height: 1000 })
   await list().getByRole('textbox').fill('audio-session-2')
   await list().getByRole('button', { name: 'Play clip one.wav', exact: true }).waitFor({ state: 'hidden' })
-  assert.equal(await list().getByRole('button', { name: 'Play legacy.wav', exact: true }).count(), 1)
+  assert.equal(await list().locator('[data-recording-path]').count(), 1)
+  assert.equal(await list().locator('audio').getAttribute('aria-label'), 'legacy.wav')
   await page.screenshot({ path: resolve(output, 'version-audio.png') })
   assert.equal(requests.at(-1).path, 'word-naming/p2/audio-session-2/legacy.wav')
   assert.equal(requests.every(request => request.bucket === 'audio-fixture.invalid'), true)
@@ -133,7 +173,7 @@ try {
   assert.equal(new URL(page.url()).searchParams.get('mode'), 'debug')
   await page.getByRole('button', { name: 'save', exact: true }).click()
   await page.getByText('saved at', { exact: false }).waitFor()
-  assert.deepEqual(syncs, [{ mode: 'debug', sessionId: 'debug-local' }])
+  assert.deepEqual(syncs, [{ mode: 'debug', sessionId: 'debug-local', includeAudio: true }])
   assert.equal(exports.length, 4)
   assert.ok(exports.every(file => file.path.startsWith('/api/data/processed/debug/debug-local/')))
   assert.equal(exports.find(file => file.path.endsWith('/_session.json')).data.meta.sessionId, 'debug-local')
@@ -156,7 +196,8 @@ try {
   assert.deepEqual(errors, [])
   await writeFile(resolve(output, 'result.json'), JSON.stringify({ requests, errors,
     checks: ['session playback', 'permission error and retry', 'no eager downloads', 'cleanup on tab change',
-      'version playback', 'legacy recording paths', 'session filtering'] }, null, 2) + '\n')
+      'version playback', 'legacy recording paths', 'session filtering', 'inline player',
+      'fixed row geometry during loading, error, retry, and playback', 'keyboard playback', 'narrow row geometry'] }, null, 2) + '\n')
   console.log(`Data-page audio checks passed; evidence: ${output}`)
 } finally {
   await browser?.close()

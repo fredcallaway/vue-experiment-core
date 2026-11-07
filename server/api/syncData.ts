@@ -4,6 +4,7 @@ import { dirname, resolve } from 'path'
 import firebaseConfig from '~/firebase.config.json'
 import { decompressEvents, getDBPath, type DataMode, type DBSessionEvents, type SafeDataObject, type SessionData, type SessionMeta } from '~/core/internal/data'
 import { assert } from '~/core/utils/asserts'
+import { downloadSessionAudio } from '../../operations/audio-downloads'
 
 type StoredSessionData = SessionData & { _downloadTime: number }
 type StoredSessionMeta = SessionMeta & { _downloadTime: number }
@@ -117,30 +118,39 @@ const getFsMeta = async (mode: DataMode) => {
   return { fsMeta, fsMetaPath }
 }
 
-const syncSessions = async (mode: DataMode, sessionId?: string) => {
+const syncSessions = async (mode: DataMode, options: {
+  sessionId?: string; includeAudio?: boolean; version?: string
+}) => {
 
   const dbMeta = await getDatabasePath<Record<string, SessionMeta>>(`${mode}/meta`)
   if (!dbMeta) {
     console.warn('no session metadata found in database for mode ', mode)
-    return { meta: {}, numUpdated: 0, numError: 0 }
+    return { meta: {}, numUpdated: 0, numError: 0, audioDownloaded: 0, audioSkipped: 0 }
   }
 
   const { fsMeta, fsMetaPath } = await getFsMeta(mode)
 
   const sessionsToUpdate = Object.entries(dbMeta)
-    .filter(([id]) => !sessionId || id === sessionId)
-    .filter(([sessionId, meta]) => (fsMeta[sessionId]?._downloadTime || 0) < meta.lastUpdateTime)
-    .map(([sessionId, meta]) => ({ sessionId, meta }))
+    .filter(([id]) => !options.sessionId || id === options.sessionId)
+    .map(([sessionId, meta]) => ({ sessionId, meta,
+      needsUpdate: (fsMeta[sessionId]?._downloadTime || 0) < meta.lastUpdateTime,
+      includeAudio: options.includeAudio && (!options.version || meta.version === options.version),
+    }))
+    .filter(session => session.needsUpdate || session.includeAudio)
   
   console.log(`--- syncing ${sessionsToUpdate.length} sessions ---`)
   let numUpdated = 0
   let numError = 0
+  let audioDownloaded = 0
+  let audioSkipped = 0
   const batchSize = 20
   for (let i = 0; i < sessionsToUpdate.length; i += batchSize) {
     const batch = sessionsToUpdate.slice(i, i + batchSize)
-    const results = await Promise.all(batch.map(async ({ sessionId, meta }) => {
+    const results = await Promise.all(batch.map(async ({ sessionId, meta, needsUpdate, includeAudio }) => {
       const now = Date.now()
-      const sessionData = await fetchSessionDataFromDb(mode, sessionId, meta)
+      const sessionData = needsUpdate
+        ? await fetchSessionDataFromDb(mode, sessionId, meta)
+        : await readJsonFile<StoredSessionData | null>(resolve(RAW_DIR, mode, `${sessionId}.json`), null)
       // console.log(`fetchSessionDataFromDb(${sessionId}) took ${Date.now() - now}ms`)
       if (!sessionData) {
         console.error('session data not found', sessionId)
@@ -152,7 +162,14 @@ const syncSessions = async (mode: DataMode, sessionId?: string) => {
         numError++
         return null
       }
-      await writeLocalSessionData(mode, sessionData, now)
+      if (needsUpdate) await writeLocalSessionData(mode, sessionData, now)
+      if (includeAudio) {
+        const bucket = 'storageBucket' in firebaseConfig ? String(firebaseConfig.storageBucket) : ''
+        const audio = await downloadSessionAudio(process.cwd(), mode, sessionData, bucket)
+        audioDownloaded += audio.downloaded
+        audioSkipped += audio.skipped
+      }
+      if (!needsUpdate) return null
       return {
         sessionId,
         meta: sessionData.meta,
@@ -168,13 +185,13 @@ const syncSessions = async (mode: DataMode, sessionId?: string) => {
       }
     })
     // checkpointing in case of interruption
-    await writeJsonFile(fsMetaPath, fsMeta)
+    if (updated.length > 0) await writeJsonFile(fsMetaPath, fsMeta)
   }
 
   // if (numUpdated > 0) {
   //   await writeJsonFile(fsMetaPath, fsMeta)
   // }
-  return { meta: fsMeta, numUpdated, numError }
+  return { meta: fsMeta, numUpdated, numError, audioDownloaded, audioSkipped }
 }
 
 export default defineEventHandler(async (event) => {
@@ -204,7 +221,13 @@ export default defineEventHandler(async (event) => {
     if (body.sessionId !== undefined && (typeof body.sessionId !== 'string' || !body.sessionId)) {
       throw createError({ statusCode: 400, message: 'sessionId must be a nonempty string' })
     }
-    return await syncSessions(mode, body.sessionId)
+    if (body.includeAudio !== undefined && typeof body.includeAudio !== 'boolean') {
+      throw createError({ statusCode: 400, message: 'includeAudio must be a boolean' })
+    }
+    if (body.version !== undefined && (typeof body.version !== 'string' || !body.version)) {
+      throw createError({ statusCode: 400, message: 'version must be a nonempty string' })
+    }
+    return await syncSessions(mode, body)
   } catch (error) {
     console.error('error syncing data', error)
     throw error

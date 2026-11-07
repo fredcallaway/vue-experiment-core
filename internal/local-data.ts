@@ -88,7 +88,7 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
     if (lastSyncTime.value < lastUpdateTime.value) return 'stale'
     return 'synced'
   })
-  const syncLocalData = async () => {
+  const syncLocalData = async (options: { includeAudio?: boolean; version?: string } = {}) => {
     // wait for last sync to complete before starting a new one
     await until(syncLoading).toBe(false)
     console.log('syncing local data')
@@ -98,7 +98,7 @@ export const useAllData = (mode: DataMode, listen: boolean = true) => {
       const now = Date.now()
       const result = await $fetch(`/api/syncData`, {
         method: 'POST',
-        body: { mode },
+        body: { mode, ...options },
       })
       fsMeta.value = result.meta
       console.log(`synced ${result.numUpdated} local sessions in ${Date.now() - now}ms`)
