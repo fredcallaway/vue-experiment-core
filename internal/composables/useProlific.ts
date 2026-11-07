@@ -497,6 +497,7 @@ export const useProlific = createGlobalState(() => {
     if (!metas) return []
 
     return R.unique(Object.values(metas)
+      .filter(meta => meta.synthetic !== true)
       .map(meta => meta.participantId)
       .filter((participantId): participantId is string => isProlificIdentifier(participantId)))
   }

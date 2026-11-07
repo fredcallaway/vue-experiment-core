@@ -15,7 +15,12 @@ try {
     window.audioStudyFixture = JSON.parse(localStorage.getItem('audioStudyFixture') ?? 'null') ?? {
       studies: {}, prolificProjectId: 'fixture-project',
       deployStatus: { sha: 'bbbbbbbb', version: '0.1' },
-      studyDraft: { exclusions: { databaseParticipants: false, previousStudies: false } },
+      studyDraft: { exclusions: { databaseParticipants: true, previousStudies: false } },
+      live: { meta: {
+        synthetic: { participantId: '111111111111111111111111', synthetic: true, excluded: true },
+        excludedParticipant: { participantId: 'aaaaaaaaaaaaaaaaaaaaaaaa', excluded: true },
+        preview: { participantId: 'debug-preview' },
+      } },
     }
   })
   let payload
@@ -61,6 +66,9 @@ try {
       let json = {}
       if (target.pathname === '/api/prolific/token') json = { token: 'fixture-token' }
       if (target.pathname === '/api/prolific/git-status') json = { sha: 'bbbbbbbb', dirty: false }
+      if (target.pathname === '/api/prolific/filters/') json = { results: [
+        { filter_id: 'custom_blocklist', data_type: 'ParticipantID' },
+      ] }
       if (target.pathname.includes('/submissions')) json = { results: [] }
       else if (target.pathname === '/api/prolific/studies/fixture-study') json = {
         ...payload, id: 'fixture-study', status: 'UNPUBLISHED', date_created: new Date(0).toISOString(),
@@ -92,6 +100,8 @@ try {
   await page.getByRole('button', { name: 'Create Draft', exact: true }).click()
   await page.waitForURL('**/prolific/fixture-study')
   assert.deepEqual(payload.peripheral_requirements, ['microphone', 'audio'])
+  assert.deepEqual(payload.filters.find(filter => filter.filter_id === 'custom_blocklist').selected_values,
+    ['aaaaaaaaaaaaaaaaaaaaaaaa'], 'Skip synthetic identities while retaining excluded real participants')
   assert.deepEqual(errors, [])
   console.log(`Prolific audio requirements persist across reload and reach the study payload; ${output}`)
 } finally {

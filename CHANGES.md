@@ -1,3 +1,7 @@
+# Synthetic sessions and recruitment
+
+- The database participant blocklist skips sessions explicitly marked `synthetic: true` in their metadata. Live smoke tests should mark their session metadata as synthetic after the writer has stopped. Analysis-excluded real participants remain on the recruitment blocklist. Existing sessions need no migration.
+
 # Prolific audio requirements
 
 - Create New Study now offers microphone recording and audio playback requirements. These persist in the study draft and are sent to Prolific as `peripheral_requirements` when creating a study. Existing drafts with no selection keep no extra requirements; no consumer-code or raw-data migration is required.
