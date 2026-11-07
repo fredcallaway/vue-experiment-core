@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useDataViews } from '../../../composables/dataViews'
+import { exportAudioFiles } from '../../../internal/audio-file'
 import { type SafeData, type SessionData, isErrorEvent } from '../../../internal/data'
 import {
   getSessionTimeInfo,
@@ -117,7 +118,8 @@ const syncView = async (viewName: string) => {
       : prepareCombinedJson(view.fn)
     await $fetch(`/api/data/processed/${mode}/${version}/${viewName}.${ext}`, {
       method: 'POST',
-      body,
+      body: JSON.stringify(exportAudioFiles(body, mode)),
+      headers: { 'Content-Type': 'application/json' },
     })
     lastSyncTimes.value[viewName] = Date.now()
     preprocessError.value = null

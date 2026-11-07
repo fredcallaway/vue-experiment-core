@@ -38,6 +38,16 @@ For an existing bucket, review and merge its rules rather than replacing rules n
 
 ## Save a session file
 
+Use `uploadAudio` for recorded audio. The acknowledged `AudioFile` is a JSON-safe reference you can log in an event and return in one cell of a data view:
+
+```ts
+const { uploadAudio } = useFirebaseStorage()
+const audioFile = await uploadAudio(filename, recording)
+if (audioFile) logResponse({ audio: audioFile })
+```
+
+Choose the filename once per attempt and reuse it for retries. `uploadAudio` returns `null` in an uninitialized preview; a failed initialized upload rejects. The file index under `other/files` keeps size, content type, recorder MIME type, and duration with the reference. A data view should return one row per trial with the reference in an audio column. Tables display Play/Stop, and processed CSV and JSON exports replace the reference with a relative filesystem path. See the live `AudioTrial.vue` example for a complete trial.
+
 Import `useFirebaseStorage` from `core/composables/useFirebaseStorage` in setup. It accepts any nonempty Blob up to `MAX_UPLOAD_BYTES` (50 MiB). Choose a filename once per response and reuse it for upload retries:
 
 ```ts
@@ -60,7 +70,7 @@ Recording and upload are separate operations. A recording is held in browser mem
 
 ## Play recordings in the Data dashboard
 
-Open a session or version under **Data**, then select **audio**. Each recording has a Play button; the version list can be filtered by session, participant, filename, or epoch. Recordings load only when selected. The player offers native play/pause, seeking, and volume controls, and displays a retry action when loading fails. Switching tabs or leaving the page stops playback and releases its Blob URL.
+Open a session or version under **Data**, then select **audio** or a data view with an audio column. The recording list can be filtered by session, participant, filename, or epoch. Play/Stop stays in its row and recordings load only on request. Loading failures offer Retry. Switching tabs or leaving the page stops playback and releases its Blob URL.
 
 Playback uses the local Nuxt server started by `bun run dev`. The server reads the configured bucket with the project's service-account key; it keeps credentials on the server and streams bytes to the local browser. The participant-facing static Firebase site does not provide this researcher endpoint. Storage rules can continue denying client reads. Google Cloud IAM separately authorizes the service account's reads.
 

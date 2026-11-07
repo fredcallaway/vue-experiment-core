@@ -113,7 +113,7 @@ try {
   assert.deepEqual(events.map(event => event.type),
     ['audioExample.started', 'audioExample.recorded', 'audioExample.saved'])
   assert.equal(events[1].data.bytes, recorded.bytes)
-  assert.deepEqual(events[2].data, { saved: false, path: null })
+  assert.deepEqual(events[2].data, { audio: null })
   await button('Continue').click()
   await page.getByText('Finished. The audioExample data view contains', { exact: false }).waitFor()
   assert.ok(await page.evaluate(url => window.__audioProbe.revoked.includes(url), recorded.url))

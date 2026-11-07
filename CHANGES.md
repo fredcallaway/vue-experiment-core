@@ -1,7 +1,11 @@
+# Audio files in data views
+
+- `useFirebaseStorage().uploadAudio(filename, recording)` returns an `AudioFile` after an acknowledged upload. Log or return that reference in a data view; its table cell offers Play/Stop and its exported value is a relative path to the downloaded file. Duration, MIME type, and size are stored with the file under the session's `other/files` index. Existing audio events and file metadata remain readable.
+
 # Incremental audio downloads
 
 - Saving live version data or a debug session downloads its missing audio files beneath `data/raw/<mode>/audio/`, preserving each recording's Storage path and filename. Complete local files are skipped without contacting Storage. Existing cached sessions are checked too, so recordings can be downloaded after their events were saved earlier. Interrupted downloads leave no completed file and are retried on the next save. Upload events and data-view paths remain unchanged; no consumer-code or raw-data migration is required.
-- Data-page playback controls appear inside the selected recording's fixed-height row. Loading, playback, errors, and retry preserve the row and list geometry.
+- Recording lists and typed audio cells use Play/Stop within the row. Loading, playback, errors, and retry preserve the row and list geometry.
 
 # Dataset versions and debug session exports
 

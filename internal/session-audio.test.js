@@ -1,5 +1,7 @@
 import { expect, test } from 'bun:test'
 import { sessionAudio } from './session-audio'
+import { audioFile, exportAudioFiles } from './audio-file'
+import { resolve } from 'node:path'
 
 const file = { saved: true, path: 'sessions/uid/s1/response%20one.webm', bucket: 'test.invalid',
   contentType: 'audio/webm', size: 30 }
@@ -33,4 +35,16 @@ test('legacy audio paths, missing MIME types, and unusual filenames remain reada
   ]), 'fallback.invalid')
   expect(rows.map(row => row.filename)).toEqual(['old.m4a', '%bad.webm'])
   expect(rows.every(row => row.bucket === 'fallback.invalid')).toBe(true)
+})
+
+test('typed audio references use indexed file metadata and resolve from exported views', () => {
+  const audio = audioFile(file)
+  const rows = sessionAudio(session([{ currentEpochId: 'trial', data: { audio } }], { clip: file }), 'fallback.invalid')
+  expect(rows).toHaveLength(1)
+  expect(rows[0]).toMatchObject({ epoch: 'trial', contentType: 'audio/webm', size: 30 })
+  const exported = exportAudioFiles({ nested: [{ audio, response: 2 }] }, 'live')
+  expect(exported.nested[0].response).toBe(2)
+  expect(resolve('/project/data/processed/live/v1', exported.nested[0].audio))
+    .toBe(`/project/data/raw/live/audio/${file.path}`)
+  expect(exportAudioFiles([{ audio }], 'debug')[0].audio).toBe(`../../../raw/debug/audio/${file.path}`)
 })

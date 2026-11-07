@@ -6,7 +6,7 @@ import AudioTrial from './AudioTrial.vue'
   <ESequence name="main">
     <AudioTrial />
     <EPage name="end" class="p-6 text-center">
-      Finished. The audioExample data view contains the recording metadata and save result.
+      Finished. The audioExample data view contains the saved audio response.
     </EPage>
   </ESequence>
 </template>

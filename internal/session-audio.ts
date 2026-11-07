@@ -1,4 +1,5 @@
 import type { SessionData } from './data'
+import { audioFilename, isAudioFile } from './audio-file'
 
 export type SessionAudio = {
   sessionId: string
@@ -14,18 +15,28 @@ export type SessionAudio = {
 export function sessionAudio(session: SessionData, defaultBucket: string): SessionAudio[] {
   const files = new Map<string, SessionAudio>()
   const add = (path: string, bucket: string, contentType: string, size?: number, epoch?: string) => {
-    let filename = path.split('/').pop() || path
-    try { filename = decodeURIComponent(filename) } catch { /* Display the original filename. */ }
+    const filename = audioFilename(path)
     const isAudio = contentType.startsWith('audio/') || ((!contentType || contentType === 'application/octet-stream')
       && /\.(webm|m4a|mp3|mp4|ogg|wav|flac|aac|opus)$/i.test(filename))
     const key = `${bucket}/${path}`
-    if (!isAudio || files.has(key)) return
+    if (!isAudio) return
+    const existing = files.get(key)
+    if (existing) {
+      existing.size ??= size
+      existing.epoch ??= epoch
+      if (existing.contentType === 'audio/*' && contentType) existing.contentType = contentType
+      return
+    }
     files.set(key, { sessionId: session.meta.sessionId, participantId: session.meta.participantId,
       path, bucket, filename, contentType, size, epoch })
   }
   const visit = (value: unknown, epoch?: string) => {
     if (!value || typeof value !== 'object') return
     const item = value as Record<string, unknown>
+    if (isAudioFile(item)) {
+      add(item.path, item.bucket, 'audio/*', undefined, epoch)
+      return
+    }
     if (item.saved === true && typeof item.path === 'string' && typeof item.contentType === 'string') {
       add(item.path, typeof item.bucket === 'string' ? item.bucket : defaultBucket, item.contentType,
         typeof item.size === 'number' ? item.size : undefined, epoch)

@@ -34,9 +34,11 @@ test('session uploads isolate previews, require a writable session, and await Fi
     mock.module('./useDataWriter', () => ({ useDataWriter: () => writer }))
     mock.module('../internal/state', () => ({ isJumping: jumping }))
     const { useFirebaseStorage, MAX_UPLOAD_BYTES } = await import('./useFirebaseStorage.ts')
-    const { upload } = useFirebaseStorage()
+    const { upload, uploadAudio } = useFirebaseStorage()
     const blob = new Blob(['audio'], { type: 'audio/webm;codecs=opus' })
+    const recording = { blob, durationMs: 1200, mimeType: blob.type, extension: 'webm' }
     assert.deepEqual(await upload('clip.webm', blob), { saved: false, path: null })
+    assert.equal(await uploadAudio('clip.webm', recording), null)
     assert.equal(initialized, 0)
     writer.initialized = true
     const paths = []
@@ -95,6 +97,15 @@ test('session uploads isolate previews, require a writable session, and await Fi
       writer.writable = true
     }
     assert.notEqual(paths[0], paths[1], 'debug files must not overwrite live files for the same session')
+    const typed = uploadAudio('response.webm', recording)
+    while (uploads.length < 4) await new Promise(resolve => setTimeout(resolve, 1))
+    acknowledge.resolve()
+    const reference = await typed
+    assert.deepEqual(reference, { type: 'audio', bucket: 'test.invalid', path: uploads[3].path })
+    assert.deepEqual(registered.at(-1), { path: 'files/response%2Ewebm', file: {
+      saved: true, path: reference.path, bucket: reference.bucket, size: blob.size, contentType: 'audio/webm',
+      durationMs: recording.durationMs, mimeType: recording.mimeType,
+    } })
     session.mode = 'live'; writer.initialized = false; writer.writable = false
     await assert.rejects(upload('clip.webm', blob), /active, initialized/)
   `], { cwd: new URL('.', import.meta.url), encoding: 'utf8', timeout: 15000 })

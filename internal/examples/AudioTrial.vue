@@ -1,5 +1,5 @@
 <script lang="ts">
-import { declareDataView } from '../../composables/dataViews'
+import { audioFile, declareDataView, isAudioFile, type AudioFile } from '../../composables/dataViews'
 import { declareEventLogger } from '../../composables/logEvent'
 import { useAudioRecorder } from '../../composables/useAudioRecorder'
 import { useDataWriter } from '../../composables/useDataWriter'
@@ -8,19 +8,28 @@ import { useFirebaseStorage, type FileUploadResult } from '../../composables/use
 import { useLocalAsync } from '../../composables/useLocalAsync'
 
 const [logStarted] = declareEventLogger('audioExample.started')
-const [logRecorded, isRecorded] = declareEventLogger<{
+const [logRecorded] = declareEventLogger<{
   durationMs: number; mimeType: string; bytes: number
 }>('audioExample.recorded')
-const [logSaved, isSaved] = declareEventLogger<FileUploadResult>('audioExample.saved')
-declareDataView('audioExample', session => session.events
-  .filter(event => isRecorded(event) || isSaved(event)).map(event => ({ event: event.eventType, ...event.data })))
+const [logSaved, isSaved] = declareEventLogger<{ audio: AudioFile | null } | FileUploadResult>('audioExample.saved')
+declareDataView('audioExample', session => {
+  const trials = new Map<string, AudioFile>()
+  for (const event of session.events.filter(isSaved)) {
+    const data = event.data
+    if (isAudioFile(data.audio)) trials.set(event.currentEpochId, data.audio)
+    else if (data.saved === true && typeof data.path === 'string' && typeof data.bucket === 'string') {
+      trials.set(event.currentEpochId, audioFile({ path: data.path, bucket: data.bucket }))
+    }
+  }
+  return Array.from(trials.values(), audio => ({ audio }))
+})
 </script>
 
 <script lang="ts" setup>
 // A single-file trial: copy this component into an experiment's ESequence to use it live.
 const epoch = useEpoch('audio')
 const audio = useAudioRecorder()
-const { upload } = useFirebaseStorage()
+const { uploadAudio } = useFirebaseStorage()
 const { registerAsync } = useLocalAsync()
 const writer = useDataWriter()
 const localPreview = computed(() => !writer.initialized)
@@ -64,10 +73,10 @@ function save() {
   return run(async () => {
     if (!audio.recording.value) return
     // Reuse this filename and Blob on retry. Initialized sessions require an acknowledged upload in both modes.
-    const result = await registerAsync(upload(filename, audio.recording.value.blob))
-    logSaved(result)
-    saved.value = result.saved || localPreview.value
-    message.value = result.saved ? 'Recording saved.' : 'Local preview only. No file was uploaded.'
+    const file = await registerAsync(uploadAudio(filename, audio.recording.value))
+    logSaved({ audio: file })
+    saved.value = !!file || localPreview.value
+    message.value = file ? 'Recording saved.' : 'Local preview only. No file was uploaded.'
   })
 }
 </script>

@@ -57,7 +57,7 @@ try {
       }
       return route.fulfill({ json: { numUpdated: 1, numError: 0 } })
     }
-    if (target.pathname.startsWith('/api/data/processed/debug/') && request.method() === 'POST') {
+    if (target.pathname.startsWith('/api/data/processed/') && request.method() === 'POST') {
       exports.push({ path: target.pathname, data: JSON.parse(request.postData()) })
       return route.fulfill({ json: null })
     }
@@ -114,26 +114,31 @@ try {
   const initialGeometry = await geometry()
   holdNextAudio = true
   await list().getByRole('button', { name: 'Play clip one.wav', exact: true }).click()
-  await list().getByRole('button', { name: 'Play clip one.wav', exact: true }).filter({ hasText: 'Loading' }).waitFor()
+  await list().getByRole('button', { name: 'Stop clip one.wav', exact: true }).waitFor()
   assert.deepEqual(await geometry(), initialGeometry, 'Loading must preserve row geometry and scroll position')
   releaseAudio()
-  await list().getByRole('alert').filter({ hasText: 'Storage Object Viewer' }).waitFor()
+  await list().getByRole('alert').filter({ hasText: 'Storage Object Viewer' }).waitFor({ state: 'attached' })
   assert.deepEqual(await geometry(), initialGeometry, 'Errors must preserve row geometry and scroll position')
   await list().getByRole('button', { name: 'Retry clip one.wav', exact: true }).focus()
   await page.keyboard.press('Enter')
   await page.waitForFunction(() => document.querySelector('audio')?.readyState > 0)
-  await page.waitForFunction(() => document.activeElement === document.querySelector('audio'))
   const player = list().locator('audio')
   assert.deepEqual(await geometry(), initialGeometry, 'Playback must preserve row geometry and scroll position')
   assert.equal(await player.evaluate(audio => audio.closest('li')?.dataset.recordingPath),
     'sessions/uid/audio-session-1/clip%20one.wav')
-  assert.equal(await player.evaluate(audio => document.activeElement === audio), true)
+  assert.equal(await list().getByRole('button', { name: 'Stop clip one.wav', exact: true })
+    .evaluate(button => document.activeElement === button), true)
   assert.equal(await player.evaluate(audio => audio.duration), 0.5)
+  assert.equal(await player.evaluate(audio => audio.controls), false)
   const firstUrl = await player.getAttribute('src')
-  await player.evaluate(async audio => { await audio.play(); audio.pause() })
   await page.screenshot({ path: resolve(output, 'session-audio.png') })
-  await page.getByRole('button', { name: 'events', exact: true }).click()
+  await list().getByRole('button', { name: 'Stop clip one.wav', exact: true }).click()
   assert.ok(await page.evaluate(url => window.__revokedAudio.includes(url), firstUrl))
+  await list().getByRole('button', { name: 'Play clip one.wav', exact: true }).click()
+  await page.waitForFunction(() => document.querySelector('audio')?.readyState > 0)
+  const secondUrl = await player.getAttribute('src')
+  await page.getByRole('button', { name: 'events', exact: true }).click()
+  assert.ok(await page.evaluate(url => window.__revokedAudio.includes(url), secondUrl))
   await page.goto(`${origin}/data/versions/audio-test`)
   await audioTab().waitFor()
   await audioTab().click()
@@ -155,10 +160,31 @@ try {
   await list().getByRole('textbox').fill('audio-session-2')
   await list().getByRole('button', { name: 'Play clip one.wav', exact: true }).waitFor({ state: 'hidden' })
   assert.equal(await list().locator('[data-recording-path]').count(), 1)
-  assert.equal(await list().locator('audio').getAttribute('aria-label'), 'legacy.wav')
   await page.screenshot({ path: resolve(output, 'version-audio.png') })
   assert.equal(requests.at(-1).path, 'word-naming/p2/audio-session-2/legacy.wav')
   assert.equal(requests.every(request => request.bucket === 'audio-fixture.invalid'), true)
+
+  await page.getByRole('button', { name: 'trial', exact: true }).click()
+  const cellPlay = page.locator('td').getByRole('button', { name: 'Play clip one.wav', exact: true })
+  const cellStop = page.locator('td').getByRole('button', { name: 'Stop clip one.wav', exact: true })
+  const row = page.locator('tbody tr').filter({ hasText: 'audio-session-1' })
+  const rowHeight = (await row.boundingBox()).height
+  await cellPlay.click()
+  await page.waitForFunction(() => document.querySelector('td audio')?.readyState > 0)
+  assert.equal((await row.boundingBox()).height, rowHeight, 'Audio cells preserve the height of their trial row')
+  assert.equal(await page.locator('td audio[controls]').count(), 0)
+  await cellStop.click()
+  await cellPlay.waitFor()
+  await page.screenshot({ path: resolve(output, 'audio-cell.png') })
+
+  await page.getByRole('button', { name: 'save', exact: true }).click()
+  await page.getByText('was last updated at', { exact: false }).waitFor()
+  assert.deepEqual(syncs, [{ mode: 'live', includeAudio: true, version: 'audio-test' }])
+  const relative = '../../../raw/live/audio/sessions/uid/audio-session-1/clip%20one.wav'
+  assert.equal(exports.find(file => file.path.endsWith('/trial.csv')).data[0].audio, relative)
+  assert.equal(exports.find(file => file.path.endsWith('/details.json')).data['audio-session-1'].audio, relative)
+  syncs.length = 0
+  exports.length = 0
 
   await page.goto(`${origin}/data?mode=debug`)
   await page.getByRole('heading', { name: 'Debug sessions', exact: true }).waitFor()
@@ -178,7 +204,10 @@ try {
   assert.ok(exports.every(file => file.path.startsWith('/api/data/processed/debug/debug-local/')))
   assert.equal(exports.find(file => file.path.endsWith('/_session.json')).data.meta.sessionId, 'debug-local')
   assert.deepEqual(exports.find(file => file.path.endsWith('/trial.csv')).data,
-    [{ session_id: 'debug-local', response: 'fixture' }])
+    [{ session_id: 'debug-local', response: 'fixture',
+      audio: '../../../raw/debug/audio/sessions/uid/audio-session-1/clip%20one.wav' }])
+  assert.equal(exports.find(file => file.path.endsWith('/details.json')).data.audio,
+    '../../../raw/debug/audio/sessions/uid/audio-session-1/clip%20one.wav')
   assert.equal(exports.find(file => file.path.endsWith('/empty.json')).data, null)
   await page.screenshot({ path: resolve(output, 'debug-session-export.png') })
   await page.goto(`${origin}/data/versions/old-pilot?mode=debug`)

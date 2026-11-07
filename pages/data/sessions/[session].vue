@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useDataViews } from '../../../composables/dataViews'
+import { exportAudioFiles } from '../../../internal/audio-file'
 import { useProlificMessages } from '../../../internal/composables/useProlificMessages'
 import { getSessionTimeInfo, makeEventList, readLocalSessionData, useSessionData } from '../../../internal/local-data'
 import { formatDateTime, formatTime } from '../../../utils/formatting'
@@ -54,7 +55,7 @@ const saveSession = async () => {
     const session = await readLocalSessionData(mode, sessionId)
     // Evaluate every view before writing so preprocessing errors cannot produce a partial export.
     const files = Object.entries(dataViews).map(([name, view]) => ({
-      name: `${name}.${view.format}`, data: view.fn(session),
+      name: `${name}.${view.format}`, data: exportAudioFiles(view.fn(session), mode),
     }))
     files.push({ name: '_session.json', data: session })
     await Promise.all(files.map(file => $fetch(`/api/data/processed/debug/${encodeURIComponent(sessionId)}/${file.name}`, {

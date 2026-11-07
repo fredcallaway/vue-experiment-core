@@ -31,7 +31,10 @@ export const useSessionData = (mode: string, id: string) => {
 }
 export const useAllData = (mode: string) => ({
   sessions: ref(Object.fromEntries(forMode(mode).map(session => [session.meta.sessionId, session.meta]))),
-  syncStatus: ref('synced'), syncLocalData: async () => {}, lastUpdateTime: ref(4000), lastSyncTime: ref(5000),
+  syncStatus: ref('synced'), lastUpdateTime: ref(4000), lastSyncTime: ref(5000),
+  syncLocalData: async (options: { includeAudio?: boolean } = {}) => {
+    if (options.includeAudio) await $fetch('/api/syncData', { method: 'POST', body: { mode, ...options } })
+  },
 })
 export const readLocalSessionData = async (mode: string, id: string) =>
   forMode(mode).find(session => session.meta.sessionId === id)!

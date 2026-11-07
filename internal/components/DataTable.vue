@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { type ParseError } from '../../composables/dataViews'
+import { audioFilename, isAudioFile } from '../audio-file'
+import AudioPlayButton from './AudioPlayButton.vue'
 import { assertDefined } from '../../utils/asserts'
 import { createTextFilter } from '../../utils/createTextFilter'
 import { formatDateTime } from '../../utils/formatting'
@@ -43,6 +45,7 @@ const formatValue = (column: string, value: any, row: Record<string, any>) => {
   const col = column.toLowerCase()
   const isNum = typeof value === 'number'
   if (value === null || value === undefined) return ''
+  if (isAudioFile(value)) return audioFilename(value.path)
   if (col.endsWith('time') || col.endsWith('timestamp') && isNum) {
     return formatDateTime(value)
   }
@@ -282,7 +285,7 @@ const columnWidths = computed(() => {
     // Measure all cell values for this column
     formattedTableData.value.forEach(row => {
       const value = row.formatted[col] ?? ''
-      let text = String(value)
+      let text = isAudioFile(row.original[col]) ? 'Play' : String(value)
       if (text == '[object Object]') {
         text = Object.entries(row.original[col]).map(([key, value]) => `${key}:${value} `).join(' ')
       }
@@ -385,7 +388,8 @@ const slots = useSlots()
                   style="white-space: nowrap; overflow: hidden;"
                   :style="columnWidths[col] ? { width: `${columnWidths[col]+2}px` } : {}"
                 >
-                  <template v-if="getCellLinkRoute(col, row.original)">
+                  <AudioPlayButton v-if="isAudioFile(row.original[col])" :file="row.original[col]" />
+                  <template v-else-if="getCellLinkRoute(col, row.original)">
                     <NuxtLink :to="getCellLinkRoute(col, row.original)" class="cursor-pointer">
                       {{ row.formatted[col] }}
                     </NuxtLink>

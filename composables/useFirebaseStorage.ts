@@ -5,6 +5,8 @@ import firebaseConfig from '~/firebase.config.json'
 import { isJumping } from '../internal/state'
 import { useCurrentSession } from './useCurrentSession'
 import { useDataWriter } from './useDataWriter'
+import { audioFile, type AudioFile } from '../internal/audio-file'
+import type { AudioRecording } from './useAudioRecorder'
 
 export type StoredFile = {
   saved: true
@@ -23,7 +25,8 @@ export function useFirebaseStorage() {
   const session = useCurrentSession()
   const writer = useDataWriter()
 
-  async function upload(filename: string, blob: Blob): Promise<FileUploadResult> {
+  async function upload(filename: string, blob: Blob, audio?: Pick<AudioRecording, 'durationMs' | 'mimeType'>):
+    Promise<FileUploadResult> {
     if (!filename || filename === '.' || filename === '..' || /[\x00-\x1f/\\]/.test(filename)) {
       throw new Error('Provide a filename without directories or control characters.')
     }
@@ -66,9 +69,15 @@ export function useFirebaseStorage() {
     const file: StoredFile = { saved: true, path: result.metadata.fullPath, bucket: result.metadata.bucket,
       size: result.metadata.size, contentType: result.metadata.contentType ?? 'application/octet-stream' }
     const key = encodeURIComponent(filename).replaceAll('.', '%2E')
-    writer.updateOther(`files/${key}`, file)
+    writer.updateOther(`files/${key}`, audio ? { ...file, ...audio } : file)
     return file
   }
 
-  return { upload }
+  async function uploadAudio(filename: string, recording: AudioRecording): Promise<AudioFile | null> {
+    const { blob, durationMs, mimeType } = recording
+    const file = await upload(filename, blob, { durationMs, mimeType })
+    return file.saved ? audioFile(file) : null
+  }
+
+  return { upload, uploadAudio }
 }

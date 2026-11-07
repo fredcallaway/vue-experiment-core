@@ -1,4 +1,5 @@
 import { type SafeData, type SessionData } from '../internal/data'
+export { audioFile, isAudioFile, type AudioFile } from '../internal/audio-file'
 
 
 export type CsvDataView = {

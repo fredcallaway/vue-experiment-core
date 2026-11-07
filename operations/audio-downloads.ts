@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import type { DataMode, SessionData } from '../internal/data'
+import { localAudioPath } from '../internal/audio-file'
 import { sessionAudio } from '../internal/session-audio'
 import { readStorageAudio } from './storage-reader'
 
@@ -13,11 +14,7 @@ export async function downloadSessionAudio(root: string, mode: DataMode, session
   let skipped = 0
   for (const file of sessionAudio(session, bucket)) {
     if (file.bucket !== bucket) throw new Error('Recording is not in the configured Storage bucket.')
-    const segments = file.path.split('/')
-    if (segments.some(part => !part || part === '.' || part === '..' || /[\\\x00-\x1f]/.test(part))) {
-      throw new Error('Recording path contains an invalid directory or filename.')
-    }
-    const target = resolve(root, 'data/raw', mode, 'audio', ...segments)
+    const target = resolve(root, 'data', localAudioPath(mode, file.path))
     const existing = await stat(target).catch(error => {
       if (error.code !== 'ENOENT') throw error
       return null
