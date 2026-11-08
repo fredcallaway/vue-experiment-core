@@ -117,7 +117,7 @@ Replace the example name and email with the values supplied by the manager. If t
 
 The output includes the complete private key, has owner-only file permissions, and refuses to overwrite an existing file. It is a single JSON block between `-----BEGIN EXPERIMENT SETUP-----` and `-----END EXPERIMENT SETUP-----`. The generator checks that the key and web configuration identify the same project. It does not create cloud resources, deploy, or change the source project.
 
-Give the manager the complete block as one copyable text block, including its boundary lines. Also link the private output file and state the chosen project name, researcher contact, and database access model. Keep any explanation outside the block. Send it only to the manager here; the manager will forward it privately to the student. Treat the block like the deployment key: keep it out of source files, issue trackers, public documentation, and logs. An agent can pass it to the installer through stdin or an owner-only file outside the project:
+Return the complete setup block directly in your final reply in the lab manager's private chat. Give it as one copyable text block with the deployment key and both boundary lines so the manager can forward it privately to the student for installation. Outside the block, link the private output file and state the project name, researcher contact, and database access model. Keep the block out of source files, issue trackers, public documentation, and logs. An agent can pass it to the installer through stdin or an owner-only file outside the project:
 
 ```bash
 node scripts/create-experiment.mjs --file /absolute/private/path/my-experiment-setup.txt
