@@ -1,3 +1,7 @@
+# Prolific URL joining
+
+- Prolific base URLs are normalized without trailing slashes so recruitment and deployment-preview links use a single `/exp` path. Custom URL path prefixes are preserved; existing raw data needs no migration.
+
 # Active Prolific study deployment check
 
 - The web and CLI deployment paths check the linked Prolific project for studies with status `ACTIVE` before building and again before uploading. Confirm the studies shown in the web UI or pass their IDs with `--allow-live-studies`. Paused and awaiting-review studies pass the check. A failed check blocks deployment when a Prolific project is linked.

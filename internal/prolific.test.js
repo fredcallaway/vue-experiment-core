@@ -9,6 +9,8 @@ test.each([
   ['multiple sites', [{ site: 'test-project' }, { site: 'another-site' }], undefined, true],
   ['missing Hosting configuration', undefined, undefined, true],
   ['explicit URL for a nondefault site', { site: 'another-site' }, 'https://another-site.web.app', false],
+  ['trailing slash', { site: 'test-project' }, 'https://experiment.example.edu/', false],
+  ['nested path', { site: 'test-project' }, 'https://experiment.example.edu/study/', false],
   ['explicit custom domain', { site: 'test-project' }, 'https://experiment.example.edu', false],
 ])('Prolific base URL handles %s', (_name, hosting, baseUrl, rejects) => {
   // Isolate mocked project configuration from other tests and use the real URL resolver.
@@ -23,7 +25,7 @@ test.each([
     if (${rejects}) {
       assert.throws(() => getProlificBaseUrl(config), /FIREBASE_DEFAULT requires.*default Firebase Hosting site/)
     } else {
-      assert.equal(getProlificBaseUrl(config), ${JSON.stringify(baseUrl ?? 'https://test-project.web.app/')})
+      assert.equal(getProlificBaseUrl(config), ${JSON.stringify(baseUrl?.replace(/\/+$/, '') ?? 'https://test-project.web.app')})
     }
   `], { cwd: new URL('../..', import.meta.url), encoding: 'utf8' })
   expect(result.stderr + result.stdout).toBe('')

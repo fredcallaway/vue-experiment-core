@@ -74,10 +74,10 @@ export const getProlificBaseUrl = (config: ProlificConfig): string => {
       'FIREBASE_DEFAULT requires a single default Firebase Hosting site whose site ID matches projectId. ' +
         'Set the Prolific study draft baseUrl to an explicit HTTPS URL for another Hosting site.',
     )
-    return `https://${firebaseConfig.projectId}.web.app/`
+    return `https://${firebaseConfig.projectId}.web.app`
   }
   assert(config.baseUrl.startsWith('https://'), 'Prolific base URL must start with https://')
-  return config.baseUrl
+  return config.baseUrl.replace(/\/+$/, '')
 }
 
 export const eligibilityToFilters = (eligibility: EligibilityConfig): Filter[] => {
