@@ -16,6 +16,8 @@ This is a Nuxt 3 experiment app that extends the template layer in `core/`.
 
 ## Before editing
 
+- Do not edit consent-form content without explicit user approval.
+- Do not edit a project’s README without explicit user approval. Put project-specific agent instructions in `AGENTS.md`.
 - When the lab manager asks for a setup block (for example, “Make me a setup block”), follow [Prepare a student handoff](student-handoff.md). Ask for the project name and researcher contact email if either is missing, and wait for the reply before provisioning the fresh student Firebase project. An explicit documentation-only or dry-run request takes precedence.
 - When a student supplies a setup block, follow the [student setup instructions](../../../README.md#create-your-experiment).
 - Find the closest implementation in [`internal/examples/README.md`](../../internal/examples/README.md) and copy its structure. The examples are live and type-checked.
