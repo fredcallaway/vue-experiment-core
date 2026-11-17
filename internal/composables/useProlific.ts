@@ -131,7 +131,6 @@ export const useProlific = createGlobalState(() => {
   const status = ref<('unknown' | 'ok' | 'invalidToken' | 'invalidProjectId')>('unknown')
 
   const checkStatus = async (token: string, projectId: string) => {
-    console.log('checking status', token, projectId)
     if (token.length < 10) {
       status.value = 'invalidToken'
     } else if (projectId.length < 10) {
