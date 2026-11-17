@@ -95,6 +95,8 @@ With a project dev server running, `node core/testing/main-content.integration.m
 
 `node core/testing/deployment-build.integration.mjs` generates an isolated static fixture with synthetic deployment identity, serves it locally, and verifies saved session provenance and participant/dashboard completion-code agreement. The build is never uploaded; the browser uses an in-memory database and blocks external traffic. Evidence goes to `.experiment-tests/deployment-build/`.
 
+`node core/testing/fatal-errors.integration.mjs` checks the shared fatal error page after plugin/configuration failures, invalid session IDs, the live deployment safeguard, and page setup exceptions. It checks original diagnostics, report copying, manual-copy fallback on narrow screens, and a healthy experiment control. Add `--production` to generate and test a local static build with synthetic build identity. Each run owns its fixture server, blocks external traffic and local API writes, and uses an in-memory database; nothing is deployed. Evidence goes to `.experiment-tests/fatal-errors/`.
+
 `node core/testing/audio-data.integration.mjs` also checks chronological debug browsing across local and hosted sessions, redirects from legacy debug version links, and session-specific CSV/JSON exports. All data APIs are mocked; no participant files are read or written.
 
 `node core/testing/preview.integration.mjs http://localhost:<port>` checks Develop/Preview switching, stable navigation and experiment state, query preservation, hover/click/keyboard outline access, cold Preview startup, reload/history, and worker isolation. Screenshots go to `.experiment-tests/preview/` by default; pass an output directory as the second argument to change it.

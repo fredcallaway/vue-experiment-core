@@ -1,3 +1,7 @@
+# Fatal error reports
+
+- Nuxt startup and fatal error screens now offer readable guidance, expandable original diagnostics, and Copy report with a selectable-text fallback. Reports include the page path and embedded build identity when available, omit URL queries and arbitrary error payloads, and work independently of experiment configuration and services. Reports are local and can be copied for investigation. Consumers with their own `error.vue` retain their override; no raw-data migration is required.
+
 # Production homepage
 
 - The production root URL now displays a participant wrong-link message and an explicit Open Developer Mode control leading to `/dev`. Local development still redirects `/` to `/dev`; participant and recruitment links continue to use `/exp` directly. No raw-data migration is required.
