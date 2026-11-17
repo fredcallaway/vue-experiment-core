@@ -1,12 +1,14 @@
-import { initializeApp } from 'firebase/app'
+import { initializeApp, type FirebaseOptions } from 'firebase/app'
 import { getAuth, signInAnonymously, type User } from 'firebase/auth'
 import { getStorage, ref, uploadBytes } from 'firebase/storage'
-import firebaseConfig from '~/firebase.config.json'
+import rawFirebaseConfig from '~/firebase.config.json'
 import { isJumping } from '../internal/state'
 import { useCurrentSession } from './useCurrentSession'
 import { useDataWriter } from './useDataWriter'
 import { audioFile, type AudioFile } from '../internal/audio-file'
 import type { AudioRecording } from './useAudioRecorder'
+
+const firebaseConfig: FirebaseOptions = rawFirebaseConfig
 
 export type StoredFile = {
   saved: true
@@ -40,8 +42,7 @@ export function useFirebaseStorage() {
       }
     }
     assertWritable()
-    if (!('storageBucket' in firebaseConfig) || typeof firebaseConfig.storageBucket !== 'string'
-      || !firebaseConfig.storageBucket) {
+    if (!firebaseConfig.storageBucket) {
       throw new Error('Set storageBucket in firebase.config.json and follow the audio and files setup guide.')
     }
     const app = initializeApp(firebaseConfig)

@@ -1,5 +1,7 @@
 # Node.js and npm toolchain
 
+Projects without the optional Firebase `storageBucket` field now typecheck correctly; Storage uploads still require a configured bucket.
+
 Use Node.js LTS 22.22 or newer and npm. Install with `npm ci` using the root `package-lock.json`; remove the old Bun lockfile when adopting this toolchain. Package scripts use `nuxt typecheck` and `node --import tsx core/operations/cli.ts`. Shared core now supplies `tsx` for TypeScript operations and Vitest for local regression tests. The installer requires Git, Node, and npm and installs Firebase CLI through npm when needed.
 
 Tracked generation invokes `npm run generate -- --envName deployment`. Update downstream package scripts and lockfiles together when adopting this change. Browser testing continues to execute under Node. Participant behavior and stored data formats are unchanged.
