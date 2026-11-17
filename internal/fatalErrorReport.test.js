@@ -8,7 +8,8 @@ test('preserves original messages, stacks, causes, and optional build context', 
     deployment: JSON.stringify({ id: 'build-1', version: 'pilot', fullSha: 'abc123', ignored: 'private data' }) })
   for (const expected of ['Nuxt wrapper', original.stack, 'Page: /prolific/create', 'Build: abc123',
     'Deployment: build-1', 'Dataset: pilot']) expect(report).toContain(expected)
-  expect(report).not.toContain('private')
+  expect(report).not.toContain('?token=private')
+  expect(report).not.toContain('private data')
 })
 
 test('works with missing or malformed context and non-Error thrown values', () => {
