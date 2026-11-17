@@ -52,10 +52,13 @@ try {
       if (target.pathname.endsWith('/composables/useProlific.ts')) {
         return route.fulfill({ contentType: 'text/javascript', body: 'export const useProlific = () => ({});' })
       }
-      if (target.pathname.endsWith('/epoch.config.ts') && scenario !== 'placeholder') {
+      if (target.pathname.endsWith('/epoch.config.ts')) {
         const response = await route.fetch()
-        return route.fulfill({ response, body: (await response.text())
-          .replace('yourEmailAddress@fakeDomain.foo', 'researcher@university.edu') })
+        const source = await response.text()
+        const contact = /\bcontactEmail:\s*(['"])[^'"]*\1/
+        assert.match(source, contact, 'The fixture must override the configured researcher contact')
+        const email = scenario === 'placeholder' ? 'yourEmailAddress@fakeDomain.foo' : 'researcher@university.edu'
+        return route.fulfill({ response, body: source.replace(contact, `contactEmail: ${JSON.stringify(email)}`) })
       }
       if (target.pathname.startsWith('/api/')) {
         if (target.pathname === '/api/prolific/firebase-auth') {
