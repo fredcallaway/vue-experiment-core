@@ -40,7 +40,8 @@ export function useFirebaseStorage() {
       }
     }
     assertWritable()
-    if (!('storageBucket' in firebaseConfig) || !firebaseConfig.storageBucket) {
+    if (!('storageBucket' in firebaseConfig) || typeof firebaseConfig.storageBucket !== 'string'
+      || !firebaseConfig.storageBucket) {
       throw new Error('Set storageBucket in firebase.config.json and follow the audio and files setup guide.')
     }
     const app = initializeApp(firebaseConfig)
