@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+import { expect, test } from 'bun:test'
 import { sessionAudio } from './session-audio'
 import { audioFile, exportAudioFiles } from './audio-file'
 import { resolve } from 'node:path'

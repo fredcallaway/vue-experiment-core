@@ -7,12 +7,12 @@ Use a testing agent to discover the real participant path and judge the first se
 From the experiment repository root:
 
 ```sh
-npm ci
-npx playwright install chromium
-npm run test:experiments help
+bun install
+bunx playwright install chromium
+bun run test:experiments help
 ```
 
-The CLI, browser sessions, and integration tests execute under Node. Reuse the experiment's existing dev server; the tools do not start or stop dev servers. Browser contexts use fresh storage, allow local `/dev`, `/docs`, and `/examples` routes, block external HTTP and WebSockets, and block local write requests. They never test production database persistence. Use `runtime.seed` only with the current core's development-only `testing` flag; unseeded exploration also works against older consumers.
+The last command runs the CLI in Node (tested with Node 22); `bun core/testing/cli.mjs` also forwards to Node. Browser processes and integration tests use Node because concurrent Playwright runs under the installed Bun 1.2.10 showed browser-transport and fixture-listener failures during verification; the matching Node runs passed. Reuse the experiment's existing dev server; the tools do not start or stop dev servers. Browser contexts use fresh storage, allow local `/dev`, `/docs`, and `/examples` routes, block external HTTP and WebSockets, and block local write requests. They never test production database persistence. Use `runtime.seed` only with the current core's development-only `testing` flag; unseeded exploration also works against older consumers.
 
 `node core/testing/debug-saving.integration.mjs` runs the real developer navigation and data writer against a dedicated in-memory database fixture. It starts and stops its own local fixture server, blocks external requests and filesystem data APIs, and checks session prompting, collisions, acknowledgments, failure/retry, pausing, Preview continuity, and URL/reload behavior. Screenshots and results are written to `.experiment-tests/debug-saving/`.
 
@@ -21,10 +21,10 @@ The CLI, browser sessions, and integration tests execute under Node. Reuse the e
 ## Record an agent run
 
 ```sh
-npm run test:experiments agent start --url http://localhost:3030/dev --seed regression-1 --scope full --label 'Whole experiment' --output .experiment-tests/session
-npm run test:experiments agent observe --session .experiment-tests/session/session.json
-npm run test:experiments agent act --session .experiment-tests/session/session.json --json '{"action":"click","target":{"role":"button","name":"Continue"}}'
-npm run test:experiments agent checkpoint --session .experiment-tests/session/session.json --json '{"name":"instructions"}'
+bun run test:experiments agent start --url http://localhost:3030/dev --seed regression-1 --scope full --label 'Whole experiment' --output .experiment-tests/session
+bun run test:experiments agent observe --session .experiment-tests/session/session.json
+bun run test:experiments agent act --session .experiment-tests/session/session.json --json '{"action":"click","target":{"role":"button","name":"Continue"}}'
+bun run test:experiments agent checkpoint --session .experiment-tests/session/session.json --json '{"name":"instructions"}'
 ```
 
 Each observation returns a screenshot path, accessibility text, visible controls, layout findings, recent events, and current epoch when the core bridge is available. Read the screenshot with the agent's image tool. Actions use real browser input. The session records both successful and failed attempts; a failed action prevents compilation. Use source inspection to understand custom keyboard/canvas controls, then exercise them through the browser.
@@ -32,15 +32,15 @@ Each observation returns a screenshot path, accessibility text, visible controls
 Finish with actual terminal assertions. Finishing captures the final screen automatically:
 
 ```sh
-npm run test:experiments agent finish --session .experiment-tests/session/session.json --json '{"summary":"Completed the tested path","terminal":[{"kind":"event","name":"experiment.complete","count":1}],"masks":[{"selector":".main-content pre","reason":"Development completion dump contains volatile timestamps; completion and trial events are asserted separately"}]}'
+bun run test:experiments agent finish --session .experiment-tests/session/session.json --json '{"summary":"Completed the tested path","terminal":[{"kind":"event","name":"experiment.complete","count":1}],"masks":[{"selector":".main-content pre","reason":"Development completion dump contains volatile timestamps; completion and trial events are asserted separately"}]}'
 ```
 
 Only include a mask when that exact visible element exists and the exclusion is justified. Read every checkpoint image, inspect relevant event payloads, and explicitly approve the clean candidate:
 
 ```sh
-npm run test:experiments agent compile --session .experiment-tests/session/session.json --json '{"reviewer":"testing-agent","rationale":"Reviewed checkpoint images, the terminal view, and trial data invariants"}'
-npm run test:experiments agent stop --session .experiment-tests/session/session.json
-npm run test:experiments test .experiment-tests/session/baseline/baseline.json --output .experiment-tests/replay
+bun run test:experiments agent compile --session .experiment-tests/session/session.json --json '{"reviewer":"testing-agent","rationale":"Reviewed checkpoint images, the terminal view, and trial data invariants"}'
+bun run test:experiments agent stop --session .experiment-tests/session/session.json
+bun run test:experiments test .experiment-tests/session/baseline/baseline.json --output .experiment-tests/replay
 ```
 
 The baseline bundle includes its exact trace, browser environment, reviewer rationale, checkpoint structure, and screenshot hashes. Copy the whole bundle to preserve its relative image paths. No failed test automatically changes it. See [the session protocol](agent/README.md) for delayed actions, failures, and daemon lifetime.
@@ -52,8 +52,8 @@ Discover actual epoch ids using the [browser guide](../docs/guide/browser-testin
 The checked-in [examples](examples/) exercise the template, bandit, prediction, graphnav, and risky-choice. They are recorded navigation programs, not approved baseline images. Run one to produce fresh reviewable evidence:
 
 ```sh
-npm run test:experiments run core/testing/examples/prediction-keyboard.json --project ~/projects/prakhar-ac/prediction-task --output .experiment-tests/prediction
-npm run test:experiments compile .experiment-tests/prediction --reviewer testing-agent --rationale 'Reviewed every image and response event' --output .experiment-tests/prediction-baseline
+bun run test:experiments run core/testing/examples/prediction-keyboard.json --project ~/projects/prakhar-ac/prediction-task --output .experiment-tests/prediction
+bun run test:experiments compile .experiment-tests/prediction --reviewer testing-agent --rationale 'Reviewed every image and response event' --output .experiment-tests/prediction-baseline
 ```
 
 Keep the example URL/viewport aligned with the intended running project. A suite JSON contains `{"baselines":["prediction-baseline/baseline.json","bandit-baseline/baseline.json"]}` with paths relative to that file. Run `suite suite.json --jobs 2`; use `--section trial` to match a trace id or scope label, or `--section full` to select full traces. Separate seeds, conditions, viewport sizes, and normal/fast timing need separate reviewed runs. Fast mode changes some experiments' trial counts as well as delays; it does not validate nominal-duration behavior.
@@ -65,7 +65,7 @@ Give the testing agent the expected behavior, local URL, affected section, relev
 A failed mechanical test writes `handoff.json`, screenshots, pixel diffs where available, and `run.json`, then exits 2. To launch an agent automatically, supply an executable and arguments as JSON:
 
 ```sh
-npm run test:experiments test baseline/baseline.json --review-command '["/path/to/testing-agent","--review-stdin"]' --output .experiment-tests/review
+bun run test:experiments test baseline/baseline.json --review-command '["/path/to/testing-agent","--review-stdin"]' --output .experiment-tests/review
 ```
 
 The process receives the handoff JSON on stdin. Its stdout/stderr and exit status are saved in `agent-review.json`; its exit code does not turn a failed mechanical test green. The adapter is model/provider independent. Without a command, the caller should delegate the handoff to a testing agent in its own orchestration environment. There is no hidden model call, API key requirement, or automatic baseline approval.
@@ -81,7 +81,7 @@ These checks cover the visited path and captured states. They do not establish t
 
 ## Validate the testing tools
 
-`npm run test:testing` runs browser isolation/session/contract tests, injected visual faults, replay mutation tests, and an independent adversarial suite. `npm run typecheck` checks the Nuxt integration. [Evaluation notes](EVALUATION.md) separate synthetic checks, real experiment runs, timings, and unresolved findings.
+`bun run test:testing` runs browser isolation/session/contract tests, injected visual faults, replay mutation tests, and an independent adversarial suite. `bun run typecheck` checks the Nuxt integration. [Evaluation notes](EVALUATION.md) separate synthetic checks, real experiment runs, timings, and unresolved findings.
 
 With a project dev server running, `node core/testing/main-content.integration.mjs http://localhost:<port>` checks that the development overflow outline responds to content growth, shrinkage, width changes, stylesheet resizing, and content replacement inside a fixed frame. It uses the isolated browser harness and writes screenshots to `.experiment-tests/overflow-warning/` by default; pass an output directory as the second argument to change it.
 

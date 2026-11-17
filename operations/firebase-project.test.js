@@ -1,19 +1,20 @@
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, expect, test } from 'bun:test'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { stubEnv, restoreEnv } from '../testing/test-environment.mjs'
 import { resolve } from 'node:path'
 import { assertFirebaseProjectMatchesCli } from './firebase-project'
 
 const roots = []
 afterEach(async () => {
-  vi.unstubAllEnvs()
+  restoreEnv()
   await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
 })
 
 async function project() {
   const root = await mkdtemp(resolve(tmpdir(), 'firebase-project-test-'))
   roots.push(root)
-  vi.stubEnv('HOME', resolve(root, 'home'))
+  stubEnv('HOME', resolve(root, 'home'))
   await writeFile(resolve(root, 'firebase.config.json'), JSON.stringify({ projectId: 'experiment-one' }))
   return root
 }

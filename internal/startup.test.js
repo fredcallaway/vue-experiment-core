@@ -1,9 +1,9 @@
-import { expect, test } from 'vitest'
+import { expect, test } from 'bun:test'
 import { spawnSync } from 'node:child_process'
 
 // Run with isolated globals and module state, as in a fresh browser session.
 test('startup preserves native randomness and installs the seeded stream and promise polyfill', () => {
-  const result = spawnSync(process.execPath, ['--import', import.meta.resolve('tsx'), '--input-type=module', '--eval', `
+  const result = spawnSync(process.execPath, ['--eval', `
     import { strict as assert } from 'node:assert'
     import { ref, reactive } from 'vue'
     Object.assign(globalThis, { ref, reactive, defineNuxtPlugin: plugin => plugin })

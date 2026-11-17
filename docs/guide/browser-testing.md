@@ -4,7 +4,7 @@ For an isolated persistent testing-agent session and reusable regression checks,
 
 How to exercise a running experiment from a browser-automation agent (Playwright MCP or similar). Everything here works against the `/dev` page as it already ships — there is no separate agent API to install.
 
-Only do this when the task calls for it. Most changes are verified with `npm run typecheck` and by reading the examples; drive the browser when you need to confirm that something actually *runs* — a trial renders, an event fires with the right payload, a phase advances.
+Only do this when the task calls for it. Most changes are verified with `bun run typecheck` and by reading the examples; drive the browser when you need to confirm that something actually *runs* — a trial renders, an event fires with the right payload, a phase advances.
 
 ## The core loop
 

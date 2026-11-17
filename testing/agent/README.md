@@ -2,19 +2,19 @@
 
 A testing agent uses a fresh, isolated Playwright browser through short CLI calls. The browser survives between calls. Inputs are genuine browser actions; the session saves what actually executed, screenshot evidence, semantic events, and an append-only journal.
 
-Use the project’s supported Node.js LTS release. Each session owns its browser process.
+Node.js must be installed. The Bun command is a launcher; browser sessions and integration tests execute under Node. The tested Bun 1.2.10 runtime corrupted live HTTP/Playwright transports after browser teardown and hung concurrent browser runs, while the same flows passed under Node. Each session owns its browser process.
 
 ```sh
-node core/testing/agent/cli.mjs start --url http://localhost:3030/dev --seed test-choice \
+bun core/testing/agent/cli.mjs start --url http://localhost:3030/dev --seed test-choice \
   --scope section --label "One choice trial" --output /tmp/choice-review
-node core/testing/agent/cli.mjs observe --session /tmp/choice-review/session.json
-node core/testing/agent/cli.mjs checkpoint --session /tmp/choice-review/session.json \
+bun core/testing/agent/cli.mjs observe --session /tmp/choice-review/session.json
+bun core/testing/agent/cli.mjs checkpoint --session /tmp/choice-review/session.json \
   --json '{"name":"before-choice"}'
-node core/testing/agent/cli.mjs act --session /tmp/choice-review/session.json \
+bun core/testing/agent/cli.mjs act --session /tmp/choice-review/session.json \
   --json '{"action":"click","target":{"role":"button","name":"Blue"}}'
-node core/testing/agent/cli.mjs checkpoint --session /tmp/choice-review/session.json \
+bun core/testing/agent/cli.mjs checkpoint --session /tmp/choice-review/session.json \
   --json '{"name":"after-choice"}'
-node core/testing/agent/cli.mjs finish --session /tmp/choice-review/session.json \
+bun core/testing/agent/cli.mjs finish --session /tmp/choice-review/session.json \
   --json '{"summary":"Choice advanced and logged blue","terminal":[{"kind":"event","name":"trial.choice","where":{"choice":"blue"}}]}'
 ```
 
@@ -35,9 +35,9 @@ For narrow volatile content, `checkpoint` and `finish` accept explicit `masks`, 
 The implementing agent reads `handoff.json` and `handoff.md`, including exact actions and screenshots, fixes the reported issue, and requests a fresh testing-agent run. The testing agent reviews every checkpoint image and the terminal evidence before explicitly approving a clean candidate:
 
 ```sh
-node core/testing/agent/cli.mjs compile --session /tmp/choice-review/session.json \
+bun core/testing/agent/cli.mjs compile --session /tmp/choice-review/session.json \
   --json '{"reviewer":"testing-agent","rationale":"Reviewed both screenshots, participant response and declared choice event"}'
-node core/testing/agent/cli.mjs stop --session /tmp/choice-review/session.json
+bun core/testing/agent/cli.mjs stop --session /tmp/choice-review/session.json
 ```
 
 Compilation saves a portable `baseline/` bundle containing `baseline.json`, the trace, and checkpoint images, ready for the mechanical replay runner. A changed screenshot, structure, action sequence or failed assertion requires agent review. Compilation records reviewer identity and rationale; that approval is the trust boundary for whether the visual content is correct. Matching a reviewed baseline does not establish scientific correctness or coverage of unvisited paths. Semantic assertions cover the event fields they explicitly name; other payload fields are not checked automatically.

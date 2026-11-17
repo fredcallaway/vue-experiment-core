@@ -1,17 +1,18 @@
 #!/usr/bin/env node
-import { pathToFileURL } from 'node:url'
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { resolve, join } from 'node:path'
 import { executeTrace, loadBaseline, readJson, saveBaseline, writeJson } from './runner.mjs'
 import { main as agentMain } from './agent/cli.mjs'
 
 const help = `Experiment testing: inspect with an agent, compile reviewed evidence, replay quickly.
 
-  node core/testing/cli.mjs agent start --url http://localhost:3030/dev --seed test-1 --output /tmp/session
-  node core/testing/cli.mjs agent help
-  node core/testing/cli.mjs run trace.json --output /tmp/candidate
-  node core/testing/cli.mjs compile /tmp/candidate --reviewer tester --rationale "Reviewed all images and events" --output /tmp/baseline
-  node core/testing/cli.mjs test /tmp/baseline/baseline.json --output /tmp/replay
-  node core/testing/cli.mjs suite suite.json --section trial --jobs 2 --output /tmp/suite
+  bun core/testing/cli.mjs agent start --url http://localhost:3030/dev --seed test-1 --output /tmp/session
+  bun core/testing/cli.mjs agent help
+  bun core/testing/cli.mjs run trace.json --output /tmp/candidate
+  bun core/testing/cli.mjs compile /tmp/candidate --reviewer tester --rationale "Reviewed all images and events" --output /tmp/baseline
+  bun core/testing/cli.mjs test /tmp/baseline/baseline.json --output /tmp/replay
+  bun core/testing/cli.mjs suite suite.json --section trial --jobs 2 --output /tmp/suite
 
 run/test accept --project <repository> for source provenance. test/suite accept
 --review-command '["path/to/testing-agent","argument"]' to dispatch failures automatically.
@@ -84,6 +85,12 @@ function summarize(run) {
 }
 
 if (import.meta.main || import.meta.url === pathToFileURL(resolve(process.argv[1] || '')).href) {
+  // Playwright's browser transport requires Node; older Bun releases corrupt concurrent transport lifecycles.
+  if (process.versions.bun) {
+    const child = spawnSync('node', [fileURLToPath(import.meta.url), ...process.argv.slice(2)], { stdio: 'inherit' })
+    if (child.error) throw child.error
+    process.exit(child.status ?? 1)
+  }
   main().then(result => {
     console.log(result.help || JSON.stringify(result, null, 2))
     if (result.status === 'needs-agent-review') process.exitCode = 2

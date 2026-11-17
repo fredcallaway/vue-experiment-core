@@ -1,16 +1,12 @@
 # Firebase credentials across checkouts
 
-- Project keys are stored per user at `~/.config/experiment-template/firebase/<project-id>/service-account.json` and selected using `firebase.config.json`. Fresh clones reuse the same private key. A valid old Git-metadata key is imported automatically when no shared key exists. Reconfigure with `npm run ops -- firebase-auth configure --key <file>` to rotate it across checkouts; running dashboards pick up changes without restarting.
+- Project keys are stored per user at `~/.config/experiment-template/firebase/<project-id>/service-account.json` and selected using `firebase.config.json`. Fresh clones reuse the same private key. A valid old Git-metadata key is imported automatically when no shared key exists. Reconfigure with `bun run ops -- firebase-auth configure --key <file>` to rotate it across checkouts; running dashboards pick up changes without restarting.
 - A saved matching project key always takes precedence; without one, shell credentials remain supported. Invalid or missing registered key files block operations with a repair instruction. Project-key calls still isolate cached human Firebase logins and clear inherited `FIREBASE_TOKEN`.
-- Create New Study and `npm run ops -- firebase-auth status` expose the active credential source. Firebase CLI errors retain their diagnostic and source; shell permission failures suggest configuring a missing project key. No consumer-code or raw-data migration is required. Participant behavior is unchanged.
+- Create New Study and `bun run ops -- firebase-auth status` expose the active credential source. Firebase CLI errors retain their diagnostic and source; shell permission failures suggest configuring a missing project key. No consumer-code or raw-data migration is required. Participant behavior is unchanged.
 
-# Node.js and npm toolchain
+# Optional Firebase Storage configuration
 
 Projects without the optional Firebase `storageBucket` field now typecheck correctly; Storage uploads still require a configured bucket.
-
-Use Node.js LTS 22.22 or newer and npm. Install with `npm ci` using the root `package-lock.json`; remove the old Bun lockfile when adopting this toolchain. Package scripts use `nuxt typecheck` and `node --import tsx core/operations/cli.ts`. Shared core now supplies `tsx` for TypeScript operations and Vitest for local regression tests. The installer requires Git, Node, and npm and installs Firebase CLI through npm when needed.
-
-Tracked generation invokes `npm run generate -- --envName deployment`. Update downstream package scripts and lockfiles together when adopting this change. Browser testing continues to execute under Node. Participant behavior and stored data formats are unchanged.
 
 # Fatal error reports
 

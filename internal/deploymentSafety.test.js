@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+import { expect, test } from 'bun:test'
 import { contactEmailError, versionWarnings } from './deploymentSafety'
 
 test.each(['yourEmailAddress@fakeDomain.foo', ' YourEmailAddress@FAKEDOMAIN.foo ', '', null, 'not-an-email'])(

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --import tsx
+#!/usr/bin/env bun
 import { assertFirebaseProjectMatchesCli } from './firebase-project'
 import { FirebaseRestDatabase } from './database'
 import { DeploymentOperations } from './deployment'

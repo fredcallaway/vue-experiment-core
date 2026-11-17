@@ -9,7 +9,7 @@ import DocsPage from './DocsPage.vue'
       <p>
         A published experiment should be traceable to the source participants actually ran.
         Commit your changes, then use the project's tracked deployment command,
-        <code>npm run ops -- deploy run</code>, to publish to Firebase Hosting and verify the deployed source identity.
+        <code>bun run ops -- deploy run</code>, to publish to Firebase Hosting and verify the deployed source identity.
       </p>
       <p>
         Deployment requires a clean checkout with matching submodules. The Prolific create

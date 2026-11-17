@@ -11,7 +11,7 @@ Experiments that upload audio or other files also need the optional [Firebase St
 Install the [Firebase CLI](https://firebase.google.com/docs/cli), sign in, and choose a unique project ID:
 
 ```bash
-npm install --global firebase-tools
+bun install -g firebase-tools
 firebase login
 EXPERIMENT_FIREBASE_PROJECT_ID="your-experiment-project-id"
 firebase projects:create "$EXPERIMENT_FIREBASE_PROJECT_ID" --display-name "My experiment"

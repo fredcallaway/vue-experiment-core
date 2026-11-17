@@ -1,27 +1,34 @@
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, expect, test } from 'bun:test'
 import { generateKeyPairSync } from 'node:crypto'
 import { execFile } from 'node:child_process'
 import { chmod, mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { stubEnv, restoreEnv } from '../testing/test-environment.mjs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 import { configureFirebaseCredentials, firebaseCredentialStatus, firebaseEnvironment, firebaseCommandError } from './firebase-auth'
 
 const exec = promisify(execFile)
-const nodeArgs = ['--import', import.meta.resolve('tsx')]
+
+async function runNode(script, args, options) {
+  const bundled = script.replace(/\.mts$/, '.mjs')
+  await exec(process.execPath, ['build', script, '--target', 'node', '--outfile', bundled])
+  return exec('node', [bundled, ...args], options)
+}
+
 const source = dirname(fileURLToPath(import.meta.url))
 const privateKey = generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({ type: 'pkcs8', format: 'pem' })
 const roots = []
 afterEach(async () => {
-  vi.unstubAllEnvs()
+  restoreEnv()
   await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true })))
 })
 
 async function fixture() {
   const directory = await mkdtemp(resolve(tmpdir(), 'firebase-auth-test-'))
   roots.push(directory)
-  vi.stubEnv('HOME', resolve(directory, 'home'))
+  stubEnv('HOME', resolve(directory, 'home'))
   const root = resolve(directory, 'experiment')
   const bin = resolve(directory, 'bin')
   await mkdir(root)
@@ -69,7 +76,7 @@ console.log(JSON.stringify({ first, second, project, inheritedToken: process.env
 test('one-time CLI configuration persists for fresh Node processes despite inherited human credentials', async () => {
   const f = await fixture()
   const before = (await exec('git', ['status', '--porcelain'], { cwd: f.root })).stdout
-  const configured = await exec(process.execPath, [...nodeArgs, resolve(source, 'cli.ts'),
+  const configured = await exec(process.execPath, [resolve(source, 'cli.ts'),
     'firebase-auth', 'configure', '--key', f.keyFile], { cwd: f.root, env: f.env })
   const result = JSON.parse(configured.stdout)
   expect(result.serviceAccount).toBe(f.key.client_email)
@@ -79,7 +86,7 @@ test('one-time CLI configuration persists for fresh Node processes despite inher
   expect((await exec('git', ['status', '--porcelain'], { cwd: f.root })).stdout).toBe(before)
 
   for (let i = 0; i < 2; i++) {
-    const { stdout } = await exec(process.execPath, [...nodeArgs, f.runner], { cwd: f.root, env: f.env })
+    const { stdout } = await runNode(f.runner, [], { cwd: f.root, env: f.env })
     const observed = JSON.parse(stdout)
     expect(observed.project).toBe(f.key.project_id)
     expect(observed.first.identity).toBe(f.key.client_email)
@@ -96,7 +103,7 @@ test('an already-running Node caller picks up a rotated key on its next operatio
   const replacement = { ...f.key, client_email: 'replacement@credential-project.iam.gserviceaccount.com' }
   const replacementFile = resolve(f.directory, 'replacement.json')
   await writeFile(replacementFile, JSON.stringify(replacement))
-  const { stdout } = await exec(process.execPath, [...nodeArgs, f.runner, replacementFile], { cwd: f.root, env: f.env })
+  const { stdout } = await runNode(f.runner, [replacementFile], { cwd: f.root, env: f.env })
   const observed = JSON.parse(stdout)
   expect(observed.first.identity).toBe(f.key.client_email)
   expect(observed.second.identity).toBe(replacement.client_email)
@@ -114,7 +121,7 @@ test('rejects invalid or wrong-project keys without replacing the configured ide
 
   await writeFile(resolve(f.root, 'firebase.config.json'), JSON.stringify({ projectId: 'changed-project' }))
   try {
-    await exec(process.execPath, [...nodeArgs, f.runner], { cwd: f.root, env: f.env })
+    await runNode(f.runner, [], { cwd: f.root, env: f.env })
     throw new Error('Expected shell fallback to fail with the unrelated shell key')
   } catch (error) {
     expect(error.stderr).toContain('shell credentials for changed-project')
@@ -124,7 +131,7 @@ test('rejects invalid or wrong-project keys without replacing the configured ide
   await writeFile(resolve(f.root, 'firebase.config.json'), JSON.stringify({ projectId: f.key.project_id }))
   await rm(configured.credentialFile)
   try {
-    await exec(process.execPath, [...nodeArgs, f.runner], { cwd: f.root, env: f.env })
+    await runNode(f.runner, [], { cwd: f.root, env: f.env })
     throw new Error('Expected missing project credentials to fail instead of using a human login')
   } catch (error) {
     expect(error.stderr).toContain('The saved project key file is missing')
@@ -134,14 +141,14 @@ test('rejects invalid or wrong-project keys without replacing the configured ide
 
 test('fresh clones and fresh shells share the matching project key after the original checkout is deleted', async () => {
   const f = await fixture()
-  const configured = await exec(process.execPath, [...nodeArgs, resolve(source, 'cli.ts'),
+  const configured = await exec(process.execPath, [resolve(source, 'cli.ts'),
     'firebase-auth', 'configure', '--key', f.keyFile], { cwd: f.root, env: f.env })
   const saved = JSON.parse(configured.stdout)
   const clone = resolve(f.directory, 'fresh-clone')
   await exec('git', ['clone', '-q', f.root, clone], { env: f.env })
   await rm(f.root, { recursive: true })
   const freshShell = { HOME: f.env.HOME, PATH: f.env.PATH, TSX_TSCONFIG_PATH: f.env.TSX_TSCONFIG_PATH }
-  const { stdout } = await exec(process.execPath, [...nodeArgs, f.runner], { cwd: clone, env: freshShell })
+  const { stdout } = await runNode(f.runner, [], { cwd: clone, env: freshShell })
   const observed = JSON.parse(stdout)
   expect(observed.first.credentialFile).toBe(saved.credentialFile)
   expect(observed.first.identity).toBe(f.key.client_email)
@@ -244,14 +251,14 @@ for (const call of [() => command(process.cwd(), 'firebase', ['hosting:sites:lis
   try { await call(); } catch (error) { console.log(error.message); }
 }
 `)
-  const shell = await exec(process.execPath, [...nodeArgs, runner], { cwd: f.root, env: f.env })
+  const shell = await runNode(runner, [], { cwd: f.root, env: f.env })
   expect(shell.stdout.match(/Firebase permission denied/g)).toHaveLength(2)
   expect(shell.stdout).toContain('shell credentials')
   expect(shell.stdout).toContain('project key may be missing')
   expect(shell.stdout).toContain('firebasehosting.sites.list')
   expect(shell.stdout).not.toContain('select a project with')
   await configureFirebaseCredentials(f.root, f.keyFile)
-  const saved = await exec(process.execPath, [...nodeArgs, runner], { cwd: f.root, env: f.env })
+  const saved = await runNode(runner, [], { cwd: f.root, env: f.env })
   expect(saved.stdout.match(/Firebase permission denied/g)).toHaveLength(2)
   expect(saved.stdout).toContain(`saved project key (${f.key.client_email})`)
   expect(saved.stdout).toContain('project permissions')
@@ -260,7 +267,7 @@ for (const call of [() => command(process.cwd(), 'firebase', ['hosting:sites:lis
 
 
 test('authentication diagnostics retain useful details while removing private key and token values', () => {
-  vi.stubEnv('FIREBASE_TOKEN', 'PRIVATE_SHELL_TOKEN')
+  stubEnv('FIREBASE_TOKEN', 'PRIVATE_SHELL_TOKEN')
   const error = firebaseCommandError({ stderr: JSON.stringify({ code: 401, message: 'UNAUTHENTICATED: expired login',
     private_key: privateKey, access_token: 'PRIVATE_ACCESS_TOKEN', refresh_token: 'PRIVATE_REFRESH_TOKEN' })
     + '\nBearer PRIVATE_BEARER_TOKEN\nPRIVATE_SHELL_TOKEN' },

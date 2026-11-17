@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, vi, test } from 'vitest'
+import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import { mkdtemp, mkdir, readdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
@@ -14,7 +14,6 @@ afterEach(async () => {
 async function project() {
   const root = await mkdtemp(resolve(tmpdir(), 'deployment-test-'))
   roots.push(root)
-  await writeFile(resolve(root, 'package.json'), JSON.stringify({ type: 'module' }))
   await writeFile(resolve(root, '.gitignore'), '.output/\n')
   await writeFile(resolve(root, 'epoch.config.ts'),
     'export default defineEpochConfig({ version: "cohort-1", contactEmail: "researcher@university.edu" })\n')
@@ -53,9 +52,9 @@ async function deploymentFixture(options = {}) {
     },
     run: async (cwd, executable, args, environment) => {
       calls.push({ executable, args, environment })
-      if (executable === process.execPath && args.includes('--eval')) return command(cwd, executable, args)
-      if (executable === 'npm' && args[0] === 'run') {
-        expect(args).toEqual(['run', 'generate', '--', '--envName', 'deployment'])
+      if (executable === 'bun' && args[0] === '--eval') return command(cwd, executable, args)
+      if (executable === 'bun' && args[0] === 'run') {
+        expect(args).toEqual(['run', 'generate', '--envName', 'deployment'])
         if (options.buildFails) throw new Error('build failed')
         await mkdir(resolve(root, '.output/public'), { recursive: true })
         await writeFile(resolve(root, '.output/public/index.html'), '<html>test</html>')
@@ -102,7 +101,7 @@ describe('tracked static Hosting deployment', () => {
   })
 
   test('reads only ACTIVE studies in the selected Prolific project, across pages', async () => {
-    const fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async request => {
+    const fetch = spyOn(globalThis, 'fetch').mockImplementation(async request => {
       const url = new URL(request)
       expect(url.pathname).toBe('/api/v1/projects/fixture-prolific/studies/')
       expect(url.searchParams.get('status')).toBe('ACTIVE')

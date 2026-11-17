@@ -3,7 +3,7 @@
 These traces were derived from observed epoch outlines and real participant interactions on local experiments. Start each experiment's existing dev script, then run a trace from the template checkout:
 
 ```sh
-node core/testing/cli.mjs run core/testing/examples/bandit-full.json --project ~/projects/prakhar-ac/bandit-task --output /tmp/bandit-candidate
+bun core/testing/cli.mjs run core/testing/examples/bandit-full.json --project ~/projects/prakhar-ac/bandit-task --output /tmp/bandit-candidate
 ```
 
 All examples use isolated `/dev` sessions. The browser runner blocks external HTTP and WebSocket traffic. Their older core versions do not support the new `testing` flag, so these traces omit session IDs and do not initialize a data writer. Their randomization varies between sessions.

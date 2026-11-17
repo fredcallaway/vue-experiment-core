@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+import { expect, test } from 'bun:test'
 import { createFatalErrorReport } from './fatalErrorReport'
 
 test('preserves original messages, stacks, causes, and optional build context', () => {

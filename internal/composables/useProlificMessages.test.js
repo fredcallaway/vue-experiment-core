@@ -1,13 +1,14 @@
-import { afterEach, beforeEach, describe, expect, vi, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { effectScope, ref } from 'vue'
 
 const clone = value => value === undefined ? undefined : JSON.parse(JSON.stringify(value))
 
 let database
 let prolific
-vi.doMock('../../composables/useDatabase', () => ({ useDatabase: () => database }))
-vi.doMock('./useProlific', () => ({ useProlific: () => prolific }))
+mock.module('../../composables/useDatabase', () => ({ useDatabase: () => database }))
+mock.module('./useProlific', () => ({ useProlific: () => prolific }))
 let useProlificMessages
+let testIndex = 0
 
 const NOW = Date.parse('2026-09-24T12:00:00Z')
 const DAY = 86400000
@@ -40,10 +41,9 @@ let finishRequest
 
 beforeEach(async () => {
   // Re-evaluate the module to give each test its own createGlobalState instance.
-  vi.resetModules()
-  const module = await import('./useProlificMessages.ts')
+  const module = await import(`./useProlificMessages.ts?test=${testIndex++}`)
   useProlificMessages = module.useProlificMessages
-  clock = vi.spyOn(Date, 'now').mockReturnValue(NOW)
+  clock = spyOn(Date, 'now').mockReturnValue(NOW)
   originalStorage = globalThis.localStorage
   globalThis.localStorage = { getItem: () => RESEARCHER, setItem: () => {} }
   values = { '/messagesRefreshTime': OLD, '/messages': {} }

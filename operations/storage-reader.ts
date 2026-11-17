@@ -42,7 +42,7 @@ export async function readStorageAudio(root: string, file: { bucket: string; pat
     if (!token) throw new Error('No access token')
   } catch {
     throw new StorageReadError(503, 'Configure this project’s service-account key with '
-      + 'npm run ops -- firebase-auth configure --key <file> before playing recordings.')
+      + 'bun run ops -- firebase-auth configure --key <file> before playing recordings.')
   }
   const url = `https://storage.googleapis.com/storage/v1/b/${encodeURIComponent(file.bucket)}`
     + `/o/${encodeURIComponent(file.path)}?alt=media`
