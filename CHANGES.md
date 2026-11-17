@@ -1,3 +1,7 @@
+# Production homepage
+
+- The production root URL now displays a participant wrong-link message and an explicit Open Developer Mode control leading to `/dev`. Local development still redirects `/` to `/dev`; participant and recruitment links continue to use `/exp` directly. No raw-data migration is required.
+
 # Prolific URL joining
 
 - Prolific base URLs are normalized without trailing slashes so recruitment and deployment-preview links use a single `/exp` path. Custom URL path prefixes are preserved; existing raw data needs no migration.
