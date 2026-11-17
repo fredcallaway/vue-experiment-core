@@ -130,6 +130,7 @@ try {
       await rm(resolve(configured.credentialFile, '..'), { recursive: true })
       await source.getByText('Shell credentials (no saved key)', { exact: false }).waitFor()
     }
+    await deploy.scrollIntoViewIfNeeded()
     const beforeFailure = await geometry()
     await deploy.click()
     const message = credentialSource === 'shell'
