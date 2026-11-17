@@ -1,3 +1,7 @@
+# Prolific connection validation
+
+- The connection form authenticates the API token before labeling it valid, including before a project has been selected. HTML and malformed API responses produce a diagnostic identifying the failed local endpoint and explaining how to check the development server; failed checks can be retried. Connection checks no longer log tokens. No consumer-code or raw-data migration is required.
+
 # Firebase credentials across checkouts
 
 - Project keys are stored per user at `~/.config/experiment-template/firebase/<project-id>/service-account.json` and selected using `firebase.config.json`. Fresh clones reuse the same private key. A valid old Git-metadata key is imported automatically when no shared key exists. Reconfigure with `bun run ops -- firebase-auth configure --key <file>` to rotate it across checkouts; running dashboards pick up changes without restarting.

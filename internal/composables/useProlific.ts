@@ -56,6 +56,25 @@ type ProlificProject = {
   workspace: string
 }
 
+const readProlificResponse = async (response: Response, method: string, path: string) => {
+  const text = await response.text()
+  if (!text.trim()) return {}
+  let data: any
+  try {
+    data = JSON.parse(text)
+    if (!data || typeof data !== 'object') throw new Error('Expected a JSON object')
+  } catch {
+    const format = /text\/html/i.test(response.headers.get('content-type') ?? '') || /^\s*</.test(text)
+      ? 'HTML instead of JSON' : 'an invalid JSON response'
+    throw new ProlificError(
+      `${method} /api/prolific/${path.replace(/^\//, '')} returned ${format} (HTTP ${response.status}). ` +
+      'Open the Prolific dashboard on the local development server started with bun run dev. ' +
+      'If it is already local, check the failed request in the browser Network panel for a server or upstream error.',
+    )
+  }
+  return data
+}
+
 export const useProlific = createGlobalState(() => {
   const { config: prolificConfig } = useProlificConfig()
   const projectId = useDatabase().sync('/prolificProjectId', '')
@@ -69,21 +88,28 @@ export const useProlific = createGlobalState(() => {
   const loadToken = async () => {
     try {
       const response = await fetch('/api/prolific/token')
-      const data = await response.json()
+      const data = await readProlificResponse(response, 'GET', 'token')
+      if (!response.ok) throw new ProlificError(`Could not load the saved Prolific token (HTTP ${response.status}).`)
       token.value = data.token || ''
+      return true
     } catch (error) {
       console.error('Failed to load token:', error)
       token.value = ''
+      status.value = 'error'
+      connectionError.value = error instanceof Error ? error.message : String(error)
+      return false
     }
   }
 
   const writeToken = async (newToken: string) => {
     try {
-      await fetch('/api/prolific/token', {
+      const response = await fetch('/api/prolific/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: newToken })
       })
+      await readProlificResponse(response, 'POST', 'token')
+      if (!response.ok) throw new ProlificError(`Could not save the Prolific token (HTTP ${response.status}).`)
     } catch (error) {
       throw new ProlificError(`Failed to save token: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
@@ -113,10 +139,7 @@ export const useProlific = createGlobalState(() => {
 
   const directRequest = async <T>(method: string, path: string, body?: any): Promise<T> => {
     const response = await baseRequest(method, path, body)
-    const responseText = await response.text()
-    const data = responseText.trim()
-      ? JSON.parse(responseText)
-      : {}
+    const data = await readProlificResponse(response, method, path)
 
     if (!response.ok) {
       throw new ProlificError(
@@ -128,55 +151,66 @@ export const useProlific = createGlobalState(() => {
     return data as T
   }
 
-  const status = ref<('unknown' | 'ok' | 'invalidToken' | 'invalidProjectId')>('unknown')
+  const status = ref<('unknown' | 'ok' | 'invalidToken' | 'invalidProjectId' | 'error')>('unknown')
+  const connectionError = ref('')
+  let statusRequestId = 0
 
-  const checkStatus = async (token: string, projectId: string) => {
-    if (token.length < 10) {
+  const checkStatus = async () => {
+    const requestId = ++statusRequestId
+    connectionError.value = ''
+    if (token.value.length < 10) {
       status.value = 'invalidToken'
-    } else if (projectId.length < 10) {
-      status.value = 'invalidProjectId'
+      return status.value
     }
-    else {
-      const result = await baseRequest('GET', `/projects/${projectId}`)
-      if (result.ok) {
-        status.value = 'ok'
-      } else if (result.status === 401) {
-        status.value = 'invalidToken'
-      } else if (result.status == 404) {
-        status.value = 'invalidProjectId'
+    status.value = 'unknown'
+    const hasProject = isProlificIdentifier(projectId.value)
+    const path = hasProject ? `/projects/${projectId.value}/` : '/workspaces/'
+    try {
+      const result = await baseRequest('GET', path)
+      const data = await readProlificResponse(result, 'GET', path)
+      if (requestId !== statusRequestId) return status.value
+      if (result.status === 401) status.value = 'invalidToken'
+      else if (hasProject && result.status === 404) status.value = 'invalidProjectId'
+      else if (!result.ok) {
+        throw new ProlificError(`Prolific connection check failed (HTTP ${result.status}): ${JSON.stringify(data)}`)
+      } else if (hasProject ? data.id !== projectId.value : !Array.isArray(data.results)) {
+        throw new ProlificError(`Prolific connection check returned unexpected JSON from /api/prolific${path}.`)
       } else {
-        console.error('Prolific status check failed', result)
-        status.value = 'unknown'
+        status.value = hasProject ? 'ok' : 'invalidProjectId'
       }
+    } catch (error) {
+      if (requestId !== statusRequestId) return status.value
+      status.value = 'error'
+      connectionError.value = error instanceof Error ? error.message : String(error)
     }
     return status.value
   }
   
   const tokenPromise = loadToken()
+
+  const refreshStatus = async () => {
+    if (!token.value && !await loadToken()) return status.value
+    return await checkStatus()
+  }
   
   const debouncedCheckStatus = useDebounceFn(checkStatus, 500)
   const initializeStatus = async () => {
     await tokenPromise
     await until(() => projectId.ready).toBe(true)
-    await checkStatus(token.value, projectId.value)
+    if (status.value !== 'error') await checkStatus()
   }
-  watch([token, projectId], async ([newToken, newProjectId], [oldToken, oldProjectId]) => {
-    if (status.value === 'invalidToken' && oldToken === newToken) return
-    if (status.value === 'invalidProjectId' && oldProjectId === newProjectId) return
-    if (status.value === 'unknown') {
-      await tokenPromise
-      await until(() => projectId.ready).toBe(true)
-      await checkStatus(newToken, newProjectId)
-    } else if (status.value === 'ok') {
-      await checkStatus(newToken, newProjectId)
-    } else {
-      await debouncedCheckStatus(newToken, newProjectId)
-    }
-  })
+  watch([token, projectId], () => {
+    statusRequestId++
+    status.value = 'unknown'
+    connectionError.value = ''
+    if (projectId.ready) void debouncedCheckStatus()
+  }, { flush: 'sync' })
   initializeStatus()
   
   watchDebounced(token, (newToken) => {
-    writeToken(newToken)
+    void writeToken(newToken).catch(error => {
+      if (token.value === newToken) connectionError.value = error.message
+    })
   }, { debounce: 500, maxWait: 2000 })
 
   // Request queue system
@@ -200,32 +234,7 @@ export const useProlific = createGlobalState(() => {
       if (status.value !== 'ok') {
         throw new ProlificError('processRequest: invalidstatus: ' + status.value)
       }
-      const response = await baseRequest(queued.method, queued.path, queued.body)
-
-      if (response.status === 204) {
-        queued.resolve({} as T)
-        return
-      }
-
-      const responseText = await response.text()
-      let data: any
-
-      if (responseText.trim()) {
-        try {
-          data = JSON.parse(responseText)
-        } catch {
-          data = { info: responseText }
-        }
-      } else {
-        data = {}
-      }
-
-      if (!response.ok) {
-        const msg = `API Error: ${queued.method} ${queued.path}\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`
-        throw new ProlificError(msg, getProlificErrorMessage(response.status, data))
-      }
-
-      queued.resolve(data)
+      queued.resolve(await directRequest<T>(queued.method, queued.path, queued.body))
     } catch (error) {
       queued.reject(error)
     }
@@ -936,6 +945,8 @@ export const useProlific = createGlobalState(() => {
     token,
     projectId,
     status: readonly(status),
+    connectionError: readonly(connectionError),
+    refreshStatus,
     studyList,
     listWorkspaces,
     listProjects,

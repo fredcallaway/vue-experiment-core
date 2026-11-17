@@ -89,6 +89,8 @@ With a project dev server running, `node core/testing/main-content.integration.m
 
 `node core/testing/prolific-token-help.integration.mjs http://localhost:<port>` checks the token-help dialog's keyboard behavior, focus restoration, and layout at desktop and smaller sizes. All backend requests are fixtures and external traffic is blocked. Screenshots go to `.experiment-tests/prolific-token-help/` by default.
 
+`node core/testing/prolific-connection.integration.mjs http://localhost:<port>` checks token authentication before project selection, HTML/malformed responses, retry, empty workspaces, and project creation. It also checks that the token is absent from console logs. All API and database operations are synthetic and external traffic is blocked; no real projects are created. Evidence goes to `.experiment-tests/prolific-connection/`.
+
 `node core/testing/prolific-empty-data.integration.mjs http://localhost:<port>` checks the study page before the first experiment session, with and without Prolific submissions, while loading, and as sessions arrive or disappear. All backend requests use fixtures and external traffic is blocked. Screenshots go to `.experiment-tests/prolific-empty-data/` by default.
 
 `node core/testing/deployment-safety.integration.mjs http://localhost:<port>` checks contact configuration, posted-version acknowledgment, isolation from deployment bypasses, pre-posting/same-code reuse, and publication attribution to the current deployed build. Database/deployment operations use in-memory fixtures and external traffic is blocked. Screenshots go to `.experiment-tests/deployment-safety/` by default.

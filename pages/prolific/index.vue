@@ -21,7 +21,7 @@ definePageMeta({
 })
 
 const prolific = useProlific()
-const { token, projectId, status, studyList, deleteStudy } = prolific
+const { token, projectId, status, connectionError, studyList, deleteStudy } = prolific
 
 const cacheError = ref<Error | null>(null)
 const setupError = ref('')
@@ -467,6 +467,7 @@ watch(selectedWorkspaceId, () => {
             <div class="flex flex-justify-between flex-gap-3 flex-items-center mb-2">
               <label class="font-semibold" for="prolific-token">API token</label>
               <span class="text-sm text-gray-500" v-if="status === 'unknown'">Validating…</span>
+              <span class="text-sm text-gray-500" v-else-if="status === 'error'">Not verified</span>
               <span class="text-sm text-green-700" v-else-if="tokenIsValid">✓ Valid</span>
               <span class="text-sm text-red-700" v-else>✗ Missing or invalid</span>
             </div>
@@ -484,6 +485,7 @@ watch(selectedWorkspaceId, () => {
             <div class="flex flex-justify-between flex-gap-3 flex-items-center mb-2">
               <label class="font-semibold" for="prolific-project-id">Project ID</label>
               <span class="text-sm text-gray-500" v-if="status === 'unknown'">Validating…</span>
+              <span class="text-sm text-gray-500" v-else-if="status === 'error'">Not verified</span>
               <span class="text-sm text-green-700" v-else-if="status === 'ok'">✓ Connected</span>
               <span class="text-sm text-red-700" v-else>✗ Missing or invalid</span>
             </div>
@@ -508,7 +510,7 @@ watch(selectedWorkspaceId, () => {
                 :disabled="!tokenIsValid || isLoadingWorkspaces || workspaceOptions.length === 0"
               >
                 <option v-if="workspaceOptions.length === 0" value="">
-                  {{ tokenIsValid ? 'No workspaces found' : 'Enter a valid API token first' }}
+                  {{ tokenIsValid ? 'No workspaces found' : 'Workspaces not loaded' }}
                 </option>
                 <option v-for="workspace in workspaceOptions" :key="workspace.id" :value="workspace.id">
                   {{ workspace.label }}
@@ -558,8 +560,15 @@ watch(selectedWorkspaceId, () => {
           </div>
         </div>
 
-        <div v-if="setupError" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mt-5">
-          {{ setupError }}
+        <div
+          v-if="connectionError || setupError"
+          role="alert"
+          class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mt-5"
+        >
+          {{ connectionError || setupError }}
+          <button v-if="connectionError" class="btn-gray mt-3 block" @click="prolific.refreshStatus">
+            Retry connection
+          </button>
         </div>
       </TutorialTarget>
     </div>
