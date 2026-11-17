@@ -146,7 +146,7 @@ export class DeploymentOperations {
     process.stderr.write(`Deployment ${deployment.id}; recovery record: ${recordPath}\n`)
     const temporary = await mkdtemp(resolve(tmpdir(), 'experiment-hosting-'))
     try {
-      await this.io.run(this.root, 'bun', ['run', 'generate', '--envName', 'deployment'], {
+      await this.io.run(this.root, 'npm', ['run', 'generate', '--', '--envName', 'deployment'], {
         EXPERIMENT_DEPLOYMENT: JSON.stringify(deployment),
       })
       await unchanged(this.root, snapshot)
@@ -169,7 +169,7 @@ export class DeploymentOperations {
       return await this.track(record)
     } catch (error) {
       throw new Error(`${error instanceof Error ? error.message : error}\nInspect ${recordPath}. ` +
-        `If upload succeeded, run: bun run ops -- deploy reconcile --id ${deployment.id}`)
+        `If upload succeeded, run: npm run ops -- deploy reconcile --id ${deployment.id}`)
     } finally {
       await rm(temporary, { recursive: true, force: true })
     }

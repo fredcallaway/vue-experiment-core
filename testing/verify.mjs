@@ -2,8 +2,9 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
+const vitest = fileURLToPath(import.meta.resolve('vitest/vitest.mjs'))
 for (const [command, args] of [
-  ['bun', ['test', 'core/testing']],
+  ['node', [vitest, 'run', '--config', 'core/testing/vitest.config.mjs', 'core/testing']],
   ['node', ['--test', 'core/testing/browser.integration.mjs', 'core/testing/agent/session.integration.mjs']],
   ['node', ['core/testing/outline.integration.mjs']],
   ['node', ['core/testing/visual/verify.mjs']],

@@ -27,4 +27,4 @@ Keep module-level `defineParams`, event logger, and `declareDataView` declaratio
 
 `plugins/00.config.ts` initializes project configuration. Core's client plugins install compatibility polyfills and the global seeded RNG before experiment setup, including when overriding the app. Keep configuration initialization in `00.config.ts`, before the `01.random.client.ts` plugin. Import Remeda directly with `import * as R from 'remeda'`; `chunkBy` is exported from `core/utils/dataProcessing`. See [the randomness decision](../adr/0010-seeded-global-randomness.md).
 
-After migration, run `bun run typecheck` and `bun run build`. Check that generated `.nuxt/imports.d.ts` contains framework APIs but no project/core helpers or VueUse APIs, and smoke-test startup plus one relevant example. Detailed checks of every experiment flow belong to the release verification task.
+After migration, run `npm run typecheck` and `npm run build`. Check that generated `.nuxt/imports.d.ts` contains framework APIs but no project/core helpers or VueUse APIs, and smoke-test startup plus one relevant example. Detailed checks of every experiment flow belong to the release verification task.

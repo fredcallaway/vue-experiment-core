@@ -1,3 +1,9 @@
+# Node.js and npm toolchain
+
+Use Node.js LTS 22.22 or newer and npm. Install with `npm ci` using the root `package-lock.json`; remove the old Bun lockfile when adopting this toolchain. Package scripts use `nuxt typecheck` and `node --import tsx core/operations/cli.ts`. Shared core now supplies `tsx` for TypeScript operations and Vitest for local regression tests. The installer requires Git, Node, and npm and installs Firebase CLI through npm when needed.
+
+Tracked generation invokes `npm run generate -- --envName deployment`. Update downstream package scripts and lockfiles together when adopting this change. Browser testing continues to execute under Node. Participant behavior and stored data formats are unchanged.
+
 # Fatal error reports
 
 - Nuxt startup and fatal error screens now offer readable guidance, expandable original diagnostics, and Copy report with a selectable-text fallback. Reports include the page path and embedded build identity when available, omit URL queries and arbitrary error payloads, and work independently of experiment configuration and services. Reports are local and can be copied for investigation. Consumers with their own `error.vue` retain their override; no raw-data migration is required.

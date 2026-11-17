@@ -29,16 +29,16 @@ This is a Nuxt 3 experiment app that extends the template layer in `core/`.
 
 ## Development commands
 
-Use Bun from the repository root.
+Use a maintained Node.js LTS release (22.22 or newer) and its bundled npm from the repository root. `package-lock.json` is the canonical dependency lock; use `npm ci` for reproducible installation. Local TypeScript commands use Node with `tsx` for the same extensionless imports as Nuxt.
 
-- Install dependencies: `bun install`
-- Start dev server: `bun run dev`
-- Typecheck: `bun run typecheck`
-- Build: `bun run build`
+- Install dependencies: `npm ci`
+- Start dev server: `npm run dev`
+- Typecheck: `npm run typecheck`
+- Build: `npm run build`
 
-Run `bun run typecheck` after all edits. When a change needs to be seen running rather than just type-checked, verify it in the browser following [`browser-testing.md`](browser-testing.md).
+Run `npm run typecheck` after all edits. When a change needs to be seen running rather than just type-checked, verify it in the browser following [`browser-testing.md`](browser-testing.md).
 
-The user usually has a dev server already running. Before starting one, check whether the dev server is already serving (its port is set by the `dev` script in `package.json`) and reuse it. If nothing is running and browser verification is needed, start the dev server yourself. Never kill a dev server you did not start, and never use a broad `pkill -f "nuxt dev"` / `pkill -f "bun run dev"` — it cannot tell the user's server from yours.
+The user usually has a dev server already running. Before starting one, check whether the dev server is already serving (its port is set by the `dev` script in `package.json`) and reuse it. If nothing is running and browser verification is needed, start the dev server yourself. Never kill a dev server you did not start, and never use a broad `pkill -f "nuxt dev"` / `pkill -f "npm run dev"` — it cannot tell the user's server from yours.
 
 ## Core rules
 
@@ -68,12 +68,12 @@ The user usually has a dev server already running. Before starting one, check wh
 
 Before deploying or preparing recruitment, read [the operations guide](../../operations/README.md). From the project root:
 
-- `bun run ops -- deploy inspect` reports the target, source identity, and posted-version warnings.
-- `bun run ops -- deploy run` deploys static Hosting, verifies the live build, and records its SHA/version.
-- `bun run ops -- --help` lists study/review draft and read-only investigation commands. Study publication and participant actions/payments remain final researcher actions in the web UI.
+- `npm run ops -- deploy inspect` reports the target, source identity, and posted-version warnings.
+- `npm run ops -- deploy run` deploys static Hosting, verifies the live build, and records its SHA/version.
+- `npm run ops -- --help` lists study/review draft and read-only investigation commands. Study publication and participant actions/payments remain final researcher actions in the web UI.
 
 If Create New Study reports **Not deployed**, **Git worktree is not clean**, or different current/deployed commits, follow [Fix a deployment mismatch](../../operations/README.md#fix-a-deployment-mismatch).
 
 Set a real researcher `contactEmail` in `epoch.config.ts` before production build/deployment. Choose the dataset version in **Prolific → Create New Study** before deploying; the selection is saved in the database rather than source configuration. The tracked deployment embeds its version and Git identity in the build, and sessions retain that loaded identity. Local debug sessions have no version; all debug data is browsed chronologically and exported per session. Treat the live version as a participant-procedure/data-cohort identifier. During development, keep the version planned for the next cohort, including pre-posting bugfix deployments; keep it for unchanged-code recruitment batches. Increment it when changing the procedure or analysis after posting a study or collecting participant data under that version. A posted version with a different commit produces a strong warning. Review the diff before using `--allow-version-reuse`; report the reason for keeping the version. Missing publication history (e.g. studies posted outside this dashboard) requires a manual check.
 
-For browser exploration and recorded replay, start with [the testing guide](../../testing/README.md) and `bun run test:experiments help`.
+For browser exploration and recorded replay, start with [the testing guide](../../testing/README.md) and `npm run test:experiments help`.

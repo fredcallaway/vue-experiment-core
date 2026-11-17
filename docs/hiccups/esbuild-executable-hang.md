@@ -14,6 +14,6 @@ In the observed case, the installed binary and working copy had identical bytes,
 
 Preserve the original inode and its metadata before replacing it. If the two installed paths are hard links, move both original links into an evidence directory on the same filesystem. Copy the executable to a new inode with `cp -p`, install that copy at the platform-package path, and restore the wrapper path as a hard link to it. Check the inode numbers and hashes afterward. Do not change global macOS security settings or reinstall unrelated dependencies.
 
-Run `--version` from both installed paths, then run the normal `bun run build` with `ESBUILD_BINARY_PATH` unset. The template checkout passed both checks after its two paths were replaced with a fresh inode. Existing hung processes were left untouched.
+Run `--version` from both installed paths, then run the normal `npm run build` with `ESBUILD_BINARY_PATH` unset. The template checkout passed both checks after its two paths were replaced with a fresh inode. Existing hung processes were left untouched.
 
 This is a local installation failure, not a core source-code defect. A separate prediction-task build failure arose when a dev server and build rewrote shared Nuxt build metadata concurrently; that case was resolved with an isolated Nuxt build directory and should not be diagnosed as an esbuild executable hang.

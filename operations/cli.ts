@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env -S node --import tsx
 import { readFile } from 'node:fs/promises'
 import { DraftOperations } from './drafts'
 import { FirebaseRestDatabase } from './database'
@@ -29,15 +29,15 @@ const readJsonInput = async () => {
 }
 
 const usage = () => `Usage:
-  bun run ops -- firebase-auth configure --key <service-account.json>
-  bun run ops -- deploy inspect [--version <dataset-version>]
-  bun run ops -- deploy run [--version <dataset-version>] [--allow-version-reuse] [--allow-live-studies <id[,id...]>]
-  bun run ops -- deploy reconcile --id <operation-id>
-  bun run ops -- study-draft get
-  bun run ops -- study-draft update --json '<patch>'
-  bun run ops -- review-draft get --study <study-id>
-  bun run ops -- review-draft update --study <study-id> --json '<patch>'
-  bun run ops -- review inspect --study <study-id> [--submission <submission-id>] [--fixture <file>]
+  npm run ops -- firebase-auth configure --key <service-account.json>
+  npm run ops -- deploy inspect [--version <dataset-version>]
+  npm run ops -- deploy run [--version <dataset-version>] [--allow-version-reuse] [--allow-live-studies <id[,id...]>]
+  npm run ops -- deploy reconcile --id <operation-id>
+  npm run ops -- study-draft get
+  npm run ops -- study-draft update --json '<patch>'
+  npm run ops -- review-draft get --study <study-id>
+  npm run ops -- review-draft update --study <study-id> --json '<patch>'
+  npm run ops -- review inspect --study <study-id> [--submission <submission-id>] [--fixture <file>]
 `
 
 const main = async () => {

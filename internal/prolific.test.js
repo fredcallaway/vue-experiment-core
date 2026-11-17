@@ -1,5 +1,4 @@
-import { expect, test } from 'bun:test'
-import { spawnSync } from 'node:child_process'
+import { expect, test, vi } from 'vitest'
 
 test.each([
   ['implicit default site', { public: '.output/public' }, undefined, false],
@@ -12,22 +11,12 @@ test.each([
   ['trailing slash', { site: 'test-project' }, 'https://experiment.example.edu/', false],
   ['nested path', { site: 'test-project' }, 'https://experiment.example.edu/study/', false],
   ['explicit custom domain', { site: 'test-project' }, 'https://experiment.example.edu', false],
-])('Prolific base URL handles %s', (_name, hosting, baseUrl, rejects) => {
-  // Isolate mocked project configuration from other tests and use the real URL resolver.
-  const result = spawnSync(process.execPath, ['--eval', `
-    import { strict as assert } from 'node:assert'
-    import { mock } from 'bun:test'
-    mock.module('~/firebase.config.json', () => ({ default: { projectId: 'test-project' } }))
-    mock.module('~/firebase.json', () => ({ default: { hosting: ${JSON.stringify(hosting)} } }))
-    const { DEFAULT_PROLIFIC_CONFIG, getProlificBaseUrl } = await import('./core/internal/prolific.ts')
-    const baseUrl = ${JSON.stringify(baseUrl)} ?? DEFAULT_PROLIFIC_CONFIG.baseUrl
-    const config = { ...DEFAULT_PROLIFIC_CONFIG, baseUrl }
-    if (${rejects}) {
-      assert.throws(() => getProlificBaseUrl(config), /FIREBASE_DEFAULT requires.*default Firebase Hosting site/)
-    } else {
-      assert.equal(getProlificBaseUrl(config), ${JSON.stringify(baseUrl?.replace(/\/+$/, '') ?? 'https://test-project.web.app')})
-    }
-  `], { cwd: new URL('../..', import.meta.url), encoding: 'utf8' })
-  expect(result.stderr + result.stdout).toBe('')
-  expect(result.status).toBe(0)
+])('Prolific base URL handles %s', async (_name, hosting, baseUrl, rejects) => {
+  vi.resetModules()
+  vi.doMock('~/firebase.config.json', () => ({ default: { projectId: 'test-project' } }))
+  vi.doMock('~/firebase.json', () => ({ default: { hosting } }))
+  const { DEFAULT_PROLIFIC_CONFIG, getProlificBaseUrl } = await import('./prolific.ts')
+  const config = { ...DEFAULT_PROLIFIC_CONFIG, baseUrl: baseUrl ?? DEFAULT_PROLIFIC_CONFIG.baseUrl }
+  if (rejects) expect(() => getProlificBaseUrl(config)).toThrow(/FIREBASE_DEFAULT requires.*default Firebase Hosting site/)
+  else expect(getProlificBaseUrl(config)).toBe(baseUrl?.replace(/\/+$/, '') ?? 'https://test-project.web.app')
 })

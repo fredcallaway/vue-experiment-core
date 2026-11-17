@@ -1,18 +1,17 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import { readFile } from 'node:fs/promises'
-import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { agentCommand, startAgentSession } from './client.mjs'
 
 const help = `Persistent browser session for a testing agent.
 
-  bun core/testing/agent/cli.mjs start --url http://localhost:3030/dev --output /tmp/experiment-session
-  bun core/testing/agent/cli.mjs observe --session /tmp/experiment-session/session.json
-  bun core/testing/agent/cli.mjs act --session <path> --json '{"action":"click","target":{"role":"button","name":"Continue"}}'
-  bun core/testing/agent/cli.mjs checkpoint --session <path> --json '{"name":"instructions"}'
-  bun core/testing/agent/cli.mjs finish --session <path> --json '{"summary":"Reached completion","terminal":[{"kind":"text","target":{"css":"h1"},"value":"Finished"}]}'
-  bun core/testing/agent/cli.mjs compile --session <path> --json '{"reviewer":"testing-agent","rationale":"Reviewed every checkpoint image and completion evidence"}'
-  bun core/testing/agent/cli.mjs stop --session <path>
+  node core/testing/agent/cli.mjs start --url http://localhost:3030/dev --output /tmp/experiment-session
+  node core/testing/agent/cli.mjs observe --session /tmp/experiment-session/session.json
+  node core/testing/agent/cli.mjs act --session <path> --json '{"action":"click","target":{"role":"button","name":"Continue"}}'
+  node core/testing/agent/cli.mjs checkpoint --session <path> --json '{"name":"instructions"}'
+  node core/testing/agent/cli.mjs finish --session <path> --json '{"summary":"Reached completion","terminal":[{"kind":"text","target":{"css":"h1"},"value":"Finished"}]}'
+  node core/testing/agent/cli.mjs compile --session <path> --json '{"reviewer":"testing-agent","rationale":"Reviewed every checkpoint image and completion evidence"}'
+  node core/testing/agent/cli.mjs stop --session <path>
 
 Use --file <JSON path> instead of --json for larger payloads. Start accepts --seed, --label,
 --scope full|section, --root-selector, --width, --height, --fast true|false and --idle-minutes. Inspect screenshot
@@ -68,11 +67,6 @@ function parseBoolean(value, name) {
 }
 
 if (import.meta.main || fileURLToPath(import.meta.url) === process.argv[1]) {
-  if (process.versions.bun) {
-    const result = spawnSync('node', [fileURLToPath(import.meta.url), ...process.argv.slice(2)], { stdio: 'inherit' })
-    if (result.error) process.stderr.write(`Node.js is required for browser testing: ${result.error.message}\n`)
-    process.exit(result.status ?? 1)
-  }
   main().then(result => {
     if (result.help) process.stdout.write(`${result.help}\n`)
     else process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)

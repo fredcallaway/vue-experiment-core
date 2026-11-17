@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, test } from 'vitest'
 import { getConditionAssignmentCount, getConditionsForAssignment } from './conditions'
 
 const optionsFor = levels => Object.fromEntries(levels.map((length, index) => [

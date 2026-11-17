@@ -78,7 +78,7 @@ try {
   assert.equal(saved.version, deployment.version)
   assert.equal(saved.sha, deployment.fullSha)
   assert.equal(saved.deploymentId, deployment.id)
-  const expectedCode = execFileSync('bun', ['--eval',
+  const expectedCode = execFileSync(process.execPath, ['--import', import.meta.resolve('tsx'), '--input-type=module', '--eval',
     `import { getCompletionCode } from './core/internal/prolific.ts';
      console.log(getCompletionCode('COMPLETED', ${JSON.stringify(deployment.version)}))`],
   { cwd: root, encoding: 'utf8' }).trim()

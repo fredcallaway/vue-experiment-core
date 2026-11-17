@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'bun:test'
+import { afterEach, expect, test } from 'vitest'
 import { execFile } from 'node:child_process'
 import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -8,6 +8,7 @@ import { promisify } from 'node:util'
 import { configureFirebaseCredentials } from './firebase-auth'
 
 const exec = promisify(execFile)
+const nodeArgs = ['--import', import.meta.resolve('tsx')]
 const source = dirname(fileURLToPath(import.meta.url))
 const roots = []
 afterEach(async () => {
@@ -40,11 +41,11 @@ console.log(JSON.stringify({
 }));
 `, { mode: 0o755 })
   const env = {
-    ...process.env, PATH: `${bin}:${process.env.PATH}`,
+    ...process.env, TSX_TSCONFIG_PATH: resolve(source, '../../tsconfig.json'), PATH: `${bin}:${process.env.PATH}`,
     FIREBASE_TOKEN: 'unrelated-human-token', GOOGLE_APPLICATION_CREDENTIALS: resolve(directory, 'unrelated-key.json'),
     XDG_CONFIG_HOME: resolve(directory, 'human-firebase-config'),
   }
-  const runner = resolve(directory, 'runner.ts')
+  const runner = resolve(directory, 'runner.mts')
   await writeFile(runner, `
 import { command } from ${JSON.stringify(resolve(source, 'project.ts'))};
 import { configureFirebaseCredentials } from ${JSON.stringify(resolve(source, 'firebase-auth.ts'))};
@@ -59,10 +60,10 @@ console.log(JSON.stringify({ first, second, project, inheritedToken: process.env
   return { directory, root, key, keyFile, env, runner }
 }
 
-test('one-time CLI configuration persists for fresh Bun and Node processes despite inherited human credentials', async () => {
+test('one-time CLI configuration persists for fresh Node processes despite inherited human credentials', async () => {
   const f = await fixture()
   const before = (await exec('git', ['status', '--porcelain'], { cwd: f.root })).stdout
-  const configured = await exec(process.execPath, [resolve(source, 'cli.ts'),
+  const configured = await exec(process.execPath, [...nodeArgs, resolve(source, 'cli.ts'),
     'firebase-auth', 'configure', '--key', f.keyFile], { cwd: f.root, env: f.env })
   const result = JSON.parse(configured.stdout)
   expect(result.serviceAccount).toBe(f.key.client_email)
@@ -71,10 +72,8 @@ test('one-time CLI configuration persists for fresh Bun and Node processes despi
   expect(JSON.parse(await readFile(result.credentialFile, 'utf8'))).toEqual(f.key)
   expect((await exec('git', ['status', '--porcelain'], { cwd: f.root })).stdout).toBe(before)
 
-  const bundled = resolve(f.directory, 'runner.mjs')
-  await exec(process.execPath, ['build', f.runner, '--target', 'node', '--outfile', bundled])
-  for (const [executable, script] of [[process.execPath, f.runner], ['node', bundled]]) {
-    const { stdout } = await exec(executable, [script], { cwd: f.root, env: f.env })
+  for (let i = 0; i < 2; i++) {
+    const { stdout } = await exec(process.execPath, [...nodeArgs, f.runner], { cwd: f.root, env: f.env })
     const observed = JSON.parse(stdout)
     expect(observed.project).toBe(f.key.project_id)
     expect(observed.first.identity).toBe(f.key.client_email)
@@ -91,9 +90,7 @@ test('an already-running Node caller picks up a rotated key on its next operatio
   const replacement = { ...f.key, client_email: 'replacement@credential-project.iam.gserviceaccount.com' }
   const replacementFile = resolve(f.directory, 'replacement.json')
   await writeFile(replacementFile, JSON.stringify(replacement))
-  const bundled = resolve(f.directory, 'runner.mjs')
-  await exec(process.execPath, ['build', f.runner, '--target', 'node', '--outfile', bundled])
-  const { stdout } = await exec('node', [bundled, replacementFile], { cwd: f.root, env: f.env })
+  const { stdout } = await exec(process.execPath, [...nodeArgs, f.runner, replacementFile], { cwd: f.root, env: f.env })
   const observed = JSON.parse(stdout)
   expect(observed.first.identity).toBe(f.key.client_email)
   expect(observed.second.identity).toBe(replacement.client_email)
@@ -111,7 +108,7 @@ test('rejects invalid or wrong-project keys without replacing the configured ide
 
   await writeFile(resolve(f.root, 'firebase.config.json'), JSON.stringify({ projectId: 'changed-project' }))
   try {
-    await exec(process.execPath, [f.runner], { cwd: f.root, env: f.env })
+    await exec(process.execPath, [...nodeArgs, f.runner], { cwd: f.root, env: f.env })
     throw new Error('Expected a project mismatch')
   } catch (error) {
     expect(error.stderr).toContain('must belong to the project')
@@ -120,7 +117,7 @@ test('rejects invalid or wrong-project keys without replacing the configured ide
 
   await rm(configured.credentialFile)
   try {
-    await exec(process.execPath, [f.runner], { cwd: f.root, env: f.env })
+    await exec(process.execPath, [...nodeArgs, f.runner], { cwd: f.root, env: f.env })
     throw new Error('Expected missing project credentials to fail instead of using a human login')
   } catch (error) {
     expect(error.stderr).toContain('Project Firebase credentials are missing')

@@ -2,7 +2,8 @@ import { contactEmailError } from '../internal/deploymentSafety'
 import { command } from './project'
 
 export async function readDeploymentConfig(root: string, run = command) {
-  const output = await run(root, 'bun', ['--eval',
+  const output = await run(root, process.execPath, [
+    '--import', import.meta.resolve('tsx'), '--input-type=module', '--eval',
     'globalThis.defineEpochConfig = c => c; ' +
     'const {contactEmail} = (await import("./epoch.config.ts")).default; ' +
     'console.log(JSON.stringify({contactEmail}))',
