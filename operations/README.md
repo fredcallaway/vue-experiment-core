@@ -4,15 +4,19 @@ These local JSON commands expose tracked static Hosting deployment, study prepar
 
 ## Configure Firebase authentication once
 
-For a lab-managed project, configure the administrator-provided service-account JSON key once per checkout:
+For a lab-managed project, configure the administrator-provided service-account JSON key once per user and Firebase project:
 
 ```bash
 npm run ops -- firebase-auth configure --key "/absolute/path/to/service-account.json"
 ```
 
-The command validates the key's project against `firebase.config.json` and stores a private copy at the Git metadata path `firebase-auth/service-account.json` with mode 0600. `git rev-parse --git-path firebase-auth` reports its directory, including in worktrees. Configuration changes no tracked files and needs no source commit.
+The command validates the key's project and private-key format against `firebase.config.json` and stores a private copy at `~/.config/experiment-template/firebase/<project-id>/service-account.json` with mode 0600 in a mode-0700 project directory. The location is independent of shell `XDG_CONFIG_HOME`. All checkouts with the same project ID use this key, including fresh clones after deleting the original checkout. Configuration changes no tracked files and needs no source commit.
 
-Supported CLI deployment commands and the dashboard load this key automatically for every Firebase CLI invocation, including the selected-project check. They use a project-private Firebase CLI configuration directory and clear inherited `FIREBASE_TOKEN`, so cached human credentials cannot override a configured project key. Each operation reads the current key; rerun the configuration command to replace it without restarting the dashboard. Missing or invalid configured credentials fail instead of falling back to a human login.
+Supported CLI deployment commands and the dashboard resolve credentials for every Firebase CLI invocation, including the selected-project check. A saved matching project key always wins; otherwise operations inherit shell credentials. With a project key, they use an isolated Firebase CLI configuration directory and clear inherited `FIREBASE_TOKEN`, so cached human credentials cannot override the key. Each operation reads the current key; rerun the configuration command to rotate it across checkouts without restarting the dashboard. Missing or invalid configured key files fail with a repair command instead of falling back to a human login. To deliberately return a project to shell authentication, remove its entire home configuration project directory; this applies to all its checkouts. Remove any old Git-metadata key directories too, so they cannot be imported again.
+
+Existing keys under Git metadata (`git rev-parse --git-path firebase-auth`) are validated and copied into the home configuration automatically on first use when no shared key is registered. The old copy is retained, but a shared key takes precedence, including after rotation. Reconfiguration with the command above also works when the old key is missing or invalid.
+
+**Prolific → Create New Study** shows the source, project ID, and service-account email when available, and refreshes them without restarting the dashboard. `npm run ops -- firebase-auth status` reports the same safe metadata. Permission/authentication errors preserve the CLI diagnostic, name the credential source, and suggest configuring a missing project key when shell credentials are in use. No credential selector or authentication preference is needed.
 
 After setup, normal development and deployment commands work from any shell without credential exports. Database access and rules remain separate from Hosting authentication. New students use the [setup block and installer](../../README.md#create-your-experiment); the [agent handoff guide](../docs/guide/student-handoff.md) explains how to prepare that block from an already provisioned project.
 

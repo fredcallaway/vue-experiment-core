@@ -1,6 +1,7 @@
 import { test, vi } from 'vitest'
 import { strict as assert } from 'node:assert'
 import { mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { generateKeyPairSync } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 import { execFileSync } from 'node:child_process'
@@ -45,10 +46,11 @@ test('local playback streams authenticated audio and byte ranges without exposin
   let server
   try {
     const root = await createRoot()
+    vi.stubEnv('HOME', root)
     const key = resolve(root, 'key.json')
     await writeFile(key, JSON.stringify({ type: 'service_account', project_id: 'audio-test',
-      client_email: 'test@audio-test.invalid', private_key: 'PRIVATE_TEST_KEY' }))
-    await configureFirebaseCredentials(root, key)
+      client_email: 'test@audio-test.invalid', private_key: generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({ type: 'pkcs8', format: 'pem' }) }))
+    const configured = await configureFirebaseCredentials(root, key)
     process.chdir(root)
     const app = h3.createApp().use('/api/recordings', route)
     server = createServer(h3.toNodeListener(app))
@@ -94,10 +96,12 @@ test('local playback streams authenticated audio and byte ranges without exposin
     assert.equal(unsafeType.headers.get('Content-Disposition'), 'attachment')
     await unsafeType.arrayBuffer()
     delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+    await rm(configured.credentialFile)
     const unconfigured = await createRoot()
     await assert.rejects(module.readStorageAudio(unconfigured, file), /firebase-auth configure/)
   } finally {
     process.chdir(cwd)
+    vi.unstubAllEnvs()
     if (server) await new Promise(resolve => server.close(resolve))
     await Promise.all(roots.map(root => rm(root, { recursive: true, force: true })))
   }

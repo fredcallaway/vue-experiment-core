@@ -6,7 +6,7 @@ import { MockProlificReader, ProlificHttpReader } from './prolific-reader'
 import { ReviewOperations } from './review'
 import { DeploymentOperations } from './deployment'
 import { withOperationLock } from './project'
-import { configureFirebaseCredentials } from './firebase-auth'
+import { configureFirebaseCredentials, firebaseCredentialStatus } from './firebase-auth'
 
 const args = process.argv.slice(2)
 if (args[0] === '--') args.shift()
@@ -30,6 +30,7 @@ const readJsonInput = async () => {
 
 const usage = () => `Usage:
   npm run ops -- firebase-auth configure --key <service-account.json>
+  npm run ops -- firebase-auth status
   npm run ops -- deploy inspect [--version <dataset-version>]
   npm run ops -- deploy run [--version <dataset-version>] [--allow-version-reuse] [--allow-live-studies <id[,id...]>]
   npm run ops -- deploy reconcile --id <operation-id>
@@ -50,6 +51,7 @@ const main = async () => {
 
   const allowed: Record<string, string[]> = {
     'firebase-auth configure': ['--key'],
+    'firebase-auth status': [],
     'deploy inspect': ['--version'], 'deploy run': ['--version', '--allow-version-reuse', '--allow-live-studies'],
     'deploy reconcile': ['--id'],
     'study-draft get': [], 'study-draft update': ['--json', '--file'],
@@ -70,7 +72,8 @@ const main = async () => {
   }
 
   if (resource === 'firebase-auth') {
-    const result = await configureFirebaseCredentials(process.cwd(), option('--key') ?? '')
+    const result = action === 'status' ? await firebaseCredentialStatus(process.cwd())
+      : await configureFirebaseCredentials(process.cwd(), option('--key') ?? '')
     console.log(JSON.stringify(result, null, 2))
     return
   }

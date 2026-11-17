@@ -4,6 +4,7 @@ import { useIntervalFn } from '@vueuse/core'
 import { contactEmailError, type ActiveProlificStudy } from '../deploymentSafety'
 import { useVersionSafety } from './useVersionSafety'
 import { datasetVersionError } from '../deploymentIdentity'
+import type { FirebaseCredentialSource } from '../../operations/firebase-auth'
 
 
 export interface GitStatus {
@@ -26,6 +27,19 @@ export const useDeployment = () => {
   const gitStatus = ref('')
   const activeStudies = ref<ActiveProlificStudy[] | null>(null)
   const activeStudiesError = ref('')
+  const firebaseCredentials = ref<(FirebaseCredentialSource & { error: string }) | null>(null)
+  const credentialError = ref('')
+  const refreshFirebaseCredentials = async () => {
+    try {
+      const result = await $fetch('/api/prolific/firebase-auth')
+      firebaseCredentials.value = result
+      credentialError.value = result.error
+    } catch {
+      credentialError.value = 'Could not check Firebase credentials. Check the local development server.'
+    }
+  }
+  refreshFirebaseCredentials()
+  useIntervalFn(refreshFirebaseCredentials, 3000)
 
   const refreshActiveStudies = async () => {
     try {
@@ -85,8 +99,9 @@ export const useDeployment = () => {
   }, { once: true })
   
   const deploy = async (allowVersionReuse = false, allowLiveStudies: string[] = []) => {
+    await refreshFirebaseCredentials()
     await checkGitStatus()
-    if (isLoading.value || isDirty.value || unconfigured.value || versionError.value) {
+    if (isLoading.value || isDirty.value || unconfigured.value || versionError.value || credentialError.value) {
       return false
     }
     isLoading.value = true
@@ -109,6 +124,7 @@ export const useDeployment = () => {
       return false
     } finally {
       isLoading.value = false
+      void refreshFirebaseCredentials()
     }
   }
 
@@ -128,5 +144,7 @@ export const useDeployment = () => {
     activeStudies,
     activeStudiesError,
     refreshActiveStudies,
+    firebaseCredentials,
+    credentialError,
   }
 }

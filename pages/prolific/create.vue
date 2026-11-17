@@ -17,7 +17,7 @@ definePageMeta({
 const prolific = useProlific()
 const { deploy, localSha, deployedSha, deployedVersion, deployedId, version, versionError: datasetError,
   status, error: deploymentError, gitStatus, versionSafety, refreshDeployment,
-  activeStudies, activeStudiesError, refreshActiveStudies } = useDeployment()
+  activeStudies, activeStudiesError, refreshActiveStudies, firebaseCredentials, credentialError } = useDeployment()
 const { warnings: versionWarnings, loading: versionLoading, error: versionError } = versionSafety
 
 const MIN_WAGE = 8
@@ -127,13 +127,7 @@ const createStudy = async ({publish = false}: {publish?: boolean} = {}) => {
   })
 }
 
-const onDeploy = async () => {
-  const success = await deploy(bypassVersionCheck.value, confirmLiveDeployment.value ? activeStudyIds.value : [])
-  if (!success) {
-    throw new Error(deploymentError.value)
-  }
-  
-}
+const onDeploy = () => deploy(bypassVersionCheck.value, confirmLiveDeployment.value ? activeStudyIds.value : [])
 
 </script>
 
@@ -144,7 +138,11 @@ const onDeploy = async () => {
 
     <h2 class="mb2 mt4">Create New Study</h2>
 
-    <Error :error="create.error.value || deploymentError" />
+    <Error :error="create.error.value" />
+
+    <div v-if="credentialError || deploymentError" role="alert"
+      class="deployment-error fixed top-4 right-4 z-50 overflow-auto p-4 border border-red-700 bg-red-100 text-red-700 text-sm whitespace-pre-wrap break-words"
+    >{{ credentialError || deploymentError }}</div>
 
     <fieldset :disabled="formDataLoading" class="grid grid-cols-2 gap-6 border-0 m-0 p-0">
       <!-- Reward/Time/Wage/Places/Cost Card -->
@@ -301,6 +299,19 @@ const onDeploy = async () => {
         title="Deployment status"
         help="Checks whether the experiment is configured, committed, and deployed before study publication."
       >
+        <div class="text-sm h-12 overflow-hidden" data-testid="firebase-credentials" aria-live="polite">
+          <template v-if="firebaseCredentials">
+            <div class="truncate">
+              <span class="font-semibold">Firebase credentials:</span>
+              {{ firebaseCredentials.source === 'project-key' ? 'Saved project key' : 'Shell credentials (no saved key)' }}
+            </div>
+            <div class="truncate" :title="firebaseCredentials.serviceAccount">
+              {{ firebaseCredentials.projectId }}
+              <template v-if="firebaseCredentials.serviceAccount">· {{ firebaseCredentials.serviceAccount }}</template>
+            </div>
+          </template>
+          <span v-else>Checking Firebase credentials…</span>
+        </div>
         <div>
           <label for="dataset-version" class="block mb-2 font-semibold">Dataset version</label>
           <input id="dataset-version" v-model="version" type="text" :disabled="status === 'loading'"
@@ -360,25 +371,16 @@ const onDeploy = async () => {
             <div>deployed commit: <span class="font-mono">{{ deployedSha }}</span></div>
           </div>
         </div>
-        <div class="p-4 rounded-lg bg-info-200 text-info-600 [&>h3]:text-info-700" v-else-if="status === 'ready'">
-          <b>Ready to deploy! </b>
+        <div v-else-if="['ready', 'loading', 'error'].includes(status)" class="p-4 rounded-lg"
+          :class="status === 'error' ? 'bg-error-200 text-error-600' : 'bg-info-200 text-info-600'"
+        >
+          <b>{{ status === 'error' ? 'Deployment failed' : status === 'loading' ? 'Deploying…' : 'Ready to deploy!' }}</b>
           <div>current commit: <span class="font-mono">{{ localSha }}</span></div>
           <div>deployed commit: <span class="font-mono">{{ deployedSha }}</span></div>
-          <label class="flex items-center gap-2 mt-2">
+          <label class="flex items-center gap-2 mt-2" :class="{ invisible: status === 'loading' }">
             <input v-model="bypassDeployedCheck" type="checkbox" />
             Bypass deployment check
           </label>
-        </div>
-        <div class="p-4 rounded-lg bg-info-200 text-info-600 [&>h3]:text-info-700" v-else-if="status === 'loading'">
-          <b>Deploying...</b>
-          <div>current commit: <span class="font-mono">{{ localSha }}</span></div>
-          <div>deployed commit: <span class="font-mono">{{ deployedSha }}</span></div>
-        </div>
-
-        <div class="p-4 rounded-lg bg-error-200 text-error-600 [&>h3]:text-error-700" v-else-if="status === 'error'">
-          <b>⚠ Error building/deploying site</b>
-          <br>
-          <pre>{{ deploymentError }}</pre>
         </div>
         <div class="p-4 rounded-lg bg-error-200 text-error-600 [&>h3]:text-error-700" v-else-if="cannotSubmitReason">
           <b>⚠ {{ cannotSubmitReason }}</b>
@@ -390,20 +392,13 @@ const onDeploy = async () => {
           </a>
         </div>
 
-        <button class="btn-gray" v-if="status === 'error'" @click="dismissDeploymentError">
-          Dismiss Error
-        </button>
-
-        <ActionButton
-          class="btn-blue"
-          v-else
-          loading
-          :name="status == 'loading' ? 'Deploying...' : 'Deploy Website'"
-          :action="onDeploy"
-          :disabled="status !== 'ready' || !!datasetError || versionLoading || !!versionError ||
-            activeStudies === null || (activeStudyIds.length > 0 && !confirmLiveDeployment) ||
-            (versionWarnings.length > 0 && !bypassVersionCheck)"
-        />
+        <button class="btn-blue deploy-action"
+          @click="status === 'error' ? dismissDeploymentError() : onDeploy()"
+          :disabled="status !== 'error' && (status !== 'ready' || !firebaseCredentials || !!datasetError ||
+            !!credentialError || versionLoading || !!versionError || activeStudies === null ||
+            (activeStudyIds.length > 0 && !confirmLiveDeployment) ||
+            (versionWarnings.length > 0 && !bypassVersionCheck))"
+        >{{ status === 'error' ? 'Dismiss Error' : status === 'loading' ? 'Deploying…' : 'Deploy Website' }}</button>
       </TutorialTarget>
     </fieldset>
 
@@ -430,3 +425,14 @@ const onDeploy = async () => {
     </TutorialTarget>
   </div>
 </template>
+
+<style scoped>
+.deploy-action {
+  min-width: 10rem;
+}
+
+.deployment-error {
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: min(16rem, calc(100vh - 2rem));
+}
+</style>

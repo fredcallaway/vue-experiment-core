@@ -1,3 +1,9 @@
+# Firebase credentials across checkouts
+
+- Project keys are stored per user at `~/.config/experiment-template/firebase/<project-id>/service-account.json` and selected using `firebase.config.json`. Fresh clones reuse the same private key. A valid old Git-metadata key is imported automatically when no shared key exists. Reconfigure with `npm run ops -- firebase-auth configure --key <file>` to rotate it across checkouts; running dashboards pick up changes without restarting.
+- A saved matching project key always takes precedence; without one, shell credentials remain supported. Invalid or missing registered key files block operations with a repair instruction. Project-key calls still isolate cached human Firebase logins and clear inherited `FIREBASE_TOKEN`.
+- Create New Study and `npm run ops -- firebase-auth status` expose the active credential source. Firebase CLI errors retain their diagnostic and source; shell permission failures suggest configuring a missing project key. No consumer-code or raw-data migration is required. Participant behavior is unchanged.
+
 # Node.js and npm toolchain
 
 Projects without the optional Firebase `storageBucket` field now typecheck correctly; Storage uploads still require a configured bucket.

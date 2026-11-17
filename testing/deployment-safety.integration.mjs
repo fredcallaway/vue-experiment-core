@@ -58,6 +58,9 @@ try {
           .replace('yourEmailAddress@fakeDomain.foo', 'researcher@university.edu') })
       }
       if (target.pathname.startsWith('/api/')) {
+        if (target.pathname === '/api/prolific/firebase-auth') {
+          return route.fulfill({ json: { projectId: 'fixture-project', source: 'shell', error: '' } })
+        }
         if (target.pathname === '/api/prolific/active-studies') {
           return route.fulfill({ json: scenario === 'active' ? [{ id: 'active-study', name: 'Recruiting study' }] : [] })
         }

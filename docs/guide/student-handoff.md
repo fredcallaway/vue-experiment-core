@@ -113,7 +113,7 @@ node scripts/prepare-student.mjs \
   --out /absolute/private/path/my-experiment-setup.txt
 ```
 
-Replace the example name and email with the values supplied by the manager. If the manager explicitly selected an already configured experiment checkout, use that as `--project`; the script reads its deployment key from Git metadata when `--key` is omitted. Use `--template /path/to/template-checkout` and `--repository <clone-url>` to choose a different template source. Run `--help` for the full command.
+Replace the example name and email with the values supplied by the manager. If the manager explicitly selected an already configured experiment checkout, use that as `--project`; when `--key` is omitted, the script resolves its saved project key from the user's home configuration, importing a valid old Git-metadata key if needed. Shell credentials cannot be embedded in a handoff; configure the project key or supply `--key`. Use `--template /path/to/template-checkout` and `--repository <clone-url>` to choose a different template source. Run `--help` for the full command.
 
 The output includes the complete private key, has owner-only file permissions, and refuses to overwrite an existing file. It is a single JSON block between `-----BEGIN EXPERIMENT SETUP-----` and `-----END EXPERIMENT SETUP-----`. The generator checks that the key and web configuration identify the same project. It does not create cloud resources, deploy, or change the source project.
 
@@ -123,7 +123,7 @@ Return the complete setup block directly in your final reply in the lab manager'
 node scripts/create-experiment.mjs --file /absolute/private/path/my-experiment-setup.txt
 ```
 
-The installer clones the recorded revision and its pinned core, starts independent Git history, writes the public project configuration and researcher contact, and uses the existing [persistent credential setup](../../operations/README.md#configure-firebase-authentication-once). It installs dependencies and runs typechecking. The private key stays in Git metadata, outside the tracked source and deployed assets. Setup does not deploy or recruit participants.
+The installer clones the recorded revision and its pinned core, starts independent Git history, writes the public project configuration and researcher contact, and uses the existing [persistent credential setup](../../operations/README.md#configure-firebase-authentication-once). It installs dependencies and runs typechecking. The private key is saved in the user's home configuration indexed by Firebase project ID, outside tracked source and deployed assets, so fresh clones reuse it. Setup does not deploy or recruit participants.
 
 If setup stops after creating the project, preserve that folder and finish the reported installation step there. Use `--directory <new-folder>` when the student wants a different destination. Existing folders are never overwritten.
 

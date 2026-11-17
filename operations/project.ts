@@ -2,17 +2,19 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-import { firebaseEnvironment } from './firebase-auth'
+import { firebaseCommandError, firebaseDiagnostic, resolveFirebaseCredentials } from './firebase-auth'
 
 const exec = promisify(execFile)
 
 export async function command(root: string, executable: string, args: string[], environment: NodeJS.ProcessEnv = {}) {
+  const credentials = executable === 'firebase' ? await resolveFirebaseCredentials(root) : null
   try {
-    const env = { ...(executable === 'firebase' ? await firebaseEnvironment(root) : process.env), ...environment }
+    const env = { ...process.env, ...environment, ...(credentials?.environment ?? {}) }
     const { stdout, stderr } = await exec(executable, args, { cwd: root, env, maxBuffer: 32 * 1024 * 1024 })
-    if (stderr) process.stderr.write(stderr)
+    if (stderr) process.stderr.write(executable === 'firebase' ? firebaseDiagnostic({ stderr }) + '\n' : stderr)
     return stdout.trim()
   } catch (error: any) {
+    if (credentials) throw firebaseCommandError(error, credentials.source, `firebase ${args.join(' ')} failed`)
     throw new Error(`${executable} ${args.join(' ')} failed\n${error.stdout ?? ''}\n${error.stderr ?? error.message}`)
   }
 }
