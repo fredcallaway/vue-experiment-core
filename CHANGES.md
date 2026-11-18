@@ -4,7 +4,7 @@
 
 # Hosted researcher tools
 
-- Production Prolific and Data pages show instructions for opening the tool on the local development server. Navigation links remain visible, and local development serves the full tools. This applies to direct study, version, and session links as well as each tool's main page. No consumer-code or raw-data migration is required.
+- Production Prolific and Data pages show instructions for starting the local development server. Navigation links remain visible, and local development serves the full tools. This applies to direct study, version, and session links as well as each tool's main page. No consumer-code or raw-data migration is required.
 
 # Prolific connection validation
 

@@ -9,6 +9,5 @@ const tool = computed(() => props.path.split('/')[1] === 'prolific' ? 'Prolific'
     <p class="mt-4">{{ tool }} isn't available on the hosted website.</p>
     <p class="mt-4">To use it, start the local server in your experiment folder:</p>
     <pre class="my-4"><code>bun run dev</code></pre>
-    <p>Open the localhost address shown in the terminal, then choose <strong>{{ tool }}</strong>.</p>
   </main>
 </template>
