@@ -72,6 +72,27 @@ try {
   assert.equal(await page.locator('.debug-save.on').count(), 0)
   assert.equal(await page.evaluate(() => window.__debugDatabase?.writes.length ?? 0), 0)
 
+  const toolRequests = []
+  const recordToolRequest = request => {
+    if (new URL(request.url()).pathname.startsWith('/api/')) toolRequests.push(request.url())
+  }
+  page.on('request', recordToolRequest)
+  for (const path of ['/prolific', '/prolific/create', '/prolific/synthetic-study',
+    '/data', '/data/sessions', '/data/versions/synthetic-version', '/data/sessions/synthetic-session']) {
+    await page.goto(`${origin}${path}`)
+    const tool = path.startsWith('/prolific') ? 'Prolific' : 'Data'
+    await page.getByText(`${tool} isn't available on the hosted website.`, { exact: true }).waitFor()
+    assert.equal(new URL(page.url()).pathname, path, 'Hosted notices preserve direct tool URLs')
+    assert.equal(await page.getByRole('link', { name: 'Prolific', exact: true }).count(), 1)
+    assert.equal(await page.getByRole('link', { name: 'Data', exact: true }).count(), 1)
+    assert.equal(await page.locator('main code').innerText(), 'bun run dev')
+    assert.equal(await page.evaluate(() => window.__debugDatabase?.writes.length ?? 0), 0)
+  }
+  assert.deepEqual(toolRequests, [], 'Hosted notices do not initialize tool APIs')
+  page.off('request', recordToolRequest)
+  await page.getByRole('link', { name: 'Develop', exact: true }).click()
+  await page.getByRole('heading', { name: 'Debug saving fixture', exact: true }).waitFor()
+
   await page.goto(`${origin}/dev?session_id=debug-static&mode=debug`)
   await page.locator('.debug-save.on').waitFor({ timeout: 20000 })
   const saved = await page.evaluate(() => window.__debugDatabase.values['debug/meta/debug-static'])

@@ -1,3 +1,7 @@
+# Hosted researcher tools
+
+- Production Prolific and Data pages show instructions for opening the tool on the local development server. Navigation links remain visible, and local development serves the full tools. This applies to direct study, version, and session links as well as each tool's main page. No consumer-code or raw-data migration is required.
+
 # Prolific connection validation
 
 - The connection form authenticates the API token before labeling it valid, including before a project has been selected. HTML and malformed API responses produce a diagnostic identifying the failed local endpoint and explaining how to check the development server; failed checks can be retried. Connection checks no longer log tokens. No consumer-code or raw-data migration is required.

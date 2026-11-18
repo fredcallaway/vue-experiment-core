@@ -7,6 +7,7 @@ import 'vue-sonner/style.css'
 import { Toaster } from 'vue-sonner'
 
 const config = useConfig()
+const needsLocalServer = path => !import.meta.dev && /^\/(prolific|data)(\/|$)/.test(path)
 
 console.log('------------ initializing app ------------')
 console.log('deployment: ', useRuntimeConfig().public.experimentDeployment)
@@ -34,7 +35,10 @@ useErrorHandler() // initialize
 <template>
   <NuxtLayout>
     <Toaster richColors closeButton position="top-right" />
-    <NuxtPage />
+    <NuxtPage v-slot="{ Component, route }">
+      <LocalToolNotice v-if="needsLocalServer(route.path)" :path="route.path" />
+      <component :is="Component" v-else />
+    </NuxtPage>
   </NuxtLayout>
 </template>
 
