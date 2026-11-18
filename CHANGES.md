@@ -1,3 +1,7 @@
+# Prolific exclusion validation
+
+- Study creation retries once when Prolific explicitly rejects nonexistent users in a participant blocklist. Only rejected IDs are removed from the outgoing request; valid exclusions and stored participant records are preserved. Other validation failures still stop creation.
+
 # Explicit contact-check override
 
 - Template/demo deployments can retain the starter contact placeholder with `bun run ops -- deploy inspect --skip-contact-email-check` and `bun run ops -- deploy run --skip-contact-email-check`. The opt-in skips contact validation for that invocation and its generated build, emits a warning, and preserves the other deployment gates. Direct production builds can opt in with `EXPERIMENT_SKIP_CONTACT_EMAIL_CHECK=1`. Contact validation remains enabled by default; no consumer-code or raw-data migration is required.

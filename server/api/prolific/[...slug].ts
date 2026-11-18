@@ -1,3 +1,5 @@
+import { createStudyRequest } from '../../../internal/createStudyRequest'
+
 export default defineEventHandler(async (event) => {
   const slug = event.context.params?.slug || ''
   const path = Array.isArray(slug) ? slug.join('/') : slug
@@ -36,16 +38,17 @@ export default defineEventHandler(async (event) => {
 
   // Make request to Prolific API
   try {
-    const response = await $fetch(url, {
+    const send = (payload: any) => $fetch(url, {
       method,
       headers: {
         'Authorization': `Token ${token}`,
         'Content-Type': 'application/json',
       },
-      body: body ? JSON.stringify(body) : undefined,
+      body: payload ? JSON.stringify(payload) : undefined,
     })
     
-    return response
+    return method === 'POST' && path.replace(/\/+$/, '') === 'studies'
+      ? await createStudyRequest(body, send) : await send(body)
   } catch (error: any) {
     throw createError({
       statusCode: error.response?.status || 500,
