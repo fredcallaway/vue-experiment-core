@@ -66,8 +66,8 @@ export class DeploymentOperations {
     return { projectId, site, hosting: staticHosting }
   }
 
-  async inspect(version?: string) {
-    const { contactEmail } = await readDeploymentConfig(this.root, this.io.run)
+  async inspect(version?: string, { skipContactEmailCheck = false } = {}) {
+    const { contactEmail } = await readDeploymentConfig(this.root, this.io.run, { skipContactEmailCheck })
     version ??= await this.database.get<string>('deploymentVersion') ?? ''
     const error = datasetVersionError(version)
     if (error) throw new Error(error)
@@ -121,10 +121,10 @@ export class DeploymentOperations {
     return { ...info, state: record.state, url: `https://${info.site}.web.app` }
   }
 
-  async deploy({ version, allowVersionReuse = false, allowLiveStudies = [] }: {
-    version?: string, allowVersionReuse?: boolean, allowLiveStudies?: string[],
+  async deploy({ version, allowVersionReuse = false, allowLiveStudies = [], skipContactEmailCheck = false }: {
+    version?: string, allowVersionReuse?: boolean, allowLiveStudies?: string[], skipContactEmailCheck?: boolean,
   } = {}) {
-    const inspected = await this.inspect(version)
+    const inspected = await this.inspect(version, { skipContactEmailCheck })
     this.requireStudyConfirmation(inspected.activeStudies, allowLiveStudies)
     if (inspected.activeStudies.length) {
       process.stderr.write(`WARNING: Deploying while Prolific is recruiting for ${inspected.activeStudies.map(s => s.name).join(', ')}.\n`)
@@ -148,6 +148,7 @@ export class DeploymentOperations {
     try {
       await this.io.run(this.root, 'bun', ['run', 'generate', '--envName', 'deployment'], {
         EXPERIMENT_DEPLOYMENT: JSON.stringify(deployment),
+        EXPERIMENT_SKIP_CONTACT_EMAIL_CHECK: skipContactEmailCheck ? '1' : '0',
       })
       await unchanged(this.root, snapshot)
       await readFile(resolve(this.root, '.output/public/index.html'))

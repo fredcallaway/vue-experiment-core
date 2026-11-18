@@ -13,15 +13,19 @@ try {
     if (!allowLiveStudies?.every(id => id && !id.startsWith('--'))) throw new Error('Supply confirmed study IDs')
     args.splice(confirmationIndex, 2)
   }
-  if (args.some(arg => arg !== '--allow-version-reuse')) throw new Error('Unknown deployment option')
+  if (args.some(arg => !['--allow-version-reuse', '--skip-contact-email-check'].includes(arg))) {
+    throw new Error('Unknown deployment option')
+  }
+  const skipContactEmailCheck = args.includes('--skip-contact-email-check')
   const root = process.cwd()
-  await readDeploymentConfig(root)
+  await readDeploymentConfig(root, undefined, { skipContactEmailCheck })
   await assertFirebaseProjectMatchesCli(root)
   const database = await FirebaseRestDatabase.fromProject(root)
   const operations = new DeploymentOperations(root, database)
   const result = await withOperationLock(root, () => operations.deploy({
     allowVersionReuse: args.includes('--allow-version-reuse'),
     allowLiveStudies,
+    skipContactEmailCheck,
   }))
   console.log(JSON.stringify(result, null, 2))
 } catch (error) {

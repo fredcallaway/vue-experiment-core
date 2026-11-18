@@ -50,7 +50,11 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@unocss/nuxt',
     async (_options, nuxt) => {
-      if (!nuxt.options.dev && !nuxt.options._prepare) await readDeploymentConfig(nuxt.options.rootDir)
+      if (!nuxt.options.dev && !nuxt.options._prepare) {
+        await readDeploymentConfig(nuxt.options.rootDir, undefined, {
+          skipContactEmailCheck: process.env.EXPERIMENT_SKIP_CONTACT_EMAIL_CHECK === '1',
+        })
+      }
       const sourcemaps = nuxt.options.posthogConfig?.sourcemaps
       if (sourcemaps && !sourcemaps.personalApiKey?.startsWith('phx_')) {
         sourcemaps.enabled = false

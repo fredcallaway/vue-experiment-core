@@ -61,7 +61,9 @@ The Git/deployment bypass checkboxes do not upload or verify a build. Resolve th
 
 ### Configure contact and version
 
-Set `contactEmail` in `epoch.config.ts` to a real researcher email. Missing, malformed, and `fakeDomain.*` placeholder addresses block deployment before building/uploading, with no bypass. Production `build` and `generate` also enforce this check; local development and typechecking work with the starter placeholder.
+Set `contactEmail` in `epoch.config.ts` to a real researcher email. Missing, malformed, and `fakeDomain.*` placeholder addresses block deployment before building/uploading. Production `build` and `generate` also enforce this check; local development and typechecking work with the starter placeholder.
+
+For a template/demo deployment that intentionally retains the starter placeholder, pass `--skip-contact-email-check` to both `deploy inspect` and `deploy run`. The explicit override applies only to that invocation, emits a warning, and leaves all other deployment checks in force. Tracked deployment passes it to the production build automatically. For a direct untracked production build or generation, set `EXPERIMENT_SKIP_CONTACT_EMAIL_CHECK=1` explicitly. Ordinary deployments continue to require a real researcher contact.
 
 Set **Dataset version** on **Prolific → Create New Study** before deploying. Use a meaningful name such as `pilot-1` or `instructions-revised`; names start with a letter or number and may contain letters, numbers, dots, hyphens, and underscores. Version identifies the live dataset, while the Git SHA identifies each source revision. Changing only the dataset version still requires deployment, so participant data and completion codes receive the chosen identity. Keep the planned version while deploying and fixing bugs before posting a study. Additional recruitment batches from the same code can reuse that version. After posting, increment it for changes to the participant procedure or analysis, including conditions, stimuli, instructions, or recorded data interpretation.
 

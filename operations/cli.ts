@@ -31,8 +31,9 @@ const readJsonInput = async () => {
 const usage = () => `Usage:
   bun run ops -- firebase-auth configure --key <service-account.json>
   bun run ops -- firebase-auth status
-  bun run ops -- deploy inspect [--version <dataset-version>]
-  bun run ops -- deploy run [--version <dataset-version>] [--allow-version-reuse] [--allow-live-studies <id[,id...]>]
+  bun run ops -- deploy inspect [--version <dataset-version>] [--skip-contact-email-check]
+  bun run ops -- deploy run [--version <dataset-version>] [--allow-version-reuse]
+    [--allow-live-studies <id[,id...]>] [--skip-contact-email-check]
   bun run ops -- deploy reconcile --id <operation-id>
   bun run ops -- study-draft get
   bun run ops -- study-draft update --json '<patch>'
@@ -52,7 +53,8 @@ const main = async () => {
   const allowed: Record<string, string[]> = {
     'firebase-auth configure': ['--key'],
     'firebase-auth status': [],
-    'deploy inspect': ['--version'], 'deploy run': ['--version', '--allow-version-reuse', '--allow-live-studies'],
+    'deploy inspect': ['--version', '--skip-contact-email-check'],
+    'deploy run': ['--version', '--allow-version-reuse', '--allow-live-studies', '--skip-contact-email-check'],
     'deploy reconcile': ['--id'],
     'study-draft get': [], 'study-draft update': ['--json', '--file'],
     'review-draft get': ['--study'], 'review-draft update': ['--study', '--json', '--file'],
@@ -65,7 +67,7 @@ const main = async () => {
     const flag = args[i]!
     if (!flags.includes(flag) || seen.has(flag)) throw new Error(`Unknown or duplicate option: ${flag}`)
     seen.add(flag)
-    if (flag === '--allow-version-reuse') continue
+    if (flag === '--allow-version-reuse' || flag === '--skip-contact-email-check') continue
     if (!args[++i] || args[i]!.startsWith('--')) {
       throw new Error(`Missing value for ${flag}`)
     }
@@ -84,11 +86,13 @@ const main = async () => {
 
   if (resource === 'deploy') {
     const deployments = new DeploymentOperations(process.cwd(), database)
-    if (action === 'inspect') result = await deployments.inspect(option('--version'))
+    const skipContactEmailCheck = seen.has('--skip-contact-email-check')
+    if (action === 'inspect') result = await deployments.inspect(option('--version'), { skipContactEmailCheck })
     else result = await withOperationLock(process.cwd(), () => action === 'run'
       ? deployments.deploy({
         version: option('--version'), allowVersionReuse: seen.has('--allow-version-reuse'),
         allowLiveStudies: option('--allow-live-studies')?.split(','),
+        skipContactEmailCheck,
       })
       : deployments.reconcile(option('--id') ?? ''))
   } else if (resource === 'study-draft' && action === 'get') {

@@ -132,6 +132,24 @@ describe('tracked static Hosting deployment', () => {
     expect(fixture.state.deployStatus).toBeUndefined()
   })
 
+  test('explicitly skips the contact check for a template deployment without changing its config', async () => {
+    const fixture = await deploymentFixture()
+    const configPath = resolve(fixture.root, 'epoch.config.ts')
+    const contactEmail = 'yourEmailAddress@fakeDomain.foo'
+    const config = `export default ${JSON.stringify({ contactEmail })}\n`
+    await writeFile(configPath, config)
+    await command(fixture.root, 'git', ['add', 'epoch.config.ts'])
+    await command(fixture.root, 'git', ['commit', '-qm', 'use template contact'])
+    await expect(fixture.operations.inspect()).rejects.toThrow('Set contactEmail')
+    expect((await fixture.operations.inspect(undefined, { skipContactEmailCheck: true })).contactEmail)
+      .toBe(contactEmail)
+    expect((await fixture.operations.deploy({ skipContactEmailCheck: true })).state).toBe('tracked')
+    const build = fixture.calls.find(call => call.args[0] === 'run')
+    expect(build.environment.EXPERIMENT_SKIP_CONTACT_EMAIL_CHECK).toBe('1')
+    expect(await Bun.file(configPath).text()).toBe(config)
+    await expect(fixture.operations.deploy()).rejects.toThrow('Set contactEmail')
+  })
+
   test('allows bugfix redeployment before posting and another batch of the same posted build', async () => {
     const fixture = await deploymentFixture()
     fixture.state.studies = { draft: { version: 'cohort-1', sha: 'aaaaaaaa' } }
@@ -181,6 +199,7 @@ describe('tracked static Hosting deployment', () => {
     expect(fixture.state[`deploys/${result.deployedAt}`]).toEqual(fixture.state.deployStatus)
     const build = fixture.calls.find(call => call.args[0] === 'run')
     expect(JSON.parse(build.environment.EXPERIMENT_DEPLOYMENT)).toEqual(fixture.state.deployStatus)
+    expect(build.environment.EXPERIMENT_SKIP_CONTACT_EMAIL_CHECK).toBe('0')
   })
 
   test('uses the UI selection or an explicit version without editing source', async () => {

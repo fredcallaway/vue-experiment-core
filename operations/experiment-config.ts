@@ -1,7 +1,7 @@
 import { contactEmailError } from '../internal/deploymentSafety'
 import { command } from './project'
 
-export async function readDeploymentConfig(root: string, run = command) {
+export async function readDeploymentConfig(root: string, run = command, { skipContactEmailCheck = false } = {}) {
   const output = await run(root, 'bun', ['--eval',
     'globalThis.defineEpochConfig = c => c; ' +
     'const {contactEmail} = (await import("./epoch.config.ts")).default; ' +
@@ -9,6 +9,7 @@ export async function readDeploymentConfig(root: string, run = command) {
   ])
   const config = JSON.parse(output) as { contactEmail: string }
   const error = contactEmailError(config.contactEmail)
-  if (error) throw new Error(error)
+  if (error && !skipContactEmailCheck) throw new Error(error)
+  if (error) console.warn('WARNING: Skipping the researcher contact-email check for this build/deployment.')
   return config
 }
