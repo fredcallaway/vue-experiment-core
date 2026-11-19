@@ -27,12 +27,8 @@ export const useDatabasePath = <T>(path: string, listen: boolean) => {
   const unsubscribe = onValue(dbRef(db, path), (snapshot) => {
     console.debug('useDatabasePath.snapshot', path, snapshot.val())
     isLoading.value = false
-    if (!snapshot.exists()) {
-      isMissing.value = true
-    } else {
-      isMissing.value = false
-      data.value = snapshot.val()
-    }
+    isMissing.value = !snapshot.exists()
+    data.value = snapshot.val()
   }, { onlyOnce: !listen })
   tryOnUnmounted(() => {
     console.debug('useDatabasePath.unsubscribe', path)

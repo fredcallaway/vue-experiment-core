@@ -30,34 +30,34 @@ try {
             get: async () => snapshot,
             onValue: (_, callback) => { callback(snapshot); return () => {}; },
             set: async () => {}, update: async () => {},
-            sync: (path, initial) => Object.assign(ref(path === '/prolificProjectId' ? 'fixture-project' : initial),
+            sync: (path, initial) => Object.assign(ref(path === '/prolificProjectId' ? 'a'.repeat(24) : initial),
               { ready: true }),
           });
         ` })
       }
       if (target.pathname.endsWith('/internal/local-data.ts')) {
         const response = await route.fetch()
-        let source = await response.text()
-        const vue = source.match(/from "([^"]*vue\.runtime[^"]*)"/)[1]
-        const start = source.indexOf('export const useDatabasePath =')
-        const end = source.indexOf('export const getDatabasePath', start)
-        assert.ok(start >= 0 && end > start, 'Replace only the database subscription boundary')
-        source = source.slice(0, start) + `
-          export const useDatabasePath = () => {
-            const data = fixtureRef(null);
-            const isLoading = fixtureRef(window.emptyDataScenario === 'loading');
-            window.emptyDataControls = {
-              setData: value => { data.value = value; isLoading.value = false; },
-            };
-            return { data, isLoading, isMissing: fixtureComputed(() => !isLoading.value && data.value === null) };
+        const source = await response.text()
+        const sdk = /from "[^"]*\/firebase_database\.js[^"]*"/
+        assert.match(source, sdk)
+        return route.fulfill({ contentType: 'text/javascript', body: source.replace(sdk, 'from "/fixture-database.js"') })
+      }
+      if (target.pathname === '/fixture-database.js') {
+        return route.fulfill({ contentType: 'text/javascript', body: `
+          export const ref = (_, path) => path;
+          export const get = async () => { throw new Error('Unexpected database read'); };
+          export const onValue = (path, callback) => {
+            const setData = value => callback({ val: () => value, exists: () => value !== null });
+            window.emptyDataControls = { setData };
+            if (window.emptyDataScenario !== 'loading') setData(null);
+            return () => {};
           };
-        ` + source.slice(end)
-        return route.fulfill({ contentType: 'text/javascript', body:
-          `import { ref as fixtureRef, computed as fixtureComputed } from ${JSON.stringify(vue)};\n${source}` })
+        ` })
       }
       if (target.pathname.startsWith('/api/')) {
         const path = target.pathname.replace(/\/$/, '')
         const json = path === '/api/prolific/token' ? { token: 'fixture-token' }
+          : path === `/api/prolific/projects/${'a'.repeat(24)}` ? { id: 'a'.repeat(24) }
           : path === `/api/prolific/studies/${study.id}` ? study
           : path === `/api/prolific/studies/${study.id}/submissions` ? { results: study.submissions }
           : path === '/api/prolific/users/me' ? { id: 'fixture-researcher' }
