@@ -16,7 +16,7 @@ definePageMeta({
 
 const prolific = useProlific()
 const { deploy, localSha, deployedSha, deployedVersion, deployedId, version, versionError: datasetError,
-  status, error: deploymentError, gitStatus, versionSafety, refreshDeployment,
+  status, isVerifying, error: deploymentError, gitStatus, versionSafety, refreshDeployment,
   activeStudies, activeStudiesError, refreshActiveStudies, firebaseCredentials, credentialError } = useDeployment()
 const { warnings: versionWarnings, loading: versionLoading, error: versionError } = versionSafety
 
@@ -374,7 +374,8 @@ const onDeploy = () => deploy(bypassVersionCheck.value, confirmLiveDeployment.va
         <div v-else-if="['ready', 'loading', 'error'].includes(status)" class="p-4 rounded-lg"
           :class="status === 'error' ? 'bg-error-200 text-error-600' : 'bg-info-200 text-info-600'"
         >
-          <b>{{ status === 'error' ? 'Deployment failed' : status === 'loading' ? 'Deploying…' : 'Ready to deploy!' }}</b>
+          <b role="status" v-if="isVerifying">Waiting for the new build to go live…</b>
+          <b v-else>{{ status === 'error' ? 'Deployment failed' : status === 'loading' ? 'Deploying…' : 'Ready to deploy!' }}</b>
           <div>current commit: <span class="font-mono">{{ localSha }}</span></div>
           <div>deployed commit: <span class="font-mono">{{ deployedSha }}</span></div>
           <label class="flex items-center gap-2 mt-2" :class="{ invisible: status === 'loading' }">

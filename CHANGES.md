@@ -1,3 +1,7 @@
+# Hosting deployment verification
+
+- Deploy Website and the deployment CLI retry live marker reads for up to 30 seconds after upload. The dashboard shows when it is waiting for the build. A verification timeout reports the expected and last observed deployment IDs.
+
 # Session Data page
 
 - Opening a session shows its loading state, identifies sessions missing from both Firebase and the local download, and explains read failures. An absent download is expected when browsing directly from Firebase.

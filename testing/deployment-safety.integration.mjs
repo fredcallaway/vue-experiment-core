@@ -22,6 +22,8 @@ try {
       }
     }, { scenario })
     let deploys = 0
+    let finishVerification
+    const markerReady = new Promise(resolve => { finishVerification = resolve })
     await context.route('**/*', async route => {
       const request = route.request()
       const target = new URL(request.url())
@@ -67,10 +69,14 @@ try {
         if (target.pathname === '/api/prolific/active-studies') {
           return route.fulfill({ json: scenario === 'active' ? [{ id: 'active-study', name: 'Recruiting study' }] : [] })
         }
+        if (target.pathname === '/api/prolific/deploy-progress') {
+          return route.fulfill({ json: { verifying: deploys > 0 } })
+        }
         if (target.pathname === '/api/prolific/deploy') {
           assert.equal(request.postDataJSON().allowVersionReuse, scenario === 'posted')
           assert.deepEqual(request.postDataJSON().allowLiveStudies, scenario === 'active' ? ['active-study'] : [])
           deploys++
+          if (scenario === 'draft') await markerReady
           return route.fulfill({ json: { success: true, sha: 'bbbbbbbb', id: 'fixture-deployment',
             version: request.postDataJSON().version } })
         }
@@ -122,6 +128,14 @@ try {
       }
       assert.ok(await deploy.isEnabled())
       await deploy.click()
+      if (scenario === 'draft') {
+        try {
+          await page.getByRole('status').filter({ hasText: 'Waiting for the new build to go live…' }).waitFor({ timeout: 10000 })
+          assert.ok(await publish.isDisabled())
+        } finally {
+          finishVerification()
+        }
+      }
       await page.getByText('Deployed and ready to publish', { exact: false }).waitFor()
       assert.equal(deploys, 1)
 

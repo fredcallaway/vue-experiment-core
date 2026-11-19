@@ -34,6 +34,8 @@ async function project() {
 async function deploymentFixture(options = {}) {
   const root = await project()
   const calls = []
+  const probes = []
+  let elapsed = 0
   const state = { deploymentVersion: 'cohort-1' }
   let remote
   let failTracking = options.failTracking
@@ -72,9 +74,14 @@ async function deploymentFixture(options = {}) {
       }
       throw new Error(`Unexpected command: ${executable}`)
     },
-    verify: async () => options.wrongBuild ? { wrong: true } : remote,
+    verify: async (url, timeoutMs) => {
+      probes.push({ url, timeoutMs })
+      return options.marker ? options.marker(remote, probes.length) : remote
+    },
+    now: () => elapsed,
+    wait: async ms => { elapsed += ms },
   }
-  return { root, calls, state, operations: new DeploymentOperations(root, database, io),
+  return { root, calls, state, probes, operations: new DeploymentOperations(root, database, io),
     allowTracking: () => { failTracking = false } }
 }
 
@@ -222,10 +229,37 @@ describe('tracked static Hosting deployment', () => {
     expect(fixture.state.deployStatus).toBeUndefined()
   })
 
-  test('never marks a mismatching remote build as deployed', async () => {
-    const fixture = await deploymentFixture({ wrongBuild: true })
-    await expect(fixture.operations.deploy()).rejects.toThrow('does not match')
-    expect(fixture.state.deployStatus).toBeUndefined()
+  test('tracks the new marker after two stale reads with a single upload', async () => {
+    const fixture = await deploymentFixture({ marker: (remote, attempt) =>
+      attempt < 3 ? { ...remote, id: 'previous-release' } : remote })
+    let verifying = false
+    const result = await fixture.operations.deploy({}, () => {
+      expect(fixture.calls.filter(call => call.executable === 'firebase')).toHaveLength(1)
+      expect(fixture.probes).toHaveLength(0)
+      verifying = true
+    })
+    expect(verifying).toBe(true)
+    expect(result.state).toBe('tracked')
+    expect(fixture.state.deployStatus.id).toBe(result.id)
+    expect(fixture.calls.filter(call => call.executable === 'firebase')).toHaveLength(1)
+    expect(fixture.probes).toHaveLength(3)
+    expect(new Set(fixture.probes.map(p => p.url)).size).toBe(3)
+  })
+
+  test.each(['id', 'version'])('reports both IDs and preserves tracking on a persistent %s mismatch', async field => {
+    const fixture = await deploymentFixture({ marker: remote => ({ ...remote, [field]: 'previous-release' }) })
+    fixture.state.deployStatus = { id: 'previous-release' }
+    const error = await fixture.operations.deploy().catch(error => error.message)
+    const [file] = await readdir(resolve(fixture.root, '.git/agent-operations/deployments'))
+    const id = file.replace('.json', '')
+    expect(error).toContain(`Expected deployment ${id}`)
+    expect(error).toContain(`Last observed deployment ID: ${field === 'id' ? 'previous-release' : id}`)
+    expect(error).toContain(`deploy reconcile --id ${id}`)
+    expect(fixture.probes.length).toBeGreaterThan(1)
+    expect(fixture.probes.at(-1).timeoutMs).toBeLessThan(fixture.probes[0].timeoutMs)
+    expect(fixture.calls.filter(call => call.executable === 'firebase')).toHaveLength(1)
+    expect(fixture.state.deployStatus).toEqual({ id: 'previous-release' })
+    expect(Object.keys(fixture.state).some(key => key.startsWith('deploys/'))).toBe(false)
   })
 
   test('recovers a successful upload after a tracking failure without uploading again', async () => {

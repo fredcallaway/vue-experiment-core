@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
+import { setTimeout as delay } from 'node:timers/promises'
+import { isDeepStrictEqual } from 'node:util'
 import type { OperationsDatabase } from './database'
 import { command, gitSnapshot, operationDirectory, readJson, safeSegment, unchanged, writeJson } from './project'
 import { readDeploymentConfig } from './experiment-config'
@@ -27,15 +29,19 @@ type DeploymentRecord = {
 
 export type DeploymentAdapters = {
   run: typeof command
-  verify: (url: string) => Promise<unknown>
+  verify: (url: string, timeoutMs: number) => Promise<unknown>
+  now: () => number
+  wait: (ms: number) => Promise<void>
   getActiveStudies: (root: string, projectId: string) => Promise<ActiveProlificStudy[]>
 }
 
 const adapters: DeploymentAdapters = {
   run: command,
   getActiveStudies: async (root, projectId) => (await ProlificHttpReader.fromProject(root)).getActiveStudies(projectId),
-  verify: async (url) => {
-    const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(30_000) })
+  now: () => performance.now(),
+  wait: ms => delay(ms),
+  verify: async (url, timeoutMs) => {
+    const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(timeoutMs) })
     if (!response.ok) throw new Error(`Hosted build verification failed: HTTP ${response.status}`)
     return response.json()
   },
@@ -102,10 +108,24 @@ export class DeploymentOperations {
 
   private async verify(deployment: Deployment) {
     const url = `https://${deployment.site}.web.app/ops-deployment.json?operation=${deployment.id}`
-    const live = await this.io.verify(url)
-    if (JSON.stringify(live) !== JSON.stringify(deployment)) {
-      throw new Error(`Hosted build does not match deployment ${deployment.id}`)
+    const deadline = this.io.now() + 30_000
+    let observedId = 'none'
+    let detail = ''
+    while (this.io.now() < deadline) {
+      try {
+        const timeoutMs = Math.max(1, Math.ceil(deadline - this.io.now()))
+        const live = await this.io.verify(`${url}&probe=${randomUUID()}`, timeoutMs)
+        if (isDeepStrictEqual(live, deployment)) return
+        observedId = live && typeof live === 'object' && 'id' in live && typeof live.id === 'string' ? live.id : 'missing'
+        detail = 'The hosted marker differs from the uploaded marker.'
+      } catch (error) {
+        detail = error instanceof Error ? error.message : String(error)
+      }
+      const remaining = deadline - this.io.now()
+      if (remaining > 0) await this.io.wait(Math.min(1000, remaining))
     }
+    throw new Error(`Hosted build verification timed out. Expected deployment ${deployment.id}. ` +
+      `Last observed deployment ID: ${observedId}. ${detail}`)
   }
 
   private async track(record: DeploymentRecord) {
@@ -123,7 +143,7 @@ export class DeploymentOperations {
 
   async deploy({ version, allowVersionReuse = false, allowLiveStudies = [], skipContactEmailCheck = false }: {
     version?: string, allowVersionReuse?: boolean, allowLiveStudies?: string[], skipContactEmailCheck?: boolean,
-  } = {}) {
+  } = {}, onVerifying?: () => void) {
     const inspected = await this.inspect(version, { skipContactEmailCheck })
     this.requireStudyConfirmation(inspected.activeStudies, allowLiveStudies)
     if (inspected.activeStudies.length) {
@@ -163,6 +183,7 @@ export class DeploymentOperations {
       await this.io.run(this.root, 'firebase', [
         'deploy', '--only', 'hosting', '--project', config.projectId, '--config', configFile, '--non-interactive',
       ])
+      onVerifying?.()
       await this.verify(deployment)
       await unchanged(this.root, snapshot)
       record.state = 'verified'

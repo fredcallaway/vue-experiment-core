@@ -23,6 +23,15 @@ export const useDeployment = () => {
   const version = useDatabase().sync('deploymentVersion', '')
   const versionError = computed(() => datasetVersionError(version.value))
   const isLoading = ref(false)
+  const isVerifying = ref(false)
+  const { pause: stopProgress, resume: pollProgress } = useIntervalFn(async () => {
+    try {
+      const progress = await $fetch('/api/prolific/deploy-progress', { retry: 0, timeout: 1000 })
+      if (isLoading.value && progress.verifying) isVerifying.value = true
+    } catch {
+      // The deploy request reports the final outcome if a progress poll fails.
+    }
+  }, 1000, { immediate: false })
   const isDirty = ref(false)
   const gitStatus = ref('')
   const activeStudies = ref<ActiveProlificStudy[] | null>(null)
@@ -109,6 +118,7 @@ export const useDeployment = () => {
       await versionSafety.refresh()
       const selectedVersion = version.value
       await version.syncImmediate()
+      pollProgress()
       const result = await $fetch('/api/prolific/deploy', {
         method: 'POST', body: { version: selectedVersion, allowVersionReuse, allowLiveStudies },
       })
@@ -123,6 +133,8 @@ export const useDeployment = () => {
       void refreshActiveStudies()
       return false
     } finally {
+      stopProgress()
+      isVerifying.value = false
       isLoading.value = false
       void refreshFirebaseCredentials()
     }
@@ -134,6 +146,7 @@ export const useDeployment = () => {
     deployedSha,
     deployedVersion,
     deployedId,
+    isVerifying,
     version,
     versionError,
     status,
