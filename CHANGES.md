@@ -1,3 +1,7 @@
+# Session Data page
+
+- Opening a session shows its loading state, identifies sessions missing from both Firebase and the local download, and explains read failures. An absent download is expected when browsing directly from Firebase.
+
 # Version overview condition counts
 
 - Each condition tally includes only sessions with a recorded value for that condition. The overall session count includes every session in the version.

@@ -18,7 +18,7 @@ const sessionId = route.params.session as string
 const mode = (route.query.mode as 'live' | 'debug') || 'live'
 
 
-const { data, downloadTime, meta, status } = useSessionData(mode, sessionId)
+const { data, meta, status, isLoading, showingLocalCopy, databaseError, localError } = useSessionData(mode, sessionId)
 
 const posthogId = computed(() => {
   const other = data.value?.other as any
@@ -89,10 +89,6 @@ const correspondence = computed(() => {
   return prolificMessages.getOrCreateCorrespondence(meta.value.studyId, meta.value.participantId)
 })
 
-watchEffect(() => {
-  console.log('correspondence', correspondence.value)
-})
-
 const timeInfo = computed(() => {
   if (!meta.value) return { totalMs: null, activeMs: null }
   return getSessionTimeInfo(meta.value)
@@ -103,10 +99,15 @@ const timeInfo = computed(() => {
 
 <template>
   <div class="p-8 max-w-7xl mx-auto">
-    <!-- <Error :error="metaError || sessionError" /> -->
-
     <NuxtLink :to="`/data/sessions?mode=${mode}`" class="absolute translate-y--5 translate-x-1"> ← All Sessions </NuxtLink>
     
+    <div v-if="databaseError" role="alert" class="mb-4">
+      Could not read this session from Firebase. {{ databaseError.message }}
+    </div>
+    <div v-if="localError && !meta" role="alert" class="mb-4">
+      Could not read the downloaded copy. {{ localError.message }}
+    </div>
+    <p v-if="showingLocalCopy" role="status" class="mb-4">Showing the downloaded copy.</p>
     <div v-if="meta" class="mb-6">
       <div class="flex flex-row flex-gap-4 flex-justify-between w-full h-100">
         <div class="bg-gray-100 p-6 rounded-lg relative flex-1">
@@ -135,7 +136,6 @@ const timeInfo = computed(() => {
               </NuxtLink>
             </div>
             <!-- <div><b>Mode:</b> {{ meta.mode || 'N/A' }}</div> -->
-            <!-- <div><b>Last Download:</b> {{ formatDateTime(downloadTime) }}</div> -->
             <div><b>Start Time:</b> {{ formatDateTime(meta.startTime) }}</div>
             <div><b>Last Update:</b> {{ formatDateTime(meta.lastUpdateTime) }}</div>
             <div><b>Total Time:</b> {{ timeInfo.totalMs === null ? 'N/A' : formatTime(timeInfo.totalMs) }}</div>
@@ -189,6 +189,11 @@ const timeInfo = computed(() => {
         </Tab>
 
       </TabContainer>
+    </div>
+    <div v-else role="status">
+      <h2 class="mb-2">Session <span class="font-mono">{{ sessionId }}</span></h2>
+      <p v-if="isLoading">Checking for {{ mode }} session data…</p>
+      <p v-else-if="!databaseError && !localError">No {{ mode }} session data was found in Firebase or on this computer.</p>
     </div>
   </div>
 </template>

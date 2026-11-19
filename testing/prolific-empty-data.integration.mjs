@@ -14,6 +14,7 @@ try {
   for (const scenario of ['empty', 'submissions', 'loading']) {
     const study = { ...fixture, submissions: scenario === 'empty' ? [] : fixture.submissions }
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' })
+    let cachedSession = null
     await context.addInitScript(scenario => { window.emptyDataScenario = scenario }, scenario)
     await context.route('**/*', async route => {
       const request = route.request()
@@ -46,9 +47,13 @@ try {
         return route.fulfill({ contentType: 'text/javascript', body: `
           export const ref = (_, path) => path;
           export const get = async () => { throw new Error('Unexpected database read'); };
-          export const onValue = (path, callback) => {
+          export const onValue = (path, callback, cancel) => {
             const setData = value => callback({ val: () => value, exists: () => value !== null });
-            window.emptyDataControls = { setData };
+            if (path.startsWith('live/meta/')) {
+              window.sessionControls = { setData, deny: () => cancel(new Error('Permission denied')) };
+              return () => {};
+            }
+            if (path === 'live/meta') window.emptyDataControls = { setData };
             if (window.emptyDataScenario !== 'loading') setData(null);
             return () => {};
           };
@@ -56,6 +61,10 @@ try {
       }
       if (target.pathname.startsWith('/api/')) {
         const path = target.pathname.replace(/\/$/, '')
+        if (path === `/api/data/raw/live/${study.submissions[0]?.id}.json`) {
+          assert.equal(target.searchParams.get('optional'), 'true')
+          return cachedSession ? route.fulfill({ json: cachedSession }) : route.fulfill({ status: 204 })
+        }
         const json = path === '/api/prolific/token' ? { token: 'fixture-token' }
           : path === `/api/prolific/projects/${'a'.repeat(24)}` ? { id: 'a'.repeat(24) }
           : path === `/api/prolific/studies/${study.id}` ? study
@@ -106,6 +115,30 @@ try {
         assert.equal(await rows.first().locator('td').nth(5).innerText(), 'missing')
       }
       await page.screenshot({ path: resolve(output, `${scenario}.png`), fullPage: true })
+      if (scenario === 'submissions') {
+        const id = study.submissions[0].id
+        const meta = { sessionId: id, mode: 'live', startTime: 1000, lastUpdateTime: 2000, version: 'fixture' }
+        await page.getByRole('link', { name: id, exact: true }).click()
+        await page.getByText('Checking for live session data…').waitFor()
+        await page.evaluate(() => window.sessionControls.setData(null))
+        const missing = page.getByText('No live session data was found in Firebase or on this computer.')
+        await missing.waitFor()
+        await page.evaluate(meta => window.sessionControls.setData(meta), meta)
+        await page.getByRole('link', { name: 'fixture', exact: true }).waitFor()
+        await page.evaluate(() => window.sessionControls.setData(null))
+        await missing.waitFor()
+        await page.evaluate(() => window.sessionControls.deny())
+        await page.getByRole('alert').filter({ hasText: 'Permission denied' }).waitFor()
+        assert.equal(await missing.count(), 0)
+
+        cachedSession = { meta: { ...meta, version: 'cached' }, events: [] }
+        await page.reload()
+        await page.getByRole('link', { name: 'cached', exact: true }).waitFor()
+        await page.evaluate(() => window.sessionControls.deny())
+        await page.getByRole('alert').filter({ hasText: 'Permission denied' }).waitFor()
+        await page.getByText('Showing the downloaded copy.').waitFor()
+        await page.getByRole('link', { name: 'cached', exact: true }).waitFor()
+      }
       assert.deepEqual(errors, [], `${scenario}: no browser runtime errors`)
     } catch (error) {
       await page.screenshot({ path: resolve(output, `${scenario}-failure.png`), fullPage: true })
@@ -114,5 +147,5 @@ try {
       throw error
     } finally { await context.close() }
   }
-  console.log(`Passed: empty database, submissions without sessions, loading, session arrival/removal; ${output}`)
+  console.log(`Passed: submission review, session loading, missing data, live updates, denied access and cached fallback; ${output}`)
 } finally { await browser.close() }

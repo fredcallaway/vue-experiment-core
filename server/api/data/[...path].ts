@@ -100,20 +100,10 @@ function parseCsvLine(line: string): string[] {
 
 
 const readFile = async (filePath: string) => {
-  try {
-    const content = await readFileAsync(filePath, 'utf-8')
-    if (filePath.endsWith('.json')) {
-      return JSON.parse(content)
-    } else if (filePath.endsWith('.csv')) {
-      return csvToObjects(content)
-    }
-    return content
-  } catch (error: any) {
-    throw createError({
-      statusCode: 500,
-      message: `Failed to read file: ${error.message}`
-    })
-  }
+  const content = await readFileAsync(filePath, 'utf-8')
+  if (filePath.endsWith('.json')) return JSON.parse(content)
+  if (filePath.endsWith('.csv')) return csvToObjects(content)
+  return content
 }
 
 const writeFile = async (filePath: string, content: any) => {
@@ -169,8 +159,15 @@ export default defineEventHandler(async (event) => {
   const method = event.method
 
   if (method === 'GET') {
-    if (!existsSync(filePath)) {
-      const defaultValue = getQuery(event).default
+    try {
+      return await readFile(filePath)
+    } catch (error: any) {
+      if (error.code !== 'ENOENT') {
+        throw createError({ statusCode: 500, message: `Failed to read file: ${error.message}` })
+      }
+      const query = getQuery(event)
+      if (query.optional === 'true') return sendNoContent(event)
+      const defaultValue = query.default
       if (defaultValue === undefined) {
         throw createError({
           statusCode: 404,
@@ -184,7 +181,6 @@ export default defineEventHandler(async (event) => {
       }
       return defaultValue
     }
-    return await readFile(filePath)
   }
 
   else if (method === 'POST' || method === 'PUT') {

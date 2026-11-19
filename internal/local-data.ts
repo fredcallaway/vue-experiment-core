@@ -16,7 +16,11 @@ import { ref as dbRef, onValue, get } from 'firebase/database'
 
 // DATABASE 
 
-export const useDatabasePath = <T>(path: string, listen: boolean) => {
+export const useDatabasePath = <T>(
+  path: string,
+  listen: boolean,
+  onError = (error: Error) => console.error(`Could not read Firebase path ${path}`, error),
+) => {
   // TODO track database listeners to avoid duplicates?
   console.debug('useDatabasePath.subscribe', path)
   const { db } = useDatabase()
@@ -29,7 +33,7 @@ export const useDatabasePath = <T>(path: string, listen: boolean) => {
     isLoading.value = false
     isMissing.value = !snapshot.exists()
     data.value = snapshot.val()
-  }, { onlyOnce: !listen })
+  }, onError, { onlyOnce: !listen })
   tryOnUnmounted(() => {
     console.debug('useDatabasePath.unsubscribe', path)
     unsubscribe()
@@ -149,46 +153,43 @@ export const getSessionTimeInfo = (meta: SessionMeta): SessionTimeInfo => {
   return { endTime, totalMs, inactiveMs: meta.inactiveTime, activeMs }
 }
 
-type ReactiveSession = {
-  downloadTime: ComputedRef<number>
-  meta: ComputedRef<SessionMeta | null>
-  data: ComputedRef<SessionData | null>
-  isSynced: ComputedRef<boolean | null>
-  status: ComputedRef<SessionStatus | null>
-}
+export const useSessionData = (mode: DataMode, sessionId: string) => {
+  const databaseError = ref<Error | null>(null)
+  const onError = (error: Error) => { databaseError.value = error }
+  const { data: metaRef, isLoading: metaLoading } = useDatabasePath<SessionMeta>(
+    getDBPath(mode, sessionId, 'meta'), true, onError,
+  )
+  const { data: eventsRef } = useDatabasePath<DBSessionEvents>(getDBPath(mode, sessionId, 'events'), true, onError)
+  const { data: otherRef } = useDatabasePath<SafeDataObject>(getDBPath(mode, sessionId, 'other'), false, onError)
 
-export const useSessionData = (mode: DataMode, sessionId: string): ReactiveSession => {
-  const { data: metaRef } = useDatabasePath<SessionMeta | null>(getDBPath(mode, sessionId, 'meta'), true)
-  const { data: eventsRef } = useDatabasePath<DBSessionEvents | null>(getDBPath(mode, sessionId, 'events'), true)
-  const { data: otherRef } = useDatabasePath<SafeDataObject | null>(getDBPath(mode, sessionId, 'other'), false)
-
-  const { data: fsData, error: fsError } = useFetch<StoredSessionData>(`/api/data/raw/${mode}/${sessionId}.json`)
+  const { data: fsData, error: fsError, status: fsStatus } = useFetch<StoredSessionData>(
+    `/api/data/raw/${mode}/${encodeURIComponent(sessionId)}.json`, { query: { optional: true } },
+  )
+  const isLoading = computed(() => (metaLoading.value && !databaseError.value)
+    || fsStatus.value === 'idle' || fsStatus.value === 'pending')
 
   const downloadTime = computed(() => fsData.value?._downloadTime ?? 0)
 
   const isSynced = computed(() => {
-    if (fsError.value) return false
+    if (fsError.value || (fsStatus.value === 'success' && !fsData.value)) return false
     if (!fsData.value || !metaRef.value) return null
     return downloadTime.value >= metaRef.value.lastUpdateTime
   })
 
   const dbData = computed<SessionData | null>(() => {
-    if (!metaRef.value) return null
+    if (!metaRef.value || databaseError.value) return null
     const meta = metaRef.value
     const events = decompressEvents(eventsRef.value ?? {})
     const other = otherRef.value ?? undefined
     return { meta, events, other }
   })
 
-  const data = computed<SessionData | null>(() => {
-    if (dbData.value) return dbData.value
-    return fsData.value
-  })
-
-  const meta = computed<SessionMeta | null>(() => data.value?.meta ?? metaRef.value ?? null)
+  const data = computed(() => dbData.value ?? fsData.value ?? null)
+  const showingLocalCopy = computed(() => !dbData.value && !!fsData.value)
+  const meta = computed<SessionMeta | null>(() => data.value?.meta ?? null)
   const status = computed(() => meta.value ? sessionStatus(meta.value) : null)
 
-  return { downloadTime, meta, data, isSynced, status }
+  return { downloadTime, meta, data, isSynced, status, isLoading, showingLocalCopy, databaseError, localError: fsError }
 }
 
 // utilities
