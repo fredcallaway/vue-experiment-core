@@ -1,3 +1,7 @@
+# Version overview condition counts
+
+- Each condition tally includes only sessions with a recorded value for that condition. The overall session count includes every session in the version.
+
 # Prolific exclusion validation
 
 - Study creation retries once when Prolific explicitly rejects nonexistent users in a participant blocklist. Only rejected IDs are removed from the outgoing request; valid exclusions and stored participant records are preserved. Other validation failures still stop creation.

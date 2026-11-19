@@ -11,7 +11,7 @@ import {
   sessionStatus,
   useAllData,
 } from '../../../internal/local-data'
-import { assertDefined, assertNumber } from '../../../utils/asserts'
+import { assertNumber } from '../../../utils/asserts'
 import { formatDateTime, formatDollars, formatTime } from '../../../utils/formatting'
 import * as R from 'remeda'
 import { until, useAsyncState, useLocalStorage } from '@vueuse/core'
@@ -283,9 +283,8 @@ const completedByCondition = computed(() => {
   const conditionKeys = R.unique(sessions.flatMap(session => Object.keys(session.conditions ?? {})))
   return conditionKeys.map((condition: string) => {
     const grouped = R.groupBy(sessions, session => {
-      const conditions = session.conditions ?? {}
-      const value = assertDefined(conditions[condition], `Missing condition "${condition}" for session ${session.sessionId}`)
-      return String(value)
+      const value = session.conditions?.[condition]
+      return value == null ? undefined : String(value)
     })
     const values = Object.entries(grouped).map(([value, group]) => {
       const completed = group.filter(session => sessionStatus(session) === 'completed').length
