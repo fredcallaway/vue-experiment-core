@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
 
   // Make request to Prolific API
   try {
-    const send = (payload: any) => $fetch(url, {
+    const send = (payload: any) => $fetch.raw(url, {
       method,
       headers: {
         'Authorization': `Token ${token}`,
@@ -47,8 +47,21 @@ export default defineEventHandler(async (event) => {
       body: payload ? JSON.stringify(payload) : undefined,
     })
     
-    return method === 'POST' && path.replace(/\/+$/, '') === 'studies'
+    const endpoint = path.replace(/\/+$/, '')
+    const response = method === 'POST' && endpoint === 'studies'
       ? await createStudyRequest(body, send) : await send(body)
+    const isReviewAcknowledgment = method === 'POST' && (
+      endpoint === 'submissions/bulk-approve' || /^bulk-bonus-payments\/[^/]+\/pay$/.test(endpoint)
+    )
+    const contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase()
+    const data = response._data
+    if (isReviewAcknowledgment && typeof data === 'string'
+      && (contentType === 'application/json' || contentType === 'text/plain') && !/^\s*</.test(data)) {
+      // H3 serves bare strings as HTML. Keep these acknowledgments in the dashboard's JSON format.
+      setResponseStatus(event, response.status)
+      return { message: data }
+    }
+    return data
   } catch (error: any) {
     throw createError({
       statusCode: error.response?.status || 500,

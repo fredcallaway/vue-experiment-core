@@ -1,3 +1,7 @@
+# Prolific review
+
+- The local dashboard recognizes Prolific's bulk approval and bonus payment acknowledgments and continues checking for updated submission and payment status.
+
 # Hosting deployment verification
 
 - Deploy Website and the deployment CLI retry live marker reads for up to 30 seconds after upload. The dashboard shows when it is waiting for the build. A verification timeout reports the expected and last observed deployment IDs.
