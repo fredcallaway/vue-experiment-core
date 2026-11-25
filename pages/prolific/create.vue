@@ -90,7 +90,9 @@ const canSubmit = computed(() => cannotSubmitReason.value === '')
 
 const previewUrl = computed(() => {
   const baseUrl = getProlificBaseUrl(formData.value)
-  return `${baseUrl}/exp?PROLIFIC_PID=debug&STUDY_ID=debug&SESSION_ID=debug&assignment=0`
+  const query = new URLSearchParams({ PROLIFIC_PID: 'debug', STUDY_ID: 'debug', SESSION_ID: 'debug', assignment: '0' })
+  if (deployedId.value) query.set('previewDeployment', deployedId.value)
+  return `${baseUrl}/exp?${query}`
 })
 
 const create = useAsyncRunner(err => err instanceof ProlificError ? err.userMessage : null)
